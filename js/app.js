@@ -2,9 +2,8 @@
    Cerro Azul — Lógica del formulario público
    ============================================================ */
 
-// URL del Web App de Google Apps Script (la inyecta Fabio manualmente al desplegar)
-// Para desarrollo local se puede dejar vacía y el modo "simular" está disponible
-const APPS_SCRIPT_URL = window.APPS_SCRIPT_URL || '';
+// URL del Web App de Google Apps Script (desplegado por Fabio en urb.cerroazul@gmail.com)
+const APPS_SCRIPT_URL = window.APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbyLbcfAJXfNhDxsRCAodMZXkqD5l7mBbep5FgtVcn6NCng7xIz8Y7xDQD6p2gflqaqd/exec';
 
 // Constantes de UI
 const $  = (s, ctx = document) => ctx.querySelector(s);
