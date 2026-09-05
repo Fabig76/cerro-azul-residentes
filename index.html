@@ -637,6 +637,8 @@
   document.getElementById('firmaFecha').addEventListener('change', (e) => {
     document.getElementById('firmaFecha2').value = e.target.value;
   });
+  // Inicializar firmaFecha2 con el valor actual de firmaFecha
+  document.getElementById('firmaFecha2').value = document.getElementById('firmaFecha').value;
 </script>
 
 </body>

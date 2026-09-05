@@ -547,8 +547,19 @@ function hideAlert(id) {
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
   $('#firmaFecha').value = new Date().toISOString().slice(0, 10);
+  // Sincronizar campo firmaFecha2 (copia disabled) desde firmaFecha
+  const fecha1 = $('#firmaFecha');
+  const fecha2 = $('#firmaFecha2');
+  function syncFecha2() {
+    if (fecha1 && fecha2) fecha2.value = fecha1.value;
+  }
+  if (fecha1 && fecha2) {
+    syncFecha2();
+    fecha1.addEventListener('change', syncFecha2);
+  }
+
   // Si la URL del Apps Script no está configurada, mostrar aviso
   if (!APPS_SCRIPT_URL) {
-    showAlert('alert-create', '<strong>Aviso:</strong> El formulario aún no está conectado al servidor. La administración debe desplegar el Apps Script y pegar la URL en <code>js/app.js</code> (constante <code>APPS_SCRIPT_URL</code>). Mientras tanto, los envíos no funcionarán.', 'err');
+    showAlert('alert-create', '<strong>⚠️ Aviso:</strong> El formulario aún no está conectado al servidor. La administración debe desplegar el Apps Script y pegar la URL en <code>js/app.js</code> (constante <code>APPS_SCRIPT_URL</code>). Mientras tanto, los envíos no funcionarán.', 'err');
   }
 });
