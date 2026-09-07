@@ -192,9 +192,10 @@
   · **"Maestros"** (auxiliar, vacía): Apto | Estado | Notas
     · Pensada para validaciones futuras contra listado de aptos del conjunto
 
-### Estructura de columnas (138 en total, A:EH)
+### Estructura de columnas (143 en total, A:EM)
 
-Los nombres exactos están en `apps-script/Codigo.gs` y `app.js`. Resumen:
+Los nombres exactos están en `apps-script/Código.gs` y `app.js`. Resumen
+actualizado al 7-Sep-2026 (v2):
 
 ```
 A: N° Formulario (CA-0001, CA-0002...)
@@ -203,23 +204,33 @@ C: Fecha Última Edición
 D: N° Apto (LLAVE DE DEDUPE)
 E: Diligencia como
 F-J: Propietario (nombre, CC, correo, celular, tel fijo)
-K-L: Parqueaderos, Matrículas
-M-P: Arrendatario (4 campos)
-Q-S: Parqueadero tercero (3)
-T-X: Inmobiliaria (5)
-Y-AN: Residentes (4 personas × 5 campos = 20)
-AO-AT: Menores (4 × 3 = 12)
-AU-BF: Vehículos (2 × 6 = 12)
-BG-BR: Motos (2 × 6 = 12)
-BS-CB: Bicicletas (2 × 4 = 8)
-CC-CD: Llaveros/Tags autorizados (2)
-CE-DO: Dispositivos (3 × 5 = 15)
-DP-FI: Mascotas (2 × 10 = 20)
-FJ-FO: Emergencias (2 × 3 = 6)
-FP-FR: Autorizaciones (3)
-FS-FU: Firma (3)
-FV (137): Hash Dedupe (sha256[:16] de apto+cc+firma)
+K: N° Parqueadero 1
+L: Matrícula Parqueadero 1
+M: N° Parqueadero 2
+N: Matrícula Parqueadero 2
+O: Matrícula del Apto
+P: Requiere Revisión Matrículas (Sí/No)
+Q: Observaciones Matrículas (texto libre)
+R-U: Arrendatario (4 campos)
+V-X: Parqueadero tercero (3)
+Y-AC: Inmobiliaria (5)
+AD-AO: Residentes (4 personas × 5 campos = 20)
+AP-AS: Menores (4 × 3 = 12)
+AT-BE: Vehículos (2 × 6 = 12)
+BF-BQ: Motos (2 × 6 = 12)
+BR-BY: Bicicletas (2 × 4 = 8)
+BZ-CA: Llaveros/Tags autorizados (2)
+CB-CN: Dispositivos (3 × 5 = 15)
+CO-DX: Mascotas (2 × 10 = 20)
+DY-ED: Emergencias (2 × 3 = 6)
+EE-EG: Autorizaciones (3)
+EH-EJ: Firma (3)
+EK (143): Hash Dedupe (sha256[:16] de apto+cc+firma)
 ```
+
+**Cambio v2 (7-Sep-2026)**: se agregaron 5 columnas nuevas (K..Q renombradas
++ M..Q nuevas) para separar N° de parqueadero de N° de apto, y para habilitar
+el lookup automático de matrículas. Total: 138 → 143 columnas.
 
 ---
 
@@ -229,7 +240,7 @@ FV (137): Hash Dedupe (sha256[:16] de apto+cc+firma)
   · **URL editor**: https://script.google.com/d/17nuyzVYK2yN_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy/edit
   · **Cuenta dueña**: urb.cerroazul@gmail.com (NO está en Drive de Fabio)
   · **Nombre del proyecto**: "Cerro Azul - Formulario Residentes Backend"
-  · **Web App URL**: `https://script.google.com/macros/s/AKfycbyLbcfAJXfNhDxsRCAodMZXkqD5l7mBbep5FgtVcn6NCng7xIz8Y7xDQD6p2gflqaqd/exec`
+  · **Web App URL**: `https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec`
   · **Esta URL está hardcodeada** en `js/app.js` línea 5.
 
 ### Configuración del deployment
@@ -242,13 +253,35 @@ FV (137): Hash Dedupe (sha256[:16] de apto+cc+firma)
 
   · `doGet(e)` con `?action=nextId` → devuelve `{ok:true, nextId:"CA-XXXX"}`
   · `doGet(e)` con `?action=lookup&numForm=X&apto=Y` → devuelve fila
+  · `doGet(e)` con `?action=lookupMatApto&apto=X` → consulta Sheet de matrículas,
+    devuelve `{ok, encontrado, matricula, fuente}` donde fuente ∈ {'torre3','torre1'}
+  · `doGet(e)` con `?action=lookupMatParq&celda=X` → consulta Sheet de matrículas,
+    devuelve `{ok, encontrado, matricula, tipo}` donde tipo ∈ {'Privado','Común'}
   · `doPost(e)` con payload JSON → crea o actualiza fila
   · `getNextFormId()` → correlativo CA-0001, CA-0002...
   · `findRowByApto(apto)` → busca fila existente por N° Apto
   · `findRowByNumFormAndApto(numForm, apto)` → busca para edición
+  · `lookupMatriculaApto(apto)` → lee cache o reconstruye desde
+    "Torre 3 - Etapa 1" y "Torre 1 - Etapa 2" del Sheet matriculas-cerro-azul
+  · `lookupMatriculaParq(celda)` → lee cache o reconstruye desde
+    "Parqueaderos - Etapa 3" del Sheet matriculas-cerro-azul
   · `submitRecord(data)` → orquesta creación/edición con validaciones
-  · `buildRowFromPayload(d, numForm, fechaReg)` → array de 138 valores
+  · `buildRowFromPayload(d, numForm, fechaReg)` → array de 143 valores
   · `rowToObject(rowArr)` → convierte fila del Sheet a objeto JS para edición
+
+### Sheet de matrículas (referencia)
+
+  · ID: `1ceGtZDUJHX4yxs5_ydDwLwtrkOcZwYh09WUG0st_b0Y`
+  · Nombre: "matriculas-cerro-azul"
+  · Pestañas consultadas (solo lectura):
+   · "Torre 3 - Etapa 1" — 198 aptos (121..318), matrículas 5377499-5377696
+    · "Torre 1 - Etapa 2" — 234 aptos (9804..10037), matrículas 5428477-5428710
+    · "Parqueaderos - Etapa 3" — 337 celdas privadas + 25 comunes (mat 5397790-5398117)
+  · Torre 2 (185 unidades) NO tiene pestaña porque RPH no ha asignado matrículas
+  · Apps Script lee con `SpreadsheetApp.openById(MATRICULAS_SHEET_ID)`
+  · Cache en memoria se reconstruye por request (las tablas son chicas)
+  · Para Torre 1, los aptos se escriben sin comas/puntos (ej: "9804", no "9.804").
+    Función `normApto()` quita separadores antes de buscar.
 
 ### Validaciones del backend
 
@@ -260,6 +293,8 @@ Obligatorios (devuelve error si falta):
   · Celular del titular
   · Checkbox de autorización de datos
   · Nombre y cédula en la firma
+  · v2: Si el apto NO está en la base de matrículas y el residente no escribió
+    la matrícula manualmente → error con instrucción de escribirla
 
 ### Lógica de edición
 
@@ -499,6 +534,107 @@ comentarios se preservan bien. Apps Script maneja UTF-8 correctamente.
 **No fue problema** porque el CSS ya era responsive. Confirmado en
 inspección visual con `browser_vision`.
 
+### P7: Procedimiento de deploy manual (v2, 7-Sep-2026)
+
+**Contexto**: cada vez que cambia el código del backend Apps Script
+(`Código.gs`) o el frontend (`index.html`, `js/app.js`, `assets/styles.css`),
+hay que desplegar manualmente. La razón es que el token OAuth de
+`computadores.y.portatiles@gmail.com` no incluye el scope `script.projects`,
+así que no podemos automatizar el deploy del Apps Script vía API. NO
+revocar el token (rompe correos-pagos-cerro-azul y citofono-cerro-azul).
+
+#### Procedimiento paso-a-paso (5 pasos, esperar OK entre cada uno)
+
+**PASO 1 — Pegar Código.gs en el editor de Apps Script**
+  · Abrir https://script.google.com/d/17nuyzVYK2yN_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy/edit
+    (sesión urb.cerroazul@gmail.com)
+  · Panel izquierdo → "Código.gs" (ícono azul) → Ctrl+A / Cmd+A → BORRAR
+  · Abrir /root/cerro-azul-residentes/apps-script/Código.gs
+    (alternativa GitHub: https://github.com/Fabig76/cerro-azul-residentes/blob/main/apps-script/Código.gs
+     — ojo con el botón "Raw" en algunos navegadores, mejor desde el sandbox)
+  · Ctrl+A / Cmd+A → Ctrl+C / Cmd+C
+  · Volver al editor de Apps Script → Ctrl+V / Cmd+V → Ctrl+S
+  · Verificar que el editor muestre al inicio:
+    const NUM_COLS = 143;
+    const MATRICULAS_SHEET_ID = '1ceGtZDUJHX4yxs5_ydDwLwtrkOcZwYh09WUG0st_b0Y';
+  · **Decir: "PASO 1 HECHO"** y esperar OK
+
+**PASO 2 — Crear NUEVA implementación (deploy manual)**
+  · Arriba a la derecha: **Implementar** (botón celeste) → **Nueva implementación**
+  · Clic en el engranaje ⚙️ → **Aplicación web**
+  · Descripción: `Backend formulario residentes v2 (lookup matriculas)`
+  · Ejecutar como: **Yo** (urb.cerroazul@gmail.com)
+  · Quién tiene acceso: **Cualquier persona**
+  · **Implementar** → autorizar si pide
+  · La URL del Web App que aparece debería ser IDÉNTICA a la actual:
+    https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec
+  · Si es DISTINTA → avisar con la URL nueva (habría que actualizar js/app.js línea 11)
+  · **Decir: "PASO 2 HECHO, URL IGUAL"** y esperar OK
+
+**PASO 3 — Probar endpoints lookup desde el navegador** (mismo URL base del Paso 2)
+  · `?action=lookupMatApto&apto=121` → `{"ok":true,"encontrado":true,"matricula":"5377499","fuente":"torre3"}`
+  · `?action=lookupMatApto&apto=9804` → `{"ok":true,"encontrado":true,"matricula":"5428477","fuente":"torre1"}`
+  · `?action=lookupMatApto&apto=9.804` (con punto, prueba normApto) → mismo resultado que 9804
+  · `?action=lookupMatApto&apto=99999` → `{"ok":true,"encontrado":false,"matricula":"","fuente":""}`
+  · `?action=lookupMatParq&celda=1` → `{"ok":true,"encontrado":true,"matricula":"5397790","tipo":"Privado"}`
+  · **Pegar los 5 resultados** y esperar OK
+
+**PASO 4 — Probar formulario end-to-end (requiere push previo del frontend)**
+  · Antes de este paso, GitHub Pages sigue mostrando el formulario viejo
+    (mismo URL del Web App, así que los endpoints SÍ responden, pero los
+    7 campos nuevos NO aparecen en el HTML hasta que Hermes haga push)
+  · Si el Paso 4 falla por "el HTML no tiene los campos nuevos" → hacer
+    el push primero (cd /root/cerro-azul-residentes && git push origin main)
+    y refrescar con Ctrl+Shift+R / Cmd+Shift+R
+  · Tests a hacer (todos con Ctrl+Shift+R para forzar cache-bypass):
+    · N° Apto `121` → autocompleta Matrícula 5377499 + cartel verde
+    · N° Apto `9804` → autocompleta 5428477 + cartel verde
+    · N° Apto `99999` → cartel amarillo + Matrícula vacía y obligatoria
+    · N° Parqueadero 1 `1` → autocompleta Matrícula 5397790
+    · Marcar checkbox revisión → aparece textarea observaciones
+  · Enviar formulario con datos de prueba → crear CA-XXXX
+  · En el Sheet, verificar que la fila tiene:
+    · Columna O (Matrícula del Apto) con el valor autocompletado
+    · Columna P (Requiere Revisión) = "No"
+    · Hasta columna EJ (Firma) + EK (Hash) = 143 celdas con datos
+  · **BORRAR la fila de prueba del Sheet** (clic derecho → Eliminar fila)
+  · NO tocar CA-0001
+  · **Decir: "PASO 4 HECHO, CA-XXXX creado y borrado"** y esperar OK
+
+**PASO 5 — Verificar CA-0001 en modo edición**
+  · Pestaña "Editar mi registro" en el formulario público
+  · N° de formulario: `CA-0001`
+  · N° de apartamento: `2000`
+  · "Cargar registro" → debe cargar los datos de CA-0001
+  · Verificar:
+    · N° Apto: 2000
+    · N° Parqueadero 1: 3000
+    · Matrícula Parqueadero 1: (vacío)
+    · N° Parqueadero 2 / Matrícula Parqueadero 2: (vacíos)
+    · Matrícula del Apto: (vacío — CA-0001 no lo tenía)
+    · Requiere Revisión: checkbox destildado
+  · NO modificar nada. Cerrar la página (NO enviar)
+  · **Decir: "PASO 5 HECHO, todo OK"** y esperar OK para push
+
+#### Después del Paso 5 (con OK) — Push a GitHub
+  · `cd /root/cerro-azul-residentes && git push origin main`
+  · `cd /root/formato-datos-ph && git push origin main`
+  · GitHub Pages se actualiza en 1-2 min
+  · Los residentes que entren después ven el formulario v2
+
+#### Plan de rollback
+  · **Antes del push** (cambios solo locales): `git reset --hard HEAD~1` en cada repo
+  · **Después del push**: `git revert HEAD && git push origin main` en cada repo
+  · **Apps Script**: Implementar → Administrar implementaciones → "v1" como activa
+  · El Sheet NO se borra solo, solo recibe filas nuevas
+
+#### Verificaciones automáticas que Hermes corre antes de pedirte OK
+  · `node --check js/app.js` (sintaxis)
+  · Encoding UTF-8 de `Código.gs`
+  · Triple consistencia: backend `rowToObject` ↔ frontend `poblarFormulario` ↔ HTML IDs
+  · `NUM_COLS = 143` declarado y consistente con offsets
+  · `APPS_SCRIPT_URL` apuntando al deploy activo
+
 ---
 
 ## 11. Pendientes y siguientes pasos
@@ -542,10 +678,10 @@ inspección visual con `browser_vision`.
 
 ```bash
 # Next ID
-curl -sL "https://script.google.com/macros/s/AKfycbyLbcfAJXfNhDxsRCAodMZXkqD5l7mBbep5FgtVcn6NCng7xIz8Y7xDQD6p2gflqaqd/exec?action=nextId"
+curl -sL "https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec?action=nextId"
 
 # Lookup (debe devolver ok:false si no existe)
-curl -sL "https://script.google.com/macros/s/AKfycbyLbcfAJXfNhDxsRCAodMZXkqD5l7mBbep5FgtVcn6NCng7xIz8Y7xDQD6p2gflqaqd/exec?action=lookup&numForm=CA-0001&apto=101"
+curl -sL "https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec?action=lookup&numForm=CA-0001&apto=101"
 
 # POST con curl (NO funciona — solo navegador — ver P2)
 # Usar browser_console.expression en su lugar
@@ -582,7 +718,7 @@ python3 scripts/generar-qr.py "https://fabig76.github.io/cerro-azul-residentes/"
 
 ```js
 (async () => {
-  const resp = await fetch('https://script.google.com/macros/s/AKfycbyLbcfAJXfNhDxsRCAodMZXkqD5l7mBbep5FgtVcn6NCng7xIz8Y7xDQD6p2gflqaqd/exec', {
+  const resp = await fetch('https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec', {
     method: 'POST',
     headers: {'Content-Type': 'text/plain;charset=UTF-8'},
     body: JSON.stringify({
@@ -634,6 +770,34 @@ python3 scripts/generar-qr.py "https://fabig76.github.io/cerro-azul-residentes/"
 ---
 
 ## Historial de cambios
+
+  · **7-Sep-2026 — v2: lookup automático de matrículas (capa 1-4 completadas)**
+    · **Capa 1 (Sheet)**: Registros pasó de 138 → 143 columnas
+      · K, L renombradas: `Parqueaderos`, `Matrículas` →
+        `N° Parqueadero 1`, `Matrícula Parqueadero 1`
+      · 5 columnas nuevas M-Q: `N° Parqueadero 2`, `Matrícula Parqueadero 2`,
+        `Matrícula del Apto`, `Requiere Revisión Matrículas`,
+        `Observaciones Matrículas`
+      · CA-0001 preservado intacto (N° Apto 2000, Parq 1 = 3000)
+    · **Capa 2 (Backend)**: `apps-script/Código.gs` v2
+      · `NUM_COLS = 143`
+      · 2 nuevos endpoints GET: `?action=lookupMatApto&apto=X` y
+        `?action=lookupMatParq&celda=X`
+      · Cache en memoria de tablas de matrículas del Sheet
+        `1ceGtZDUJHX4yxs5_ydDwLwtrkOcZwYh09WUG0st_b0Y` (Torre 3 Etapa 1,
+        Torre 1 Etapa 2, Parqueaderos Etapa 3)
+      · Función `normApto()` para limpiar "9.804" → "9804"
+      · Validación v2: si apto no está en base, exige matrícula escrita a mano
+    · **Capa 3 (Frontend)**: `index.html`, `js/app.js`, `assets/styles.css`
+      · Sección 1 (datos propietario) con 7 campos nuevos + checkbox revisión
+        + textarea observaciones
+      · `lookupMatApto()` y `lookupMatParq()` con listeners `blur`
+      · Validación cliente: si apto no encontrado, `matriculaApto` es obligatorio
+      · `recolectar()` y `poblarFormulario()` actualizados con los 7 nuevos
+      · Estilos `.lookup-msg` con variantes `ok` / `warn` / `err`
+    · **Capa 4 (Docs)**: este `GUIA-PROYECTO.md` actualizado
+    · **PENDIENTE (te toca a vos)**: pegar Código.gs en Apps Script +
+      nueva implementación + verificar 5 flujos de prueba
 
   · **5-Sep-2026**: Implementación inicial completa para Cerro Azul
     · Sheet configurado (138 columnas, formato, validación)

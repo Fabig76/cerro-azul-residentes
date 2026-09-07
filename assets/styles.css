@@ -375,6 +375,37 @@ main {
 }
 .alert strong { font-weight: 700; }
 
+/* ---------- LOOKUP DE MATRÍCULAS ---------- */
+.lookup-msg {
+  margin: 8px 0 14px 0;
+  padding: 10px 14px;
+  border-radius: 5px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.lookup-msg.ok {
+  background: var(--ok-fondo);
+  color: var(--ok);
+  border-left: 4px solid var(--ok);
+}
+.lookup-msg.warn {
+  background: #FFF7E6;
+  color: #8A5A00;
+  border-left: 4px solid var(--naranja);
+}
+.lookup-msg.err {
+  background: var(--err-fondo);
+  color: var(--err);
+  border-left: 4px solid var(--err);
+}
+.lookup-msg strong { font-weight: 700; }
+.lookup-field-hint {
+  display: block;
+  font-size: 12px;
+  color: var(--gris-med);
+  margin-top: 4px;
+}
+
 /* ---------- PANTALLA DE EDICIÓN: LOOKUP ---------- */
 .lookup-box {
   max-width: 480px;

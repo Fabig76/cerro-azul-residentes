@@ -144,17 +144,51 @@
               </div>
               <div class="field">
                 <label>N° de apartamento <span class="req">*</span></label>
-                <input type="text" id="apto" placeholder="Ej: 101, 202B, T1-304" required>
+                <input type="text" id="apto" placeholder="Ej: 101, 202B, 9804" required>
                 <div class="err-msg"></div>
               </div>
               <div class="field">
-                <label>Parqueaderos N°</label>
-                <input type="text" id="parqueaderos" placeholder="Ej: 12, 15">
+                <label>Matrícula del apartamento</label>
+                <input type="text" id="matriculaApto" placeholder="Autocompleta al escribir el apto">
+                <div class="err-msg"></div>
               </div>
             </div>
-            <div class="field">
-              <label>Matrículas inmobiliarias N°</label>
-              <input type="text" id="matriculas" placeholder="Si aplica">
+            <div id="apto-lookup-msg" class="lookup-msg hidden"></div>
+
+            <h4 style="margin-top:18px; color:var(--azul-osc);">Parqueaderos</h4>
+            <div class="row row-2">
+              <div class="field">
+                <label>N° Parqueadero 1</label>
+                <input type="text" id="parq1Celda" placeholder="Ej: 12">
+              </div>
+              <div class="field">
+                <label>Matrícula Parqueadero 1</label>
+                <input type="text" id="parq1Mat" placeholder="Autocompleta al escribir la celda">
+              </div>
+            </div>
+            <div id="parq1-lookup-msg" class="lookup-msg hidden"></div>
+
+            <div class="row row-2">
+              <div class="field">
+                <label>N° Parqueadero 2 (opcional)</label>
+                <input type="text" id="parq2Celda" placeholder="Ej: 15">
+              </div>
+              <div class="field">
+                <label>Matrícula Parqueadero 2</label>
+                <input type="text" id="parq2Mat" placeholder="Autocompleta al escribir la celda">
+              </div>
+            </div>
+            <div id="parq2-lookup-msg" class="lookup-msg hidden"></div>
+
+            <div class="checkbox-row" style="margin-top:14px;">
+              <label>
+                <input type="checkbox" name="requiereRevision">
+                Alguna matrícula mostrada arriba NO coincide con la real; requiere revisión administrativa.
+              </label>
+            </div>
+            <div class="field" id="observMatriculas-wrap" style="display:none; margin-top:8px;">
+              <label>Observaciones sobre las matrículas</label>
+              <textarea id="observMatriculas" rows="2" placeholder="Indícanos cuál matrícula es incorrecta y, si la sabes, cuál es la correcta"></textarea>
             </div>
           </div>
         </div>

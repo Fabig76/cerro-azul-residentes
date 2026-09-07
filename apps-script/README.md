@@ -17,7 +17,8 @@ Este es el código del backend que conecta el formulario público
 
   · `Código.gs` — El backend completo (un solo archivo, copia y pega)
   · Sheet ID: `16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc`
-  · Hoja de destino: `Registros` (138 columnas)
+  · Hoja de destino: `Registros` (**143 columnas desde v2 / 7-Sep-2026**)
+  · Sheet de matrículas (solo lectura): `1ceGtZDUJHX4yxs5_ydDwLwtrkOcZwYh09WUG0st_b0Y`
 
 ## Despliegue paso a paso (~5 minutos)
 

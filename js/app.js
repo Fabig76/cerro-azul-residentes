@@ -1,9 +1,14 @@
 /* ============================================================
    Cerro Azul — Lógica del formulario público
+   Cambios v2 (7-Sep-2026):
+   - Nuevos campos: matriculaApto, parq1Celda, parq1Mat, parq2Celda, parq2Mat
+   - Lookup automático de matrículas desde el Sheet matriculas-cerro-azul
+   - Avisos visuales (ok/warn/err) según resultado del lookup
+   - Checkbox requiereRevision + textarea observaciones
    ============================================================ */
 
 // URL del Web App de Google Apps Script (desplegado por Fabio en urb.cerroazul@gmail.com)
-const APPS_SCRIPT_URL = window.APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbyLbcfAJXfNhDxsRCAodMZXkqD5l7mBbep5FgtVcn6NCng7xIz8Y7xDQD6p2gflqaqd/exec';
+const APPS_SCRIPT_URL = window.APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec';
 
 // Constantes de UI
 const $  = (s, ctx = document) => ctx.querySelector(s);
@@ -138,8 +143,17 @@ function poblarFormulario(r) {
   setVal('#correoProp', r.correoProp);
   setVal('#celProp', r.celProp);
   setVal('#telFijoProp', r.telFijoProp);
-  setVal('#parqueaderos', r.parqueaderos);
-  setVal('#matriculas', r.matriculas);
+  // v2 — Parqueaderos y matrículas
+  setVal('#parq1Celda', r.parq1Celda);
+  setVal('#parq1Mat', r.parq1Mat);
+  setVal('#parq2Celda', r.parq2Celda);
+  setVal('#parq2Mat', r.parq2Mat);
+  setVal('#matriculaApto', r.matriculaApto);
+  setChecked('requiereRevision', r.requiereRevision === 'Sí');
+  setVal('#observMatriculas', r.observMatriculas);
+  // Mostrar/ocultar textarea según checkbox
+  const wrapObs = $('#observMatriculas-wrap');
+  if (wrapObs) wrapObs.style.display = r.requiereRevision === 'Sí' ? '' : 'none';
   setVal('#nombreArr', r.nombreArr);
   setVal('#ccArr', r.ccArr);
   setVal('#correArr', r.correoArr);
@@ -334,8 +348,15 @@ function recolectar() {
     correoProp: val('#correoProp'),
     celProp: val('#celProp'),
     telFijoProp: val('#telFijoProp'),
-    parqueaderos: val('#parqueaderos'),
-    matriculas: val('#matriculas'),
+    // v2 — Parqueaderos y matrículas
+    parq1Celda: val('#parq1Celda'),
+    parq1Mat:   val('#parq1Mat'),
+    parq2Celda: val('#parq2Celda'),
+    parq2Mat:   val('#parq2Mat'),
+    matriculaApto: val('#matriculaApto'),
+    requiereRevision: checked('requiereRevision'),
+    observMatriculas: val('#observMatriculas'),
+    // Resto
     nombreArr: val('#nombreArr'),
     ccArr: val('#ccArr'),
     correoArr: val('#correArr'),
@@ -412,6 +433,13 @@ function validar() {
   if (!c) { showError('#correoProp', 'Correo del titular es obligatorio.'); ok = false; }
   else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c)) { showError('#correoProp', 'Correo inválido.'); ok = false; }
   required('#celProp', 'Celular del titular es obligatorio.');
+
+  // v2 — Si el apto NO fue encontrado en la base, la matrícula del apto es OBLIGATORIA
+  const matAptoEl = $('#matriculaApto');
+  if (matAptoEl && matAptoEl.getAttribute('data-required-porque-no-encontrado') === '1' && !val('#matriculaApto')) {
+    showError('#matriculaApto', 'Tu apartamento no aparece en la base de matrículas. Escribe la matrícula manualmente (o contacta a la administración).');
+    ok = false;
+  }
 
   requiredCheckbox('autDatos', 'Debes autorizar el tratamiento de datos para continuar.');
   required('#firmaNom', 'Firma con tu nombre completo.');
@@ -540,6 +568,142 @@ function hideAlert(id) {
   const el = $('#' + id);
   if (el) { el.classList.add('hidden'); el.textContent = ''; }
 }
+
+// ============================================================
+// v2 — LOOKUP DE MATRÍCULAS (autocompleta al perder foco)
+// ============================================================
+
+// Muestra/oculta un mensaje de aviso (ok/warn/err) en un div .lookup-msg
+function setLookupMsg(targetId, msg, kind) {
+  const el = $('#' + targetId);
+  if (!el) return;
+  if (!msg) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+  el.className = 'lookup-msg ' + (kind || 'info');
+  el.innerHTML = msg;
+  el.classList.remove('hidden');
+}
+
+// Lookup de matrícula del apartamento
+async function lookupMatApto() {
+  const apto = val('#apto');
+  const msgTarget = 'apto-lookup-msg';
+  const matField  = '#matriculaApto';
+
+  // Si el residente ya escribió manualmente una matrícula, NO la pisamos
+  // salvo que esté vacía.
+  const manualMat = val(matField).trim();
+
+  if (!apto) {
+    setLookupMsg(msgTarget, '', null);
+    return;
+  }
+  if (!APPS_SCRIPT_URL) {
+    setLookupMsg(msgTarget, 'No se puede consultar la base de matrículas: el formulario no está conectado al servidor.', 'err');
+    return;
+  }
+
+  setLookupMsg(msgTarget, '<strong>Buscando matrícula del apartamento ' + apto + '...</strong>', 'warn');
+
+  try {
+    const url = APPS_SCRIPT_URL + '?action=lookupMatApto&apto=' + encodeURIComponent(apto);
+    const resp = await fetch(url, { method: 'GET', redirect: 'follow' });
+    const data = await resp.json();
+    if (!data.ok) {
+      setLookupMsg(msgTarget, 'Error al consultar la base: ' + (data.error || 'desconocido'), 'err');
+      return;
+    }
+    if (data.encontrado) {
+      // Autocompletar SOLO si el campo está vacío (respetar edición manual)
+      if (!manualMat) setVal(matField, data.matricula);
+      setLookupMsg(msgTarget,
+        '<strong>✓ Matrícula encontrada:</strong> ' + data.matricula +
+        ' (fuente: ' + (data.fuente === 'torre3' ? 'Torre 3 - Etapa 1' : 'Torre 1 - Etapa 2') + '). ' +
+        'Verifica que sea correcta. Si no lo es, edítala y marca la casilla de revisión.',
+        'ok');
+    } else {
+      // No encontrada: el residente TIENE que escribir la matrícula manualmente
+      setVal(matField, manualMat || '');
+      setLookupMsg(msgTarget,
+        '<strong>⚠ Tu apartamento (' + apto + ') NO aparece en la base de matrículas.</strong> ' +
+        'Esto aplica a unidades de Torre 2 (sin asignación) o si tu unidad no está registrada. ' +
+        '<strong>Por favor escribe la matrícula manualmente</strong> en el campo de arriba. ' +
+        'Si no la conoces, deja el campo vacío y contacta a la administración.',
+        'warn');
+      // Marcar el campo de matrícula como requerido para forzar la escritura
+      const f = $(matField);
+      if (f) f.setAttribute('data-required-porque-no-en-contrado', '1');
+    }
+  } catch (err) {
+    setLookupMsg(msgTarget, 'Error de red al consultar la base de matrículas: ' + err.message, 'err');
+  }
+}
+
+// Lookup de matrícula de un parqueadero
+async function lookupMatParq(n) {
+  const celda = val('#parq' + n + 'Celda');
+  const matField = '#parq' + n + 'Mat';
+  const msgTarget = 'parq' + n + '-lookup-msg';
+
+  const manualMat = val(matField).trim();
+
+  if (!celda) {
+    setLookupMsg(msgTarget, '', null);
+    return;
+  }
+  if (!APPS_SCRIPT_URL) {
+    setLookupMsg(msgTarget, 'No se puede consultar: el formulario no está conectado.', 'err');
+    return;
+  }
+
+  setLookupMsg(msgTarget, '<strong>Buscando matrícula de la celda ' + celda + '...</strong>', 'warn');
+
+  try {
+    const url = APPS_SCRIPT_URL + '?action=lookupMatParq&celda=' + encodeURIComponent(celda);
+    const resp = await fetch(url, { method: 'GET', redirect: 'follow' });
+    const data = await resp.json();
+    if (!data.ok) {
+      setLookupMsg(msgTarget, 'Error: ' + (data.error || 'desconocido'), 'err');
+      return;
+    }
+    if (data.encontrado) {
+      if (!manualMat) setVal(matField, data.matricula);
+      const tipoTxt = data.tipo ? ' (' + data.tipo + ')' : '';
+      setLookupMsg(msgTarget,
+        '<strong>✓ Celda ' + celda + tipoTxt + ':</strong> matrícula ' + data.matricula +
+        '. Verifica que sea correcta.',
+        'ok');
+    } else {
+      setVal(matField, manualMat || '');
+      setLookupMsg(msgTarget,
+        '<strong>⚠ La celda ' + celda + ' NO aparece en el registro de parqueaderos.</strong> ' +
+        'Escríbe la matrícula manualmente. Si no la conoces, déjala en blanco.',
+        'warn');
+    }
+  } catch (err) {
+    setLookupMsg(msgTarget, 'Error de red: ' + err.message, 'err');
+  }
+}
+
+// Listeners: lookup al perder foco
+['#apto', '#parq1Celda', '#parq2Celda'].forEach(sel => {
+  const el = $(sel);
+  if (el) el.addEventListener('blur', () => {
+    if (sel === '#apto') lookupMatApto();
+    else if (sel === '#parq1Celda') lookupMatParq(1);
+    else if (sel === '#parq2Celda') lookupMatParq(2);
+  });
+});
+
+// Mostrar/ocultar textarea de observaciones según checkbox de revisión
+function toggleObservMatriculas() {
+  const cb = $('[name="requiereRevision"]');
+  const wrap = $('#observMatriculas-wrap');
+  if (!cb || !wrap) return;
+  wrap.style.display = cb.checked ? '' : 'none';
+}
+document.addEventListener('change', (e) => {
+  if (e.target && e.target.name === 'requiereRevision') toggleObservMatriculas();
+});
 
 // ============================================================
 // INIT
