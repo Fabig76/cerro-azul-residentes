@@ -19,10 +19,10 @@
   9. [Decisiones de diseño](#9-decisiones-de-diseño)
   10. [Problemas encontrados y soluciones](#10-problemas-encontrados-y-soluciones)
   11. [Pendientes y siguientes pasos](#11-pendientes-y-siguientes-pasos)
-  12. [Comandos utiles](#12-comandos-utiles)
- 14. [Manuales de uso para residentes](#14-manuales-de-uso-para-residentes)
- 12. [Comandos útiles](#12-comandos-útiles)
+  12. [Comandos útiles](#12-comandos-útiles)
   13. [Checklist de mantenimiento](#13-checklist-de-mantenimiento)
+  14. [Respaldos](#14-respaldos)
+  15. [Manuales de uso para residentes](#15-manuales-de-uso-para-residentes)
 
 ---
 
@@ -902,7 +902,7 @@ done
 
 ---
 
-## 14. Manuales de uso para residentes
+## 15. Manuales de uso para residentes
 
 ### Carpeta de Drive
 `https://drive.google.com/drive/folders/1NS6M0p5k7u89SiRy52CGxu7VpqmJ66fT`
