@@ -330,7 +330,7 @@ Obligatorios (devuelve error si falta):
 
   0. Encabezado (Copropiedad, NIT, Dirección, Fecha, Diligencia como)
   1. Datos del propietario (titular)
-  2. Datos del arrendatario / tenedor (opcional)
+  2. Datos del encargado o administrador del inmueble (opcional)
   3. Parqueadero autorizado a tercero (opcional)
   4. Inmobiliaria y/o representante (opcional)
   5. Residentes mayores (hasta 4)
