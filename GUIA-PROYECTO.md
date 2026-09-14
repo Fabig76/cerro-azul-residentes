@@ -19,7 +19,9 @@
   9. [Decisiones de diseño](#9-decisiones-de-diseño)
   10. [Problemas encontrados y soluciones](#10-problemas-encontrados-y-soluciones)
   11. [Pendientes y siguientes pasos](#11-pendientes-y-siguientes-pasos)
-  12. [Comandos útiles](#12-comandos-útiles)
+  12. [Comandos utiles](#12-comandos-utiles)
+ 14. [Manuales de uso para residentes](#14-manuales-de-uso-para-residentes)
+ 12. [Comandos útiles](#12-comandos-útiles)
   13. [Checklist de mantenimiento](#13-checklist-de-mantenimiento)
 
 ---
@@ -406,6 +408,13 @@ Carpeta: `https://drive.google.com/drive/folders/1BooaM5uxGOb1lcfX65Adcqof6PMAF-
     ID: `1j0yK0RVUDBWLEn_m5I2vlQ8Z_zLkrGMY`
     https://drive.google.com/file/d/1j0yK0RVUDBWLEn_m5I2vlQ8Z_zLkrGMY/view
 
+
+  - **Carpeta capturas + prompt video** (14-Sep-2026)
+    Folder ID: `18g9pVdktfAu3j7B5NnXOQcUpDUdkUYbR`
+    https://drive.google.com/drive/folders/18g9pVdktfAu3j7B5NnXOQcUpDUdkUYbR
+  - **Carpeta manuales para residentes** (14-Sep-2026)
+    Folder ID: `1NS6M0p5k7u89SiRy52CGxu7VpqmJ66fT`
+    https://drive.google.com/drive/folders/1NS6M0p5k7u89SiRy52CGxu7VpqmJ66fT
 Drive de Fabio (computadores.y.portatiles@gmail.com):
   · **QR_Formulario_Residentes_Cerro_Azul.png** (subido antes)
     ID: `1UpeVh8jADOSij6iZNX-SPWMQqNmtdaKr`
@@ -808,9 +817,126 @@ python3 scripts/generar-qr.py "https://fabig76.github.io/cerro-azul-residentes/"
     · Repo formato-datos-ph creado con documentación completa
     · 3 archivos subidos a carpeta Drive de Cerro Azul
 
+## 14. Respaldos
+
+### Respaldo del 7-Sep-2026 (post-deploy v2)
+
+Después del deploy v2 del lookup de matrículas y antes de cerrar la sesión,
+se hizo un respaldo completo del estado actual en una carpeta de Drive
+específica para esto.
+
+  · **Carpeta destino**: `formato del recidentes`
+    · Drive ID: `1NS6M0p5k7u89SiRy52CGxu7VpqmJ66fT`
+    · URL: https://drive.google.com/drive/folders/1NS6M0p5k7u89SiRy52CGxu7VpqmJ66fT
+    · Owner: computadores.y.portatiles@gmail.com (tu correo)
+  · **14 archivos respaldados** (11 código + 3 exports)
+  · **Verificación**: md5 local == md5 en Drive (todos los 14 OK)
+  · **3 exports viejos** (1 fila) se movieron a la papelera de Drive
+
+#### 11 archivos de código (cerro-azul-residentes/, sin .git)
+
+| Archivo | Drive ID | Tamaño | md5 |
+|---|---|---|---|
+| `GUIA-PROYECTO.md` | `16Wtb41S5LOKPWtSZCprp6hfgyIzFDIJl` | 34.859 B | `ad453b71bcdc4c9ef035e04b7efaf334` |
+| `README-project.md` | `1_fSsGkY7AEPg9SBL5MUP-zWSzMllXSFq` | 51 B | `c5bf05bc099f6401f4461ffcc15f027a` |
+| `index.html` | `1GsfUKzqkhGC_F1SsbYU-BhNcI-uEhDbh` | 31.201 B | `df6f6ba6cbba34270a381406fc6776a2` |
+| `js/app.js` | `1q5vxnUX9CZnuL5WjLEDZD8oSX55aACfA` | 26.111 B | `ee2836fb7d411dbc40cb391f227d2389` |
+| `assets/styles.css` | `1xJ_ixwDQ7yDWI0C8DM4BbzJnL1c7z-rR` | 10.540 B | `f6419505011be1c492e015200dac82d4` |
+| `assets/logo.jpg` | `1bYquqM-gFmKYvoX7rlv5iKz4FnhmlT8d` | 356.516 B | `f470181c5710569a0f1edc612744de5c` |
+| `apps-script/Código.gs` | `11WEGpYLoUZ8zO4M6cz4qxFFt4mrbGBF-` | 24.324 B | `12bb1ba325a834563e4e13e14b5af0ab` |
+| `apps-script/README.md` | `1_xNMrNpFFhZxCL6zQFv1ZDhEbDvgLeLh` | 5.781 B | `8dc082ee64545f9a7b2ffb55d30da1e1` |
+| `qr-formulario-cerro-azul.png` | `1OlDiHQp5r26bmEgvnWmW0r1C860EiiHn` | 37.489 B | `7c64e09e1ff88da29b971a94d16cbe2f` |
+| `.gitignore` | `1ImILo3YAv1EfEahVhbCtkwIthM7xyoY0` | 6 B | `73dd5c8e87159492db611de051904562` |
+| `.nojekyll` | `17GAVu27l2mdig-aTEYVdOuj3zVDtXWup` | 0 B | `d41d8cd98f00b204e9800998ecf8427e` |
+
+#### 3 exports de Google Sheets
+
+| Archivo | Drive ID | Tamaño | Contenido | md5 |
+|---|---|---|---|---|
+| `cerro_azul_registros_2026-09-07.csv` | `1TYary9IHKvHpgOE_gRfJajaFjWlJKCGT` | 3.200 B | Sheet Registros en CSV, 4 filas (header + CA-0001 + 2) | `944ea17beede47f49391fd43b1c180c4` |
+| `cerro_azul_registros_2026-09-07.xlsx` | `1X4cD6rOXHnPS1W3db19BczjDFQsOe5yJ` | 7.789 B | Sheet Registros en XLSX, 4 filas × 143 cols | `d6a612d5cbc41d31c1c002e4c13d68ae` |
+| `matriculas_cerro_azul_2026-09-07.xlsx` | `1YByliz9H5g7Tx87K7pkTQvUxC8pPpYZF` | 32.085 B | Sheet matriculas-cerro-azul completo, 4 hojas (Resumen + Torre 3 + Torre 1 + Parqueaderos) | `769b43e4eb40f4c681c0f0ba83967107` |
+
+#### Estado del proyecto al momento del respaldo
+
+  - **Sheet Registros**: 143 columnas, 3 filas con datos (CA-0001 + 2 pruebas)
+  - **Sheet matrículas**: 4 hojas, ~800 filas en total
+  - **Apps Script**: deploy v2 activo (14:09 COL, 7-Sep-2026)
+  - **URL Web App**: https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec
+  - **GitHub Pages**: rebuild en curso al momento del respaldo
+  - **Commits push**:
+    · cerro-azul-residentes: `187e512`
+    · formato-datos-ph:     `b481328`
+
+#### Política de respaldos recomendada
+
+  · **Cada vez que se hace un deploy nuevo** (manual o automático), hacer un
+    respaldo con este mismo procedimiento (cambiar fecha en los nombres de los
+    exports)
+  · **Mensual**: descargar el Sheet completo en xlsx y guardarlo en Drive
+    (para tener histórico sin acumular archivos de código)
+  · **Anual**: si cambia la estructura del Sheet (nuevas columnas), respaldar
+    también el Sheet de matrículas y este archivo GUIA-PROYECTO.md
+  · **NO respaldar** el directorio `.git/` (es regenerable, ocupa mucho y
+    no contiene código fuente, solo metadata de git)
+
+#### Procedimiento para hacer un nuevo respaldo (receta)
+
+```bash
+# 1. Subir los 11 archivos de código
+for f in GUIA-PROYECTO.md README-project.md index.html js/app.js \
+         assets/styles.css assets/logo.jpg apps-script/Código.gs \
+         apps-script/README.md qr-formulario-cerro-azul.png .gitignore .nojekyll; do
+  python /root/.hermes/skills/productivity/google-workspace/scripts/google_api.py \
+    drive upload "/root/cerro-azul-residentes/$f" \
+    --name "$f" --parent 1NS6M0p5k7u89SiRy52CGxu7VpqmJ66fT
+done
+
+# 2. Exportar el Sheet Registros a CSV+XLSX y el Sheet matrículas a XLSX
+#    (usar /tmp/build_exports_v2.py como plantilla, ajustar fechas)
+
+# 3. Verificar md5 de cada archivo descargándolo de vuelta
+
+# 4. Actualizar esta sección §14 con los nuevos Drive IDs y md5
+```
+
 ---
 
-## Contactos importantes
+## 14. Manuales de uso para residentes
+
+### Carpeta de Drive
+`https://drive.google.com/drive/folders/1NS6M0p5k7u89SiRy52CGxu7VpqmJ66fT`
+
+### Manual de llenado (HTML paso a paso)
+Manual web disenado para personas sin experiencia tecnologica. Con capturas de cada seccion.
+
+  - **manual-llenado-cerro-azul.html**
+    File ID: 1bWMitW7i80LUdjV2mCbhr6NVCIzRruLA
+    Drive: https://drive.google.com/file/d/1bWMitW7i80LUdjV2mCbhr6NVCIzRruLA/view?usp=drivesdk
+    GitHub Pages: https://Fabig76.github.io/cerro-azul-residentes/docs/manual-llenado-cerro-azul.html
+    Commit: `997e5f04` (subido por API, 14-Sep-2026)
+
+### Video instructivo (NotebookLM)
+Prompt para generar video explicativo con las 14 capturas del formulario.
+
+  - **prompt-notebooklm-video.md**
+    File ID: 1qm7PNmyZ-o4fTYto44YPxT68BaOSS1Bl
+    Drive: https://drive.google.com/file/d/1qm7PNmyZ-o4fTYto44YPxT68BaOSS1Bl/view?usp=drivesdk
+    14 capturas en: Folder ID `18g9pVdktfAu3j7B5NnXOQcUpDUdkUYbR`
+
+**Como generar el video:**
+1. Crear notebook en https://notebooklm.google.com
+2. Subir las 14 capturas en orden (7.26.34 a 7.29.28)
+3. Studio > Video Overview > Add instructions
+4. Pegar contenido de prompt-notebooklm-video.md
+
+**Mensajes clave del video:**
+  - Codigo CA-XXXX debe guardarse (ENFASIS MAXIMO)
+  - Tags/llaveros son implementacion FUTURA
+  - Ley 1581: mencion breve y tranquilizadora
+  - Dos pestanas: crear registro / editar registro
+
+---
 
   · **Fabio Lesmes** (cliente/administrador): fabig76@gmail.com
     · MacBook Pro con zsh, plataforma macOS
