@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual de Llenado — Formulario de Residentes Cerro Azul</title>
+<style>
+  :root {
+    --azul: #0066CC;
+    --azul-osc: #004A99;
+    --azul-clr: #EAF2FF;
+    --verde: #155724;
+    --verde-bg: #D4EDDA;
+    --rojo: #721C24;
+    --rojo-bg: #F8D7DA;
+    --naranja: #856404;
+    --naranja-bg: #FFF3CD;
+    --gris-bg: #F8F9FA;
+    --gris-bd: #DEE2E6;
+    --texto: #212529;
+    --texto-med: #6C757D;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: var(--texto); line-height: 1.6; background: #F0F4F8; }
+
+  /* PORTADA */
+  .cover {
+    background: linear-gradient(135deg, var(--azul) 0%, var(--azul-osc) 100%);
+    color: white;
+    text-align: center;
+    padding: 60px 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .cover img.logo { width: 120px; border-radius: 50%; margin-bottom: 24px; border: 4px solid rgba(255,255,255,0.4); }
+  .cover h1 { font-size: 2.4em; margin-bottom: 10px; }
+  .cover .sub { font-size: 1.2em; opacity: 0.9; margin-bottom: 30px; }
+  .cover .nit { font-size: 1em; opacity: 0.7; margin-bottom: 40px; }
+  .cover .btn-start {
+    background: white; color: var(--azul); font-size: 1.1em; font-weight: bold;
+    padding: 14px 40px; border: none; border-radius: 50px; cursor: pointer;
+    text-decoration: none; display: inline-block;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .cover .btn-start:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.2); }
+
+  /* ÍNDICE */
+  .toc { max-width: 860px; margin: 50px auto; padding: 20px; }
+  .toc h2 { color: var(--azul); margin-bottom: 20px; font-size: 1.6em; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin-bottom: 8px; }
+  .toc a { color: var(--azul); text-decoration: none; font-size: 1.05em; }
+  .toc a:hover { text-decoration: underline; }
+
+  /* SECCIONES */
+  .section-manual {
+    max-width: 860px;
+    margin: 30px auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+  .section-header {
+    background: var(--azul);
+    color: white;
+    padding: 20px 28px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .section-num {
+    background: rgba(255,255,255,0.2);
+    border: 2px solid rgba(255,255,255,0.5);
+    border-radius: 50%;
+    width: 48px; height: 48px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2em; font-weight: bold; flex-shrink: 0;
+  }
+  .section-header h2 { font-size: 1.3em; }
+  .section-header p { opacity: 0.85; font-size: 0.9em; margin-top: 4px; }
+
+  .section-body { padding: 24px 28px; }
+
+  /* INFO BOXES */
+  .info-box { border-radius: 8px; padding: 14px 18px; margin: 16px 0; font-size: 0.93em; }
+  .info-obligatorio { background: var(--rojo-bg); border-left: 4px solid var(--rojo); color: var(--rojo); }
+  .info-opcional { background: var(--verde-bg); border-left: 4px solid var(--verde); color: var(--verde); }
+  .info-aviso { background: var(--naranja-bg); border-left: 4px solid var(--naranja); color: var(--naranja); }
+  .info-importante { background: var(--azul-clr); border-left: 4px solid var(--azul); color: var(--azul-osc); }
+  .info-futuro { background: #FFF0E0; border-left: 4px solid #E65100; color: #6D2C00; }
+  .info-box strong { display: block; margin-bottom: 4px; }
+
+  /* IMAGEN DEL FORMULARIO */
+  .form-img-wrap { text-align: center; margin: 20px 0; }
+  .form-img-wrap img {
+    max-width: 100%;
+    border: 1px solid var(--gris-bd);
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  }
+  .form-img-caption {
+    font-size: 0.82em;
+    color: var(--texto-med);
+    margin-top: 6px;
+    font-style: italic;
+  }
+
+  /* LISTA DE CAMPOS */
+  .campo-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.92em; }
+  .campo-table th { background: var(--azul-clr); color: var(--azul-osc); padding: 8px 12px; text-align: left; }
+  .campo-table td { padding: 7px 12px; border-bottom: 1px solid var(--gris-bd); }
+  .campo-table tr:last-child td { border-bottom: none; }
+  .badge-oblig { background: var(--rojo); color: white; font-size: 0.75em; padding: 1px 6px; border-radius: 4px; margin-left: 4px; }
+  .badge-opcional { background: var(--texto-med); color: white; font-size: 0.75em; padding: 1px 6px; border-radius: 4px; margin-left: 4px; }
+  .badge-futuro { background: #E65100; color: white; font-size: 0.75em; padding: 1px 6px; border-radius: 4px; margin-left: 4px; }
+
+  /* CONSEJO / ERROR */
+  .consejo { background: #E8F5E9; border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+  .consejo::before { content: "💡 CONSEJO: "; font-weight: bold; color: var(--verde); }
+  .error-comun { background: #FFEBEE; border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+  .error-comun::before { content: "⚠️ ERROR COMÚN: "; font-weight: bold; color: var(--rojo); }
+
+  /* STEP */
+  .step { display: flex; gap: 16px; margin: 14px 0; align-items: flex-start; }
+  .step-num { background: var(--azul); color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85em; flex-shrink: 0; }
+  .step-text { padding-top: 3px; }
+
+  /* ÉXITO */
+  .exito-box { background: var(--verde-bg); border: 2px solid var(--verde); border-radius: 10px; padding: 20px 24px; margin: 20px 0; text-align: center; }
+  .exito-box .codigo { font-size: 2.5em; font-weight: bold; color: var(--azul-osc); font-family: monospace; margin: 12px 0; }
+  .exito-box .aviso { font-size: 0.95em; color: var(--rojo); font-weight: bold; margin-top: 8px; }
+
+  /* NAV */
+  .nav-links { display: flex; justify-content: space-between; padding: 20px 28px; background: var(--gris-bg); border-top: 1px solid var(--gris-bd); }
+  .nav-links a { color: var(--azul); text-decoration: none; font-weight: 600; font-size: 0.95em; }
+  .nav-links a:hover { text-decoration: underline; }
+  .nav-links .nav-prev::before { content: "← "; }
+  .nav-links .nav-next::after { content: " →"; }
+
+  /* RESPONSIVE */
+  @media (max-width: 600px) {
+    .cover h1 { font-size: 1.6em; }
+    .section-body { padding: 16px; }
+    .campo-table { font-size: 0.82em; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- PORTADA                                                     -->
+<!-- ============================================================ -->
+<div class="cover" id="inicio">
+  <img src="https://lh3.googleusercontent.com/d/1g9pVdktfAu3j7B5NnXOQcUpDUdkUYbR/1g9pVdktfAu3j7B5NnXOQcUpDUdkUYbR" alt="Logo Cerro Azul" class="logo" onerror="this.style.display='none'">
+  <h1>Manual de Llenado</h1>
+  <p class="sub">Formulario de Actualización de Datos de Residentes</p>
+  <p class="nit">Urbanización Cerro Azul · NIT 900770444 · Bello / Niquía</p>
+  <a href="#indice" class="btn-start">📋 Ver Índice</a>
+</div>
+
+<!-- ============================================================ -->
+<!-- ÍNDICE                                                     -->
+<!-- ============================================================ -->
+<div class="toc" id="indice">
+  <h2>📋 Índice del Manual</h2>
+  <p style="margin-bottom:16px; color:var(--texto-med);">Usa los enlaces para ir directo a cada sección.</p>
+  <ol>
+    <li><a href="#antes-de-empezar">Antes de empezar: lo que necesitas tener a la mano</a></li>
+    <li><a href="#seccion-0">Sección 0 — Encabezado</a></li>
+    <li><a href="#seccion-1">Sección 1 — Datos del propietario</a></li>
+    <li><a href="#seccion-2">Sección 2 — Datos del arrendatario / tenedor</a></li>
+    <li><a href="#seccion-3">Sección 3 — Parqueadero a tercero</a></li>
+    <li><a href="#seccion-4">Sección 4 — Inmobiliaria / representante</a></li>
+    <li><a href="#seccion-5">Sección 5 — Residentes mayores de edad</a></li>
+    <li><a href="#seccion-5-1">Sección 5.1 — Menores de edad</a></li>
+    <li><a href="#seccion-6">Sección 6 — Vehículos y motos</a></li>
+    <li><a href="#seccion-7">Sección 7 — Bicicletas</a></li>
+    <li><a href="#seccion-8">Sección 8 — Llaveros y tags electrónicos</a></li>
+    <li><a href="#seccion-9">Sección 9 — Mascotas / Animales de compañía</a></li>
+    <li><a href="#seccion-10">Sección 10 — Contactos en caso de urgencia</a></li>
+    <li><a href="#seccion-11">Sección 11 — Autorización y firma</a></li>
+    <li><a href="#enviar">Enviar el formulario</a></li>
+    <li><a href="#editar">Editar tu registro después</a></li>
+    <li><a href="#faq">Preguntas frecuentes</a></li>
+  </ol>
+</div>
+
+<!-- ============================================================ -->
+<!-- ANTES DE EMPEZAR                                           -->
+<!-- ============================================================ -->
+<div class="section-manual" id="antes-de-empezar">
+  <div class="section-header">
+    <div class="section-num">!</div>
+    <div>
+      <h2>Antes de empezar</h2>
+      <p>Lo que necesitas tener a la mano antes de abrir el formulario</p>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="info-box info-importante">
+      <strong>¿Cómo accedo al formulario?</strong>
+      Hay dos formas: escaneando el <strong>código QR</strong> que está pegado en el ascensor de tu torre, o abriendo directamente este enlace:<br>
+      <strong>https://fabig76.github.io/cerro-azul-residentes/</strong><br>
+      No necesitas contraseña. Solo abre el enlace en tu celular o en cualquier computador.
+    </div>
+
+    <h3 style="margin:20px 0 12px;">📋 Ten listos estos documentos e información:</h3>
+    <ul style="padding-left:20px; line-height:2;">
+      <li>Tu <strong>cédula de ciudadanía</strong> (el número exacto como aparece en la cédula)</li>
+      <li>El <strong>número de apartamento</strong> (ej: 101, 202B, 9804)</li>
+      <li>La <strong>matrícula del apartamento</strong> en el registro de la copropiedad (si la conoces)</li>
+      <li>Si tienes vehículo: <strong>placa, marca, modelo, color</strong> y si tiene tag, el número</li>
+      <li>Si tienes moto: misma información</li>
+      <li>Si tienes bicicleta: <strong>marca, color, clase</strong> y el <strong>número de serie</strong> del marco</li>
+      <li>Si tienes mascota: <strong>nombre, raza, fecha de la última vacuna</strong> y si es perro potencialmente peligroso, los datos de la póliza</li>
+      <li>Si alguien más vive contigo mayor de edad: sus datos de contacto</li>
+      <li>Si tienes hijos menores: nombre y edad de cada uno</li>
+      <li>Un <strong>correo electrónico</strong> tuyo donde puedas recibir mensajes</li>
+      <li>Un <strong>nombre y teléfono de un familiar o amigo</strong> de contacto en caso de urgencia</li>
+    </ul>
+
+    <div class="info-box info-aviso">
+      <strong>⏱️ ¿Cuánto tiempo toma?</strong>
+      Si tienes todo listo, el formulario se llena en aproximadamente <strong>10 a 15 minutos</strong>.
+      Si te falta algún dato puedes <strong>guardar el enlace</strong> del formulario en tu celular y terminar después.
+    </div>
+
+    <div class="info-box info-obligatorio">
+      <strong>¿Quién debe llenar el formulario?</strong>
+      Lo llena el <strong>dueño real del inmueble</strong>: ya sea que seas el propietario, el arrendatario o el tenedor.
+      La información debe ser verdadera y corresponde a la persona que figura en la escritura o en el contrato de arrendamiento.
+    </div>
+  </div>
+  <div class="nav-links">
+    <span></span>
+    <a href="#seccion-0">Sección 0 — Encabezado →</a>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 0: ENCABEZADO                                       -->
+<!-- ============================================================ -->
+<div class="section-manual" id="seccion-0">
+  <div class="section-header">
+    <div class="section-num">0</div>
+    <div>
+      <h2>Sección 0 — Encabezado</h2>
+      <p>Información del conjunto y datos generales del formulario</p>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="form-img-wrap">
+      <img src="https://lh3.googleusercontent.com/d/18PI3JEpNE0VqJ49Nj2Nc6UgyXsKGZ8uP" alt="Sección 0 — Encabezado del formulario">
+      <div class="form-img-caption">Figura 1 — Así se ve la Sección 0. Los campos sombreados ya vienen llenos y no se pueden cambiar.</div>
+    </div>
+
+    <div class="info-box info-importante">
+      <strong>Los tres primeros campos ya vienen llenos.</strong>
+      No necesitas modificarlos. Solo revisa que digan:
+      <ul style="margin-top:8px; padding-left:20px;">
+        <li><strong>Conjuntos / Copropiedad:</strong> Urbanización Cerro Azul</li>
+        <li><strong>NIT:</strong> 900770444</li>
+        <li><strong>Dirección:</strong> Bello / Niquía</li>
+      </ul>
+    </div>
+
+    <table class="campo-table">
+      <tr><th>Campo</th><th>Qué escribir</th><th>¿Obligatorio?</th></tr>
+      <tr><td>Fecha de diligenciamiento</td><td>La fecha de hoy (el sistema la pone por defecto)</td><td><span class="badge-oblig">Obligatorio</span></td></tr>
+      <tr>
+        <td>Diligencia como</td>
+        <td>Marca <strong>una sola</strong> opción:<br>
+        • <em>Propietario</em> — si eres el dueño del apartamento<br>
+        • <em>Arrendatario</em> — si lo tienes en arriendo<br>
+        • <em>Tenedor / Otro</em> — cualquier otra situación</td>
+        <td><span class="badge-oblig">Obligatorio</span></td></tr>
+    </table>
+
+    <div class="consejo">La fecha se llena sola con la fecha de hoy. Si necesitas cambiarla, haz clic en el calendario y selecciona la fecha correcta.</div>
+    <div class="error-comun">No marque más de una opción en "Diligencia como". Solo una es la correcta según tu situación.</div>
+  </div>
+  <div class="nav-links">
+    <a href="#antes-de-empezar" class="nav-prev">Antes de empezar</a>
+    <a href="#seccion-1">Sección 1 — Datos del propietario →</a>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 1: DATOS DEL PROPIETARIO                           -->
+<!-- ============================================================ -->
+<div class="section-manual" id="seccion-1">
+  <div class="section-header">
+    <div class="section-num">1</div>
+    <div>
+      <h2>Sección 1 — Datos del propietario</h2>
+      <p>Tus datos personales, apartamento y parqueaderos</p>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="form-img-wrap">
+      <img src="https://lh3.googleusercontent.com/d/1aRRr7m2x1d0YoYMZd97zqOgT5jK4CV0h" alt="Sección 1 — Datos del propietario">
+      <div class="form-img-caption">Figura 2 — Campos de la Sección 1. Haz clic en el título azul para expandir si aparece cerrado.</div>
+    </div>
+
+    <div class="info-box info-obligatorio">
+      <strong>Esta sección es la más importante.</strong>
+      Todos los campos marcados con asterisco (*) son obligatorios.
+      Si falta uno, el formulario no se puede enviar.
+    </div>
+
+    <table class="campo-table">
+      <tr><th>Campo</th><th>Qué escribir</th><th>¿Obligatorio?</th></tr>
+      <tr><td>Nombres y apellidos</td><td>Tal cual como aparece en tu cédula de ciudadanía. Sin sobrenombres.</td><td><span class="badge-oblig">Obligatorio</span></td></tr>
+      <tr><td>N° de identificación</td><td>El número de tu cédula de ciudadanía (sin puntos ni espacios). Ej: 12345678</td><td><span class="badge-oblig">Obligatorio</span></td></tr>
+      <tr><td>Correo electrónico</td><td>Tu correo personal. Ej: micorreo@gmail.com</td><td><span class="badge-oblig">Obligatorio</span></td></tr>
+      <tr><td>Celular</td><td>Tu número de celular con el prefijo. Ej: 3001234567 o +57 3001234567</td><td><span class="badge-oblig">Obligatorio</span></td></tr>
+      <tr><td>Teléfono fijo</td><td>El teléfono de tu casa con código de área. Ej: (604) 123 4567. O déjalo en blanco si no tienes.</td><td><span class="badge-opcional">Opcional</span></td></tr>
+      <tr><td>N° de apartamento</td><td>El número de tu apartamento. Ej: 101, 202B, 9804. <strong>Este campo es muy importante.</strong></td><td><span class="badge-oblig">Obligatorio</span></td></tr>
+      <tr><td>Matrícula del apartamento</td><td>Se llena <strong>sola</strong> cuando escribas el número de apartamento. Si no la conoces, déjala en blanco.</td><td><span class="badge-opcional">Opcional</span></td></tr>
+    </table>
+
+    <h3 style="margin:20px 0 10px;">🚗 Parqueaderos</h3>
+    <p style="color:var(--texto-med); margin-bottom:12px;">Si tienes uno o dos parqueaderos asignados, completa los datos. El número de parqueadero y la matrícula también se autocompletan si la información ya existe en la base de datos.</p>
+
+    <table class="campo-table">
+      <tr><th>Campo</th><th>Qué escribir</th><th>¿Obligatorio?</th></tr>
+      <tr><td>N° Parqueadero 1</td><td>El número de tu parqueadero. Ej: 12</td><td><span class="badge-opcional">Opcional</span></td></tr>
+      <tr><td>Matrícula Parqueadero 1</td><td>Se llena sola al escribir el número. Si no coincide con la real, márcalo abajo.</td><td><span class="badge-opcional">Opcional</span></td></tr>
+      <tr><td>N° Parqueadero 2</td><td>Si tienes segundo parqueadero. Si no, déjalo en blanco.</td><td><span class="badge-opcional">Opcional</span></td></tr>
+      <tr><td>Matrícula Parqueadero 2</td><td>Se llena sola. Igual, verifica que esté correcta.</td><td><span class="badge-opcional">Opcional</span></td></tr>
+    </table>
+
+    <div class="info-box info-aviso">
+      <strong>⚠️ Si alguna matrícula mostrada no coincide con la real:</strong><br>
+      Marca la casilla que dice:<br>
+      <em>"Alguna matrícula mostrada arriba NO coincide con la real; requiere revisión administrativa."</em><br>
+      Luego, en el campo de observaciones, escribe cuál matrícula es incorrecta y cuál es la que tú conoces como la correcta.
+    </div>
+
+    <div class="consejo">Apenas escribas el número de tu apartamento, el sistema intenta autocompletar la matrícula. Si ves que la completa sola, verifica que sea la correcta. Si no la conoce o la deja en blanco, no pasa nada.</div>
+  </div>
+  <div class="nav-links">
+    <a href="#seccion-0" class="nav-prev">Sección 0</a>
+    <a href="#seccion-2">Sección 2 — Arrendatario →</a>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 2: ARRENDATARIO / TENEDOR                          -->
+<!-- ============================================================ -->
+<div class="section-manual" id="seccion-2">
+  <div class="section-header">
+    <div class="section-num">2</div>
+    <div>
+      <h2>Sección 2 — Datos del arrendatario / tenedor</h2>
+      <p>Solo si aplica — sección opcional</p>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="form-img-wrap">
+      <img src="https://lh3.googleusercontent.com/d/1g5yoB0wgbORXHMaD5cE9-HWR0gVNQmvR" alt="Sección 2 — Arrendatario / Tenedor">
+      <div class="form-img-caption">Figura 3 — Sección 2. Solo la llenas si eres arrendatario o tenedor.</div>
+    </div>
+
+    <div class="info-box info-opcional">
+      <strong>Esta sección es OPCIONAL.</strong><br>
+      Solo la llenas si en la Sección 0 marcaste <em>"Arrendatario"</em> o <em>"Tenedor / Otro"</em>.
+      Si marcaste <em>"Propietario"</em>, puedes saltar esta sección y pasar a la 3.
+    </div>
+
+    <table class="campo-table">
+      <tr><th>Campo</th><th>Qué escribir</th><th>¿Obligatorio?</th></tr>
+      <tr><td>Nombres y apellidos</td><td>Nombre completo de quien está arrendando o tiene el inmueble.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>N° de identificación</td><td>Número de cédula de quien arrienda.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Correo electrónico</td><td>Correo de quien arrienda.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Celular</td><td>Celular de quien arrienda.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+    </table>
+
+    <div class="consejo">Si no eres arrendatario ni tenedor, simplemente déjala en blanco y continúa con la siguiente sección.</div>
+  </div>
+  <div class="nav-links">
+    <a href="#seccion-1" class="nav-prev">Sección 1</a>
+    <a href="#seccion-3">Sección 3 — Parqueadero a tercero →</a>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 3: PARQUEADERO A TERCERO                            -->
+<!-- ============================================================ -->
+<div class="section-manual" id="seccion-3">
+  <div class="section-header">
+    <div class="section-num">3</div>
+    <div>
+      <h2>Sección 3 — Autorización de uso de parqueadero a tercero</h2>
+      <p>Solo si le prestas tu parqueadero a alguien más — sección opcional</p>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="form-img-wrap">
+      <img src="https://lh3.googleusercontent.com/d/165yCvd36wTrKvYbx-h6Icxk3Wd3g1kLR" alt="Sección 3 — Parqueadero a tercero">
+      <div class="form-img-caption">Figura 4 — Sección 3. Solo si le prestas tu parqueadero a alguien de otro apartamento.</div>
+    </div>
+
+    <div class="info-box info-opcional">
+      <strong>Sección OPCIONAL.</strong><br>
+      Solo la llenas si le estás dando permiso a <strong>alguien de otro apartamento</strong> para que use tu parqueadero.
+      Si nadie más usa tu parqueadero, déjalo en blanco.
+    </div>
+
+    <table class="campo-table">
+      <tr><th>Campo</th><th>Qué escribir</th><th>¿Obligatorio?</th></tr>
+      <tr><td>Nombre del autorizado</td><td>Nombre completo de la persona a quien le prestas el parqueadero.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Apto N°</td><td>Número del apartamento de esa persona.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Celular</td><td>Celular de esa persona.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+    </table>
+
+    <div class="consejo">Esto es para que la administración sepa quién tiene autorización para parqueadero de otro apartamento. No aplica si el que parquea vive en tu mismo apartamento.</div>
+  </div>
+  <div class="nav-links">
+    <a href="#seccion-2" class="nav-prev">Sección 2</a>
+    <a href="#seccion-4">Sección 4 — Inmobiliaria →</a>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 4: INMOBILIARIA / REPRESENTANTE                     -->
+<!-- ============================================================ -->
+<div class="section-manual" id="seccion-4">
+  <div class="section-header">
+    <div class="section-num">4</div>
+    <div>
+      <h2>Sección 4 — Inmobiliaria y/o representante del propietario</h2>
+      <p>Solo si el propietario tiene inmobiliaria — sección opcional</p>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="form-img-wrap">
+      <img src="https://lh3.googleusercontent.com/d/1aNb-Kijw0sI0gXSMewmDtQJZ2JEFygEM" alt="Sección 4 — Inmobiliaria">
+      <div class="form-img-caption">Figura 5 — Sección 4. Solo si el apartamento tiene inmobiliaria o representante legal del propietario.</div>
+    </div>
+
+    <div class="info-box info-opcional">
+      <strong>Sección OPCIONAL.</strong><br>
+      Solo la llenas si el apartamento está administrando por una inmobiliaria o si hay un representante legal del propietario que no es el mismo residente.
+    </div>
+
+    <table class="campo-table">
+      <tr><th>Campo</th><th>Qué escribir</th><th>¿Obligatorio?</th></tr>
+      <tr><td>Nombre / Razón social</td><td>Nombre de la inmobiliaria o nombre del representante.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>NIT</td><td>NIT de la inmobiliaria o del representante.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Persona de contacto</td><td>Nombre de la persona en la inmobiliaria con quien comunicarse.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Teléfono</td><td>Teléfono de la inmobiliaria o del representante.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Correo</td><td>Correo de la inmobiliaria o del representante.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+    </table>
+
+    <div class="info-box info-aviso">
+      <strong>📎 Anexar poder:</strong><br>
+      Si llenas esta sección, la administración puede pedirte que adjuntes el poder o contrato que demuestra esa representación. Tenlo preparado por si te lo solicitan después.
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="#seccion-3" class="nav-prev">Sección 3</a>
+    <a href="#seccion-5">Sección 5 — Residentes mayores →</a>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 5: RESIDENTES MAYORES DE EDAD                       -->
+<!-- ============================================================ -->
+<div class="section-manual" id="seccion-5">
+  <div class="section-header">
+    <div class="section-num">5</div>
+    <div>
+      <h2>Sección 5 — Residentes del apartamento (mayores de edad)</h2>
+      <p>Todas las personas de 18 años o más que viven en el apartamento</p>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="form-img-wrap">
+      <img src="https://lh3.googleusercontent.com/d/1cWJyqzp-BOChMA-tg8CzCsmSYkwsCMlc" alt="Sección 5 — Residentes mayores de edad">
+      <div class="form-img-caption">Figura 6 — Sección 5. Hasta 4 residentes adicionales (excluyendo al titular de la Sección 1).</div>
+    </div>
+
+    <div class="info-box info-importante">
+      <strong>¿A quién incluyo aquí?</strong><br>
+      Incluye a <strong>todas</strong> las personas de 18 años o más que viven en tu apartamento, <strong>excepto</strong> la persona que ya llenaste en la Sección 1 (el propietario o quien Diligencia como).
+    </div>
+
+    <p style="margin:14px 0 10px; color:var(--texto-med);">Puedes registrar hasta <strong>4 residentes</strong>. Si hay menos de 4, deja los demás en blanco.</p>
+
+    <table class="campo-table">
+      <tr><th>Campo</th><th>Qué escribir</th><th>¿Obligatorio?</th></tr>
+      <tr><td>Nombres y apellidos</td><td>Nombre completo del residente.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Cédula</td><td>Número de cédula del residente.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Correo</td><td>Correo electrónico del residente.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Celular</td><td>Celular del residente.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Parentesco</td><td>Cómo se relaciona contigo. Ej: Cónyuge, Hijo/a, Hermano/a, Padre, Madre, Otro.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+    </table>
+
+    <div class="consejo">Si vives solo en el apartamento, deja todos los campos en blanco y listo. Si vive una pareja y los dos son propietarios, el segundo pareja también se registra aquí.</div>
+    <div class="error-comun">No pongas a la misma persona de la Sección 1 otra vez aquí. Solo las personas adicionales que viven en el apartamento.</div>
+  </div>
+  <div class="nav-links">
+    <a href="#seccion-4" class="nav-prev">Sección 4</a>
+    <a href="#seccion-5-1">Sección 5.1 — Menores →</a>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 5.1: MENORES DE EDAD                               -->
+<!-- ============================================================ -->
+<div class="section-manual" id="seccion-5-1">
+  <div class="section-header">
+    <div class="section-num">5.1</div>
+    <div>
+      <h2>Sección 5.1 — Menores de edad</h2>
+      <p>Hijos o menores que viven en el apartamento</p>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="form-img-wrap">
+      <img src="https://lh3.googleusercontent.com/d/1CDNRQMrlqFs3bMOOy70zj7LuI43vZLZt" alt="Sección 5.1 — Menores de edad">
+      <div class="form-img-caption">Figura 7 — Sección 5.1. Hasta 4 menores. Protegidos por la Ley 1581 de 2012.</div>
+    </div>
+
+    <div class="info-box info-importante">
+      <strong>Datos protegidos por la ley.</strong><br>
+      La información de menores se protege bajo la Ley 1581 de 2012 de Colombia.
+      Solo tú (como representante legal que firma el formulario) autorizas su inclusión.
+    </div>
+
+    <p style="margin:14px 0 10px; color:var(--texto-med);">Puedes registrar hasta <strong>4 menores</strong>. Si no tienes hijos menores, deja todo en blanco.</p>
+
+    <table class="campo-table">
+      <tr><th>Campo</th><th>Qué escribir</th><th>¿Obligatorio?</th></tr>
+      <tr><td>Nombres y apellidos</td><td>Nombre completo del menor.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Edad</td><td>Edad en años. Debe ser menor de 18.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Parentesco / representante legal</td><td>Quién es el padre o madre. Ej: Hijo, Hijastra, Nieto, Bajo tu cuidado.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+    </table>
+
+    <div class="consejo">Si no tienes menores de edad viviendo en el apartamento, simplemente deja todos los campos en blanco y continúa. No estás obligado a poner a nadie.</div>
+  </div>
+  <div class="nav-links">
+    <a href="#seccion-5" class="nav-prev">Sección 5</a>
+    <a href="#seccion-6">Sección 6 — Vehículos y motos →</a>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 6: VEHÍCULOS Y MOTOS                                -->
+<!-- ============================================================ -->
+<div class="section-manual" id="seccion-6">
+  <div class="section-header">
+    <div class="section-num">6</div>
+    <div>
+      <h2>Sección 6 — Vehículos y motos</h2>
+      <p>Datos de los carros y motos que están vinculados al apartamento</p>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="form-img-wrap">
+      <img src="https://lh3.googleusercontent.com/d/1FJK_L0tXG4rsfZYTkjHYsXpo1Aqmd9Sv" alt="Sección 6 — Vehículos y motos">
+      <div class="form-img-caption">Figura 8 — Sección 6. Hasta 2 vehículos y hasta 2 motos.</div>
+    </div>
+
+    <div class="info-box info-importante">
+      <strong>¿Por qué pedimos los datos del vehículo?</strong><br>
+      La administración necesita saber qué carros y motos están asociados a cada apartamento para el control de seguridad y para gestionar los tags electrónicos de acceso al conjunto.
+    </div>
+
+    <h3 style="margin:16px 0 10px;">🚗 Vehículos (máximo 2)</h3>
+    <table class="campo-table">
+      <tr><th>Campo</th><th>Qué escribir</th><th>¿Obligatorio?</th></tr>
+      <tr><td>Marca</td><td>Marca del carro. Ej: Renault, Toyota, Chevrolet.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Tipo</td><td>Tipo de vehículo. Ej: Sedán, Camioneta, Hatchback.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Color</td><td>Color del vehículo.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Placa</td><td>Placa del vehículo (con el formato completo, ej: ABC123).</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Modelo</td><td>Año del modelo. Ej: 2020, 2023.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>N° Tag</td><td>Número que aparece impreso en el tag electrónico de tu carro (si ya te entregaron uno). Si no te han dado tag, déjalo en blanco.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+    </table>
+
+    <h3 style="margin:20px 0 10px;">🏍️ Motos (máximo 2)</h3>
+    <table class="campo-table">
+      <tr><th>Campo</th><th>Qué escribir</th><th>¿Obligatorio?</th></tr>
+      <tr><td>Marca</td><td>Marca de la moto. Ej: Honda, Yamaha, AKT.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Tipo</td><td>Tipo. Ej: Urbana, Deport.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Color</td><td>Color de la moto.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Placa</td><td>Placa de la moto.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Modelo</td><td>Año del modelo.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>N° Tag</td><td>Número del tag de la moto (si ya lo tienes). Si no, déjalo en blanco.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+    </table>
+
+    <div class="consejo">Si no tienes carro ni moto, déjalo todo en blanco. No estás obligado a llenarlo. Si tienes más de 2 vehículos, escribe los 2 principales y deja una nota.</div>
+    <div class="error-comun">Escribe la placa tal cual aparece en la tarjeta de propiedad, con los tres números y tres letras (o el formato que tenga). Sin espacios ni guiones de más.</div>
+  </div>
+  <div class="nav-links">
+    <a href="#seccion-5-1" class="nav-prev">Sección 5.1</a>
+    <a href="#seccion-7">Sección 7 — Bicicletas →</a>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 7: BICICLETAS                                       -->
+<!-- ============================================================ -->
+<div class="section-manual" id="seccion-7">
+  <div class="section-header">
+    <div class="section-num">7</div>
+    <div>
+      <h2>Sección 7 — Bicicletas</h2>
+      <p>Datos de las bicicletas del apartamento (máximo 2)</p>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="form-img-wrap">
+      <img src="https://lh3.googleusercontent.com/d/1n9WFXTdyyIW4OMFZmdztEUWzZ9QvCH1H" alt="Sección 7 — Bicicletas">
+      <div class="form-img-caption">Figura 9 — Sección 7. Hasta 2 bicicletas. El serial del marco es muy importante.</div>
+    </div>
+
+    <table class="campo-table">
+      <tr><th>Campo</th><th>Qué escribir</th><th>¿Obligatorio?</th></tr>
+      <tr><td>Marca</td><td>Marca de la bicicleta. Ej: GW, Schwinn, Trek.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Color</td><td>Color de la bicicleta.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Clase</td><td>Tipo de bicicleta. Ej: Urbana, Montaña, Ruta, Infantil.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>N° serial del marco</td><td><strong>Este es el número más importante.</strong> Es el número de serie grabado en el marco de la bicicleta (generalmente debajo del pedal o en el tubo del sillín). Sirve para identificar tu bicicleta si te la roban.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+    </table>
+
+    <div class="consejo">El número serial del marco (también llamado serial o número de serie) es clave para la seguridad de tu bicicleta. Búscalo grabado en el marco metálico. Si tiene stickers o está oxidado, límpialo para leerlo bien.</div>
+    <div class="error-comun">No confundas el serial del marco con el número de la tabla o con un sticker de precio. Debe ser un número grabado en el metal del marco.</div>
+  </div>
+  <div class="nav-links">
+    <a href="#seccion-6" class="nav-prev">Sección 6</a>
+    <a href="#seccion-8">Sección 8 — Llaveros y tags →</a>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 8: LLAVEROS Y TAGS ELECTRÓNICOS                    -->
+<!-- ============================================================ -->
+<div class="section-manual" id="seccion-8">
+  <div class="section-header">
+    <div class="section-num">8</div>
+    <div>
+      <h2>Sección 8 — Control de entrega de llaveros y tags electrónicos</h2>
+      <p>Dispositivos de acceso al conjunto (implementación futura)</p>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="form-img-wrap">
+      <img src="https://lh3.googleusercontent.com/d/18hhsdleNE3huFkD0EGr7_99nXJtsLOXM" alt="Sección 8 — Llaveros y tags">
+      <div class="form-img-caption">Figura 10 — Sección 8. Esta información se pide con anticipación para una implementación futura.</div>
+    </div>
+
+    <div class="info-box info-futuro">
+      <strong>⚠️ AVISO MUY IMPORTANTE sobre esta sección:</strong><br><br>
+      Esta sección se está pidiendo <strong>con anticipación</strong> porque la administración va a implementar en el futuro un sistema de seguridad con llaveros y tags electrónicos para el ingreso al conjunto.<br><br>
+      <strong>Por ahora, estos dispositivos todavía NO se están usando.</strong> Si todavía no te han entregado ningún llavero ni tag, puedes dejar esta sección en blanco o escribir "Pendiente de entrega".<br><br>
+      <strong>Si ya te entregaron llaveros o tags</strong>, anota el número que viene impreso en el dispositivo. Si no lo conoces, pregúntale al vigilante o a la administración.
+    </div>
+
+    <table class="campo-table">
+      <tr><th>Campo</th><th>Qué escribir</th><th>¿Obligatorio?</th></tr>
+      <tr><td>N° de llaveros autorizados por apartamento</td><td>Cuántos llaveros tienes. Ej: 2</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>N° de tags de vehículo autorizados</td><td>Cuántos tags tienes para carros o motos. Ej: 1</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+    </table>
+
+    <h3 style="margin:16px 0 10px;">Datos de los dispositivos (máximo 3)</h3>
+    <p style="color:var(--texto-med); margin-bottom:12px;">Para cada llavero o tag que tengas:</p>
+
+    <table class="campo-table">
+      <tr><th>Campo</th><th>Qué escribir</th><th>¿Obligatorio?</th></tr>
+      <tr><td>Tipo</td><td>Selecciona: <em>Llavero</em> o <em>Tag</em></td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>N° / código del dispositivo</td><td>El número que viene impreso en el llavero o tag.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Placa asociada</td><td>Si es un tag de vehículo, la placa del carro o moto asociado.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Fecha de entrega</td><td>Fecha en que te entregan el dispositivo (si ya lo recibiste).</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Recibe (nombre)</td><td>Nombre de quien recibe el dispositivo.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+    </table>
+
+    <div class="consejo">Si todavía no te han entregado ningún dispositivo, escribe "Pendiente de entrega" en los campos o déjalos en blanco. No te preocupes, el formulario se puede actualizar más adelante.</div>
+
+    <div class="info-box info-aviso">
+      <strong>🔑 Compromiso de devolución:</strong><br>
+      Cuando termines de vivir en el apartamento, debes devolver todos los llaveros y tags a la administración. Si pierdes uno, repórtalo inmediatamente. La reposición tiene un costo que fija la administración.
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="#seccion-7" class="nav-prev">Sección 7</a>
+    <a href="#seccion-9">Sección 9 — Mascotas →</a>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 9: MASCOTAS                                         -->
+<!-- ============================================================ -->
+<div class="section-manual" id="seccion-9">
+  <div class="section-header">
+    <div class="section-num">9</div>
+    <div>
+      <h2>Sección 9 — Mascotas / Animales de compañía</h2>
+      <p>Censo obligatorio según el Decreto 768 de 2025</p>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="form-img-wrap">
+      <img src="https://lh3.googleusercontent.com/d/1Wps6fZi55KFziKnKz96mc4LS-v8SA7FU" alt="Sección 9 — Mascotas">
+      <div class="form-img-caption">Figura 11 — Sección 9. Hasta 2 mascotas. Si no tienes, déjalo en blanco.</div>
+    </div>
+
+    <div class="info-box info-importante">
+      <strong>Censo obligatorio — Decreto 768 de 2025.</strong><br>
+      El gobierno colombiano exige que todas las copropiedades tengan un registro actualizado de los animales de compañía que viven en el conjunto. Si tienes mascota, debes registrarla.
+    </div>
+
+    <p style="margin:14px 0 10px; color:var(--texto-med);">Puedes registrar hasta <strong>2 mascotas</strong>. Si no tienes mascota, deja todo en blanco.</p>
+
+    <table class="campo-table">
+      <tr><th>Campo</th><th>Qué escribir</th><th>¿Obligatorio?</th></tr>
+      <tr><td>Tipo</td><td>Qué tipo de animal. Ej: Perro, Gato, otro.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Nombre</td><td>Nombre de la mascota.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Raza</td><td>Raza de la mascota. Ej: Labrador,波斯 (gato), Criollo.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Color</td><td>Color del pelaje.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Sexo</td><td>Selecciona: Macho o Hembra.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Fecha última vacuna</td><td>Fecha de la última vacuna aplicada (la más reciente).</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>¿Manejo especial?</td><td>Marcar Sí si es un perro potencialmente peligroso (Ley 1801/2016). Ej: Pitbull, Rottweiler, Pastor alemán.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>N° de registro del canino</td><td>Solo si es perro de manejo especial: número de registro.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Aseguradora</td><td>Solo si es perro de manejo especial: nombre de la aseguradora de la póliza.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>N° de póliza</td><td>Solo si es perro de manejo especial: número de la póliza de responsabilidad civil.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+    </table>
+
+    <div class="consejo">Si tienes un perro que no es potencialmente peligroso, marca "No" en "¿Manejo especial?" y los campos de póliza y registro quedan en blanco.</div>
+
+    <div class="info-box info-aviso">
+      <strong>🐕 Perros de manejo especial (Ley 1801/2016):</strong><br>
+      Si tienes un perro de raza potencialmente peligrosa, la ley exige:<br>
+      1) Registro a nombre de un mayor de edad<br>
+      2) Póliza de responsabilidad civil extracontractual vigente<br>
+      Si no tienes póliza, consulta con tu aseguradora o con un broker de seguros.
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="#seccion-8" class="nav-prev">Sección 8</a>
+    <a href="#seccion-10">Sección 10 — Contactos de urgencia →</a>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 10: CONTACTOS DE EMERGENCIA                        -->
+<!-- ============================================================ -->
+<div class="section-manual" id="seccion-10">
+  <div class="section-header">
+    <div class="section-num">10</div>
+    <div>
+      <h2>Sección 10 — Contactos en caso de urgencia</h2>
+      <p>Personas que la administración puede contactar en caso de emergencia</p>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="form-img-wrap">
+      <img src="https://lh3.googleusercontent.com/d/15nYrIypKzf5fZdwKVT6mYscRCiiBxqoe" alt="Sección 10 — Contactos de urgencia">
+      <div class="form-img-caption">Figura 12 — Sección 10. Hasta 2 contactos de emergencia.</div>
+    </div>
+
+    <div class="info-box info-importante">
+      <strong>¿Por qué pedimos contactos de emergencia?</strong><br>
+      Si ocurre una emergencia (accidente, incendio, desastre, enfermedad) y no podemos contactarte a ti, necesitamos a alguien más que sepa de tu situación y pueda ayudar.
+    </div>
+
+    <p style="margin:14px 0 10px; color:var(--texto-med);">Puedes registrar hasta <strong>2 contactos</strong>. Si solo tienes uno, déjalo en el Contacto #1.</p>
+
+    <table class="campo-table">
+      <tr><th>Campo</th><th>Qué escribir</th><th>¿Obligatorio?</th></tr>
+      <tr><td>Nombre</td><td>Nombre completo del contacto.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Parentesco</td><td>Cómo se relaciona contigo. Ej: Mamá, Esposa, Hermano, Amigo.</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+      <tr><td>Teléfonos</td><td>Uno o más teléfonos donde se pueda localizar. Ej: 3001234567 / 6041234567</td><td><span class="badge-opcional">Si aplica</span></td></tr>
+    </table>
+
+    <div class="consejo">Pon teléfonos donde realmente contesten. Un número de mamá o de tu esposa/pareja suele ser la mejor opción. Si tienes dos contactos, pon uno que viva cerca y otro que viva lejos (por si pasa algo en la noche).</div>
+  </div>
+  <div class="nav-links">
+    <a href="#seccion-9" class="nav-prev">Sección 9</a>
+    <a href="#seccion-11">Sección 11 — Autorización y firma →</a>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 11: AUTORIZACIÓN Y FIRMA                           -->
+<!-- ============================================================ -->
+<div class="section-manual" id="seccion-11">
+  <div class="section-header">
+    <div class="section-num">11</div>
+    <div>
+      <h2>Sección 11 — Autorización de tratamiento de datos personales</h2>
+      <p>Ley 1581 de 2012 — Tus derechos y tu firma electrónica</p>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="form-img-wrap">
+      <img src="https://lh3.googleusercontent.com/d/1G_Qb7HWSHdDqFbuYD2HEI4wxc-84cFDi" alt="Sección 11 — Autorización y firma">
+      <div class="form-img-caption">Figura 13 — Sección 11. Aquí lees tus derechos, marcas las casillas de autorización y pones tu firma.</div>
+    </div>
+
+    <div class="info-box info-importante">
+      <strong>ley 1581 de 2012 — Protección de datos personales.</strong><br>
+      Esta sección te informa sobre tus derechos como titular de datos personales y te pide autorización para que la Urbanización Cerro Azul pueda manejar tu información.
+    </div>
+
+    <h3 style="margin:16px 0 10px;">📖 Lo que debes leer (es importante)</h3>
+    <p style="color:var(--texto-med); line-height:1.7; margin-bottom:14px;">
+      El texto explica que la Urbanización Cerro Azul (NIT 900770444) va a usar tu información para:
+    </p>
+    <ul style="padding-left:20px; line-height:1.9; color:var(--texto-med);">
+      <li>Identificar residentes y visitantes y controlar quién entra al conjunto</li>
+      <li>Administrar los llaveros y tags electrónicos</li>
+      <li>Atender emergencias y contingencias</li>
+      <li>Enviarte comunicaciones de la administración</li>
+      <li>Cumplir el reglamento de propiedad horizontal y la ley, incluido el censo de mascotas</li>
+    </ul>
+    <p style="color:var(--texto-med); line-height:1.7; margin:14px 0;">
+      También te informa que puedes ejercer tus derechos escribiendo a:
+      <strong>urb.cerroazul@gmail.com</strong>
+    </p>
+
+    <h3 style="margin:20px 0 10px;">✅ Las casillas que debes marcar</h3>
+    <table class="campo-table">
+      <tr><th>Casilla</th><th>Cuándo marcarla</th><th>¿Obligatorio?</th></tr>
+      <tr>
+        <td>Autorizo el tratamiento de mis datos personales.</td>
+        <td><strong>Siempre</strong> — es la autorización base. Sin esto, no puedes enviar el formulario.</td>
+        <td><span class="badge-oblig">Obligatorio</span></td>
+      </tr>
+      <tr>
+        <td>Autorizo el tratamiento de datos de los menores que represento (si aplica).</td>
+        <td>Solo si registraste menores de edad en la Sección 5.1. Si no tienes menores, déjala sin marcar.</td>
+        <td><span class="badge-opcional">Solo si aplica</span></td>
+      </tr>
+      <tr>
+        <td>Autorizo el envío de comunicaciones por correo y WhatsApp.</td>
+        <td>Si quieres recibir mensajes de la administración por estos canales. Si prefieres no recibir comunicaciones, déjala sin marcar.</td>
+        <td><span class="badge-opcional">Opcional</span></td>
+      </tr>
+    </table>
+
+    <h3 style="margin:20px 0 10px;">✍️ La firma electrónica</h3>
+    <p style="color:var(--texto-med); margin-bottom:12px;">Para firmar electrónicamente, escribes tres cosas:</p>
+    <table class="campo-table">
+      <tr><th>Campo</th><th>Qué escribir</th><th>¿Obligatorio?</th></tr>
+      <tr><td>Firma — Nombre completo</td><td>Tu nombre completo, tal como aparece en la cédula.</td><td><span class="badge-oblig">Obligatorio</span></td></tr>
+      <tr><td>Firma — C.C. N°</td><td>Tu número de cédula.</td><td><span class="badge-oblig">Obligatorio</span></td></tr>
+      <tr><td>Firma — Fecha</td><td>Se llena sola con la fecha que ya seleccionaste en la Sección 0.</td><td><span class="badge-oblig">Obligatorio</span></td></tr>
+    </table>
+
+    <div class="info-box info-importante">
+      <strong>¿Qué significa firmar electrónicamente?</strong><br>
+      Cuando escribes tu nombre y tu número de cédula y haces clic en "Enviar", eso constituye tu <strong>firma electrónica</strong> para efectos legales. No necesitas imprimir nada ni usar un dedo. Solo con escribir tu nombre y cédula y enviar el formulario, quedas firmando el documento.
+    </div>
+
+    <div class="consejo">Revisa bien que el nombre y la cédula estén escritos exactamente como aparecen en tu documento de identidad. Un error de una letra o un número puede causar problemas después.</div>
+  </div>
+  <div class="nav-links">
+    <a href="#seccion-10" class="nav-prev">Sección 10</a>
+    <a href="#enviar">Enviar el formulario →</a>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ENVIAR EL FORMULARIO                                        -->
+<!-- ============================================================ -->
+<div class="section-manual" id="enviar">
+  <div class="section-header">
+    <div class="section-num">📤</div>
+    <div>
+      <h2>Enviar el formulario</h2>
+      <p>El último paso — guarda bien tu código CA-XXXX</p>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="form-img-wrap">
+      <img src="https://lh3.googleusercontent.com/d/1V0EvWvJKmKlaCpwxmCvvakHF7jcPJJka" alt="Pantalla de éxito con código CA-XXXX">
+      <div class="form-img-caption">Figura 14 — Así se ve la pantalla cuando el formulario se envía correctamente. El código CA-XXXX aparece grande en el centro.</div>
+    </div>
+
+    <h3 style="margin-bottom:12px;">Paso a paso para enviar:</h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Revisa que todos los campos con asterisco (*) estén llenos.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Baja hasta el final y marca la casilla de <strong>"Autorizo el tratamiento de mis datos personales."</strong></div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Escribe tu nombre completo y tu número de cédula en los campos de firma.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">Haz clic en el botón <strong>"Enviar formulario"</strong> (es de color azul).</div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-text">Espera unos segundos. Verás una pantalla de éxito.</div>
+    </div>
+
+    <div class="exito-box">
+      <h2 style="color:var(--verde); margin-bottom:10px;">✅ ¡Registro creado exitosamente!</h2>
+      <p>Tu N° de formulario es:</p>
+      <div class="codigo">CA-0001</div>
+      <div class="aviso">⚠️ ¡GUARDA ESTE CÓDIGO! Es la única forma de volver a editar tu registro.</div>
+    </div>
+
+    <div class="info-box info-obligatorio" style="font-size:1.05em;">
+      <strong>🚨 EL CÓDIGO CA-XXXX ES MUY IMPORTANTE</strong><br><br>
+      Cuando el formulario se envíe, el sistema te va a mostrar un código como <strong>CA-0001</strong>, <strong>CA-0042</strong>, etc.<br><br>
+      <strong>Guarda este código AHORA mismo.</strong> Tienes estas opciones:<br>
+      • <strong>Tomarle foto</strong> a la pantalla con el celular<br>
+      • <strong>Anotarlo</strong> en un papel y guardarlo<br>
+      • <strong>Guardarlo</strong> en los contactos de tu celular como contacto nuevo<br>
+      • <strong>Imprimir</strong> el comprobante (hay un botón para eso)<br><br>
+      Si <strong> pierdes el código</strong>, tienes que escribir un correo a <strong>urb.cerroazul@gmail.com</strong> con tu nombre, cédula y número de apartamento para que te lo envíen de nuevo.
+    </div>
+
+    <h3 style="margin:20px 0 10px;">🖨️ ¿Quieres imprimir el comprobante?</h3>
+    <p style="color:var(--texto-med); margin-bottom:12px;">Después de enviar, verás un botón que dice <strong>"Imprimir comprobante"</strong>. Haz clic ahí para guardar una copia impresa o una截图 del comprobante con tu código CA-XXXX.</p>
+
+    <div class="consejo">Si no tienes impresora, solo toma una foto a la pantalla donde aparece el código. Lo importante es que quede registrado en algún lugar.</div>
+  </div>
+  <div class="nav-links">
+    <a href="#seccion-11" class="nav-prev">Sección 11</a>
+    <a href="#editar">Editar tu registro después →</a>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- EDITAR EL REGISTRO DESPUÉS                                  -->
+<!-- ============================================================ -->
+<div class="section-manual" id="editar">
+  <div class="section-header">
+    <div class="section-num">✏️</div>
+    <div>
+      <h2>Editar tu registro después</h2>
+      <p>Cómo cambiar datos si ya enviaste el formulario</p>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="form-img-wrap">
+      <img src="https://lh3.googleusercontent.com/d/1V0EvWvJKmKlaCpwxmCvvakHF7jcPJJka" alt="Pestaña Editar mi registro">
+      <div class="form-img-caption">Figura 15 — Vista de "Editar mi registro". Está en la pestaña de arriba del formulario.</div>
+    </div>
+
+    <div class="info-box info-importante">
+      <strong>¿Puedes cambiar datos?</strong><br>
+      <strong>Sí.</strong> Si después de enviar te das cuenta de que escribiste algo mal, o si cambia algo (nuevo carro, nuevo residente, nueva mascota), puedes volver y corregirlo sin tener que llenar todo desde cero.
+    </div>
+
+    <h3 style="margin-bottom:12px;">Pasos para editar:</h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Abre el formulario: <strong>https://fabig76.github.io/cerro-azul-residentes/</strong></div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Arriba del formulario, haz clic en la pestaña que dice <strong>"Editar mi registro"</strong> (es de color azul).</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Escribe tu <strong>N° de formulario</strong> (el código CA-XXXX que guardaste). Ejemplo: CA-0042.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">Escribe tu <strong>N° de apartamento</strong>. Ejemplo: 101.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-text">Haz clic en <strong>"Buscar mi registro"</strong>.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-text">El formulario se va a cargar con todos tus datos. Cambia lo que necesites y vuelve a enviar.</div>
+    </div>
+
+    <div class="info-box info-obligatorio">
+      <strong>¿Perdiste tu código CA-XXXX?</strong><br>
+      Si no recuerdas tu código, escribe un correo a <strong>urb.cerroazul@gmail.com</strong> con:
+      <ul style="margin-top:8px; padding-left:20px;">
+        <li>Tu nombre completo</li>
+        <li>Tu número de cédula</li>
+        <li>El número de tu apartamento</li>
+      </ul>
+      La administración te responderá con tu código.
+    </div>
+
+    <div class="consejo">El código CA-XXXX no cambia cuando editas. Si te asignaron CA-0042 la primera vez, seguirás siendo CA-0042 en todas las ediciones futuras.</div>
+  </div>
+  <div class="nav-links">
+    <a href="#enviar" class="nav-prev">Enviar el formulario</a>
+    <a href="#faq">Preguntas frecuentes →</a>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PREGUNTAS FRECUENTES                                        -->
+<!-- ============================================================ -->
+<div class="section-manual" id="faq">
+  <div class="section-header">
+    <div class="section-num">❓</div>
+    <div>
+      <h2>Preguntas frecuentes</h2>
+      <p>Las dudas más comunes de los residentes</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3 style="color:var(--azul); margin:16px 0 8px;">¿Este formulario es obligatorio?</h3>
+    <p style="color:var(--texto-med);">Sí. La administración del conjunto lo pide a todos los residentes como parte del registro obligatorio de propiedad horizontal y del cumplimiento de la Ley 1581 de 2012.</p>
+
+    <h3 style="color:var(--azul); margin:20px 0 8px;">¿Mis datos están seguros?</h3>
+    <p style="color:var(--texto-med);">Sí. Tus datos están protegidos por la Ley 1581 de 2012 de Colombia. La Urbanización Cerro Azul solo puede usar tu información para los fines que te indica el formulario. No puede compartirla con nadie sin tu autorización.</p>
+
+    <h3 style="color:var(--azul); margin:20px 0 8px;">¿Puedo llenar el formulario desde el celular?</h3>
+    <p style="color:var(--texto-med);">Sí. El formulario está diseñado para verse bien tanto en celular como en computador. Solo abre el enlace en el navegador de tu teléfono.</p>
+
+    <h3 style="color:var(--azul); margin:20px 0 8px;">¿Puedo llenar el formulario en varias sesiones?</h3>
+    <p style="color:var(--texto-med);">El formulario no se guarda automáticamente. Si necesitas varias sesiones, te recomendamos tener todos los datos a la mano antes de empezar. Si sales de la página sin enviar, tendrás que volver a empezar.</p>
+
+    <h3 style="color:var(--azul); margin:20px 0 8px;">¿Qué pasa si no tengo parqueadero, bicicleta o mascota?</h3>
+    <p style="color:var(--texto-med);">Simplemente déjalo en blanco. Las secciones opcionales no requieren que las llenes si no aplican para tu caso.</p>
+
+    <h3 style="color:var(--azul); margin:20px 0 8px;">¿Pueden mis datos ser eliminados?</h3>
+    <p style="color:var(--texto-med);">Tus datos de residente no se borran por voluntad propia (la copropiedad necesita conservarlos). Pero sí puedes ejercer tu derecho a actualizar, rectificar o suprimir datos escribiendo a urb.cerroazul@gmail.com.</p>
+
+    <h3 style="color:var(--azul); margin:20px 0 8px;">¿Los tags y llaveros ya están funcionando?</h3>
+    <p style="color:var(--texto-med);"><strong>No todavía.</strong> La información se pide con anticipación para cuando se implemente el sistema. La administración te informará cuando estén activos.</p>
+
+    <h3 style="color:var(--azul); margin:20px 0 8px;">¿Qué hago si me sale un error al enviar?</h3>
+    <p style="color:var(--texto-med);">Intenta de nuevo en unos minutos. Si el problema persiste, escribe a urb.cerroazul@gmail.com con una descripción del error y el navegador que estás usando (Chrome, Safari, etc.).</p>
+
+    <h3 style="color:var(--azul); margin:20px 0 8px;">¿Puedo enviar más de un registro por apartamento?</h3>
+    <p style="color:var(--texto-med);">No. Cada apartamento tiene un solo registro. Si ya llenaste uno y necesitas cambiar algo, usa la pestaña "Editar mi registro" con tu código CA-XXXX.</p>
+
+    <h3 style="color:var(--azul); margin:20px 0 8px;">¿A dónde va toda esa información?</h3>
+    <p style="color:var(--texto-med);">La información se guarda en una base de datos segura de la Urbanización Cerro Azul y solo la ve la administración. No está disponible públicamente.</p>
+
+    <div class="info-box info-importante" style="margin-top:24px;">
+      <strong>¿Tienes otra pregunta?</strong><br>
+      Escribe a <strong>urb.cerroazul@gmail.com</strong> con tu duda y te responderemos lo antes posible.
+    </div>
+
+  </div>
+  <div class="nav-links">
+    <a href="#editar" class="nav-prev">Editar registro</a>
+    <a href="#inicio">↑ Volver al inicio</a>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- FOOTER                                                      -->
+<!-- ============================================================ -->
+<div style="text-align:center; padding:40px 20px; color:var(--texto-med); font-size:0.88em; background:white; margin-top:30px;">
+  <p><strong>Urbanización Cerro Azul</strong> · NIT 900770444 · Bello / Niquía</p>
+  <p>Formulario oficial conforme a la Ley 1581 de 2012 y Decreto 768 de 2025</p>
+  <p>¿Dudas? Escribe a <a href="mailto:urb.cerroazul@gmail.com" style="color:var(--azul);">urb.cerroazul@gmail.com</a></p>
+</div>
+
+</body>
+</html>

@@ -19,7 +19,9 @@
   9. [Decisiones de diseño](#9-decisiones-de-diseño)
   10. [Problemas encontrados y soluciones](#10-problemas-encontrados-y-soluciones)
   11. [Pendientes y siguientes pasos](#11-pendientes-y-siguientes-pasos)
-  12. [Comandos útiles](#12-comandos-útiles)
+  12. [Comandos utiles](#12-comandos-utiles)
+ 14. [Manuales de uso para residentes](#14-manuales-de-uso-para-residentes)
+ 12. [Comandos útiles](#12-comandos-útiles)
   13. [Checklist de mantenimiento](#13-checklist-de-mantenimiento)
 
 ---
@@ -406,6 +408,13 @@ Carpeta: `https://drive.google.com/drive/folders/1BooaM5uxGOb1lcfX65Adcqof6PMAF-
     ID: `1j0yK0RVUDBWLEn_m5I2vlQ8Z_zLkrGMY`
     https://drive.google.com/file/d/1j0yK0RVUDBWLEn_m5I2vlQ8Z_zLkrGMY/view
 
+
+  - **Carpeta capturas + prompt video** (14-Sep-2026)
+    Folder ID: `18g9pVdktfAu3j7B5NnXOQcUpDUdkUYbR`
+    https://drive.google.com/drive/folders/18g9pVdktfAu3j7B5NnXOQcUpDUdkUYbR
+  - **Carpeta manuales para residentes** (14-Sep-2026)
+    Folder ID: `1NS6M0p5k7u89SiRy52CGxu7VpqmJ66fT`
+    https://drive.google.com/drive/folders/1NS6M0p5k7u89SiRy52CGxu7VpqmJ66fT
 Drive de Fabio (computadores.y.portatiles@gmail.com):
   · **QR_Formulario_Residentes_Cerro_Azul.png** (subido antes)
     ID: `1UpeVh8jADOSij6iZNX-SPWMQqNmtdaKr`
@@ -890,6 +899,42 @@ done
 
 # 4. Actualizar esta sección §14 con los nuevos Drive IDs y md5
 ```
+
+---
+
+## 14. Manuales de uso para residentes
+
+### Carpeta de Drive
+`https://drive.google.com/drive/folders/1NS6M0p5k7u89SiRy52CGxu7VpqmJ66fT`
+
+### Manual de llenado (HTML paso a paso)
+Manual web disenado para personas sin experiencia tecnologica. Con capturas de cada seccion.
+
+  - **manual-llenado-cerro-azul.html**
+    File ID: 1bWMitW7i80LUdjV2mCbhr6NVCIzRruLA
+    Drive: https://drive.google.com/file/d/1bWMitW7i80LUdjV2mCbhr6NVCIzRruLA/view?usp=drivesdk
+    GitHub Pages: https://Fabig76.github.io/cerro-azul-residentes/docs/manual-llenado-cerro-azul.html
+    Commit: `997e5f04` (subido por API, 14-Sep-2026)
+
+### Video instructivo (NotebookLM)
+Prompt para generar video explicativo con las 14 capturas del formulario.
+
+  - **prompt-notebooklm-video.md**
+    File ID: 1qm7PNmyZ-o4fTYto44YPxT68BaOSS1Bl
+    Drive: https://drive.google.com/file/d/1qm7PNmyZ-o4fTYto44YPxT68BaOSS1Bl/view?usp=drivesdk
+    14 capturas en: Folder ID `18g9pVdktfAu3j7B5NnXOQcUpDUdkUYbR`
+
+**Como generar el video:**
+1. Crear notebook en https://notebooklm.google.com
+2. Subir las 14 capturas en orden (7.26.34 a 7.29.28)
+3. Studio > Video Overview > Add instructions
+4. Pegar contenido de prompt-notebooklm-video.md
+
+**Mensajes clave del video:**
+  - Codigo CA-XXXX debe guardarse (ENFASIS MAXIMO)
+  - Tags/llaveros son implementacion FUTURA
+  - Ley 1581: mencion breve y tranquilizadora
+  - Dos pestanas: crear registro / editar registro
 
 ---
 
