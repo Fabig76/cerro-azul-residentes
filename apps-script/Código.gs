@@ -616,6 +616,11 @@ const MUDANZAS_ASCENSOR       = 'A';
 const MUDANZAS_ANTICIPACION_DIAS = 2;
 const MUDANZAS_CANCELACION_HORAS = 24;
 const MUDANZAS_LOCK_TIMEOUT_MS   = 30000;
+// Usamos getScriptLock() en lugar de getDocumentLock() porque
+// getDocumentLock() retorna null cuando el script se ejecuta en
+// modo "Ejecutar como: User accessing the web app".
+// getScriptLock() es independiente del documento y funciona siempre.
+// (Fix aplicado 23-Sep-2026 después del primer test E2E)
 const MUDANZAS_EMAIL_ADMIN      = 'urb.cerroazul@gmail.com';
 
 const MUDANZAS_SLOTS_LUN_VIE = [
@@ -887,7 +892,7 @@ function reservarMudanza(data) {
     return { ok: false, error: 'El propietario no tiene un correo válido registrado en el formulario de residentes. No se puede enviar la confirmación.' };
   }
 
-  const lock = LockService.getDocumentLock();
+  const lock = LockService.getScriptLock();
   if (!lock.tryLock(MUDANZAS_LOCK_TIMEOUT_MS)) {
     return { ok: false, error: 'Otro residente está reservando en este momento. Por favor intente nuevamente en unos segundos.' };
   }
@@ -981,7 +986,7 @@ function cancelarMudanza(data) {
     return { ok: false, error: 'Solo se puede cancelar hasta ' + MUDANZAS_CANCELACION_HORAS + ' horas antes de la mudanza. Contacte a la administración.' };
   }
 
-  const lock = LockService.getDocumentLock();
+  const lock = LockService.getScriptLock();
   if (!lock.tryLock(MUDANZAS_LOCK_TIMEOUT_MS)) {
     return { ok: false, error: 'Otro proceso está activo. Intente nuevamente en unos segundos.' };
   }
