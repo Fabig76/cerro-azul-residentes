@@ -495,3 +495,99 @@ footer.site-footer {
   background: #FFF;
 }
 footer.site-footer a { color: var(--azul); }
+
+/* ---------- MODULO MUDANZAS ---------- */
+.mud-mes { margin-bottom: 18px; }
+.mud-mes h4 {
+  font-size: 14px;
+  margin: 0 0 8px;
+  color: var(--azul-osc);
+  text-align: center;
+  text-transform: capitalize;
+}
+.mud-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.mud-cal-hdr { display: contents; }
+.mud-cal-hdr span {
+  font-size: 11px;
+  text-align: center;
+  color: var(--gris-med);
+  font-weight: 600;
+  padding: 4px 0;
+}
+.mud-cal-dias { display: contents; }
+.mud-cal-dias > span { display: block; }
+.mud-dia {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid var(--gris-borde);
+  background: var(--fondo-card);
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--texto);
+  font-family: inherit;
+  padding: 0;
+}
+.mud-dia:hover:not(:disabled):not(.mud-dia-deshabilitado) {
+  background: var(--azul-claro);
+  border-color: var(--azul);
+}
+.mud-dia-seleccionado {
+  background: var(--azul) !important;
+  color: #FFF !important;
+  border-color: var(--azul) !important;
+}
+.mud-dia-deshabilitado, .mud-dia:disabled {
+  background: #F5F5F5;
+  color: var(--gris-med);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.mud-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.mud-slot {
+  padding: 10px 8px;
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid;
+  font-family: inherit;
+  text-align: center;
+  transition: all 0.15s;
+}
+.mud-slot-disponible {
+  background: var(--fondo-card);
+  border-color: var(--ok);
+  color: var(--ok);
+}
+.mud-slot-disponible:hover {
+  background: var(--ok-fondo);
+}
+.mud-slot-seleccionado {
+  background: var(--ok) !important;
+  color: #FFF !important;
+  border-color: var(--ok) !important;
+}
+.mud-slot-ocupado, .mud-slot:disabled {
+  background: var(--err-fondo);
+  border-color: var(--err);
+  color: var(--err);
+  cursor: not-allowed;
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+.mud-slot small { font-weight: 400; font-size: 10px; }
+
+.alert-warn {
+  background: var(--adv-fondo);
+  color: var(--adv);
+  border-left: 4px solid var(--adv);
+}

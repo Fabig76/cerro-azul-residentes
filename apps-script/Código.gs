@@ -65,6 +65,24 @@ function doGet(e) {
       const r = lookupMatriculaParq(celda);
       return jsonOut(r);
     }
+    // --- MUDANZAS (agregado 22-Sep-2026 feature/mudanzas) ---
+    if (action === 'verificarPropietario') {
+      const r = verificarPropietario(
+        e.parameter.numForm,
+        e.parameter.apto,
+        e.parameter.ccProp
+      );
+      return jsonOut(r);
+    }
+    if (action === 'dispMudanzas') {
+      const r = dispMudanzas(
+        e.parameter.torre,
+        e.parameter.ascensor,
+        e.parameter.desde,
+        e.parameter.hasta
+      );
+      return jsonOut(r);
+    }
     return jsonOut({ ok: false, error: 'Acción no reconocida.' });
   } catch (err) {
     return jsonOut({ ok: false, error: String(err && err.message || err) });
@@ -82,6 +100,15 @@ function doPost(e) {
     } else if (e && e.parameter) {
       payload = e.parameter;
     }
+    // Enrutar por action (agregado 22-Sep-2026 feature/mudanzas)
+    const action = String(payload.action || '').trim();
+    if (action === 'reservarMudanza') {
+      return jsonOut(reservarMudanza(payload));
+    }
+    if (action === 'cancelarMudanza') {
+      return jsonOut(cancelarMudanza(payload));
+    }
+    // Comportamiento por defecto (compatibilidad): submit del formulario principal
     const result = submitRecord(payload);
     return jsonOut(result);
   } catch (err) {
@@ -565,4 +592,501 @@ function jsonOut(obj) {
   return ContentService
     .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+// =====================================================================
+// Cerro Azul — Módulo de Agendamiento de Mudanzas
+// Agregado 22-Sep-2026 (rama feature/mudanzas, SPEC §3-§4)
+//
+// Reglas:
+//   - 3 torres × 2 ascensores; solo "A" habilitado para mudanzas
+//   - L-V: 08-10, 10-12, 13-15, 15-17 (4 slots de 2h)
+//   - Sábado: 08-10, 10-12 (solo mañana)
+//   - Domingo: no hay servicio
+//   - Anticipación mínima: 2 días calendario completos
+//   - Cancelación permitida: hasta 24h antes
+//   - Solo propietario o inmobiliaria pueden agendar (CC validada contra Sheet)
+// =====================================================================
+
+const MUDANZAS_SHEET_NAME     = 'Mudanzas';
+const MUDANZAS_NUM_COLS       = 19;
+const MUDANZAS_HEADER_ROW     = 1;
+const MUDANZAS_TORRES         = ['1', '2', '3'];
+const MUDANZAS_ASCENSOR       = 'A';
+const MUDANZAS_ANTICIPACION_DIAS = 2;
+const MUDANZAS_CANCELACION_HORAS = 24;
+const MUDANZAS_LOCK_TIMEOUT_MS   = 30000;
+// Usamos getScriptLock() en lugar de getDocumentLock() porque
+// getDocumentLock() retorna null cuando el script se ejecuta en
+// modo "Ejecutar como: User accessing the web app".
+// getScriptLock() es independiente del documento y funciona siempre.
+// (Fix aplicado 23-Sep-2026 después del primer test E2E)
+const MUDANZAS_EMAIL_ADMIN      = 'urb.cerroazul@gmail.com';
+
+const MUDANZAS_SLOTS_LUN_VIE = [
+  ['08:00', '10:00'],
+  ['10:00', '12:00'],
+  ['13:00', '15:00'],
+  ['15:00', '17:00']
+];
+const MUDANZAS_SLOTS_SABADO = [
+  ['08:00', '10:00'],
+  ['10:00', '12:00']
+];
+const MUDANZAS_SLOTS_DOMINGO = [];
+
+// Columnas de la pestaña Mudanzas (A..S)
+const COL_MUD_ID       = 0;  // A
+const COL_MUD_NUMFORM  = 1;  // B
+const COL_MUD_APTO     = 2;  // C
+const COL_MUD_TIPO     = 3;  // D
+const COL_MUD_TORRE    = 4;  // E
+const COL_MUD_ASCENSOR = 5;  // F
+const COL_MUD_FECHA    = 6;  // G
+const COL_MUD_HORA_INI = 7;  // H
+const COL_MUD_HORA_FIN = 8;  // I
+const COL_MUD_NOMBRE   = 9;  // J
+const COL_MUD_CC       = 10; // K
+const COL_MUD_CEL      = 11; // L
+const COL_MUD_CORREO   = 12; // M
+const COL_MUD_EMPRESA  = 13; // N
+const COL_MUD_PLACA    = 14; // O
+const COL_MUD_OBS      = 15; // P
+const COL_MUD_FECHARES = 16; // Q
+const COL_MUD_ESTADO   = 17; // R
+const COL_MUD_HASH     = 18; // S
+
+// ---------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------
+function normalizarCC(cc) {
+  return String(cc || '').replace(/[^0-9]/g, '').trim();
+}
+
+function getMudanzasSheet() {
+  return SpreadsheetApp.openById(SHEET_ID).getSheetByName(MUDANZAS_SHEET_NAME);
+}
+
+function formatDateOnly(d) {
+  if (!d) return '';
+  if (d instanceof Date) {
+    return Utilities.formatDate(d, 'America/Bogota', 'yyyy-MM-dd');
+  }
+  const s = String(d);
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  return s;
+}
+
+// Normaliza hora a formato HH:MM.
+// Sheets guarda celdas con formato TIME como Date (Apps Script auto-convierte),
+// pero los slots teoricos son strings "08:00". Sin esta normalizacion,
+// el matching reservas.find() falla (Date vs String).
+// (Fix aplicado 23-Sep-2026 despues del primer E2E test con MD-0001)
+function normalizarHora(h) {
+  if (h == null || h === '') return '';
+  if (h instanceof Date) {
+    return Utilities.formatDate(h, 'America/Bogota', 'HH:mm');
+  }
+  const s = String(h).trim();
+  const m = s.match(/^(\d{1,2}):(\d{2})/);
+  if (m) {
+    return m[1].padStart(2, '0') + ':' + m[2];
+  }
+  return s;
+}
+
+function nextReservaId() {
+  const sheet = getMudanzasSheet();
+  if (!sheet) return 'MD-0001';
+  const last = sheet.getLastRow();
+  if (last < MUDANZAS_HEADER_ROW + 1) return 'MD-0001';
+  const ids = sheet.getRange(MUDANZAS_HEADER_ROW + 1, COL_MUD_ID + 1, last - MUDANZAS_HEADER_ROW, 1).getValues();
+  let max = 0;
+  for (const r of ids) {
+    const s = String(r[0] || '');
+    const m = s.match(/^MD-(\d+)$/);
+    if (m) {
+      const n = parseInt(m[1], 10);
+      if (n > max) max = n;
+    }
+  }
+  return 'MD-' + String(max + 1).padStart(4, '0');
+}
+
+function generarSlotsTeoricos(desde, hasta) {
+  const slots = [];
+  const d = new Date(desde + 'T12:00:00');
+  const fin = new Date(hasta + 'T12:00:00');
+  while (d <= fin) {
+    const dow = d.getDay();
+    const slotsDelDia = dow === 0 ? MUDANZAS_SLOTS_DOMINGO
+                      : dow === 6 ? MUDANZAS_SLOTS_SABADO
+                      : MUDANZAS_SLOTS_LUN_VIE;
+    const fechaStr = Utilities.formatDate(d, 'America/Bogota', 'yyyy-MM-dd');
+    for (const [hi, hf] of slotsDelDia) {
+      slots.push({ fecha: fechaStr, horaInicio: hi, horaFin: hf });
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  return slots;
+}
+
+function findReservaById(idReserva) {
+  const sheet = getMudanzasSheet();
+  if (!sheet) return null;
+  const last = sheet.getLastRow();
+  if (last < MUDANZAS_HEADER_ROW + 1) return null;
+  const data = sheet.getRange(MUDANZAS_HEADER_ROW + 1, 1, last - MUDANZAS_HEADER_ROW, MUDANZAS_NUM_COLS).getValues();
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][COL_MUD_ID] || '').trim() === String(idReserva || '').trim()) {
+      return { rowNumber: MUDANZAS_HEADER_ROW + 1 + i, values: data[i] };
+    }
+  }
+  return null;
+}
+
+function findReservasEnRango(torre, ascensor, desde, hasta) {
+  const sheet = getMudanzasSheet();
+  if (!sheet) return [];
+  const last = sheet.getLastRow();
+  if (last < MUDANZAS_HEADER_ROW + 1) return [];
+  const data = sheet.getRange(MUDANZAS_HEADER_ROW + 1, 1, last - MUDANZAS_HEADER_ROW, MUDANZAS_NUM_COLS).getValues();
+  const result = [];
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i];
+    if (String(row[COL_MUD_ESTADO]).trim() !== 'Confirmada') continue;
+    if (String(row[COL_MUD_TORRE]).trim() !== String(torre)) continue;
+    if (String(row[COL_MUD_ASCENSOR]).trim() !== String(ascensor)) continue;
+    const fecha = formatDateOnly(row[COL_MUD_FECHA]);
+    if (!fecha) continue;
+    if (fecha >= desde && fecha <= hasta) {
+      result.push({
+        rowNumber: MUDANZAS_HEADER_ROW + 1 + i,
+        id: String(row[COL_MUD_ID] || ''),
+        fecha: fecha,
+        horaInicio: normalizarHora(row[COL_MUD_HORA_INI]),
+        horaFin: normalizarHora(row[COL_MUD_HORA_FIN])
+      });
+    }
+  }
+  return result;
+}
+
+function hashReserva(torre, ascensor, fecha, horaInicio) {
+  const input = `${torre}|${ascensor}|${fecha}|${horaInicio}`;
+  const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, input);
+  return digest.map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('').slice(0, 16);
+}
+
+// ---------------------------------------------------------------------
+// Endpoint 4.1: verificarPropietario
+// ---------------------------------------------------------------------
+function verificarPropietario(numForm, apto, ccProp) {
+  numForm = String(numForm || '').trim();
+  apto = String(apto || '').trim();
+  ccProp = normalizarCC(ccProp);
+
+  if (!numForm) return { ok: false, error: 'Falta N° de formulario.' };
+  if (!apto) return { ok: false, error: 'Falta N° de apartamento.' };
+  if (!ccProp) return { ok: false, error: 'Falta cédula del propietario.' };
+
+  const found = findRowByNumFormAndApto(numForm, apto);
+  if (!found) {
+    return { ok: false, error: 'No se encontró ningún registro con ese N° de formulario y N° de apartamento.' };
+  }
+
+  const diligencia = String(found.values[4] || '').trim();
+  if (diligencia !== 'Propietario' && diligencia !== 'Tenedor / Otro' && diligencia !== 'Inmobiliaria') {
+    return { ok: false, error: 'Esta autorización debe ser solicitada por el propietario del inmueble o por la inmobiliaria autorizada, no por un arrendatario. Contacte al propietario.' };
+  }
+
+  const ccSheet = normalizarCC(found.values[6]);
+  if (ccSheet !== ccProp) {
+    return { ok: false, error: 'La cédula ingresada no coincide con el propietario registrado. Verifique o contacte a la administración.' };
+  }
+
+  return {
+    ok: true,
+    diligencia: diligencia,
+    numForm: numForm,
+    apto: apto,
+    nombreProp: String(found.values[5] || ''),
+    ccProp: ccSheet,
+    correoProp: String(found.values[7] || ''),
+    celProp: String(found.values[8] || '')
+  };
+}
+
+// ---------------------------------------------------------------------
+// Endpoint 4.2: dispMudanzas
+// ---------------------------------------------------------------------
+function dispMudanzas(torre, ascensor, desde, hasta) {
+  torre = String(torre || '').trim();
+  ascensor = String(ascensor || '').trim().toUpperCase();
+  desde = String(desde || '').trim();
+  hasta = String(hasta || '').trim();
+
+  if (!MUDANZAS_TORRES.includes(torre)) {
+    return { ok: false, error: 'Torre inválida. Debe ser 1, 2 o 3.' };
+  }
+  if (ascensor !== MUDANZAS_ASCENSOR) {
+    return { ok: false, error: 'Solo el ascensor A está habilitado para mudanzas. El ascensor B está reservado para circulación de residentes.' };
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(desde)) {
+    return { ok: false, error: 'Fecha "desde" inválida. Use formato YYYY-MM-DD.' };
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(hasta)) {
+    return { ok: false, error: 'Fecha "hasta" inválida. Use formato YYYY-MM-DD.' };
+  }
+  if (desde > hasta) {
+    return { ok: false, error: 'Fecha "desde" no puede ser posterior a "hasta".' };
+  }
+
+  const slotsTeoricos = generarSlotsTeoricos(desde, hasta);
+  const reservas = findReservasEnRango(torre, ascensor, desde, hasta);
+
+  const hoy = new Date();
+  const minFecha = new Date(hoy);
+  minFecha.setDate(minFecha.getDate() + MUDANZAS_ANTICIPACION_DIAS);
+  const minFechaStr = Utilities.formatDate(minFecha, 'America/Bogota', 'yyyy-MM-dd');
+
+  const resultado = slotsTeoricos.map(s => {
+    const reservado = reservas.find(r => r.fecha === s.fecha && r.horaInicio === s.horaInicio);
+    const muyPronto = s.fecha < minFechaStr;
+    return {
+      fecha: s.fecha,
+      horaInicio: s.horaInicio,
+      horaFin: s.horaFin,
+      disponible: !reservado && !muyPronto,
+      reservadoPor: reservado ? reservado.id : null
+    };
+  });
+
+  return { ok: true, slots: resultado, minFecha: minFechaStr, torre: torre, ascensor: ascensor };
+}
+
+// ---------------------------------------------------------------------
+// Endpoint 4.3: reservarMudanza
+// ---------------------------------------------------------------------
+function reservarMudanza(data) {
+  const verif = verificarPropietario(data.numForm, data.apto, data.ccProp);
+  if (!verif.ok) return verif;
+
+  const torre = String(data.torre || '').trim();
+  const ascensor = MUDANZAS_ASCENSOR;
+  const fecha = String(data.fecha || '').trim();
+  const horaInicio = String(data.horaInicio || '').trim();
+  const horaFin = String(data.horaFin || '').trim();
+  const tipoMudanza = String(data.tipoMudanza || '').trim();
+
+  if (!MUDANZAS_TORRES.includes(torre)) {
+    return { ok: false, error: 'Torre inválida. Debe ser 1, 2 o 3.' };
+  }
+  if (!['Salida', 'Ingreso'].includes(tipoMudanza)) {
+    return { ok: false, error: 'Tipo de mudanza inválido. Debe ser Salida o Ingreso.' };
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+    return { ok: false, error: 'Fecha inválida. Use formato YYYY-MM-DD.' };
+  }
+
+  const dow = new Date(fecha + 'T12:00:00').getDay();
+  const slotsPermitidos = dow === 0 ? MUDANZAS_SLOTS_DOMINGO
+                        : dow === 6 ? MUDANZAS_SLOTS_SABADO
+                        : MUDANZAS_SLOTS_LUN_VIE;
+  const slotValido = slotsPermitidos.find(s => s[0] === horaInicio && s[1] === horaFin);
+  if (!slotValido) {
+    return { ok: false, error: 'El horario seleccionado no es válido. Domingo no hay servicio; verifique el día y la hora.' };
+  }
+
+  const hoy = new Date();
+  const minFecha = new Date(hoy);
+  minFecha.setDate(minFecha.getDate() + MUDANZAS_ANTICIPACION_DIAS);
+  const minFechaStr = Utilities.formatDate(minFecha, 'America/Bogota', 'yyyy-MM-dd');
+  if (fecha < minFechaStr) {
+    return { ok: false, error: 'Las mudanzas deben agendarse con al menos ' + MUDANZAS_ANTICIPACION_DIAS + ' días calendario de anticipación. Próxima fecha disponible: ' + minFechaStr + '.' };
+  }
+
+  if (!verif.correoProp || verif.correoProp.indexOf('@') === -1) {
+    return { ok: false, error: 'El propietario no tiene un correo válido registrado en el formulario de residentes. No se puede enviar la confirmación.' };
+  }
+
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(MUDANZAS_LOCK_TIMEOUT_MS)) {
+    return { ok: false, error: 'Otro residente está reservando en este momento. Por favor intente nuevamente en unos segundos.' };
+  }
+
+  try {
+    const reservas = findReservasEnRango(torre, ascensor, fecha, fecha);
+    const duplicado = reservas.find(r => r.horaInicio === horaInicio);
+    if (duplicado) {
+      return { ok: false, error: 'Este horario ya fue reservado por otro residente. Por favor seleccione otro.' };
+    }
+
+    const sheet = getMudanzasSheet();
+    if (!sheet) {
+      return { ok: false, error: 'La pestaña Mudanzas no existe en el Sheet. Contacte a la administración.' };
+    }
+
+    const idReserva = nextReservaId();
+    const now = Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss');
+    const hash = hashReserva(torre, ascensor, fecha, horaInicio);
+
+    const row = new Array(MUDANZAS_NUM_COLS).fill('');
+    row[COL_MUD_ID]       = idReserva;
+    row[COL_MUD_NUMFORM]  = verif.numForm;
+    row[COL_MUD_APTO]     = verif.apto;
+    row[COL_MUD_TIPO]     = tipoMudanza;
+    row[COL_MUD_TORRE]    = torre;
+    row[COL_MUD_ASCENSOR] = ascensor;
+    row[COL_MUD_FECHA]    = fecha;
+    row[COL_MUD_HORA_INI] = horaInicio;
+    row[COL_MUD_HORA_FIN] = horaFin;
+    row[COL_MUD_NOMBRE]   = verif.nombreProp;
+    row[COL_MUD_CC]       = verif.ccProp;
+    row[COL_MUD_CEL]      = verif.celProp;
+    row[COL_MUD_CORREO]   = verif.correoProp;
+    row[COL_MUD_EMPRESA]  = String(data.empresa || '').trim();
+    row[COL_MUD_PLACA]    = String(data.placa || '').trim().toUpperCase();
+    row[COL_MUD_OBS]      = String(data.observaciones || '').trim();
+    row[COL_MUD_FECHARES] = now;
+    row[COL_MUD_ESTADO]   = 'Confirmada';
+    row[COL_MUD_HASH]     = hash;
+
+    const last = sheet.getLastRow();
+    const targetRow = Math.max(last + 1, MUDANZAS_HEADER_ROW + 1);
+    sheet.getRange(targetRow, 1, 1, MUDANZAS_NUM_COLS).setValues([row]);
+
+    try { enviarEmailConfirmacionAdmin(row); } catch (e) { console.error('Error email admin:', e); }
+    try { enviarEmailConfirmacionResidente(row); } catch (e) { console.error('Error email residente:', e); }
+
+    return {
+      ok: true,
+      idReserva: idReserva,
+      fecha: fecha,
+      horaInicio: horaInicio,
+      horaFin: horaFin,
+      torre: torre,
+      message: 'Reserva confirmada. Le enviamos un correo de confirmación a ' + verif.correoProp + '.'
+    };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ---------------------------------------------------------------------
+// Endpoint 4.4: cancelarMudanza
+// ---------------------------------------------------------------------
+function cancelarMudanza(data) {
+  const idReserva = String(data.idReserva || '').trim();
+  if (!idReserva) return { ok: false, error: 'Falta ID de reserva.' };
+
+  const verif = verificarPropietario(data.numForm, data.apto, data.ccProp);
+  if (!verif.ok) return verif;
+
+  const found = findReservaById(idReserva);
+  if (!found) return { ok: false, error: 'No se encontró la reserva con ese ID.' };
+
+  if (String(found.values[COL_MUD_NUMFORM]).trim() !== verif.numForm ||
+      String(found.values[COL_MUD_APTO]).trim() !== verif.apto) {
+    return { ok: false, error: 'Esta reserva no pertenece a este apartamento.' };
+  }
+
+  if (String(found.values[COL_MUD_ESTADO]).trim() !== 'Confirmada') {
+    return { ok: false, error: 'Esta reserva ya no está activa (estado actual: ' + String(found.values[COL_MUD_ESTADO]) + ').' };
+  }
+
+  const fechaMudanza = formatDateOnly(found.values[COL_MUD_FECHA]);
+  const horaInicio = normalizarHora(found.values[COL_MUD_HORA_INI]);
+  const fechaHoraMudanza = new Date(fechaMudanza + 'T' + horaInicio + ':00');
+  const ahora = new Date();
+  const diffHoras = (fechaHoraMudanza - ahora) / (1000 * 60 * 60);
+  if (diffHoras < MUDANZAS_CANCELACION_HORAS) {
+    return { ok: false, error: 'Solo se puede cancelar hasta ' + MUDANZAS_CANCELACION_HORAS + ' horas antes de la mudanza. Contacte a la administración.' };
+  }
+
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(MUDANZAS_LOCK_TIMEOUT_MS)) {
+    return { ok: false, error: 'Otro proceso está activo. Intente nuevamente en unos segundos.' };
+  }
+
+  try {
+    const sheet = getMudanzasSheet();
+    sheet.getRange(found.rowNumber, COL_MUD_ESTADO + 1).setValue('Cancelada');
+
+    try { enviarEmailCancelacionAdmin(found.values); } catch (e) { console.error('Error email cancel admin:', e); }
+    try { enviarEmailCancelacionResidente(found.values); } catch (e) { console.error('Error email cancel residente:', e); }
+
+    return { ok: true, message: 'Reserva cancelada correctamente.' };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ---------------------------------------------------------------------
+// Emails
+// ---------------------------------------------------------------------
+function enviarEmailConfirmacionAdmin(row) {
+  const subject = '[Cerro Azul] Nueva reserva de mudanza ' + row[COL_MUD_ID];
+  const body =
+    'Nueva reserva de mudanza registrada:\n\n' +
+    'ID Reserva:    ' + row[COL_MUD_ID] + '\n' +
+    'Propietario:   ' + row[COL_MUD_NOMBRE] + ' (CC ' + row[COL_MUD_CC] + ')\n' +
+    'Apartamento:   ' + row[COL_MUD_APTO] + '\n' +
+    'Celular:       ' + row[COL_MUD_CEL] + '\n' +
+    'Correo:        ' + row[COL_MUD_CORREO] + '\n' +
+    'Tipo:          ' + row[COL_MUD_TIPO] + ' de arrendatario\n' +
+    'Torre:         ' + row[COL_MUD_TORRE] + ', Ascensor ' + row[COL_MUD_ASCENSOR] + '\n' +
+    'Fecha:         ' + row[COL_MUD_FECHA] + ' ' + row[COL_MUD_HORA_INI] + '-' + row[COL_MUD_HORA_FIN] + '\n' +
+    'Empresa:       ' + (row[COL_MUD_EMPRESA] || '(no indicada)') + '\n' +
+    'Placa:         ' + (row[COL_MUD_PLACA] || '(no indicada)') + '\n' +
+    'Observaciones: ' + (row[COL_MUD_OBS] || '(sin observaciones)') + '\n\n' +
+    '--\nCerro Azul — Sistema de agendamiento de mudanzas\n';
+  MailApp.sendEmail(MUDANZAS_EMAIL_ADMIN, subject, body);
+}
+
+function enviarEmailConfirmacionResidente(row) {
+  const to = row[COL_MUD_CORREO];
+  if (!to || to.indexOf('@') === -1) return;
+  const subject = 'Confirmacion de reserva de mudanza ' + row[COL_MUD_ID];
+  const body =
+    'Hola ' + row[COL_MUD_NOMBRE] + ',\n\n' +
+    'Su reserva de mudanza ha sido confirmada:\n\n' +
+    'ID Reserva:    ' + row[COL_MUD_ID] + '\n' +
+    'Apartamento:   ' + row[COL_MUD_APTO] + '\n' +
+    'Tipo:          ' + row[COL_MUD_TIPO] + ' de arrendatario\n' +
+    'Torre:         ' + row[COL_MUD_TORRE] + ', Ascensor ' + row[COL_MUD_ASCENSOR] + '\n' +
+    'Fecha:         ' + row[COL_MUD_FECHA] + '\n' +
+    'Horario:       ' + row[COL_MUD_HORA_INI] + ' a ' + row[COL_MUD_HORA_FIN] + '\n\n' +
+    'Recuerde: la vigilancia NO permite ingreso en dias festivos, ' +
+    'aunque usted tenga reserva. Verifique que la fecha seleccionada no sea festivo.\n\n' +
+    'Para cancelar su reserva, ingrese nuevamente al formulario con su ' +
+    'N° de formulario, apartamento y cedula del propietario.\n\n' +
+    '--\nCerro Azul — Sistema de agendamiento de mudanzas\n';
+  MailApp.sendEmail(to, subject, body);
+}
+
+function enviarEmailCancelacionAdmin(row) {
+  const subject = '[Cerro Azul] Cancelacion de reserva de mudanza ' + row[COL_MUD_ID];
+  const body =
+    'Se ha cancelado la siguiente reserva de mudanza:\n\n' +
+    'ID Reserva:  ' + row[COL_MUD_ID] + '\n' +
+    'Apartamento: ' + row[COL_MUD_APTO] + '\n' +
+    'Tipo:        ' + row[COL_MUD_TIPO] + '\n' +
+    'Fecha:       ' + row[COL_MUD_FECHA] + ' ' + row[COL_MUD_HORA_INI] + '-' + row[COL_MUD_HORA_FIN] + '\n' +
+    'Cancelada por: ' + row[COL_MUD_NOMBRE] + ' (CC ' + row[COL_MUD_CC] + ')\n';
+  MailApp.sendEmail(MUDANZAS_EMAIL_ADMIN, subject, body);
+}
+
+function enviarEmailCancelacionResidente(row) {
+  const to = row[COL_MUD_CORREO];
+  if (!to || to.indexOf('@') === -1) return;
+  const subject = 'Cancelacion de reserva de mudanza ' + row[COL_MUD_ID];
+  const body =
+    'Hola ' + row[COL_MUD_NOMBRE] + ',\n\n' +
+    'Su reserva de mudanza ' + row[COL_MUD_ID] + ' ha sido cancelada.\n\n' +
+    'Fecha que estaba reservada: ' + row[COL_MUD_FECHA] + ' ' +
+    row[COL_MUD_HORA_INI] + '-' + row[COL_MUD_HORA_FIN] + '\n\n' +
+    'Si necesita reprogramar, ingrese nuevamente al formulario de Cerro Azul.\n\n' +
+    '--\nCerro Azul\n';
+  MailApp.sendEmail(to, subject, body);
 }

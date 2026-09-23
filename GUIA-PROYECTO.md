@@ -868,6 +868,94 @@ específica para esto.
     · cerro-azul-residentes: `187e512`
     · formato-datos-ph:     `b481328`
 
+### Respaldo incremental post-F2 (22-Sep-2026 22:10 COL)
+
+Respaldo incremental después de crear la pestaña `Mudanzas` con 19 columnas
++ headers formateados + 4 validaciones (ESTADO, TIPO MUDANZA, TORRE, ASCENSOR).
+
+  · **Carpeta destino**: misma que el respaldo principal
+    · Drive ID: `1RPHtWnVEFwzBKR1DCzBP1to9wLHY2F22`
+  · **2 archivos incrementales** (solo el cambio de F2):
+    · Sheet completo XLSX (incluye la nueva pestaña Mudanzas)
+    · CSV solo de la pestaña Mudanzas (headers sin datos)
+  · **Verificación md5 round-trip**: 2/2 ✓ MATCH
+
+| Archivo | Drive ID | Tamano | md5 |
+|---|---|---|---|
+| `BaseDatosCerroAzul_F2-POST_20260922-221023_COL.xlsx` | `1NWQhDRQJjPJdGSjvG5tocpBHsPTGO6O0` | 58.596 B | `634cf14bb72653e14ecb0fb5c47392fa` |
+| `Mudanzas_F2-POST_20260922-221023_COL.csv` | `1yEkQY7BewSEuWDafOcn0u5eJTMklgXT2` | 242 B | `d4e33d6ee63915049abe99e66da7da5a` |
+
+Notas:
+  · El XLSX pasó de 44.435 B (pre-F2) a 58.596 B (post-F2). Los +14.161 B son
+    la nueva pestaña con headers + formato + validaciones.
+  · El CSV de Mudanzas solo tiene 1 fila (los headers) — aún no hay reservas
+    porque no se ha implementado el flujo de reserva (eso es F3-F8).
+
+### Respaldo del 22-Sep-2026 (pre-mudanzas)
+
+Respaldo completo previo al inicio del desarrollo del módulo de agendamiento
+de mudanzas. **22 archivos verificados bit-a-bit** (md5 local == md5 en Drive).
+
+  · **Carpeta destino**: `proyecto formulario residentes`
+    · Drive ID: `1RPHtWnVEFwzBKR1DCzBP1to9wLHY2F22`
+    · URL: https://drive.google.com/drive/folders/1RPHtWnVEFwzBKR1DCzBP1to9wLHY2F22
+    · Owner: urb.cerroazul@gmail.com
+    · Permiso: anyone with link = writer (para que el operador pueda ver/descargar)
+  · **22 archivos respaldados** (13 código + bundle ZIP + 3 exports Registros + 5 exports Matriculas)
+  · **Verificación**: 22/22 archivos con md5 round-trip OK (descargados y comparados)
+  · **Procedimiento**: Sheets API + Drive API multipart upload (no `/export` que 404ea)
+
+#### Bundle ZIP del repositorio completo (sin .git)
+
+| Archivo | Drive ID | Tamano | md5 |
+|---|---|---|---|
+| `cerro-azul-residentes_bundle_20260922-215129_COL.zip` | `1BoXiNGsfmwodZe_bG5nAfQX_hTILctSb` | 448.673 B | `ba80927be659c4a014fdd27d380bd9e6` |
+
+#### Sheet Registros (Base datos Cerro azul fomato)
+
+| Archivo | Drive ID | Tamano | md5 |
+|---|---|---|---|
+| `BaseDatosCerroAzul_20260922-215103_COL.xlsx` | `1gAHyusyOCIM3y5nObgANh45WI9ivkysc` | 44.435 B | `d0008c7456b8862d2a7e1d174eb058f9` |
+| `Registros_20260922-215103_COL.csv` | `1GJERNp7IaSsrzBWhget5TiC7ESS3ZSum` | 51.587 B | `7b504e60ef4110964369a8104f38933a` |
+| `Maestros_20260922-215103_COL.csv` | `1StfhCda9GaQBe4KiC9gJszk_2Hoz-M-L` | 23 B | `37d69fe5f0f075d003bdda1f6cd133c9` |
+
+#### Sheet Matriculas
+
+| Archivo | Drive ID | Tamano | md5 |
+|---|---|---|---|
+| `MatriculasCerroAzul_20260922-215103_COL.xlsx` | `1jpY5mXPQr36BZyDrpGzDzEuO7w__p9dz` | 60.236 B | `5f371944e14e745ad290e085b840b63e` |
+| `Torre_3___Etapa_1_20260922-215103_COL.csv` | `1klHNH81orOv3hFA8b2U_T8d7UeHNk5vN` | 12.785 B | `4c78a41ba24b1cdc167932de23af83db` |
+| `Torre_1___Etapa_2_20260922-215103_COL.csv` | `1Ds12_t6pNA1r0iEWPacsNUTRuxgoJSkh` | 12.746 B | `215fb5989aff75ade27f303e46c3e04a` |
+| `Parqueaderos___Etapa_3_20260922-215103_COL.csv` | `1LhLuJSovt9qrB9TmAj7reZz46VCFT16o` | 12.681 B | `114af7021c33260ed9d6aad230945ab2` |
+| `Resumen_de_Copropiedad_20260922-215103_COL.csv` | `1obBJghBTIojapw0uqPj9Zlpa26uYK23I` | 956 B | `c77eddee468ff3ccd20319b83aecff97` |
+
+#### Codigo del repo (cerro-azul-residentes/, sin .git)
+
+| Archivo | Drive ID | Tamano | md5 |
+|---|---|---|---|
+| `index.html` | `1DyAR7NI5vUMHTNh3K3EjmsyjzleGxAsw` | 31.282 B | `56da40e334fa486df073a38212b59035` |
+| `GUIA-PROYECTO.md` | `10kc3PVWiylK2FlQQ0Sh1mBwkoqgzgavz` | 41.396 B | `318141195d6518be59fdf282ce0ef91c` |
+| `README-project.md` | `1So6sFWlfiqT8Ai1mBJ2oxSRIkJq-_v4R` | 51 B | `c5bf05bc099f6401f4461ffcc15f027a` |
+| `js/app.js` | `1F9iqoMH-mvB2_O3UpOYnedT_67hXmqYo` | 26.111 B | `ee2836fb7d411dbc40cb391f227d2389` |
+| `apps-script/Codigo.gs` | `1_W_34RC-bWQj6h1HMX6tUbuGSSRr2DiL` | 24.324 B | `12bb1ba325a834563e4e13e14b5af0ab` |
+| `apps-script/README.md` | `1obac9WLV9vZG66pFbpUzymLuZZNOTmv0` | 5.781 B | `8dc082ee64545f9a7b2ffb55d30da1e1` |
+| `assets/styles.css` | `1VOoo-Wo1yQYMQgBbCvZejHyzQE65RPCy` | 10.540 B | `f6419505011be1c492e015200dac82d4` |
+| `assets/logo.jpg` | `1Rai_X6pI6dVhCX163jKxjrBzQbCOI_Iq` | 356.516 B | `f470181c5710569a0f1edc612744de5c` |
+| `docs/manual-llenado-cerro-azul.html` | `1Exu0j892pI2Bz3-3Oh0TdHyXyRoPlGyJ` | 61.958 B | `6ba327cefba417562a9feb9f2b7b23b2` |
+| `docs/prompt-notebooklm-video.md` | `1yYHZodV9tq0890KAV4NB157TUfqVNXWm` | 13.903 B | `490ba954d9bb375dfa74cc962101e81a` |
+| `qr-formulario-cerro-azul.png` | `1WpFllyDKxOYDsTcwbn8d79JlbsDMiCr8` | 37.489 B | `7c64e09e1ff88da29b971a94d16cbe2f` |
+| `.gitignore` | `1PIappJSg77DkWQgVYR3akDMq1MivJt1c` | 6 B | `73dd5c8e87159492db611de051904562` |
+| `.nojekyll` | `1kLriQxEg2q4BbXwZOoekMQJh_gXBTaum` | 0 B | `d41d8cd98f00b204e9800998ecf8427e` |
+
+#### Estado del proyecto al momento del respaldo
+
+  - **Sheet Registros**: 143 columnas, 84 filas con datos (CA-0001 + 83 residentes)
+  - **Sheet matriculas**: 4 hojas, ~622 filas en total
+  - **Apps Script**: deploy v2 activo (sin cambios desde 7-Sep-2026 14:09 COL)
+  - **URL Web App**: https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec
+  - **GitHub Pages**: cerro-azul-residentes desplegado y funcional
+  - **Commits push**: cerro-azul-residentes (HEAD al cierre del 14-Sep-2026)
+
 #### Política de respaldos recomendada
 
   · **Cada vez que se hace un deploy nuevo** (manual o automático), hacer un
@@ -902,7 +990,55 @@ done
 
 ---
 
-## 15. Manuales de uso para residentes
+## 15. Módulo de agendamiento de mudanzas
+
+Agregado en septiembre 2026 (rama `feature/mudanzas`).
+
+### 15.1 Reglas de negocio
+
+- 3 torres × 2 ascensores; solo el **ascensor A** está habilitado para mudanzas (B bloqueado al 100%)
+- Lunes a Viernes: 4 slots de 2h → 08:00-10:00, 10:00-12:00, 13:00-15:00, 15:00-17:00
+- Sábado: 2 slots solo mañana → 08:00-10:00, 10:00-12:00
+- Domingo y festivos: NO hay servicio (validación solo con mensaje emergente al usuario, no rechazo automático)
+- Anticipación mínima: 2 días calendario completos
+- Cancelación permitida: hasta 24 horas antes de la mudanza
+- Sin límite de reservas por residente (caso real: mudanza en varias cajas/días)
+- Solo el propietario del inmueble o la inmobiliaria pueden agendar
+- Validación de cédula del propietario contra el Sheet `Registros` col G
+- Email automático al admin (urb.cerroazul@gmail.com) y al residente
+
+### 15.2 Endpoints Apps Script
+
+| Método | Acción | Descripción |
+|---|---|---|
+| GET | `verificarPropietario` | Valida CA-XXXX + apto + cédula del propietario |
+| GET | `dispMudanzas` | Lista slots disponibles vs ocupados (próximos N días) |
+| POST | `reservarMudanza` | Crea fila en Sheet pestaña Mudanzas con LockService |
+| POST | `cancelarMudanza` | Marca Estado="Cancelada" sin borrar fila |
+
+### 15.3 Esquema Sheet pestaña Mudanzas (19 columnas)
+
+`ID`, `NumForm`, `Apto`, `TipoMudanza` (Salida|Ingreso), `Torre`, `Ascensor`,
+`Fecha`, `HoraIni`, `HoraFin`, `NombreProp`, `CCProp`, `Celular`, `Correo`,
+`Empresa`, `Placa`, `Observaciones`, `FechaReserva`, `Estado` (Confirmada|Cancelada|Completada),
+`HashDedupe`.
+
+### 15.4 Archivos del feature
+
+- `apps-script/Código.gs` — 4 funciones + 32 constantes + emails + LockService
+- `index.html` — nueva pestaña "Agendar mudanza" + 4 vistas internas
+- `js/app.js` — módulo M encapsulado
+- `assets/styles.css` — estilos calendario + slots
+- `docs/spec-mudanzas.md` — SPEC v1.0.0 (12 secciones, 21 KB)
+
+### 15.5 Ver también
+
+- `docs/spec-mudanzas.md` — especificación completa
+- §14 — respaldos del proyecto (incluye backups pre y post del feature)
+
+---
+
+## 16. Manuales de uso para residentes
 
 ### Carpeta de Drive
 `https://drive.google.com/drive/folders/1NS6M0p5k7u89SiRy52CGxu7VpqmJ66fT`
