@@ -990,7 +990,55 @@ done
 
 ---
 
-## 15. Manuales de uso para residentes
+## 15. Módulo de agendamiento de mudanzas
+
+Agregado en septiembre 2026 (rama `feature/mudanzas`).
+
+### 15.1 Reglas de negocio
+
+- 3 torres × 2 ascensores; solo el **ascensor A** está habilitado para mudanzas (B bloqueado al 100%)
+- Lunes a Viernes: 4 slots de 2h → 08:00-10:00, 10:00-12:00, 13:00-15:00, 15:00-17:00
+- Sábado: 2 slots solo mañana → 08:00-10:00, 10:00-12:00
+- Domingo y festivos: NO hay servicio (validación solo con mensaje emergente al usuario, no rechazo automático)
+- Anticipación mínima: 2 días calendario completos
+- Cancelación permitida: hasta 24 horas antes de la mudanza
+- Sin límite de reservas por residente (caso real: mudanza en varias cajas/días)
+- Solo el propietario del inmueble o la inmobiliaria pueden agendar
+- Validación de cédula del propietario contra el Sheet `Registros` col G
+- Email automático al admin (urb.cerroazul@gmail.com) y al residente
+
+### 15.2 Endpoints Apps Script
+
+| Método | Acción | Descripción |
+|---|---|---|
+| GET | `verificarPropietario` | Valida CA-XXXX + apto + cédula del propietario |
+| GET | `dispMudanzas` | Lista slots disponibles vs ocupados (próximos N días) |
+| POST | `reservarMudanza` | Crea fila en Sheet pestaña Mudanzas con LockService |
+| POST | `cancelarMudanza` | Marca Estado="Cancelada" sin borrar fila |
+
+### 15.3 Esquema Sheet pestaña Mudanzas (19 columnas)
+
+`ID`, `NumForm`, `Apto`, `TipoMudanza` (Salida|Ingreso), `Torre`, `Ascensor`,
+`Fecha`, `HoraIni`, `HoraFin`, `NombreProp`, `CCProp`, `Celular`, `Correo`,
+`Empresa`, `Placa`, `Observaciones`, `FechaReserva`, `Estado` (Confirmada|Cancelada|Completada),
+`HashDedupe`.
+
+### 15.4 Archivos del feature
+
+- `apps-script/Código.gs` — 4 funciones + 32 constantes + emails + LockService
+- `index.html` — nueva pestaña "Agendar mudanza" + 4 vistas internas
+- `js/app.js` — módulo M encapsulado
+- `assets/styles.css` — estilos calendario + slots
+- `docs/spec-mudanzas.md` — SPEC v1.0.0 (12 secciones, 21 KB)
+
+### 15.5 Ver también
+
+- `docs/spec-mudanzas.md` — especificación completa
+- §14 — respaldos del proyecto (incluye backups pre y post del feature)
+
+---
+
+## 16. Manuales de uso para residentes
 
 ### Carpeta de Drive
 `https://drive.google.com/drive/folders/1NS6M0p5k7u89SiRy52CGxu7VpqmJ66fT`
