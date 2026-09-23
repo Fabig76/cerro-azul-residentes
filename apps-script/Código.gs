@@ -53,7 +53,7 @@ function doGet(e) {
       if (!row) {
         return jsonOut({ ok: false, error: 'No se encontró ningún registro con ese N° de formulario y N° de apartamento. Verifica los datos e inténtalo de nuevo.' });
       }
-      return jsonOut({ ok: true, row: rowToObject(row) });
+      return jsonOut({ ok: true, row: rowToObject(row.values) });  // FIX 23-Sept: antes decia 'row' (objeto), debia ser 'row.values' (array)
     }
     if (action === 'lookupMatApto') {
       const apto = String(e.parameter.apto || '').trim();
