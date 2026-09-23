@@ -38,6 +38,9 @@
     <button type="button" class="mode-tab" data-mode="edit" role="tab">
       ✏️ Editar mi registro
     </button>
+    <button type="button" class="mode-tab" data-mode="mudanzas" role="tab">
+      🚚 Agendar mudanza
+    </button>
   </div>
 </nav>
 
@@ -508,6 +511,154 @@
         <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a> con tu nombre, cédula y N° de apartamento
         para que podamos ayudarte a recuperar tu número.
       </p>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- VISTA: MODO MUDANZAS (Agendar)                  -->
+  <!-- ============================================== -->
+  <div id="view-mudanzas" class="hidden">
+
+    <!-- ===== VISTA 1: Identificacion ===== -->
+    <div id="mud-vista-login" class="lookup-box">
+      <h3>🚚 Agendar mudanza</h3>
+      <p>Esta autorización debe ser diligenciada por el <strong>propietario del inmueble</strong> o por la <strong>inmobiliaria autorizada</strong>. El propietario es responsable de la mudanza.</p>
+      <div id="alert-mud-login" class="alert hidden"></div>
+      <div class="field" style="margin-bottom:12px;">
+        <label>N° de formulario <span class="req">*</span></label>
+        <input type="text" id="mudNumForm" placeholder="Ej: CA-0042" autocomplete="off">
+      </div>
+      <div class="field" style="margin-bottom:12px;">
+        <label>N° de apartamento <span class="req">*</span></label>
+        <input type="text" id="mudApto" placeholder="Ej: 101, 202B" autocomplete="off">
+      </div>
+      <div class="field" style="margin-bottom:18px;">
+        <label>Cédula del propietario <span class="req">*</span></label>
+        <input type="text" id="mudCcProp" placeholder="Solo números, sin puntos ni guiones" inputmode="numeric" autocomplete="off">
+        <small style="color:var(--gris-med);">La cédula debe coincidir con la registrada en el formulario de residentes.</small>
+      </div>
+      <button type="button" class="btn btn-primary btn-block" id="btnMudVerificar">
+        🔍 Verificar
+      </button>
+      <p style="margin-top:18px; font-size:12px; color:var(--gris-med);">
+        <strong>¿Perdiste tu N° de formulario?</strong> Escríbenos a
+        <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a>.
+      </p>
+    </div>
+
+    <!-- ===== VISTA 2: Formulario de reserva ===== -->
+    <div id="mud-vista-form" class="hidden">
+      <h3>🚚 Agendar mudanza</h3>
+      <div id="alert-mud-form" class="alert hidden"></div>
+
+      <!-- Tipo de autorizacion -->
+      <div class="section">
+        <div class="section-head"><span><span class="section-num">1</span>Tipo de autorización</span></div>
+        <div class="section-body">
+          <div class="field">
+            <label class="radio-row">
+              <input type="radio" name="mudTipo" value="Salida" required>
+              <strong>Salida</strong> del arrendatario actual
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="mudTipo" value="Ingreso" required>
+              <strong>Ingreso</strong> del nuevo arrendatario
+            </label>
+          </div>
+          <div id="mudTipoMensaje" class="alert hidden" style="margin-top:12px;"></div>
+        </div>
+      </div>
+
+      <!-- Torre + Ascensor (bloqueado) -->
+      <div class="section">
+        <div class="section-head"><span><span class="section-num">2</span>Torre y ascensor</span></div>
+        <div class="section-body">
+          <div class="row">
+            <div class="field">
+              <label>Torre <span class="req">*</span></label>
+              <select id="mudTorre">
+                <option value="1">Torre 1</option>
+                <option value="2">Torre 2</option>
+                <option value="3">Torre 3</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Ascensor</label>
+              <input type="text" value="A (bloqueado)" disabled style="background:var(--gris-claro);">
+              <small style="color:var(--gris-med);">El ascensor B está reservado para circulación de residentes.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Calendario + Slots -->
+      <div class="section">
+        <div class="section-head"><span><span class="section-num">3</span>Fecha y horario</span></div>
+        <div class="section-body">
+          <p style="font-size:13px; color:var(--gris-med); margin-top:0;">
+            Click en un día del calendario para ver los horarios disponibles.
+            Recuerde: las mudanzas deben agendarse con al menos <strong>2 días calendario</strong> de anticipación.
+            Domingo y festivos no hay servicio.
+          </p>
+          <div id="mudCalendario"></div>
+          <div id="mudSlots"></div>
+        </div>
+      </div>
+
+      <!-- Datos opcionales -->
+      <div class="section">
+        <div class="section-head"><span><span class="section-num">4</span>Datos adicionales (opcionales)</span></div>
+        <div class="section-body">
+          <div class="row">
+            <div class="field">
+              <label>Empresa de mudanza</label>
+              <input type="text" id="mudEmpresa" placeholder="Ej: Mudanzas XYZ">
+            </div>
+            <div class="field">
+              <label>Placa del vehículo</label>
+              <input type="text" id="mudPlaca" placeholder="Ej: ABC123" maxlength="10">
+            </div>
+          </div>
+          <div class="field">
+            <label>Observaciones</label>
+            <textarea id="mudObservaciones" rows="2" placeholder="Información adicional que considere relevante"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px; display:flex; gap:10px;">
+        <button type="button" class="btn btn-secondary" id="btnMudCancelar">← Volver al inicio</button>
+        <button type="button" class="btn btn-primary btn-block" id="btnMudReservar" disabled>📅 Confirmar reserva</button>
+      </div>
+    </div>
+
+    <!-- ===== VISTA 3: Confirmacion ===== -->
+    <div id="mud-vista-ok" class="hidden">
+      <div class="card" style="text-align:center; padding:30px;">
+        <div style="font-size:48px;">✅</div>
+        <h3 style="color:var(--ok); margin:10px 0;">Reserva confirmada</h3>
+        <p><strong>ID de reserva:</strong> <span id="mudOkId" style="font-family:monospace; font-size:18px;"></span></p>
+        <p id="mudOkDetalle"></p>
+        <div class="alert alert-info" style="text-align:left;">
+          Le enviamos un correo de confirmación a su dirección registrada.
+          <br><br>
+          <strong>Recuerde:</strong> la vigilancia <strong>NO permite ingreso en días festivos</strong>,
+          aunque usted tenga reserva. Verifique que la fecha seleccionada no sea festivo.
+        </div>
+        <div style="margin-top:20px; display:flex; gap:10px; justify-content:center;">
+          <button type="button" class="btn btn-secondary" id="btnMudOtra">📅 Agendar otra</button>
+          <button type="button" class="btn btn-primary" id="btnMudMisReservas">📋 Ver mis reservas</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== VISTA 4: Mis reservas ===== -->
+    <div id="mud-vista-mis" class="hidden">
+      <h3>📋 Mis reservas</h3>
+      <div id="mudMisReservas"></div>
+      <div style="margin-top:20px;">
+        <button type="button" class="btn btn-secondary" id="btnMudVolver">← Volver al inicio</button>
+      </div>
     </div>
   </div>
 
