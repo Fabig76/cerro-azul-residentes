@@ -1094,19 +1094,117 @@ Agregado en septiembre 2026 (rama `feature/mudanzas`).
 
 ---
 
-## 16. Manuales de uso para residentes
+## 16. Portal Administrativo (admin.html)
+
+Agregado el 23-Sept-2026 (commits `d25617a`, `9eefa57`, `6cd7736`, `e4e3769`).
+
+### 16.1 Descripción
+
+Página web separada (`admin.html`) que permite al administrador buscar,
+ver y editar TODOS los registros de residentes sin necesidad del código
+CA-XXXX generado. Solo requiere contraseña (almacenada en el Sheet).
+
+### 16.2 URL y credenciales
+
+  · URL: https://fabig76.github.io/cerro-azul-residentes/admin.html
+  · Contraseña por defecto: `cerroazul2026`
+  · Para cambiar: editar celda `Config!B1` en el Google Sheet
+    (cambio inmediato, NO requiere redeploy)
+
+### 16.3 Pestaña "Config" del Sheet
+
+Nueva pestaña del Sheet (sheetId 144036579, color morado) con la
+configuración del portal:
+
+| Celda | Valor ejemplo | Descripción |
+|---|---|---|
+| A1 | `admin_password` | Header (clave) |
+| B1 | `cerroazul2026` | Contraseña actual |
+
+Para agregar más configs en el futuro, agregar filas con la clave en A
+y el valor en B.
+
+### 16.4 Endpoints Apps Script (V8)
+
+| Método | Acción | Descripción |
+|---|---|---|
+| GET | `adminLogin&password=X` | Valida contraseña contra Config!B1 |
+| GET | `adminBuscar&q=X` | Busca por apto/nombre/CC/numForm/correo/celular (devuelve hasta 100 resultados) |
+| GET | `adminObtener&numForm=X` | Devuelve fila completa (143 campos) |
+| POST | `adminGuardar` | Actualiza campos editables (edición parcial: solo sobrescribe los campos enviados) |
+
+### 16.5 Campos editables (143 totales)
+
+  · **0-16:** Encabezado, propietario, parqueaderos, matrículas, revisión
+  · **17-20:** Encargado/administrador del inmueble
+  · **21-23:** Parqueadero a tercero
+  · **24-28:** Inmobiliaria
+  · **29-48:** Residentes (4 × 5 cols = 20 campos)
+  · **49-60:** Menores (4 × 3 cols = 12 campos)
+  · **61-72:** Vehículos (2 × 6 cols = 12 campos)
+  · **73-84:** Motos (2 × 6 cols = 12 campos)
+  · **85-92:** Bicicletas (2 × 4 cols = 8 campos)
+  · **93-94:** Llaveros y tags electrónicos
+  · **95-109:** Dispositivos (3 × 5 cols = 15 campos)
+  · **110-129:** Mascotas (2 × 10 cols = 20 campos)
+  · **130-135:** Emergencias (2 × 3 cols = 6 campos)
+  · **136-138:** Autorizaciones (Ley 1581)
+  · **139-141:** Firma
+
+### 16.6 Archivos del feature
+
+  · `admin.html` (nuevo, ~150 líneas) — página de login + panel
+  · `js/admin.js` (nuevo, ~530 líneas) — módulo A con login/buscar/seleccionar/editar/guardar
+  · `apps-script/Código.gs` — 4 funciones nuevas: `adminLeerContrasena`,
+    `adminLogin`, `adminBuscar`, `adminObtener`, `adminGuardar`
+
+### 16.7 ⚠️ IMPORTANTE: NO eliminar filas del Sheet
+
+**PROHIBIDO eliminar filas del Sheet (Registros) manualmente.**
+
+Razones técnicas:
+  · El correlativo `getNextFormId()` busca el MAX(numForm). Si eliminas
+    el último y luego el antepenúltimo, los numForm colisionan.
+  · Si eliminas un registro, el residente NO puede volver a editar
+    (findRowByNumFormAndApto retorna null) NI crear uno nuevo
+    (findRowByApto bloquea por duplicado de apto).
+  · El hash dedupe está basado en apto + CC titular + CC firma. Si
+    eliminas un registro mal y luego intentas crear otro con los
+    mismos datos, el hash colisiona y no se puede crear.
+  · Las reservas de mudanzas huérfanas (que apuntan a numForm
+    eliminado) quedan inconsistentes.
+
+**Solución correcta ante datos mal digitados:** usar el portal admin
+para EDITAR la fila, no eliminarla.
+
+**Recomendación futura:** agregar columna `Estado` (Activo/Inactivo)
+para hacer "eliminación lógica" sin perder datos.
+
+### 16.8 Auditoría
+
+Por ahora, `adminGuardar` loggea con `Logger.log()` la siguiente info:
+  · numForm modificado
+  · Fila en el Sheet
+  · Timestamp de la modificación
+
+Los logs están disponibles en el editor de Apps Script → Executions.
+
+---
+
+## 17. Manuales de uso para residentes
 
 ### Carpeta de Drive
 `https://drive.google.com/drive/folders/1NS6M0p5k7u89SiRy52CGxu7VpqmJ66fT`
 
 ### Manual de llenado (HTML paso a paso)
-Manual web disenado para personas sin experiencia tecnologica. Con capturas de cada seccion.
+Manual web diseñado para personas sin experiencia tecnológica. Con capturas de cada sección.
 
   - **manual-llenado-cerro-azul.html**
     File ID: 1bWMitW7i80LUdjV2mCbhr6NVCIzRruLA
     Drive: https://drive.google.com/file/d/1bWMitW7i80LUdjV2mCbhr6NVCIzRruLA/view?usp=drivesdk
     GitHub Pages: https://Fabig76.github.io/cerro-azul-residentes/docs/manual-llenado-cerro-azul.html
-    Commit: `997e5f04` (subido por API, 14-Sep-2026)
+    Commit: `997e5f04` (subido por API, 14-Sept-2026)
+    Actualizado: 23-Sept-2026 con sección completa de mudanzas + FAQ sobre bugfix de view-create
 
 ### Video instructivo (NotebookLM)
 Prompt para generar video explicativo con las 14 capturas del formulario.
@@ -1116,17 +1214,88 @@ Prompt para generar video explicativo con las 14 capturas del formulario.
     Drive: https://drive.google.com/file/d/1qm7PNmyZ-o4fTYto44YPxT68BaOSS1Bl/view?usp=drivesdk
     14 capturas en: Folder ID `18g9pVdktfAu3j7B5NnXOQcUpDUdkUYbR`
 
-**Como generar el video:**
+**Cómo generar el video:**
 1. Crear notebook en https://notebooklm.google.com
 2. Subir las 14 capturas en orden (7.26.34 a 7.29.28)
 3. Studio > Video Overview > Add instructions
 4. Pegar contenido de prompt-notebooklm-video.md
 
 **Mensajes clave del video:**
-  - Codigo CA-XXXX debe guardarse (ENFASIS MAXIMO)
-  - Tags/llaveros son implementacion FUTURA
-  - Ley 1581: mencion breve y tranquilizadora
-  - Dos pestanas: crear registro / editar registro
+  - Código CA-XXXX debe guardarse (ÉNFASIS MÁXIMO)
+  - Tags/llaveros son implementación FUTURA
+  - Ley 1581: mención breve y tranquilizadora
+  - Dos pestañas: crear registro / editar registro
+  - NUEVO (sept 2026): pestaña "🚚 Agendar mudanza"
+
+---
+
+## 18. Advertencia crítica: NUNCA eliminar filas del Sheet
+
+(Resumen ampliado del §16.7. Esta sección es la guía de referencia
+rápida para evitar el error más común del proyecto.)
+
+### El problema en detalle
+
+`apps-script/Código.gs` tiene 3 funciones que asumen que las filas
+NO se eliminan:
+
+  1. `getNextFormId()`: busca el MAX(numForm) en la columna A.
+     Si eliminas CA-0083, el próximo registro será CA-0084 (no
+     CA-0083). Si después eliminas también CA-0084 (el último),
+     el correlativo salta hacia atrás y puede colisionar con códigos
+     ya asignados.
+
+  2. `findRowByNumFormAndApto()`: busca por numForm+apto. Si eliminas
+     CA-0083, retorna null. El residente con ese código:
+       · No puede "Editar mi registro" (botón no carga nada)
+       · Si intenta "Crear", findRowByApto() lo bloquea porque el
+         apto 9999 ya existe en otro registro o porque el hash dedupe
+         coincide con el registro eliminado.
+
+  3. `findRowByApto()`: usado para deduplicar. Si eliminas un registro
+     y creas otro con el mismo apto, el hash sha256 (basado en apto +
+     CC titular + CC firma) coincide → submitRecord retorna
+     "Ya existe un registro similar".
+
+### Efectos colaterales en el módulo de mudanzas
+
+Si eliminas un residente que tenía reservas en Sheet "Mudanzas":
+  · Las reservas siguen existiendo (MD-XXXX no se borran)
+  · Pero el numForm que referencian ya no existe en "Registros"
+  · El admin las ve huérfanas en el Sheet Mudanzas
+  · No causa error de aplicación pero es inconsistencia de datos
+
+### Procedimiento correcto ante datos mal digitados
+
+  1. Abre el Google Sheet
+  2. Ve a la pestaña "Registros"
+  3. Encuentra la fila del residente (Ctrl+F)
+  4. EDITA directamente las celdas con los valores correctos
+  5. NO elimines la fila
+
+Si el dato mal digitado es de un residente y necesitas corregirlo
+desde la UI (no desde el Sheet), usa el portal admin:
+  · https://fabig76.github.io/cerro-azul-residentes/admin.html
+  · Busca por apto o nombre
+  · "Habilitar edición" → corrige → "Guardar cambios"
+
+### Si absolutamente tienes que eliminar (emergencia)
+
+  1. Haz backup primero: ve a `§14` (Respaldos) o descarga el Sheet
+     completo a XLSX desde el Drive
+  2. Elimina solo la última fila (la más reciente, numForm más alto)
+  3. NO elimines filas intermedias
+  4. NO elimines múltiples filas a la vez
+  5. Verifica después que `getNextFormId()` retorne el siguiente
+     correlativo correctamente
+  6. Si el residente eliminado tenía reservas de mudanzas,
+     elimínalas manualmente del Sheet "Mudanzas"
+
+### Roadmap futuro
+
+  · Agregar columna "Estado" (Activo/Inactivo) a "Registros"
+  · Filtrar por Estado=Activo en todas las búsquedas
+  · Esto permite "eliminación lógica" sin perder datos históricos
 
 ---
 

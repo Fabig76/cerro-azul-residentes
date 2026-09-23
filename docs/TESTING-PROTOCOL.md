@@ -184,6 +184,72 @@ Si el paso 5 falla (view-create oculto), es BUGFIX-002 regresivo. NO hacer push.
 
 ---
 
+## Test 2.5: Flujo del portal admin (admin.html)
+
+Ejecutar ANTES de cada deploy que afecte admin.html, Código.gs endpoints admin, o js/admin.js.
+
+### 2.5.1 Login admin
+```
+1. Abrir https://fabig76.github.io/cerro-azul-residentes/admin.html
+2. Ingresar contraseña (la de Config!B1 del Sheet)
+3. Click "Ingresar"
+4. ESPERADO:
+   · Pasa a vista del panel (oculta login, muestra búsqueda)
+   · Aparece badge "Sesión activa" en el header
+   · El campo "Buscar" recibe foco automático
+```
+
+### 2.5.2 Búsqueda admin
+```
+1. Tab "Editar mi registro" abierto (sesión iniciada)
+2. Buscar "9999" → debe encontrar CA-0083
+3. Buscar "Faber" → debe encontrar CA-0002
+4. Buscar "xyz123" → debe retornar ok:true con resultados:[]
+5. Buscar "apto" → NO debe retornar resultados (texto muy corto)
+6. Click en una fila de la tabla
+7. ESPERADO:
+   · Fila se marca visualmente
+   · Aparece vista de detalle con las 14 secciones plegables
+   · Se cargan todos los 143 campos del registro
+```
+
+### 2.5.3 Edición admin
+```
+1. Con un registro seleccionado, click "✏️ Habilitar edición"
+2. ESPERADO: todos los inputs/selects se desbloquean
+3. Modificar varios campos en distintas secciones
+4. Click "💾 Guardar cambios"
+5. ESPERADO:
+   · Alert "Cambios guardados correctamente. Fila N."
+   · Re-fetch automático del registro
+   · Inputs vuelven a disabled (modo vista)
+```
+
+### 2.5.4 Auditoría admin
+```
+1. Después de guardar, abrir Apps Script editor
+2. Menú "Executions" → ver el último log
+3. Debe contener: "adminGuardar: CA-NNNN (fila N) a las YYYY-MM-DD HH:MM:SS"
+```
+
+### 2.5.5 Logout admin
+```
+1. Click "Cerrar sesión"
+2. ESPERADO: vuelve a vista de login
+3. sessionStorage se limpia
+4. Recargar página → debe mostrar login (no debe auto-entrar)
+```
+
+### 2.5.6 Cambio de contraseña
+```
+1. Cambiar Config!B1 en el Sheet a una nueva contraseña
+2. Logout del portal
+3. Login con la NUEVA contraseña → debe funcionar
+4. Login con la ANTERIOR contraseña → debe rechazar
+```
+
+---
+
 ## Test 3: Datos de prueba
 
 El operador debe mantener un registro de prueba activo:
