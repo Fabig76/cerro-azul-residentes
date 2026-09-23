@@ -12,13 +12,40 @@ Este es el código del backend que conecta el formulario público
   · Permite editar un registro existente pidiendo N° de Formulario + N° de Apto
   · Escribe en la hoja "Registros" del Sheet
   · Nunca borra filas (los residentes no pueden eliminar su información)
+  · **Módulo de mudanzas** (sept 2026): agendar y cancelar reservas de ascensor
+    para propietarios e inmobiliarias
 
 ## Estructura
 
   · `Código.gs` — El backend completo (un solo archivo, copia y pega)
   · Sheet ID: `16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc`
-  · Hoja de destino: `Registros` (**143 columnas desde v2 / 7-Sep-2026**)
+  · Hoja de destino principal: `Registros` (**143 columnas desde v2 / 7-Sep-2026**)
+  · Hoja de mudanzas: `Mudanzas` (**19 columnas, sept 2026**)
   · Sheet de matrículas (solo lectura): `1ceGtZDUJHX4yxs5_ydDwLwtrkOcZwYh09WUG0st_b0Y`
+
+## Endpoints disponibles
+
+### Formulario principal (submit)
+  · `POST` con payload JSON — crea o actualiza fila en `Registros`
+
+### Búsquedas (GET)
+  · `?action=nextId` — siguiente N° de Formulario correlativo
+  · `?action=lookup&numForm=X&apto=Y` — devuelve fila existente
+  · `?action=lookupMatApto&apto=X` — autocompleta matrícula del apto
+  · `?action=lookupMatParq&celda=X` — autocompleta matrícula del parqueadero
+
+### Módulo de mudanzas (sept 2026)
+  · `GET ?action=verificarPropietario&numForm=X&apto=Y&ccProp=Z`
+    Valida que el solicitante sea el propietario o la inmobiliaria
+    (rechaza arrendatarios). Devuelve nombre, correo y celular del propietario.
+  · `GET ?action=dispMudanzas&torre=1&ascensor=A&desde=YYYY-MM-DD&hasta=YYYY-MM-DD`
+    Lista slots disponibles vs ocupados para los próximos N días.
+  · `POST action=reservarMudanza`
+    Crea fila en `Mudanzas`. Valida 48h anticipación + ascensor A + LockService.
+    Envía email al admin y al residente.
+  · `POST action=cancelarMudanza`
+    Marca Estado="Cancelada" (NO borra fila). Valida 24h anticipación.
+    Envía email al admin y al residente.
 
 ## Despliegue paso a paso (~5 minutos)
 

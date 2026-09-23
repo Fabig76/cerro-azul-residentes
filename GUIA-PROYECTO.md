@@ -780,6 +780,37 @@ python3 scripts/generar-qr.py "https://fabig76.github.io/cerro-azul-residentes/"
 
 ## Historial de cambios
 
+  · **22-23-Sep-2026 — Módulo de agendamiento de mudanzas (PRODUCCIÓN)**
+    · Merge PR #1 en main: commit `c1c0892`, rama `feature/mudanzas`
+    · Backend `apps-script/Código.gs` v5 (1.071 líneas, +504)
+      · 4 endpoints nuevos: `verificarPropietario`, `dispMudanzas`,
+        `reservarMudanza`, `cancelarMudanza`
+      · 32 constantes (slots, torres, ascensor, anticipación, etc.)
+      · LockService.getScriptLock() para race conditions
+      · MailApp: 4 templates de email (admin/residente × confirma/cancela)
+      · Hash SHA-256[:16] para dedupe por (torre, ascensor, fecha, hora)
+    · Sheet nueva pestaña `Mudanzas` (19 columnas, sheetId 1654967558)
+      · 4 validaciones: ESTADO, TIPO MUDANZA, TORRE, ASCENSOR
+      · Frozen row 1, formato encabezado azul, 1000 filas × 19 cols
+    · Frontend `index.html` + `js/app.js` + `assets/styles.css`
+      · Nueva pestaña "🚚 Agendar mudanza" con 4 vistas internas:
+        login (CA-XXXX + apto + cédula), formulario (tipo/torre/calendario/slots),
+        confirmación (MD-XXXX), mis reservas (placeholder)
+      · Módulo `M` encapsulado en `js/app.js` (1.112 líneas, +384)
+      · Calendario visual con días deshabilitados (domingos, <48h)
+      · Slots con colores: disponible (verde), ocupado (rojo tachado), seleccionado
+      · Aviso emergente NO bloqueante sobre festivos
+    · Documentación
+      · `docs/spec-mudanzas.md` (nuevo, 21 KB, 12 secciones)
+      · §15 resumen del feature (reglas, endpoints, esquema Sheet, archivos)
+      · §14 tres respaldos documentados (F0, F2 incremental, post-F3)
+    · Pruebas E2E: 9/9 OK (verificar/lookup/disp/reservar/doble-reserva/cancelar/frontend visual)
+    · Issues resueltos durante desarrollo
+      · C8.10: LockService.getDocumentLock() retornaba null → cambiado a getScriptLock()
+      · C8.11: Sheets auto-convierte "08:00" a Date → agregada función normalizarHora()
+    · Datos de prueba preservados: CA-0083 (apto 9999, CC 94501666) + 4 filas de mudanzas
+    · Apps Script deployed V1→V5 (URL /exec siempre la misma: `AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec`)
+
   · **7-Sep-2026 — v2: lookup automático de matrículas (capa 1-4 completadas)**
     · **Capa 1 (Sheet)**: Registros pasó de 138 → 143 columnas
       · K, L renombradas: `Parqueaderos`, `Matrículas` →

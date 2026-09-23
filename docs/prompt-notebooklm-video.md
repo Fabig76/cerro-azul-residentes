@@ -20,11 +20,13 @@
 
 Estás creando un video instructivo del formulario web público de actualización de datos de residentes de la **Urbanización Cerro Azul** (NIT 900770444), ubicada en Bello / Niquía, Colombia. El formulario reemplaza un PDF impreso y se llena en línea por los residentes de cada apartamento.
 
-- **URL del formulario:** https://fabig76.github.io/cerro-azul-residentes/
-- **Acceso:** cualquier persona con el enlace (no requiere contraseña)
-- **Quién lo llena:** el dueño real del apartamento (Propietario, Arrendatario o Tenedor)
-- **Carácter:** obligatorio para todos los residentes, según el reglamento de propiedad horizontal
-- **Marco legal colombiano:** Ley 1581 de 2012 (protección de datos personales) y Decreto 768 de 2025 (censo de animales de compañía)
+| **URL del formulario:** https://fabig76.github.io/cerro-azul-residentes/
+|- **Acceso:** cualquier persona con el enlace (no requiere contraseña)
+|- **Quién lo llena:** el dueño real del apartamento (Propietario, Arrendatario o Tenedor)
+|- **Carácter:** obligatorio para todos los residentes, según el reglamento de propiedad horizontal
+|- **Marco legal colombiano:** Ley 1581 de 2012 (protección de datos personales) y Decreto 768 de 2025 (censo de animales de compañía)
+|- **Módulo adicional:** agendamiento de mudanzas (septiembre 2026) — el propietario
+  agenda el uso del ascensor con su cédula como validación
 
 ---
 
