@@ -423,6 +423,23 @@ es independiente del documento y funciona siempre.
 **Requiere deploy:** V4 de Apps Script
 **Probabilidad residual:** NULA (getScriptLock siempre retorna un lock válido)
 
+### C8.11 Sheets auto-convierte celdas HH:MM a Date (FIX 23-Sep-2026)
+
+**Probabilidad:** 100% (sucede siempre al guardar horas como string "08:00")
+**Impacto si ocurre:** MEDIO (la reserva se crea pero dispMudanzas no la detecta)
+**Síntoma:** La fila existe en el Sheet pero el slot sigue apareciendo
+`disponible: true` en dispMudanzas.
+**Causa raíz:** Sheets detecta que "08:00" tiene formato de hora y lo
+guarda como tipo TIME (numberValue ~0.333). Apps Script auto-convierte
+esas celdas a Date objects. El matching `String === String` falla porque
+un lado es Date y el otro String.
+**Mitigación implementada:** Nueva función `normalizarHora(h)` que
+convierte Date → "HH:MM" string, o paddea strings "8:00" → "08:00".
+Usada en `findReservasEnRango()` y `cancelarMudanza()`.
+**Resuelto en:** commit `e525b21` (rama feature/mudanzas)
+**Requiere deploy:** V5 de Apps Script
+**Probabilidad residual:** NULA (la normalización funciona siempre)
+
 ---
 
 ## 9. PLAN DE IMPLEMENTACIÓN (8 FASES, CON CHECKPOINTS)
