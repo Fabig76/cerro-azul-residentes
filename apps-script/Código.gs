@@ -83,6 +83,16 @@ function doGet(e) {
       );
       return jsonOut(r);
     }
+    // --- ADMINISTRACION (admin.html) ---
+    if (action === 'adminLogin') {
+      return jsonOut(adminLogin(e.parameter.password));
+    }
+    if (action === 'adminBuscar') {
+      return jsonOut(adminBuscar(e.parameter.q));
+    }
+    if (action === 'adminObtener') {
+      return jsonOut(adminObtener(e.parameter.numForm));
+    }
     return jsonOut({ ok: false, error: 'Acción no reconocida.' });
   } catch (err) {
     return jsonOut({ ok: false, error: String(err && err.message || err) });
@@ -107,6 +117,10 @@ function doPost(e) {
     }
     if (action === 'cancelarMudanza') {
       return jsonOut(cancelarMudanza(payload));
+    }
+    // --- ADMINISTRACION (admin.html) ---
+    if (action === 'adminGuardar') {
+      return jsonOut(adminGuardar(payload));
     }
     // Comportamiento por defecto (compatibilidad): submit del formulario principal
     const result = submitRecord(payload);
@@ -1089,4 +1103,150 @@ function enviarEmailCancelacionResidente(row) {
     'Si necesita reprogramar, ingrese nuevamente al formulario de Cerro Azul.\n\n' +
     '--\nCerro Azul\n';
   MailApp.sendEmail(to, subject, body);
+}
+
+// =====================================================================
+// ADMINISTRACION (admin.html) — busqueda y edicion de registros
+// Contrasena se lee de la pestana "Config" del Sheet (celda B2).
+// Para cambiarla: editar Config!B2 desde el Sheet directamente.
+// =====================================================================
+
+function adminLeerContrasena() {
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('Config');
+  if (!sheet) return null;
+  const data = sheet.getRange('A1:B10').getValues();
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][0]).trim() === 'admin_password') {
+      return String(data[i][1] || '');
+    }
+  }
+  return null;
+}
+
+function adminLogin(password) {
+  password = String(password || '');
+  const stored = adminLeerContrasena();
+  if (!stored) {
+    return { ok: false, error: 'No se encontro la contrasena de administrador en la pestana Config del Sheet. Contacte al administrador del sistema.' };
+  }
+  if (password === stored) {
+    return { ok: true, message: 'Login correcto' };
+  }
+  return { ok: false, error: 'Contrasena incorrecta' };
+}
+
+function adminBuscar(query) {
+  query = String(query || '').trim().toLowerCase();
+  if (!query || query.length < 1) {
+    return { ok: false, error: 'Ingrese un termino de busqueda' };
+  }
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+  if (!sheet) return { ok: false, error: 'Sheet no encontrado' };
+  const last = sheet.getLastRow();
+  if (last < HEADER_ROW + 1) return { ok: true, resultados: [] };
+
+  // Leer primeras 12 columnas (lo necesario para resultados + display)
+  const data = sheet.getRange(HEADER_ROW + 1, 1, last - HEADER_ROW, 12).getValues();
+  const resultados = [];
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i];
+    const numForm = String(row[COL_NUM_FORM] || '');
+    const apto = String(row[COL_APTO] || '');
+    const diligencia = String(row[4] || '');
+    const nombre = String(row[5] || '');
+    const cc = String(row[6] || '');
+    const correo = String(row[7] || '');
+    const celular = String(row[8] || '');
+    const todo = (numForm + ' ' + apto + ' ' + diligencia + ' ' + nombre + ' ' + cc + ' ' + correo + ' ' + celular).toLowerCase();
+    if (todo.indexOf(query) !== -1) {
+      resultados.push({
+        numForm: numForm,
+        apto: apto,
+        diligencia: diligencia,
+        nombre: nombre,
+        cc: cc,
+        correo: correo,
+        celular: celular,
+        rowNumber: HEADER_ROW + 1 + i
+      });
+      if (resultados.length >= 100) break;  // limite
+    }
+  }
+  return { ok: true, resultados: resultados, total: resultados.length };
+}
+
+function adminObtener(numForm) {
+  numForm = String(numForm || '').trim();
+  if (!numForm) return { ok: false, error: 'Falta numForm' };
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+  if (!sheet) return { ok: false, error: 'Sheet no encontrado' };
+  const last = sheet.getLastRow();
+  if (last < HEADER_ROW + 1) return { ok: false, error: 'Sheet vacio' };
+  const data = sheet.getRange(HEADER_ROW + 1, 1, last - HEADER_ROW, NUM_COLS).getValues();
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][COL_NUM_FORM] || '').trim() === numForm) {
+      return { ok: true, row: rowToObject(data[i]), rowNumber: HEADER_ROW + 1 + i };
+    }
+  }
+  return { ok: false, error: 'No se encontro el registro' };
+}
+
+function adminGuardar(data) {
+  const numForm = String(data.numForm || '').trim();
+  if (!numForm) return { ok: false, error: 'Falta numForm' };
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+  if (!sheet) return { ok: false, error: 'Sheet no encontrado' };
+
+  // Encontrar fila
+  const last = sheet.getLastRow();
+  if (last < HEADER_ROW + 1) return { ok: false, error: 'Sheet vacio' };
+  const allNumForms = sheet.getRange(HEADER_ROW + 1, COL_NUM_FORM + 1, last - HEADER_ROW, 1).getValues();
+  let targetRow = -1;
+  for (let i = 0; i < allNumForms.length; i++) {
+    if (String(allNumForms[i][0] || '').trim() === numForm) {
+      targetRow = HEADER_ROW + 1 + i;
+      break;
+    }
+  }
+  if (targetRow === -1) return { ok: false, error: 'No se encontro el registro con numForm=' + numForm };
+
+  // Validar datos minimos
+  const apto = String(data.apto || '').trim();
+  if (!apto) return { ok: false, error: 'Falta N° de apartamento' };
+  const nombre = String(data.nombreProp || '').trim();
+  if (!nombre) return { ok: false, error: 'Falta nombre del propietario' };
+  const cc = String(data.ccProp || '').trim();
+  if (!cc) return { ok: false, error: 'Falta CC del propietario' };
+  const correo = String(data.correoProp || '').trim();
+  if (!correo || correo.indexOf('@') === -1) return { ok: false, error: 'Correo del propietario invalido' };
+
+  // Reconstruir la fila con los datos actualizados
+  // Primero leer la fila actual
+  const currentRow = sheet.getRange(targetRow, 1, 1, NUM_COLS).getValues()[0];
+  // Mezclar: usar los valores actuales, pero sobrescribir con los datos nuevos si vienen
+  const newRow = currentRow.slice();
+  newRow[COL_APTO] = apto;
+  newRow[4] = String(data.diligencia || currentRow[4] || '');  // diligencia
+  newRow[5] = nombre;
+  newRow[6] = cc;
+  newRow[7] = correo.toLowerCase();
+  newRow[8] = String(data.celProp || '');
+  newRow[9] = String(data.telFijoProp || '');
+  newRow[10] = String(data.parq1Celda || '');
+  newRow[11] = String(data.parq1Mat || '');
+  newRow[12] = String(data.parq2Celda || '');
+  newRow[13] = String(data.parq2Mat || '');
+  newRow[14] = String(data.matriculaApto || '');
+  newRow[15] = data.requiereRevision === 'Si' || data.requiereRevision === true ? 'Sí' : 'No';
+  newRow[16] = String(data.observMatriculas || '');
+  // Actualizar fecha de edicion
+  newRow[COL_FECHA_EDIT] = Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss');
+
+  // Guardar
+  sheet.getRange(targetRow, 1, 1, NUM_COLS).setValues([newRow]);
+
+  // Log de auditoria (basico, en consola por ahora)
+  Logger.log('adminGuardar: ' + numForm + ' (fila ' + targetRow + ') a las ' + newRow[COL_FECHA_EDIT]);
+
+  return { ok: true, message: 'Registro actualizado correctamente', rowNumber: targetRow };
 }
