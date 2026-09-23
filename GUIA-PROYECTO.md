@@ -780,7 +780,32 @@ python3 scripts/generar-qr.py "https://fabig76.github.io/cerro-azul-residentes/"
 
 ## Historial de cambios
 
-  · **22-23-Sep-2026 — Módulo de agendamiento de mudanzas (PRODUCCIÓN)**
+  · **23-Sept-2026 — Bugfixes post-deploy del módulo de mudanzas**
+    · Merge PR #1 (módulo mudanzas) + commits docs ya en historial inferior
+    · Commit `fedf2aa`: FIX C8.12 — endpoint lookup
+      · `Código.gs` línea 56: `rowToObject(row)` → `rowToObject(row.values)`
+      · Bug latente desde commit inicial eecbf63 (5-Sept-2026)
+      · Causa: rowToObject recibía un objeto {rowNumber, values: [...]}
+        en lugar de un array (la fila en sí)
+      · Síntoma: endpoint retornaba ok:true pero row con todos los
+        campos vacíos. Frontend llamaba poblarFormulario(row) y no
+        actualizaba nada. Usuario veía "Editar mi registro" sin datos.
+      · Detectado el 23-Sept al intentar editar CA-0083 con datos reales.
+      · Deploy V6 de Apps Script necesario.
+    · Commit `ca94dae`: FIX C8.13 — view-create oculto al editar
+      · `js/app.js` en buscarRegistro(): agregar
+        `$('#view-create').classList.remove('hidden')`
+      · Bug latente (independiente de mudanzas) que se manifestaba
+        al cambiar de pestaña "Editar" al formulario
+      · Causa: setMode('edit') pone view-create con class="hidden".
+        buscarRegistro() solo removía hidden de form-card (hijo), pero
+        el padre view-create seguía oculto. display:none en padre =
+        todo el contenido invisible.
+      · Síntoma: al click "Buscar mi registro", main aparecía vacío.
+      · Detectado el 23-Sept durante verificación post-deploy V6.
+      · Push a GitHub Pages necesario (ya hecho).
+
+  · **22-23-Sept-2026 — Módulo de agendamiento de mudanzas (PRODUCCIÓN)**
     · Merge PR #1 en main: commit `c1c0892`, rama `feature/mudanzas`
     · Backend `apps-script/Código.gs` v5 (1.071 líneas, +504)
       · 4 endpoints nuevos: `verificarPropietario`, `dispMudanzas`,

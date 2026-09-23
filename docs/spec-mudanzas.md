@@ -423,7 +423,7 @@ es independiente del documento y funciona siempre.
 **Requiere deploy:** V4 de Apps Script
 **Probabilidad residual:** NULA (getScriptLock siempre retorna un lock válido)
 
-### C8.11 Sheets auto-convierte celdas HH:MM a Date (FIX 23-Sep-2026)
+### C8.11 Sheets auto-convierte celdas HH:MM a Date (FIX 23-Sept-2026)
 
 **Probabilidad:** 100% (sucede siempre al guardar horas como string "08:00")
 **Impacto si ocurre:** MEDIO (la reserva se crea pero dispMudanzas no la detecta)
@@ -439,6 +439,63 @@ Usada en `findReservasEnRango()` y `cancelarMudanza()`.
 **Resuelto en:** commit `e525b21` (rama feature/mudanzas)
 **Requiere deploy:** V5 de Apps Script
 **Probabilidad residual:** NULA (la normalización funciona siempre)
+
+### C8.12 Endpoint lookup retorna row vacío por pasar OBJETO en lugar de ARRAY (FIX 23-Sept-2026)
+
+**Probabilidad:** 100% (bug desde commit inicial eecbf63 del 5-Sept-2026)
+**Impacto si ocurre:** ALTO — la pestaña "Editar mi registro" nunca mostró datos en producción
+**Síntoma:** El endpoint retorna `{ok: true, row: {todos los campos vacíos}}`.
+Frontend llama `poblarFormulario(row)` con objeto vacío → no actualiza nada.
+Usuario ve la vista "Editar mi registro" sin datos.
+**Causa raíz:** En `Código.gs` línea 56:
+```js
+// ANTES (BUG):
+return jsonOut({ ok: true, row: rowToObject(row) });
+//                                ↑ objeto {rowNumber, values:[...]} — INCORRECTO
+
+// AHORA (FIX):
+return jsonOut({ ok: true, row: rowToObject(row.values) });
+//                                ↑ array de la fila — CORRECTO
+```
+`rowToObject()` espera un array (hace `rowArr[COL_NUM_FORM]`), pero
+recibía un objeto. JS interpretaba `obj[0]` como `undefined` y
+`String(undefined || '')` = `''`. Resultado: row con todos los campos vacíos.
+**Por qué no se detectó antes:** En F7 probé `nextId`, `lookupMatApto`,
+`lookupMatParq`, `verificarPropietario`, `dispMudanzas` — pero NO
+probé `?action=lookup`. La pestaña "Editar mi registro" nunca se
+probó con datos reales en producción.
+**Mitigación:** Cambiar `rowToObject(row)` por `rowToObject(row.values)`.
+**Resuelto en:** commit `fedf2aa` (rama main)
+**Requiere deploy:** V6 de Apps Script
+**Lección aprendida:** SIEMPRE probar TODOS los endpoints del flujo
+completo, no solo los del feature nuevo.
+**Probabilidad residual:** NULA
+
+### C8.13 view-create sigue oculto al editar registro (FIX 23-Sept-2026)
+
+**Probabilidad:** 100% (bug latente, no relacionado con mudanzas pero
+detectado durante testing E2E del módulo de mudanzas)
+**Impacto si ocurre:** ALTO — usuario no ve datos al editar
+**Síntoma:** Después de click en "Buscar mi registro", la vista no
+cambia. `view-create` tiene `class="hidden"` y `display: none`,
+aunque `form-card` (hijo) tiene `display: block`.
+**Causa raíz:** En `buscarRegistro()` (js/app.js), el código solo hacía:
+```js
+$('#view-edit').classList.add('hidden');
+$('#form-card').classList.remove('hidden');
+```
+Pero `form-card` está DENTRO de `view-create`. Y `view-create` tenía
+clase `hidden` (de `setMode('edit') previo). Entonces el form-card
+se hacía visible internamente pero su contenedor padre seguía con
+`display:none`. Usuario veía `<main>` completamente vacío.
+**Mitigación:** Agregar `$('#view-create').classList.remove('hidden')`
+antes de los otros toggles en `buscarRegistro()`.
+**Resuelto en:** commit `ca94dae` (rama main)
+**Requiere:** Push a GitHub Pages (ya hecho, NO requiere deploy de Apps Script)
+**Lección aprendida:** Al cambiar entre vistas, hay que manipular TODOS
+los contenedores padres, no solo los hijos. El estado "oculto" se
+hereda de padres a hijos.
+**Probabilidad residual:** NULA
 
 ---
 

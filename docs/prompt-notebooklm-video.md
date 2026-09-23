@@ -7,12 +7,19 @@
 > 4. Ir a **Studio → Video Overview → "Add instructions"** (ícono de rayito / cuadro de instrucciones)
 > 5. Copiar y pegar el bloque de las **Secciones 1 a 9** como instrucciones (NO incluir la sección 0 ni las 10-11; esas son notas para ti)
 > 6. Generar el video. Si el énfasis no quedó bien, ajustar y volver a generar
->
-> **Limitaciones honestas de NotebookLM Video Overview** (léeme antes):
-> - El video sale corto (≈ 1–3 minutos típicamente). NO es un tutorial frame por frame
-> - NO controlas tiempo exacto por escena, ni haces zoom a un píxel
-> - SÍ aceptas instrucciones de enfoque/tono/énfasis, y las imágenes que subes se usan en el orden en que aparecen
-> - Probablemente necesites 2–3 intentos para que el énfasis del código CA-XXXX quede bien marcado
+## Limitaciones honestas de NotebookLM Video Overview (léeme antes):
+
+- El video sale corto (≈ 1–3 minutos típicamente). NO es un tutorial frame por frame
+- NO controlas tiempo exacto por escena, ni haces zoom a un píxel
+- SÍ aceptas instrucciones de enfoque/tono/énfasis, y las imágenes que subes se usan en el orden en que aparecen
+- Probablemente necesites 2–3 intentos para que el énfasis del código CA-XXXX quede bien marcado
+
+## Historial de cambios del manual
+
+- 22-Sept-2026: Manual inicial creado (secciones 0-11 + FAQ + procedimientos)
+- 23-Sept-2026: Agregada sección completa sobre módulo de mudanzas (entre FAQ y "¿Tienes otra pregunta?")
+- 23-Sept-2026: Agregada FAQ "¿Qué hago si no veo mis datos al hacer clic en Editar mi registro?"
+  (para orientar a residentes que experimenten cache del navegador tras bugfix de view-create)
 
 ---
 

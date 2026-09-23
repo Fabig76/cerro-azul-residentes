@@ -31,6 +31,11 @@ Este es el código del backend que conecta el formulario público
 ### Búsquedas (GET)
   · `?action=nextId` — siguiente N° de Formulario correlativo
   · `?action=lookup&numForm=X&apto=Y` — devuelve fila existente
+    **⚠️ IMPORTANTE:** pasar `numForm` y `apto` como strings. El backend
+    hace `rowToObject(row.values)` donde `row` es el objeto retornado
+    por `findRowByNumFormAndApto({rowNumber, values: array})`. Ver
+    bug C8.12 en `docs/spec-mudanzas.md` §8 — bug latente corregido
+    en commit `fedf2aa` (deploy V6).
   · `?action=lookupMatApto&apto=X` — autocompleta matrícula del apto
   · `?action=lookupMatParq&celda=X` — autocompleta matrícula del parqueadero
 
