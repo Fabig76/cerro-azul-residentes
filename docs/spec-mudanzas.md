@@ -409,6 +409,20 @@ const M = {
 **Mitigación:** NO se planea redeploy con breaking change.
 Si en el futuro se necesita, seguir el procedimiento P7 documentado.
 
+### C8.10 LockService.getDocumentLock() retorna null (FIX 23-Sep-2026)
+
+**Probabilidad:** 100% (era reproducible en cada intento de reserva)
+**Impacto si ocurre:** ALTO (reservar/cancelar totalmente bloqueadas)
+**Síntoma:** "Cannot read properties of null (reading 'tryLock')"
+**Causa raíz:** El script se ejecuta en modo "Ejecutar como: Yo" pero
+los `DocumentLock` están vinculados al owner, y en algunos contextos
+el Web App /exec entrega null en lugar del lock.
+**Mitigación implementada:** Cambiar a `LockService.getScriptLock()` que
+es independiente del documento y funciona siempre.
+**Resuelto en:** commit `5ad6fbf` (rama feature/mudanzas)
+**Requiere deploy:** V4 de Apps Script
+**Probabilidad residual:** NULA (getScriptLock siempre retorna un lock válido)
+
 ---
 
 ## 9. PLAN DE IMPLEMENTACIÓN (8 FASES, CON CHECKPOINTS)
