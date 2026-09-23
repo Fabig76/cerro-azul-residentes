@@ -677,6 +677,24 @@ function formatDateOnly(d) {
   return s;
 }
 
+// Normaliza hora a formato HH:MM.
+// Sheets guarda celdas con formato TIME como Date (Apps Script auto-convierte),
+// pero los slots teoricos son strings "08:00". Sin esta normalizacion,
+// el matching reservas.find() falla (Date vs String).
+// (Fix aplicado 23-Sep-2026 despues del primer E2E test con MD-0001)
+function normalizarHora(h) {
+  if (h == null || h === '') return '';
+  if (h instanceof Date) {
+    return Utilities.formatDate(h, 'America/Bogota', 'HH:mm');
+  }
+  const s = String(h).trim();
+  const m = s.match(/^(\d{1,2}):(\d{2})/);
+  if (m) {
+    return m[1].padStart(2, '0') + ':' + m[2];
+  }
+  return s;
+}
+
 function nextReservaId() {
   const sheet = getMudanzasSheet();
   if (!sheet) return 'MD-0001';
@@ -746,8 +764,8 @@ function findReservasEnRango(torre, ascensor, desde, hasta) {
         rowNumber: MUDANZAS_HEADER_ROW + 1 + i,
         id: String(row[COL_MUD_ID] || ''),
         fecha: fecha,
-        horaInicio: String(row[COL_MUD_HORA_INI] || ''),
-        horaFin: String(row[COL_MUD_HORA_FIN] || '')
+        horaInicio: normalizarHora(row[COL_MUD_HORA_INI]),
+        horaFin: normalizarHora(row[COL_MUD_HORA_FIN])
       });
     }
   }
@@ -978,7 +996,7 @@ function cancelarMudanza(data) {
   }
 
   const fechaMudanza = formatDateOnly(found.values[COL_MUD_FECHA]);
-  const horaInicio = String(found.values[COL_MUD_HORA_INI]).trim();
+  const horaInicio = normalizarHora(found.values[COL_MUD_HORA_INI]);
   const fechaHoraMudanza = new Date(fechaMudanza + 'T' + horaInicio + ':00');
   const ahora = new Date();
   const diffHoras = (fechaHoraMudanza - ahora) / (1000 * 60 * 60);
