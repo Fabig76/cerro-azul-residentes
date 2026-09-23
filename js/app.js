@@ -119,7 +119,11 @@ async function buscarRegistro() {
     state.editLookup = data.row;
     state.numForm = data.row.numForm;
     poblarFormulario(data.row);
+    // Mostrar el formulario (view-create contiene form-card). ANTES del fix,
+    // solo se hacia toggle a #form-card pero su padre #view-create seguia con
+    // clase hidden (de setMode('edit') previo), entonces el usuario no veia nada.
     $('#view-edit').classList.add('hidden');
+    $('#view-create').classList.remove('hidden');  // FIX 23-Sept: mostrar tambien el contenedor
     $('#form-card').classList.remove('hidden');
     showAlert('alert-create', 'Registro cargado. Modifica los campos que necesites y haz clic en "Guardar cambios".', 'info');
     // Marca el formulario como "modo edición"
