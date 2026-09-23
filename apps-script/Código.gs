@@ -1210,7 +1210,7 @@ function adminGuardar(data) {
   }
   if (targetRow === -1) return { ok: false, error: 'No se encontro el registro con numForm=' + numForm };
 
-  // Validar datos minimos
+  // Validar datos minimos (siempre requeridos)
   const apto = String(data.apto || '').trim();
   if (!apto) return { ok: false, error: 'Falta N° de apartamento' };
   const nombre = String(data.nombreProp || '').trim();
@@ -1220,32 +1220,175 @@ function adminGuardar(data) {
   const correo = String(data.correoProp || '').trim();
   if (!correo || correo.indexOf('@') === -1) return { ok: false, error: 'Correo del propietario invalido' };
 
-  // Reconstruir la fila con los datos actualizados
-  // Primero leer la fila actual
+  // Leer fila actual como base
   const currentRow = sheet.getRange(targetRow, 1, 1, NUM_COLS).getValues()[0];
-  // Mezclar: usar los valores actuales, pero sobrescribir con los datos nuevos si vienen
   const newRow = currentRow.slice();
-  newRow[COL_APTO] = apto;
-  newRow[4] = String(data.diligencia || currentRow[4] || '');  // diligencia
-  newRow[5] = nombre;
-  newRow[6] = cc;
-  newRow[7] = correo.toLowerCase();
-  newRow[8] = String(data.celProp || '');
-  newRow[9] = String(data.telFijoProp || '');
-  newRow[10] = String(data.parq1Celda || '');
-  newRow[11] = String(data.parq1Mat || '');
-  newRow[12] = String(data.parq2Celda || '');
-  newRow[13] = String(data.parq2Mat || '');
-  newRow[14] = String(data.matriculaApto || '');
-  newRow[15] = data.requiereRevision === 'Si' || data.requiereRevision === true ? 'Sí' : 'No';
-  newRow[16] = String(data.observMatriculas || '');
+
+  // Helper para aplicar campo solo si viene en el payload
+  function set(idx, val) {
+    if (val !== undefined) newRow[idx] = val;
+  }
+  function setStr(idx, val) {
+    if (val !== undefined) newRow[idx] = String(val || '');
+  }
+
+  // ====== CAMPOS BASICOS (0-16) ======
+  set(COL_APTO, apto);
+  set(4, String(data.diligencia || currentRow[4] || ''));
+  set(5, nombre);
+  set(6, cc);
+  set(7, correo.toLowerCase());
+  setStr(8, data.celProp);
+  setStr(9, data.telFijoProp);
+  setStr(10, data.parq1Celda);
+  setStr(11, data.parq1Mat);
+  setStr(12, data.parq2Celda);
+  setStr(13, data.parq2Mat);
+  setStr(14, data.matriculaApto);
+  if (data.requiereRevision !== undefined) {
+    newRow[15] = (data.requiereRevision === 'Si' || data.requiereRevision === true || data.requiereRevision === 'Sí') ? 'Sí' : 'No';
+  }
+  setStr(16, data.observMatriculas);
+
+  // ====== ENCARGADO/ADMINISTRADOR (17-20) ======
+  setStr(17, data.nombreArr); setStr(18, data.ccArr); setStr(19, data.correoArr); setStr(20, data.celArr);
+
+  // ====== PARQUEADERO TERCERO (21-23) ======
+  setStr(21, data.parqTerNom); setStr(22, data.parqTerApto); setStr(23, data.parqTerCel);
+
+  // ====== INMOBILIARIA (24-28) ======
+  setStr(24, data.inmobRazon); setStr(25, data.inmobNit); setStr(26, data.inmobContacto); setStr(27, data.inmobTel); setStr(28, data.inmobCorreo);
+
+  // ====== RESIDENTES (29-48, 4 × 5 cols) ======
+  if (Array.isArray(data.residentes)) {
+    for (let i = 0; i < 4; i++) {
+      const r = data.residentes[i] || {};
+      const base = 29 + i * 5;
+      setStr(base + 0, r.nombre);
+      setStr(base + 1, r.cc);
+      if (r.correo !== undefined) set(base + 2, String(r.correo || '').toLowerCase());
+      setStr(base + 3, r.cel);
+      setStr(base + 4, r.parent);
+    }
+  }
+
+  // ====== MENORES (49-60, 4 × 3 cols) ======
+  if (Array.isArray(data.menores)) {
+    for (let i = 0; i < 4; i++) {
+      const m = data.menores[i] || {};
+      const base = 49 + i * 3;
+      setStr(base + 0, m.nombre);
+      if (m.edad !== undefined) {
+        newRow[base + 1] = (m.edad !== null && m.edad !== '') ? String(m.edad) : '';
+      }
+      setStr(base + 2, m.parent);
+    }
+  }
+
+  // ====== VEHICULOS (61-72, 2 × 6 cols) ======
+  if (Array.isArray(data.vehiculos)) {
+    for (let i = 0; i < 2; i++) {
+      const v = data.vehiculos[i] || {};
+      const base = 61 + i * 6;
+      setStr(base + 0, v.marca);
+      setStr(base + 1, v.tipo);
+      setStr(base + 2, v.color);
+      if (v.placa !== undefined) set(base + 3, String(v.placa || '').toUpperCase());
+      setStr(base + 4, v.modelo);
+      setStr(base + 5, v.tag);
+    }
+  }
+
+  // ====== MOTOS (73-84, 2 × 6 cols) ======
+  if (Array.isArray(data.motos)) {
+    for (let i = 0; i < 2; i++) {
+      const v = data.motos[i] || {};
+      const base = 73 + i * 6;
+      setStr(base + 0, v.marca);
+      setStr(base + 1, v.tipo);
+      setStr(base + 2, v.color);
+      if (v.placa !== undefined) set(base + 3, String(v.placa || '').toUpperCase());
+      setStr(base + 4, v.modelo);
+      setStr(base + 5, v.tag);
+    }
+  }
+
+  // ====== BICICLETAS (85-92, 2 × 4 cols) ======
+  if (Array.isArray(data.bicis)) {
+    for (let i = 0; i < 2; i++) {
+      const b = data.bicis[i] || {};
+      const base = 85 + i * 4;
+      setStr(base + 0, b.marca);
+      setStr(base + 1, b.color);
+      setStr(base + 2, b.clase);
+      setStr(base + 3, b.serial);
+    }
+  }
+
+  // ====== LLAVEROS/TAGS (93-94) ======
+  if (data.llaverosAut !== undefined) setStr(93, data.llaverosAut);
+  if (data.tagsAut !== undefined) setStr(94, data.tagsAut);
+
+  // ====== DISPOSITIVOS (95-109, 3 × 5 cols) ======
+  if (Array.isArray(data.dispositivos)) {
+    for (let i = 0; i < 3; i++) {
+      const d = data.dispositivos[i] || {};
+      const base = 95 + i * 5;
+      setStr(base + 0, d.tipo);
+      setStr(base + 1, d.codigo);
+      if (d.placa !== undefined) set(base + 2, String(d.placa || '').toUpperCase());
+      setStr(base + 3, d.fecha);
+      setStr(base + 4, d.recibe);
+    }
+  }
+
+  // ====== MASCOTAS (110-129, 2 × 10 cols) ======
+  if (Array.isArray(data.mascotas)) {
+    for (let i = 0; i < 2; i++) {
+      const m = data.mascotas[i] || {};
+      const base = 110 + i * 10;
+      setStr(base + 0, m.tipo);
+      setStr(base + 1, m.nombre);
+      setStr(base + 2, m.raza);
+      setStr(base + 3, m.color);
+      setStr(base + 4, m.sexo);
+      setStr(base + 5, m.vacuna);
+      if (m.manejoEspecial !== undefined) {
+        newRow[base + 6] = (m.manejoEspecial === true || m.manejoEspecial === 'Sí') ? 'Sí' : 'No';
+      }
+      setStr(base + 7, m.registro);
+      setStr(base + 8, m.aseguradora);
+      setStr(base + 9, m.poliza);
+    }
+  }
+
+  // ====== EMERGENCIAS (130-135, 2 × 3 cols) ======
+  if (Array.isArray(data.emergencias)) {
+    for (let i = 0; i < 2; i++) {
+      const e = data.emergencias[i] || {};
+      const base = 130 + i * 3;
+      setStr(base + 0, e.nombre);
+      setStr(base + 1, e.parent);
+      setStr(base + 2, e.tel);
+    }
+  }
+
+  // ====== AUTORIZACIONES (136-138) ======
+  if (data.autDatos !== undefined) newRow[136] = data.autDatos ? 'Sí' : 'No';
+  if (data.autMenores !== undefined) newRow[137] = data.autMenores ? 'Sí' : 'No';
+  if (data.autCom !== undefined) newRow[138] = data.autCom ? 'Sí' : 'No';
+
+  // ====== FIRMA (139-141) ======
+  setStr(139, data.firmaNom);
+  setStr(140, data.firmaCC);
+  if (data.firmaFecha !== undefined) set(141, String(data.firmaFecha || ''));
+
   // Actualizar fecha de edicion
   newRow[COL_FECHA_EDIT] = Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss');
 
   // Guardar
   sheet.getRange(targetRow, 1, 1, NUM_COLS).setValues([newRow]);
 
-  // Log de auditoria (basico, en consola por ahora)
   Logger.log('adminGuardar: ' + numForm + ' (fila ' + targetRow + ') a las ' + newRow[COL_FECHA_EDIT]);
 
   return { ok: true, message: 'Registro actualizado correctamente', rowNumber: targetRow };
