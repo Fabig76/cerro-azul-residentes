@@ -1,6 +1,6 @@
 // ============================================================
-// PORTAL ADMINISTRATIVO — Cerro Azul
-// Requiere V7 de Apps Script (deploy con endpoints admin)
+// PORTAL ADMINISTRATIVO — Cerro Azul (V8)
+// Backend: V8 (adminGuardar acepta los 143 campos)
 // ============================================================
 
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec';
@@ -14,18 +14,14 @@ const A = {
     lastSearchResults: []
   },
 
-  // ============================================================
-  // Helpers
-  // ============================================================
-  log(msg) {
-    console.log('[A]', msg);
-  },
+  log(msg) { console.log('[A]', msg); },
 
   showAlert(msg, kind) {
     const el = document.getElementById('alert');
     el.className = 'alert alert-' + (kind || 'info');
     el.innerHTML = msg;
     el.classList.remove('hidden');
+    if (kind === 'ok') setTimeout(() => el.classList.add('hidden'), 5000);
   },
 
   hideAlert() {
@@ -37,40 +33,32 @@ const A = {
     document.getElementById('view-panel').classList.toggle('hidden', vista !== 'panel');
   },
 
+  escapeHtml(s) {
+    if (s === null || s === undefined) return '';
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  },
+
   // ============================================================
-  // Login
+  // LOGIN
   // ============================================================
   async login() {
     A.hideAlert();
     const password = document.getElementById('loginPassword').value;
     if (!password) { A.showAlert('Ingresa la contraseña.', 'err'); return; }
-
     const btn = document.getElementById('btnLogin');
-    btn.disabled = true;
-    btn.textContent = 'Verificando...';
-
+    btn.disabled = true; btn.textContent = 'Verificando...';
     try {
-      const r = await fetch(APPS_SCRIPT_URL + '?action=adminLogin&password=' + encodeURIComponent(password))
-        .then(x => x.json());
-      if (!r.ok) {
-        A.showAlert(r.error || 'Error de autenticación.', 'err');
-        return;
-      }
+      const r = await fetch(APPS_SCRIPT_URL + '?action=adminLogin&password=' + encodeURIComponent(password)).then(x=>x.json());
+      if (!r.ok) { A.showAlert(r.error || 'Error de autenticación.', 'err'); return; }
       A.state.loggedIn = true;
-      A.state.password = password;  // guardamos para reusar en cada llamada
       sessionStorage.setItem('adminLoggedIn', 'true');
       document.getElementById('sessionBadge').style.display = '';
       document.getElementById('loginPassword').value = '';
       A.showVista('panel');
       A.showAlert('Sesión iniciada correctamente.', 'ok');
-      // Auto-focus en buscar
       setTimeout(() => document.getElementById('searchInput').focus(), 100);
-    } catch (e) {
-      A.showAlert('Error de red: ' + e.message, 'err');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Ingresar';
-    }
+    } catch (e) { A.showAlert('Error de red: ' + e.message, 'err'); }
+    finally { btn.disabled = false; btn.textContent = 'Ingresar'; }
   },
 
   logout() {
@@ -78,44 +66,32 @@ const A = {
     sessionStorage.removeItem('adminLoggedIn');
     document.getElementById('sessionBadge').style.display = 'none';
     A.showVista('login');
-    A.clearResults();
+    document.getElementById('resultsContainer').innerHTML = '';
+    document.getElementById('detailContainer').innerHTML = '';
   },
 
   // ============================================================
-  // Buscar
+  // BUSCAR
   // ============================================================
   async buscar() {
     A.hideAlert();
     const q = document.getElementById('searchInput').value.trim();
     if (!q) { A.showAlert('Ingresa un término de búsqueda.', 'err'); return; }
-    if (q.length < 1) { A.showAlert('El término es muy corto.', 'err'); return; }
-
     const btn = document.getElementById('btnSearch');
-    btn.disabled = true;
-    btn.textContent = 'Buscando...';
-
+    btn.disabled = true; btn.textContent = 'Buscando...';
     try {
-      const r = await fetch(APPS_SCRIPT_URL + '?action=adminBuscar&q=' + encodeURIComponent(q))
-        .then(x => x.json());
-      if (!r.ok) {
-        A.showAlert(r.error || 'Error en la búsqueda.', 'err');
-        A.clearResults();
-        return;
-      }
+      const r = await fetch(APPS_SCRIPT_URL + '?action=adminBuscar&q=' + encodeURIComponent(q)).then(x=>x.json());
+      if (!r.ok) { A.showAlert(r.error || 'Error.', 'err'); return; }
       A.state.lastSearchResults = r.resultados;
       A.renderResults(r.resultados, q);
-    } catch (e) {
-      A.showAlert('Error de red: ' + e.message, 'err');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = '🔍 Buscar';
-    }
+    } catch (e) { A.showAlert('Error de red: ' + e.message, 'err'); }
+    finally { btn.disabled = false; btn.textContent = '🔍 Buscar'; }
   },
 
   renderResults(resultados, query) {
     const cont = document.getElementById('resultsContainer');
     if (!resultados.length) {
-      cont.innerHTML = '<div class="no-results">No se encontraron resultados para "' + escapeHtml(query) + '"</div>';
+      cont.innerHTML = '<div class="no-results">No se encontraron resultados para "' + A.escapeHtml(query) + '"</div>';
       document.getElementById('detailContainer').innerHTML = '';
       return;
     }
@@ -124,20 +100,18 @@ const A = {
     html += '<thead><tr><th>CA-XXXX</th><th>Apto</th><th>Tipo</th><th>Nombre</th><th>CC</th><th>Correo</th><th>Celular</th></tr></thead>';
     html += '<tbody>';
     for (const r of resultados) {
-      html += '<tr data-numform="' + escapeHtml(r.numForm) + '">';
-      html += '<td><strong>' + escapeHtml(r.numForm) + '</strong></td>';
-      html += '<td>' + escapeHtml(r.apto) + '</td>';
-      html += '<td>' + escapeHtml(r.diligencia) + '</td>';
-      html += '<td>' + escapeHtml(r.nombre) + '</td>';
-      html += '<td>' + escapeHtml(r.cc) + '</td>';
-      html += '<td>' + escapeHtml(r.correo) + '</td>';
-      html += '<td>' + escapeHtml(r.celular) + '</td>';
+      html += '<tr data-numform="' + A.escapeHtml(r.numForm) + '">';
+      html += '<td><strong>' + A.escapeHtml(r.numForm) + '</strong></td>';
+      html += '<td>' + A.escapeHtml(r.apto) + '</td>';
+      html += '<td>' + A.escapeHtml(r.diligencia) + '</td>';
+      html += '<td>' + A.escapeHtml(r.nombre) + '</td>';
+      html += '<td>' + A.escapeHtml(r.cc) + '</td>';
+      html += '<td>' + A.escapeHtml(r.correo) + '</td>';
+      html += '<td>' + A.escapeHtml(r.celular) + '</td>';
       html += '</tr>';
     }
     html += '</tbody></table>';
     cont.innerHTML = html;
-
-    // Bindear clicks
     cont.querySelectorAll('tr[data-numform]').forEach(tr => {
       tr.addEventListener('click', () => {
         cont.querySelectorAll('tr').forEach(t => t.classList.remove('selected'));
@@ -147,169 +121,370 @@ const A = {
     });
   },
 
-  clearResults() {
-    document.getElementById('resultsContainer').innerHTML = '';
-    document.getElementById('detailContainer').innerHTML = '';
-  },
-
   // ============================================================
-  // Detalle y edición
+  // DETALLE COMPLETO
   // ============================================================
   async seleccionar(numForm) {
     A.hideAlert();
     A.state.selectedNumForm = numForm;
     A.state.editMode = false;
-
     try {
-      const r = await fetch(APPS_SCRIPT_URL + '?action=adminObtener&numForm=' + encodeURIComponent(numForm))
-        .then(x => x.json());
-      if (!r.ok) {
-        A.showAlert(r.error || 'Error al obtener el registro.', 'err');
-        document.getElementById('detailContainer').innerHTML = '';
-        return;
-      }
+      const r = await fetch(APPS_SCRIPT_URL + '?action=adminObtener&numForm=' + encodeURIComponent(numForm)).then(x=>x.json());
+      if (!r.ok) { A.showAlert(r.error || 'Error al obtener el registro.', 'err'); return; }
       A.state.selectedRow = r.row;
       A.renderDetail(r.row, r.rowNumber);
-    } catch (e) {
-      A.showAlert('Error de red: ' + e.message, 'err');
-    }
+    } catch (e) { A.showAlert('Error de red: ' + e.message, 'err'); }
   },
 
   renderDetail(row, rowNumber) {
+    const r = row; // alias
     const html = `
       <div class="detail-card">
-        <h3>Detalle del apartamento ${escapeHtml(row.apto)} — ${escapeHtml(row.numForm)}</h3>
+        <h3>Editar registro ${A.escapeHtml(r.numForm)} — apto ${A.escapeHtml(r.apto)}</h3>
         <div class="meta-info">
-          <strong>Registro fila:</strong> ${rowNumber} ·
-          <strong>Fecha registro:</strong> ${escapeHtml(row.fechaRegistro)} ·
-          <strong>Última edición:</strong> ${escapeHtml(row.fechaEdicion)}
+          <strong>Fila:</strong> ${rowNumber} ·
+          <strong>Registro:</strong> ${A.escapeHtml(r.fechaRegistro)} ·
+          <strong>Última edición:</strong> ${A.escapeHtml(r.fechaEdicion)}
         </div>
-        <div class="form-grid">
-          <div>
-            <label>N° de apartamento</label>
-            <input id="editApto" value="${escapeHtml(row.apto)}" disabled>
+
+        <details open><summary><strong>0. Encabezado</strong></summary>
+          <div class="form-grid">
+            <div><label>Fecha de diligenciamiento</label><input type="date" id="edit-firmaFecha" value="${A.escapeHtml(r.firmaFecha ? String(r.firmaFecha).slice(0,10) : '')}" disabled></div>
+            <div><label>Diligencia como</label>
+              <select id="edit-diligencia" disabled>
+                <option value="">-- Seleccionar --</option>
+                <option value="Propietario" ${r.diligencia==='Propietario'?'selected':''}>Propietario</option>
+                <option value="Arrendatario" ${r.diligencia==='Arrendatario'?'selected':''}>Arrendatario</option>
+                <option value="Tenedor / Otro" ${r.diligencia==='Tenedor / Otro'?'selected':''}>Tenedor / Otro</option>
+              </select>
+            </div>
           </div>
-          <div>
-            <label>Diligencia como</label>
-            <input id="editDiligencia" value="${escapeHtml(row.diligencia)}" disabled>
+        </details>
+
+        <details open><summary><strong>1. Datos del propietario + Parqueaderos</strong></summary>
+          <div class="form-grid">
+            <div><label>N° apartamento</label><input id="edit-apto" value="${A.escapeHtml(r.apto)}" disabled></div>
+            <div><label>Matrícula del apto</label><input id="edit-matriculaApto" value="${A.escapeHtml(r.matriculaApto)}" disabled></div>
+            <div class="full"><label>Nombre del propietario</label><input id="edit-nombreProp" value="${A.escapeHtml(r.nombreProp)}" disabled></div>
+            <div><label>C.C. del propietario</label><input id="edit-ccProp" value="${A.escapeHtml(r.ccProp)}" disabled></div>
+            <div><label>Correo del propietario</label><input type="email" id="edit-correoProp" value="${A.escapeHtml(r.correoProp)}" disabled></div>
+            <div><label>Celular</label><input id="edit-celProp" value="${A.escapeHtml(r.celProp)}" disabled></div>
+            <div><label>Teléfono fijo</label><input id="edit-telFijoProp" value="${A.escapeHtml(r.telFijoProp)}" disabled></div>
+            <div><label>Parqueadero 1 (celda)</label><input id="edit-parq1Celda" value="${A.escapeHtml(r.parq1Celda)}" disabled></div>
+            <div><label>Parqueadero 1 (matrícula)</label><input id="edit-parq1Mat" value="${A.escapeHtml(r.parq1Mat)}" disabled></div>
+            <div><label>Parqueadero 2 (celda)</label><input id="edit-parq2Celda" value="${A.escapeHtml(r.parq2Celda)}" disabled></div>
+            <div><label>Parqueadero 2 (matrícula)</label><input id="edit-parq2Mat" value="${A.escapeHtml(r.parq2Mat)}" disabled></div>
+            <div><label>¿Requiere revisión de matrículas?</label>
+              <select id="edit-requiereRevision" disabled>
+                <option value="Sí" ${r.requiereRevision==='Sí'?'selected':''}>Sí</option>
+                <option value="No" ${r.requiereRevision==='No'?'selected':''}>No</option>
+              </select>
+            </div>
+            <div class="full"><label>Observaciones matrículas</label><input id="edit-observMatriculas" value="${A.escapeHtml(r.observMatriculas)}" disabled></div>
           </div>
-          <div class="full">
-            <label>Nombre del propietario</label>
-            <input id="editNombre" value="${escapeHtml(row.nombreProp)}" disabled>
+        </details>
+
+        <details><summary><strong>2. Encargado o administrador del inmueble</strong></summary>
+          <div class="form-grid">
+            <div class="full"><label>Nombre</label><input id="edit-nombreArr" value="${A.escapeHtml(r.nombreArr)}" disabled></div>
+            <div><label>C.C.</label><input id="edit-ccArr" value="${A.escapeHtml(r.ccArr)}" disabled></div>
+            <div><label>Correo</label><input id="edit-correoArr" value="${A.escapeHtml(r.correoArr)}" disabled></div>
+            <div><label>Celular</label><input id="edit-celArr" value="${A.escapeHtml(r.celArr)}" disabled></div>
           </div>
-          <div>
-            <label>C.C.</label>
-            <input id="editCc" value="${escapeHtml(row.ccProp)}" disabled>
+        </details>
+
+        <details><summary><strong>3. Parqueadero a tercero</strong></summary>
+          <div class="form-grid">
+            <div class="full"><label>Nombre del autorizado</label><input id="edit-parqTerNom" value="${A.escapeHtml(r.parqTerNom)}" disabled></div>
+            <div><label>Apartamento del autorizado</label><input id="edit-parqTerApto" value="${A.escapeHtml(r.parqTerApto)}" disabled></div>
+            <div><label>Celular del autorizado</label><input id="edit-parqTerCel" value="${A.escapeHtml(r.parqTerCel)}" disabled></div>
           </div>
-          <div>
-            <label>Celular</label>
-            <input id="editCel" value="${escapeHtml(row.celProp)}" disabled>
+        </details>
+
+        <details><summary><strong>4. Inmobiliaria</strong></summary>
+          <div class="form-grid">
+            <div class="full"><label>Razón social</label><input id="edit-inmobRazon" value="${A.escapeHtml(r.inmobRazon)}" disabled></div>
+            <div><label>NIT</label><input id="edit-inmobNit" value="${A.escapeHtml(r.inmobNit)}" disabled></div>
+            <div><label>Persona de contacto</label><input id="edit-inmobContacto" value="${A.escapeHtml(r.inmobContacto)}" disabled></div>
+            <div><label>Teléfono</label><input id="edit-inmobTel" value="${A.escapeHtml(r.inmobTel)}" disabled></div>
+            <div><label>Correo</label><input id="edit-inmobCorreo" value="${A.escapeHtml(r.inmobCorreo)}" disabled></div>
           </div>
-          <div class="full">
-            <label>Correo electrónico</label>
-            <input id="editCorreo" value="${escapeHtml(row.correoProp)}" disabled>
+        </details>
+
+        <details><summary><strong>5. Residentes (mayores de edad)</strong></summary>
+          ${[0,1,2,3].map(i => `
+            <div class="form-grid nested">
+              <div class="full"><label><strong>Residente ${i+1}</strong></label></div>
+              <div class="full"><label>Nombre</label><input data-array="residentes" data-idx="${i}" data-field="nombre" value="${A.escapeHtml(r.residentes[i]?.nombre)}" disabled></div>
+              <div><label>C.C.</label><input data-array="residentes" data-idx="${i}" data-field="cc" value="${A.escapeHtml(r.residentes[i]?.cc)}" disabled></div>
+              <div><label>Correo</label><input data-array="residentes" data-idx="${i}" data-field="correo" value="${A.escapeHtml(r.residentes[i]?.correo)}" disabled></div>
+              <div><label>Celular</label><input data-array="residentes" data-idx="${i}" data-field="cel" value="${A.escapeHtml(r.residentes[i]?.cel)}" disabled></div>
+              <div><label>Parentesco</label><input data-array="residentes" data-idx="${i}" data-field="parent" value="${A.escapeHtml(r.residentes[i]?.parent)}" disabled></div>
+            </div>
+          `).join('')}
+        </details>
+
+        <details><summary><strong>5.1 Menores de edad</strong></summary>
+          ${[0,1,2,3].map(i => `
+            <div class="form-grid nested">
+              <div class="full"><label><strong>Menor ${i+1}</strong></label></div>
+              <div class="full"><label>Nombre</label><input data-array="menores" data-idx="${i}" data-field="nombre" value="${A.escapeHtml(r.menores[i]?.nombre)}" disabled></div>
+              <div><label>Edad</label><input data-array="menores" data-idx="${i}" data-field="edad" value="${A.escapeHtml(r.menores[i]?.edad)}" disabled></div>
+              <div><label>Parentesco</label><input data-array="menores" data-idx="${i}" data-field="parent" value="${A.escapeHtml(r.menores[i]?.parent)}" disabled></div>
+            </div>
+          `).join('')}
+        </details>
+
+        <details><summary><strong>6. Vehículos y motos</strong></summary>
+          ${[0,1].map(i => `
+            <div class="form-grid nested">
+              <div class="full"><label><strong>Vehículo ${i+1}</strong></label></div>
+              <div><label>Marca</label><input data-array="vehiculos" data-idx="${i}" data-field="marca" value="${A.escapeHtml(r.vehiculos[i]?.marca)}" disabled></div>
+              <div><label>Tipo</label><input data-array="vehiculos" data-idx="${i}" data-field="tipo" value="${A.escapeHtml(r.vehiculos[i]?.tipo)}" disabled></div>
+              <div><label>Color</label><input data-array="vehiculos" data-idx="${i}" data-field="color" value="${A.escapeHtml(r.vehiculos[i]?.color)}" disabled></div>
+              <div><label>Placa</label><input data-array="vehiculos" data-idx="${i}" data-field="placa" value="${A.escapeHtml(r.vehiculos[i]?.placa)}" disabled></div>
+              <div><label>Modelo</label><input data-array="vehiculos" data-idx="${i}" data-field="modelo" value="${A.escapeHtml(r.vehiculos[i]?.modelo)}" disabled></div>
+              <div><label>Tag</label><input data-array="vehiculos" data-idx="${i}" data-field="tag" value="${A.escapeHtml(r.vehiculos[i]?.tag)}" disabled></div>
+            </div>
+          `).join('')}
+          ${[0,1].map(i => `
+            <div class="form-grid nested">
+              <div class="full"><label><strong>Moto ${i+1}</strong></label></div>
+              <div><label>Marca</label><input data-array="motos" data-idx="${i}" data-field="marca" value="${A.escapeHtml(r.motos[i]?.marca)}" disabled></div>
+              <div><label>Tipo</label><input data-array="motos" data-idx="${i}" data-field="tipo" value="${A.escapeHtml(r.motos[i]?.tipo)}" disabled></div>
+              <div><label>Color</label><input data-array="motos" data-idx="${i}" data-field="color" value="${A.escapeHtml(r.motos[i]?.color)}" disabled></div>
+              <div><label>Placa</label><input data-array="motos" data-idx="${i}" data-field="placa" value="${A.escapeHtml(r.motos[i]?.placa)}" disabled></div>
+              <div><label>Modelo</label><input data-array="motos" data-idx="${i}" data-field="modelo" value="${A.escapeHtml(r.motos[i]?.modelo)}" disabled></div>
+              <div><label>Tag</label><input data-array="motos" data-idx="${i}" data-field="tag" value="${A.escapeHtml(r.motos[i]?.tag)}" disabled></div>
+            </div>
+          `).join('')}
+        </details>
+
+        <details><summary><strong>7. Bicicletas</strong></summary>
+          ${[0,1].map(i => `
+            <div class="form-grid nested">
+              <div class="full"><label><strong>Bicicleta ${i+1}</strong></label></div>
+              <div><label>Marca</label><input data-array="bicis" data-idx="${i}" data-field="marca" value="${A.escapeHtml(r.bicis[i]?.marca)}" disabled></div>
+              <div><label>Color</label><input data-array="bicis" data-idx="${i}" data-field="color" value="${A.escapeHtml(r.bicis[i]?.color)}" disabled></div>
+              <div><label>Clase</label><input data-array="bicis" data-idx="${i}" data-field="clase" value="${A.escapeHtml(r.bicis[i]?.clase)}" disabled></div>
+              <div><label>Serial</label><input data-array="bicis" data-idx="${i}" data-field="serial" value="${A.escapeHtml(r.bicis[i]?.serial)}" disabled></div>
+            </div>
+          `).join('')}
+        </details>
+
+        <details><summary><strong>8. Llaveros y tags electrónicos</strong></summary>
+          <div class="form-grid">
+            <div><label>Llaveros entregados</label><input id="edit-llaverosAut" value="${A.escapeHtml(r.llaverosAut)}" disabled></div>
+            <div><label>Tags entregados</label><input id="edit-tagsAut" value="${A.escapeHtml(r.tagsAut)}" disabled></div>
           </div>
-          <div class="full">
-            <label>Teléfono fijo</label>
-            <input id="editTel" value="${escapeHtml(row.telFijoProp)}" disabled>
+          <p style="font-size:0.82em; color:var(--texto-med); margin-top:6px;">Nota: llaveros/tags aún no están operativos. Esta sección es solo informativa.</p>
+        </details>
+
+        <details><summary><strong>9. Dispositivos (control de acceso)</strong></summary>
+          ${[0,1,2].map(i => `
+            <div class="form-grid nested">
+              <div class="full"><label><strong>Dispositivo ${i+1}</strong></label></div>
+              <div><label>Tipo</label><input data-array="dispositivos" data-idx="${i}" data-field="tipo" value="${A.escapeHtml(r.dispositivos[i]?.tipo)}" disabled></div>
+              <div><label>Código</label><input data-array="dispositivos" data-idx="${i}" data-field="codigo" value="${A.escapeHtml(r.dispositivos[i]?.codigo)}" disabled></div>
+              <div><label>Placa</label><input data-array="dispositivos" data-idx="${i}" data-field="placa" value="${A.escapeHtml(r.dispositivos[i]?.placa)}" disabled></div>
+              <div><label>Fecha</label><input data-array="dispositivos" data-idx="${i}" data-field="fecha" value="${A.escapeHtml(r.dispositivos[i]?.fecha)}" disabled></div>
+              <div><label>Recibe</label><input data-array="dispositivos" data-idx="${i}" data-field="recibe" value="${A.escapeHtml(r.dispositivos[i]?.recibe)}" disabled></div>
+            </div>
+          `).join('')}
+        </details>
+
+        <details><summary><strong>10. Mascotas (Decreto 768 de 2025)</strong></summary>
+          ${[0,1].map(i => `
+            <div class="form-grid nested">
+              <div class="full"><label><strong>Mascota ${i+1}</strong></label></div>
+              <div><label>Tipo</label><input data-array="mascotas" data-idx="${i}" data-field="tipo" value="${A.escapeHtml(r.mascotas[i]?.tipo)}" disabled></div>
+              <div><label>Nombre</label><input data-array="mascotas" data-idx="${i}" data-field="nombre" value="${A.escapeHtml(r.mascotas[i]?.nombre)}" disabled></div>
+              <div><label>Raza</label><input data-array="mascotas" data-idx="${i}" data-field="raza" value="${A.escapeHtml(r.mascotas[i]?.raza)}" disabled></div>
+              <div><label>Color</label><input data-array="mascotas" data-idx="${i}" data-field="color" value="${A.escapeHtml(r.mascotas[i]?.color)}" disabled></div>
+              <div><label>Sexo</label>
+                <select data-array="mascotas" data-idx="${i}" data-field="sexo" disabled>
+                  <option value=""></option>
+                  <option value="Macho" ${r.mascotas[i]?.sexo==='Macho'?'selected':''}>Macho</option>
+                  <option value="Hembra" ${r.mascotas[i]?.sexo==='Hembra'?'selected':''}>Hembra</option>
+                </select>
+              </div>
+              <div><label>Vacunado</label>
+                <select data-array="mascotas" data-idx="${i}" data-field="vacuna" disabled>
+                  <option value=""></option>
+                  <option value="Si" ${r.mascotas[i]?.vacuna==='Si'?'selected':''}>Sí</option>
+                  <option value="No" ${r.mascotas[i]?.vacuna==='No'?'selected':''}>No</option>
+                </select>
+              </div>
+              <div><label>Manejo especial</label>
+                <select data-array="mascotas" data-idx="${i}" data-field="manejoEspecial" disabled>
+                  <option value=""></option>
+                  <option value="true" ${(r.mascotas[i]?.manejoEspecial==='Sí' || r.mascotas[i]?.manejoEspecial===true)?'selected':''}>Sí</option>
+                  <option value="false" ${(r.mascotas[i]?.manejoEspecial==='No' || r.mascotas[i]?.manejoEspecial===false)?'selected':''}>No</option>
+                </select>
+              </div>
+              <div><label>Registro</label><input data-array="mascotas" data-idx="${i}" data-field="registro" value="${A.escapeHtml(r.mascotas[i]?.registro)}" disabled></div>
+              <div><label>Aseguradora</label><input data-array="mascotas" data-idx="${i}" data-field="aseguradora" value="${A.escapeHtml(r.mascotas[i]?.aseguradora)}" disabled></div>
+              <div><label>Póliza</label><input data-array="mascotas" data-idx="${i}" data-field="poliza" value="${A.escapeHtml(r.mascotas[i]?.poliza)}" disabled></div>
+            </div>
+          `).join('')}
+        </details>
+
+        <details><summary><strong>11. Contactos de emergencia</strong></summary>
+          ${[0,1].map(i => `
+            <div class="form-grid nested">
+              <div class="full"><label><strong>Contacto ${i+1}</strong></label></div>
+              <div class="full"><label>Nombre</label><input data-array="emergencias" data-idx="${i}" data-field="nombre" value="${A.escapeHtml(r.emergencias[i]?.nombre)}" disabled></div>
+              <div><label>Parentesco</label><input data-array="emergencias" data-idx="${i}" data-field="parent" value="${A.escapeHtml(r.emergencias[i]?.parent)}" disabled></div>
+              <div><label>Teléfono</label><input data-array="emergencias" data-idx="${i}" data-field="tel" value="${A.escapeHtml(r.emergencias[i]?.tel)}" disabled></div>
+            </div>
+          `).join('')}
+        </details>
+
+        <details><summary><strong>12. Autorizaciones y firma</strong></summary>
+          <div class="form-grid">
+            <div><label><input type="checkbox" id="edit-autDatos" ${r.autDatos==='Sí'?'checked':''} disabled> Autoriza tratamiento de datos (Ley 1581)</label></div>
+            <div><label><input type="checkbox" id="edit-autMenores" ${r.autMenores==='Sí'?'checked':''} disabled> Autoriza datos de menores</label></div>
+            <div><label><input type="checkbox" id="edit-autCom" ${r.autCom==='Sí'?'checked':''} disabled> Autoriza comunicaciones</label></div>
+            <div><label>Nombre firma</label><input id="edit-firmaNom" value="${A.escapeHtml(r.firmaNom)}" disabled></div>
+            <div><label>C.C. firma</label><input id="edit-firmaCC" value="${A.escapeHtml(r.firmaCC)}" disabled></div>
           </div>
-          <div>
-            <label>Parqueadero 1 (celda)</label>
-            <input id="editParq1" value="${escapeHtml(row.parq1Celda)}" disabled>
-          </div>
-          <div>
-            <label>Parqueadero 1 (matrícula)</label>
-            <input id="editParq1Mat" value="${escapeHtml(row.parq1Mat)}" disabled>
-          </div>
-          <div>
-            <label>Parqueadero 2 (celda)</label>
-            <input id="editParq2" value="${escapeHtml(row.parq2Celda)}" disabled>
-          </div>
-          <div>
-            <label>Parqueadero 2 (matrícula)</label>
-            <input id="editParq2Mat" value="${escapeHtml(row.parq2Mat)}" disabled>
-          </div>
-          <div>
-            <label>Matrícula del apto</label>
-            <input id="editMatApto" value="${escapeHtml(row.matriculaApto)}" disabled>
-          </div>
-          <div>
-            <label>¿Requiere revisión de matrículas?</label>
-            <select id="editRequiereRevision" disabled>
-              <option value="Sí" ${row.requiereRevision === 'Sí' ? 'selected' : ''}>Sí</option>
-              <option value="No" ${row.requiereRevision === 'No' ? 'selected' : ''}>No</option>
-            </select>
-          </div>
-          <div class="full">
-            <label>Observaciones matrículas</label>
-            <input id="editObsMat" value="${escapeHtml(row.observMatriculas)}" disabled>
-          </div>
-        </div>
+        </details>
+
         <div class="action-bar">
-          <button type="button" class="btn btn-primary" id="btnEdit">✏️ Editar</button>
-          <button type="button" class="btn btn-secondary hidden" id="btnCancelEdit">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btnEdit">✏️ Habilitar edición</button>
+          <button type="button" class="btn btn-secondary hidden" id="btnExpandAll">📂 Expandir todo</button>
+          <button type="button" class="btn btn-secondary hidden" id="btnCollapseAll">📁 Colapsar todo</button>
+          <button type="button" class="btn btn-secondary hidden" id="btnCancelEdit">↶ Cancelar edición</button>
           <button type="button" class="btn btn-primary hidden" id="btnSave">💾 Guardar cambios</button>
           <span style="flex:1"></span>
-          <small style="color:var(--texto-med); font-size: 0.85em;">
-            Nota: para editar datos no básicos (residentes, vehículos, mascotas, etc.) usa el formulario "Editar mi registro" del residente.
-          </small>
+          <small style="color:var(--texto-med); font-size: 0.82em;">Última edición: ${A.escapeHtml(r.fechaEdicion)}</small>
         </div>
       </div>
     `;
     document.getElementById('detailContainer').innerHTML = html;
 
-    // Bindear botones
     document.getElementById('btnEdit').addEventListener('click', () => A.editar());
-    document.getElementById('btnCancelEdit').addEventListener('click', () => A.cancelarEdicion());
     document.getElementById('btnSave').addEventListener('click', () => A.guardar());
+    document.getElementById('btnCancelEdit').addEventListener('click', () => A.cancelarEdicion());
+    document.getElementById('btnExpandAll').addEventListener('click', () => {
+      document.querySelectorAll('.detail-card details').forEach(d => d.open = true);
+    });
+    document.getElementById('btnCollapseAll').addEventListener('click', () => {
+      document.querySelectorAll('.detail-card details').forEach(d => d.open = false);
+    });
   },
 
+  // ============================================================
+  // EDICION
+  // ============================================================
   editar() {
     A.state.editMode = true;
-    const campos = ['editApto', 'editDiligencia', 'editNombre', 'editCc', 'editCel', 'editCorreo', 'editTel', 'editParq1', 'editParq1Mat', 'editParq2', 'editParq2Mat', 'editMatApto', 'editRequiereRevision', 'editObsMat'];
-    campos.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.disabled = false;
+    // Habilitar todos los inputs del detail
+    document.querySelectorAll('.detail-card input, .detail-card select').forEach(el => {
+      el.disabled = false;
     });
     document.getElementById('btnEdit').classList.add('hidden');
+    document.getElementById('btnExpandAll').classList.remove('hidden');
+    document.getElementById('btnCollapseAll').classList.remove('hidden');
     document.getElementById('btnCancelEdit').classList.remove('hidden');
     document.getElementById('btnSave').classList.remove('hidden');
-    A.showAlert('Modo edición activo. Modifica los campos y haz clic en "Guardar cambios".', 'info');
+    A.showAlert('Edición habilitada. Modifica lo que necesites y haz clic en "Guardar cambios".', 'info');
   },
 
   cancelarEdicion() {
-    A.state.editMode = false;
-    // Re-renderizar para resetear valores
-    if (A.state.selectedRow) {
-      A.renderDetail(A.state.selectedRow, 0);
-    }
+    if (!A.state.selectedRow) return;
+    A.renderDetail(A.state.selectedRow, 0); // re-renderiza y resetea valores
     A.hideAlert();
+  },
+
+  // Recolectar TODOS los campos del formulario al payload
+  recolectarPayload() {
+    const v = id => {
+      const el = document.getElementById('edit-' + id);
+      return el ? el.value : undefined;
+    };
+
+    // Arrays: leer inputs con data-array
+    function leerArray(name, count) {
+      const arr = [];
+      for (let i = 0; i < count; i++) {
+        const obj = {};
+        document.querySelectorAll(`[data-array="${name}"][data-idx="${i}"]`).forEach(el => {
+          obj[el.dataset.field] = el.value;
+        });
+        arr.push(obj);
+      }
+      return arr;
+    }
+
+    return {
+      numForm: A.state.selectedNumForm,
+      apto: v('apto'),
+      firmaFecha: v('firmaFecha'),
+      diligencia: v('diligencia'),
+      matriculaApto: v('matriculaApto'),
+      nombreProp: v('nombreProp'),
+      ccProp: v('ccProp'),
+      correoProp: v('correoProp'),
+      celProp: v('celProp'),
+      telFijoProp: v('telFijoProp'),
+      parq1Celda: v('parq1Celda'),
+      parq1Mat: v('parq1Mat'),
+      parq2Celda: v('parq2Celda'),
+      parq2Mat: v('parq2Mat'),
+      requiereRevision: v('requiereRevision'),
+      observMatriculas: v('observMatriculas'),
+      nombreArr: v('nombreArr'),
+      ccArr: v('ccArr'),
+      correoArr: v('correoArr'),
+      celArr: v('celArr'),
+      parqTerNom: v('parqTerNom'),
+      parqTerApto: v('parqTerApto'),
+      parqTerCel: v('parqTerCel'),
+      inmobRazon: v('inmobRazon'),
+      inmobNit: v('inmobNit'),
+      inmobContacto: v('inmobContacto'),
+      inmobTel: v('inmobTel'),
+      inmobCorreo: v('inmobCorreo'),
+      residentes: leerArray('residentes', 4),
+      menores: leerArray('menores', 4),
+      vehiculos: leerArray('vehiculos', 2),
+      motos: leerArray('motos', 2),
+      bicis: leerArray('bicis', 2),
+      llaverosAut: v('llaverosAut'),
+      tagsAut: v('tagsAut'),
+      dispositivos: leerArray('dispositivos', 3),
+      mascotas: leerArray('mascotas', 2),
+      emergencias: leerArray('emergencias', 2),
+      autDatos: document.getElementById('edit-autDatos')?.checked || false,
+      autMenores: document.getElementById('edit-autMenores')?.checked || false,
+      autCom: document.getElementById('edit-autCom')?.checked || false,
+      firmaNom: v('firmaNom'),
+      firmaCC: v('firmaCC')
+    };
   },
 
   async guardar() {
     A.hideAlert();
-    const payload = {
-      action: 'adminGuardar',
-      numForm: A.state.selectedNumForm,
-      apto: document.getElementById('editApto').value.trim(),
-      diligencia: document.getElementById('editDiligencia').value.trim(),
-      nombreProp: document.getElementById('editNombre').value.trim(),
-      ccProp: document.getElementById('editCc').value.trim(),
-      correoProp: document.getElementById('editCorreo').value.trim(),
-      celProp: document.getElementById('editCel').value.trim(),
-      telFijoProp: document.getElementById('editTel').value.trim(),
-      parq1Celda: document.getElementById('editParq1').value.trim(),
-      parq1Mat: document.getElementById('editParq1Mat').value.trim(),
-      parq2Celda: document.getElementById('editParq2').value.trim(),
-      parq2Mat: document.getElementById('editParq2Mat').value.trim(),
-      matriculaApto: document.getElementById('editMatApto').value.trim(),
-      requiereRevision: document.getElementById('editRequiereRevision').value,
-      observMatriculas: document.getElementById('editObsMat').value.trim()
-    };
+    const payload = A.recolectarPayload();
+    payload.action = 'adminGuardar';
+
+    // Validacion basica cliente
+    if (!payload.apto || !payload.apto.trim()) {
+      A.showAlert('Falta N° de apartamento.', 'err'); return;
+    }
+    if (!payload.nombreProp || !payload.nombreProp.trim()) {
+      A.showAlert('Falta nombre del propietario.', 'err'); return;
+    }
+    if (!payload.ccProp || !payload.ccProp.trim()) {
+      A.showAlert('Falta CC del propietario.', 'err'); return;
+    }
+    if (!payload.correoProp || payload.correoProp.indexOf('@') === -1) {
+      A.showAlert('Correo del propietario inválido.', 'err'); return;
+    }
 
     const btn = document.getElementById('btnSave');
-    btn.disabled = true;
-    btn.textContent = 'Guardando...';
+    btn.disabled = true; btn.textContent = 'Guardando...';
 
     try {
       const r = await fetch(APPS_SCRIPT_URL, {
@@ -323,45 +498,25 @@ const A = {
         return;
       }
       A.showAlert('Cambios guardados correctamente. Fila ' + r.rowNumber + '.', 'ok');
-      // Re-obtener el registro actualizado
       await A.seleccionar(A.state.selectedNumForm);
-    } catch (e) {
-      A.showAlert('Error de red: ' + e.message, 'err');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = '💾 Guardar cambios';
-    }
+    } catch (e) { A.showAlert('Error de red: ' + e.message, 'err'); }
+    finally { btn.disabled = false; btn.textContent = '💾 Guardar cambios'; }
   },
 
   // ============================================================
-  // Init
+  // INIT
   // ============================================================
   bindEvents() {
     document.getElementById('btnLogin').addEventListener('click', () => A.login());
-    document.getElementById('loginPassword').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') A.login();
-    });
+    document.getElementById('loginPassword').addEventListener('keypress', (e) => { if (e.key === 'Enter') A.login(); });
     document.getElementById('btnSearch').addEventListener('click', () => A.buscar());
-    document.getElementById('searchInput').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') A.buscar();
-    });
+    document.getElementById('searchInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') A.buscar(); });
     document.getElementById('btnLogout').addEventListener('click', () => A.logout());
   }
 };
 
-function escapeHtml(s) {
-  if (s === null || s === undefined) return '';
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
 document.addEventListener('DOMContentLoaded', () => {
   A.bindEvents();
-  // Si hay sesion previa en sessionStorage, ir directo al panel
   if (sessionStorage.getItem('adminLoggedIn') === 'true') {
     A.state.loggedIn = true;
     document.getElementById('sessionBadge').style.display = '';
