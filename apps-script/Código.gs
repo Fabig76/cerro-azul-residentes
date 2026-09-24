@@ -93,6 +93,16 @@ function doGet(e) {
     if (action === 'adminObtener') {
       return jsonOut(adminObtener(e.parameter.numForm));
     }
+    // --- VIGILANCIA (vigilantes.html) ---
+    if (action === 'vigilanteLogin') {
+      return jsonOut(vigilanteLogin(e.parameter.password));
+    }
+    if (action === 'vigilanteVerResidentes') {
+      return jsonOut(vigilanteVerResidentes(e.parameter.q));
+    }
+    if (action === 'vigilanteVerMudanzas') {
+      return jsonOut(vigilanteVerMudanzas(e.parameter.fecha));
+    }
     return jsonOut({ ok: false, error: 'Acción no reconocida.' });
   } catch (err) {
     return jsonOut({ ok: false, error: String(err && err.message || err) });
@@ -121,6 +131,10 @@ function doPost(e) {
     // --- ADMINISTRACION (admin.html) ---
     if (action === 'adminGuardar') {
       return jsonOut(adminGuardar(payload));
+    }
+    // --- VIGILANCIA (vigilantes.html) ---
+    if (action === 'vigilanteCheckMudanza') {
+      return jsonOut(vigilanteCheckMudanza(payload));
     }
     // Comportamiento por defecto (compatibilidad): submit del formulario principal
     const result = submitRecord(payload);
@@ -1392,4 +1406,308 @@ function adminGuardar(data) {
   Logger.log('adminGuardar: ' + numForm + ' (fila ' + targetRow + ') a las ' + newRow[COL_FECHA_EDIT]);
 
   return { ok: true, message: 'Registro actualizado correctamente', rowNumber: targetRow };
+}
+
+// =====================================================================
+// VIGILANCIA (vigilantes.html) — vista de solo lectura + check mudanzas
+// Solo datos publicos de identificacion (NO correos, celulares, telefonos).
+// Para cambiar contrasena: editar Config!B2 desde el Sheet.
+// =====================================================================
+
+function vigilanteLeerContrasena() {
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('Config');
+  if (!sheet) return null;
+  const data = sheet.getRange('A1:B10').getValues();
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][0]).trim() === 'vigilante_password') {
+      return String(data[i][1] || '');
+    }
+  }
+  return null;
+}
+
+function vigilanteLogin(password) {
+  password = String(password || '');
+  const stored = vigilanteLeerContrasena();
+  if (!stored) {
+    return { ok: false, error: 'No se encontro la contrasena de vigilancia en Config!B2.' };
+  }
+  if (password === stored) {
+    return { ok: true, message: 'Login correcto' };
+  }
+  return { ok: false, error: 'Contrasena incorrecta' };
+}
+
+function vigilanteVerResidentes(query) {
+  query = String(query || '').trim().toLowerCase();
+  if (!query || query.length < 1) {
+    return { ok: false, error: 'Ingrese un termino de busqueda' };
+  }
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+  if (!sheet) return { ok: false, error: 'Sheet no encontrado' };
+  const last = sheet.getLastRow();
+  if (last < HEADER_ROW + 1) return { ok: true, resultados: [] };
+
+  // Leer primeras 12 columnas + residentes (cols 29-48) + vehiculos (61-72)
+  // + motos (73-84) + bicis (85-92) + parqueaderos (10-16) + mascotas (110-129)
+  // + encargado (17-20) + inmobiliaria (24-28) + firma (139-141)
+  // NO leer correos/celulares (cols 7, 8, 9, 19, 20, 27, 28, etc.)
+  const data = sheet.getRange(HEADER_ROW + 1, 1, last - HEADER_ROW, NUM_COLS).getValues();
+  const resultados = [];
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i];
+    const numForm = String(row[COL_NUM_FORM] || '');
+    const apto = String(row[COL_APTO] || '');
+    const diligencia = String(row[4] || '');
+    const nombre = String(row[5] || '');
+    const cc = String(row[6] || '');
+    const encargado = String(row[17] || '');
+    const ccEncargado = String(row[18] || '');
+    const inmobRazon = String(row[24] || '');
+    const inmobNit = String(row[25] || '');
+    const inmobContacto = String(row[26] || '');
+    // Busqueda incluye nombre del encargado/inmobiliaria y placas
+    let vehiculoTexto = '';
+    for (let v = 0; v < 2; v++) {
+      const base = 61 + v * 6;
+      vehiculoTexto += ' ' + String(row[base + 3] || ''); // placa
+    }
+    const todo = (numForm + ' ' + apto + ' ' + diligencia + ' ' + nombre + ' ' + cc + ' ' +
+      encargado + ' ' + ccEncargado + ' ' + inmobRazon + ' ' + inmobNit + ' ' +
+      inmobContacto + ' ' + vehiculoTexto).toLowerCase();
+    if (todo.indexOf(query) !== -1) {
+      // Construir respuesta FILTRADA (sin correos/celulares/telefonos)
+      const resultado = {
+        numForm: numForm,
+        apto: apto,
+        diligencia: diligencia,
+        nombreProp: nombre,
+        ccProp: cc,
+        nombreEncargado: encargado,
+        ccEncargado: ccEncargado,
+        nombreInmobiliaria: inmobRazon,
+        nitInmobiliaria: inmobNit,
+        contactoInmobiliaria: inmobContacto,  // OK: nombre de contacto, no email
+        residentes: [],
+        vehiculos: [],
+        motos: [],
+        bicis: [],
+        parq1Celda: String(row[10] || ''),
+        parq1Mat: String(row[11] || ''),
+        parq2Celda: String(row[12] || ''),
+        parq2Mat: String(row[13] || ''),
+        parqTerNom: String(row[21] || ''),
+        parqTerApto: String(row[22] || ''),
+        mascotas: [],
+        firmaNom: String(row[139] || ''),
+        firmaCC: String(row[140] || ''),
+        rowNumber: HEADER_ROW + 1 + i
+      };
+      // Residentes (4): solo nombre y CC
+      for (let r = 0; r < 4; r++) {
+        const base = 29 + r * 5;
+        const rn = String(row[base] || '');
+        if (rn) {
+          resultado.residentes.push({
+            nombre: rn,
+            cc: String(row[base + 1] || ''),
+            parent: String(row[base + 4] || '')
+          });
+        }
+      }
+      // Vehiculos (2)
+      for (let v = 0; v < 2; v++) {
+        const base = 61 + v * 6;
+        const marca = String(row[base] || '');
+        if (marca) {
+          resultado.vehiculos.push({
+            marca: marca,
+            tipo: String(row[base + 1] || ''),
+            color: String(row[base + 2] || ''),
+            placa: String(row[base + 3] || ''),
+            modelo: String(row[base + 4] || ''),
+            tag: String(row[base + 5] || '')
+          });
+        }
+      }
+      // Motos (2)
+      for (let v = 0; v < 2; v++) {
+        const base = 73 + v * 6;
+        const marca = String(row[base] || '');
+        if (marca) {
+          resultado.motos.push({
+            marca: marca,
+            tipo: String(row[base + 1] || ''),
+            color: String(row[base + 2] || ''),
+            placa: String(row[base + 3] || ''),
+            modelo: String(row[base + 4] || ''),
+            tag: String(row[base + 5] || '')
+          });
+        }
+      }
+      // Bicis (2)
+      for (let b = 0; b < 2; b++) {
+        const base = 85 + b * 4;
+        const marca = String(row[base] || '');
+        if (marca) {
+          resultado.bicis.push({
+            marca: marca,
+            color: String(row[base + 1] || ''),
+            clase: String(row[base + 2] || ''),
+            serial: String(row[base + 3] || '')
+          });
+        }
+      }
+      // Mascotas (2)
+      for (let m = 0; m < 2; m++) {
+        const base = 110 + m * 10;
+        const tipo = String(row[base] || '');
+        if (tipo) {
+          resultado.mascotas.push({
+            tipo: tipo,
+            nombre: String(row[base + 1] || ''),
+            raza: String(row[base + 2] || ''),
+            color: String(row[base + 3] || ''),
+            sexo: String(row[base + 4] || ''),
+            manejoEspecial: String(row[base + 6] || '')
+          });
+        }
+      }
+      resultados.push(resultado);
+      if (resultados.length >= 100) break;
+    }
+  }
+  return { ok: true, resultados: resultados, total: resultados.length };
+}
+
+function vigilanteVerMudanzas(fecha) {
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('Mudanzas');
+  if (!sheet) return { ok: false, error: 'Pestana Mudanzas no encontrada' };
+  const last = sheet.getLastRow();
+  if (last < 2) return { ok: true, reservas: [] };
+
+  // Leer todas las columnas (necesitamos las nuevas T/U/V tambien)
+  const data = sheet.getRange(2, 1, last - 1, 22).getValues();
+
+  // Calcular fecha limite (30 dias atras)
+  const hoy = new Date();
+  const hace30 = new Date(hoy);
+  hace30.setDate(hace30.getDate() - 30);
+
+  const reservas = [];
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i];
+    const idReserva = String(row[0] || '');
+    const numForm = String(row[1] || '');
+    const apto = String(row[2] || '');
+    const tipo = String(row[3] || '');
+    const torre = String(row[4] || '');
+    const ascensor = String(row[5] || '');
+    const fechaRes = row[6]; // Date object
+    const horaInicio = String(row[7] || '');
+    const horaFin = String(row[8] || '');
+    const nombre = String(row[9] || '');
+    const estado = String(row[17] || '');
+    const realizada = String(row[19] || ''); // T
+    const fechaCheck = String(row[20] || ''); // U
+    const vigilante = String(row[21] || ''); // V
+
+    if (!idReserva) continue;
+
+    // Filtrar por estado
+    if (estado !== 'Confirmada' && estado !== 'Cancelada') continue;
+
+    // Si se especifico fecha, filtrar
+    if (fecha) {
+      const fechaStr = String(fecha || '').trim();
+      if (fechaStr) {
+        const fechaResStr = fechaRes instanceof Date
+          ? Utilities.formatDate(fechaRes, 'America/Bogota', 'yyyy-MM-dd')
+          : String(fechaRes).slice(0, 10);
+        if (fechaResStr !== fechaStr) continue;
+      }
+    } else {
+      // Sin fecha: solo Confirmadas futuras o Canceladas recientes
+      const fechaDate = fechaRes instanceof Date ? fechaRes : new Date(String(fechaRes));
+      if (estado === 'Cancelada') {
+        // Solo Canceladas de los ultimos 30 dias
+        if (fechaDate < hace30) continue;
+      } else {
+        // Solo Confirmadas futuras (o hoy)
+        const hoy0 = new Date(hoy);
+        hoy0.setHours(0, 0, 0, 0);
+        if (fechaDate < hoy0) continue;
+      }
+    }
+
+    reservas.push({
+      idReserva: idReserva,
+      numForm: numForm,
+      apto: apto,
+      tipoMudanza: tipo,
+      torre: torre,
+      ascensor: ascensor,
+      fecha: fechaRes instanceof Date
+        ? Utilities.formatDate(fechaRes, 'America/Bogota', 'yyyy-MM-dd')
+        : String(fechaRes).slice(0, 10),
+      horaInicio: horaInicio,
+      horaFin: horaFin,
+      nombrePropietario: nombre,
+      estado: estado,
+      realizada: realizada,
+      fechaCheck: fechaCheck,
+      vigilante: vigilante,
+      rowNumber: i + 2
+    });
+  }
+
+  // Ordenar: Confirmadas futuras primero, luego Canceladas recientes
+  reservas.sort((a, b) => {
+    if (a.estado !== b.estado) {
+      return a.estado === 'Confirmada' ? -1 : 1;
+    }
+    return a.fecha.localeCompare(b.fecha);
+  });
+
+  return { ok: true, reservas: reservas, total: reservas.length };
+}
+
+function vigilanteCheckMudanza(data) {
+  const idReserva = String(data.idReserva || '').trim();
+  if (!idReserva) return { ok: false, error: 'Falta idReserva' };
+  const status = String(data.status || '').trim();
+  if (status !== 'realizada' && status !== 'no_realizada') {
+    return { ok: false, error: 'status debe ser "realizada" o "no_realizada"' };
+  }
+  const vigilante = String(data.vigilante || '').trim().substring(0, 100);
+
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('Mudanzas');
+  if (!sheet) return { ok: false, error: 'Pestana Mudanzas no encontrada' };
+  const last = sheet.getLastRow();
+  if (last < 2) return { ok: false, error: 'Sin reservas' };
+
+  const idCol = sheet.getRange(2, 1, last - 1, 1).getValues();
+  let targetRow = -1;
+  for (let i = 0; i < idCol.length; i++) {
+    if (String(idCol[i][0] || '').trim() === idReserva) {
+      targetRow = i + 2;
+      break;
+    }
+  }
+  if (targetRow === -1) return { ok: false, error: 'No se encontro la reserva ' + idReserva };
+
+  // Lock para evitar race conditions entre vigilantes
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) {
+    return { ok: false, error: 'Otro vigilante esta marcando. Intenta en unos segundos.' };
+  }
+  try {
+    sheet.getRange(targetRow, 20).setValue(status === 'realizada' ? 'Sí' : 'No'); // T
+    sheet.getRange(targetRow, 21).setValue(Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss')); // U
+    sheet.getRange(targetRow, 22).setValue(vigilante); // V
+    Logger.log('vigilanteCheck: ' + idReserva + ' = ' + status + ' por ' + vigilante);
+    return { ok: true, message: 'Check registrado correctamente', rowNumber: targetRow };
+  } finally {
+    lock.releaseLock();
+  }
 }
