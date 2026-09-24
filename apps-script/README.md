@@ -61,6 +61,10 @@ Este es el código del backend que conecta el formulario público
   · `GET ?action=vigilanteVerMudanzas&fecha=YYYY-MM-DD`
     Lista mudanzas Confirmadas futuras + Canceladas recientes (últimos
     30 días) con campos para marcar check.
+  · `GET ?action=vigilanteBuscarPorPlaca&placa=X` (oct 2026)
+    Búsqueda especializada por placa de vehículo/moto (parcial,
+    case-insensitive). Devuelve apartamento, propietario, CC y datos
+    del vehículo. Para casos de incidente vehicular.
   · `POST action=vigilanteCheckMudanza`
     Marca check (Sí/No realizado) con LockService y nombre del vigilante.
     Actualiza columnas T (REALIZADA), U (FECHA_CHECK), V (VIGILANTE) en Sheet Mudanzas.

@@ -1277,30 +1277,46 @@ y registrar checks sobre mudanzas (Sí/No se realizó).
 - Correo/celular de residentes
 - Correo/teléfono de la inmobiliaria
 
-### 18.6 Endpoints Apps Script (V9)
+### 18.6 Endpoints Apps Script (V10)
 
 | Método | Acción | Descripción |
 |---|---|---|
 | GET | `vigilanteLogin&password=X` | Valida contra Config!B2 |
 | GET | `vigilanteVerResidentes&q=X` | Busca residentes (datos FILTRADOS, sin contacto) |
 | GET | `vigilanteVerMudanzas&fecha=YYYY-MM-DD` | Lista mudanzas (Confirmadas futuras + Canceladas recientes 30 días) |
+| GET | `vigilanteBuscarPorPlaca&placa=X` (V10) | Búsqueda especializada por placa (parcial, case-insensitive). Para incidentes vehiculares. |
 | POST | `vigilanteCheckMudanza` | Marca check con nombre del vigilante |
 
 ### 18.7 Flujo del vigilante
 
   1. Abre `vigilantes.html`
   2. Login con contraseña
-  3. Tab "Buscar residente" → busca por apto, nombre, CC, placa o encargado
-  4. Ve el detalle con secciones colapsables
-  5. Tab "Mudanzas" → ve reservas del día o futuras
-  6. Marca check (✓ Sí realizado / ✗ No realizado) con su nombre
-  7. Logout al final del turno
+  3. Pestañas disponibles:
+     - 🔍 **Buscar residente** → busca por apto, nombre, CC, encargado o inmobiliaria
+     - 🚗 **Buscar por placa** (V10) → caso de incidente vehicular, busca por placa (parcial o completa)
+     - 📦 **Mudanzas** → ve reservas del día o futuras
+  4. Marca check (✓ Sí realizado / ✗ No realizado) con su nombre
+  5. Logout al final del turno
 
-### 18.8 Archivos del feature
+### 18.8 Caso de uso principal: incidente vehicular
 
-- `vigilantes.html` (nuevo, ~225 líneas)
-- `js/vigilantes.js` (nuevo, ~370 líneas)
-- `apps-script/Código.gs` — 5 funciones nuevas + enrutamiento
+Si un carro o moto genera un problema dentro del conjunto:
+
+  1. Vigilante toma nota de la placa del vehículo (ej: "TES999")
+  2. Abre `vigilantes.html` → pestaña "🚗 Buscar por placa"
+  3. Ingresa la placa (parcial o completa, mayúsculas irrelevantes)
+  4. Ve resultado con:
+     · Apto del propietario
+     · Nombre y CC del propietario
+     · Datos del vehículo (marca, tipo, color, modelo, tag)
+     · Si hay múltiples vehículos con misma placa, los muestra todos
+  5. Procede a verificar al apartamento o contactar al propietario
+
+### 18.9 Archivos del feature
+
+- `vigilantes.html` (nuevo, ~225 líneas) + nueva pestaña placas
+- `js/vigilantes.js` (nuevo, ~470 líneas) + función `buscarPlaca()`
+- `apps-script/Código.gs` — 6 funciones nuevas + enrutamiento
 
 ---
 

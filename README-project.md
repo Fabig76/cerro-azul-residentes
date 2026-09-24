@@ -45,6 +45,8 @@ impreso en PDF.
     residentes, encargado, inmobiliaria
   · Ve datos NO: correo, celular, teléfono (privacidad)
   · Marca check de mudanzas con su nombre para auditoría
+  · Pestaña especial "🚗 Buscar por placa" para incidentes vehiculares
+    (búsqueda parcial, case-insensitive, devuelve apto+propietario)
 
 ## Stack
 
