@@ -1158,6 +1158,36 @@ y el valor en B.
   · `apps-script/Código.gs` — 4 funciones nuevas: `adminLeerContrasena`,
     `adminLogin`, `adminBuscar`, `adminObtener`, `adminGuardar`
 
+### 16.6.1 ⚠️ Incidente: sobreescritura accidental de admin_password
+
+**Fecha:** 23-Sept-2026
+**Síntoma:** `adminLogin` retorna error "No se encontró la contraseña
+de administrador en la pestaña Config del Sheet".
+**Causa raíz:** Al agregar la fila de `vigilante_password` en Config!A2,
+se sobreescribió accidentalmente la fila `admin_password` que estaba
+en Config!A2 (alguien — operador o script — editó mal el Sheet).
+**Diagnóstico:** El Sheet Config tenía solo 2 filas (header + vigilante),
+no 3 (header + admin + vigilante).
+**Fix:** Re-insertar fila admin_password = cerroazul2026 en Config!A2
+mediante `insertDimension` + `values.update`.
+**Lección aprendida:**
+  · Las contraseñas SÍ están separadas por clave (admin_password vs
+    vigilante_password) pero el Sheet NO estaba bien estructurado.
+  · El código `adminLeerContrasena()` busca la clave "admin_password"
+    en todas las filas, así que SIEMPRE encontrará la fila correcta
+    si existe, sin importar su posición.
+  · El bug NO fue del código sino de los datos. El código ya era
+    robusto a inserciones/eliminaciones de filas intermedias.
+
+**Recomendación para el futuro:**
+  · Al editar Config manualmente, verificar que ambas contraseñas
+    siguen presentes después de la edición.
+  · Si se elimina accidentalmente una fila, restaurar desde un
+    backup (ver §14) o reescribir manualmente.
+  · Considerar agregar validación automática en el Sheet (Data
+    Validation en Config!A:A para que solo acepte las claves
+    válidas: `admin_password`, `vigilante_password`).
+
 ### 16.7 ⚠️ IMPORTANTE: NO eliminar filas del Sheet
 
 **PROHIBIDO eliminar filas del Sheet (Registros) manualmente.**
