@@ -103,6 +103,9 @@ function doGet(e) {
     if (action === 'vigilanteVerMudanzas') {
       return jsonOut(vigilanteVerMudanzas(e.parameter.fecha));
     }
+    if (action === 'vigilanteBuscarPorPlaca') {
+      return jsonOut(vigilanteBuscarPorPlaca(e.parameter.placa));
+    }
     return jsonOut({ ok: false, error: 'Acción no reconocida.' });
   } catch (err) {
     return jsonOut({ ok: false, error: String(err && err.message || err) });
@@ -1710,4 +1713,73 @@ function vigilanteCheckMudanza(data) {
   } finally {
     lock.releaseLock();
   }
+}
+
+function vigilanteBuscarPorPlaca(placa) {
+  placa = String(placa || '').trim().toUpperCase();
+  if (!placa || placa.length < 1) {
+    return { ok: false, error: 'Ingrese la placa (o parte de ella)' };
+  }
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+  if (!sheet) return { ok: false, error: 'Sheet no encontrado' };
+  const last = sheet.getLastRow();
+  if (last < HEADER_ROW + 1) return { ok: true, resultados: [] };
+
+  const data = sheet.getRange(HEADER_ROW + 1, 1, last - HEADER_ROW, NUM_COLS).getValues();
+  const resultados = [];
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i];
+    const numForm = String(row[COL_NUM_FORM] || '');
+    const apto = String(row[COL_APTO] || '');
+    const diligencia = String(row[4] || '');
+    const nombreProp = String(row[5] || '');
+    const ccProp = String(row[6] || '');
+
+    // Buscar en vehiculos (cols 61-72) y motos (cols 73-84)
+    const matches = [];
+    for (let v = 0; v < 2; v++) {
+      const baseV = 61 + v * 6;
+      const placaV = String(row[baseV + 3] || '').toUpperCase();
+      if (placaV && placaV.indexOf(placa) !== -1) {
+        matches.push({
+          tipoVehiculo: 'vehiculo',
+          numero: v + 1,
+          marca: String(row[baseV] || ''),
+          tipo: String(row[baseV + 1] || ''),
+          color: String(row[baseV + 2] || ''),
+          placa: placaV,
+          modelo: String(row[baseV + 4] || ''),
+          tag: String(row[baseV + 5] || '')
+        });
+      }
+    }
+    for (let m = 0; m < 2; m++) {
+      const baseM = 73 + m * 6;
+      const placaM = String(row[baseM + 3] || '').toUpperCase();
+      if (placaM && placaM.indexOf(placa) !== -1) {
+        matches.push({
+          tipoVehiculo: 'moto',
+          numero: m + 1,
+          marca: String(row[baseM] || ''),
+          tipo: String(row[baseM + 1] || ''),
+          color: String(row[baseM + 2] || ''),
+          placa: placaM,
+          modelo: String(row[baseM + 4] || ''),
+          tag: String(row[baseM + 5] || '')
+        });
+      }
+    }
+    if (matches.length > 0) {
+      resultados.push({
+        numForm: numForm,
+        apto: apto,
+        diligencia: diligencia,
+        nombreProp: nombreProp,
+        ccProp: ccProp,
+        vehiculos: matches,
+        rowNumber: HEADER_ROW + 1 + i
+      });
+    }
+  }
+  return { ok: true, resultados: resultados, total: resultados.length };
 }

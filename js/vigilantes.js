@@ -43,6 +43,7 @@ const V = {
       t.classList.toggle('active', t.dataset.tab === tab);
     });
     document.getElementById('tab-residentes').classList.toggle('hidden', tab !== 'residentes');
+    document.getElementById('tab-placas').classList.toggle('hidden', tab !== 'placas');
     document.getElementById('tab-mudanzas').classList.toggle('hidden', tab !== 'mudanzas');
     V.hideAlert();
     if (tab === 'mudanzas') V.cargarMudanzasHoy();
@@ -232,6 +233,64 @@ const V = {
   },
 
   // ============================================================
+  // BUSCAR POR PLACA (casos de incidente vehicular)
+  // ============================================================
+  async buscarPlaca() {
+    V.hideAlert();
+    const placa = document.getElementById('placaInput').value.trim();
+    if (!placa) { V.showAlert('Ingresa la placa (o parte de ella).', 'err'); return; }
+    if (placa.length < 1) { V.showAlert('Placa muy corta.', 'err'); return; }
+    const btn = document.getElementById('btnBuscarPlaca');
+    btn.disabled = true; btn.textContent = 'Buscando...';
+    try {
+      const r = await fetch(APPS_SCRIPT_URL + '?action=vigilanteBuscarPorPlaca&placa=' + encodeURIComponent(placa)).then(x=>x.json());
+      if (!r.ok) { V.showAlert(r.error || 'Error.', 'err'); V.clearPlacas(); return; }
+      V.renderPlacas(r.resultados, placa);
+    } catch (e) { V.showAlert('Error de red: ' + e.message, 'err'); }
+    finally { btn.disabled = false; btn.textContent = '🚗 Buscar placa'; }
+  },
+
+  clearPlacas() {
+    document.getElementById('placasContainer').innerHTML = '';
+  },
+
+  renderPlacas(resultados, query) {
+    const cont = document.getElementById('placasContainer');
+    if (!resultados.length) {
+      cont.innerHTML = '<div class="no-results">No se encontraron vehiculos con placa que contenga "' + V.escapeHtml(query) + '".</div>';
+      return;
+    }
+    let totalVehiculos = 0;
+    resultados.forEach(r => totalVehiculos += r.vehiculos.length);
+
+    let html = '<p style="color:var(--texto-med); margin-bottom:12px;">' +
+      resultados.length + ' apartamento(s) con ' + totalVehiculos + ' vehiculo(s) que coinciden:</p>';
+    for (const r of resultados) {
+      html += '<div class="detail-card" style="border-left:4px solid #D32F2F;">';
+      html += '<h3>🚗 Apto ' + V.escapeHtml(r.apto) + ' — ' + V.escapeHtml(r.nombreProp) + '</h3>';
+      html += '<div class="meta-info">';
+      html += '<strong>CC:</strong> ' + V.escapeHtml(r.ccProp) + ' · ';
+      html += '<strong>Diligencia:</strong> ' + V.escapeHtml(r.diligencia);
+      html += '</div>';
+      html += '<div class="detail-section">';
+      html += '<h4>Vehiculos con esta placa</h4>';
+      for (const v of r.vehiculos) {
+        html += '<div class="item" style="border-color:#D32F2F;">';
+        html += '<strong>' + V.escapeHtml(v.placa) + '</strong> · ';
+        html += (v.tipoVehiculo === 'moto' ? '🏍️ Moto' : '🚗 Vehiculo') + ' ' + (v.numero) + ' · ';
+        html += V.escapeHtml(v.marca) + ' ' + V.escapeHtml(v.tipo) + ' · ';
+        html += 'Color: ' + V.escapeHtml(v.color);
+        if (v.modelo) html += ' · Modelo: ' + V.escapeHtml(v.modelo);
+        if (v.tag) html += ' · Tag: ' + V.escapeHtml(v.tag);
+        html += '</div>';
+      }
+      html += '</div>';
+      html += '</div>';
+    }
+    cont.innerHTML = html;
+  },
+
+  // ============================================================
   // MUDANZAS
   // ============================================================
   async cargarMudanzasHoy(fecha) {
@@ -339,6 +398,8 @@ const V = {
     document.getElementById('loginPassword').addEventListener('keypress', (e) => { if (e.key === 'Enter') V.login(); });
     document.getElementById('btnSearch').addEventListener('click', () => V.buscar());
     document.getElementById('searchInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') V.buscar(); });
+    document.getElementById('btnBuscarPlaca').addEventListener('click', () => V.buscarPlaca());
+    document.getElementById('placaInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') V.buscarPlaca(); });
     document.getElementById('btnLogout').addEventListener('click', () => V.logout());
     document.querySelectorAll('.vig-tab[data-tab]').forEach(t => {
       t.addEventListener('click', () => V.switchTab(t.dataset.tab));

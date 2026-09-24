@@ -192,6 +192,7 @@
   <div id="view-panel" class="hidden">
     <div class="vig-tabs">
       <button type="button" class="vig-tab active" data-tab="residentes">🔍 Buscar residente</button>
+      <button type="button" class="vig-tab" data-tab="placas">🚗 Buscar por placa</button>
       <button type="button" class="vig-tab" data-tab="mudanzas">📦 Mudanzas</button>
       <button type="button" class="vig-tab" style="margin-left:auto;" id="btnLogout">Cerrar sesión</button>
     </div>
@@ -199,14 +200,28 @@
     <!-- TAB 1: BUSCAR RESIDENTE -->
     <div id="tab-residentes">
       <div class="search-bar">
-        <input type="text" id="searchInput" placeholder="Buscar por apto, nombre, cédula, placa o encargado...">
+        <input type="text" id="searchInput" placeholder="Buscar por apto, nombre, cédula, encargado o inmobiliaria...">
         <button type="button" class="btn btn-primary" id="btnSearch">🔍 Buscar</button>
       </div>
       <div id="resultsContainer"></div>
       <div id="detailContainer"></div>
     </div>
 
-    <!-- TAB 2: MUDANZAS -->
+    <!-- TAB 2: BUSCAR POR PLACA -->
+    <div id="tab-placas" class="hidden">
+      <p style="background:#FFF8E1; padding:10px 14px; border-radius:6px; border-left:4px solid #F57C00; margin-bottom:14px; font-size:0.92em;">
+        🚨 <strong>Caso de incidente vehicular:</strong> si un carro o moto genera
+        un problema dentro del conjunto, busca aquí por la placa (o parte de
+        ella) para identificar al propietario y su apartamento.
+      </p>
+      <div class="search-bar">
+        <input type="text" id="placaInput" placeholder="Ingrese la placa (ej: TES999, ABC12)..." style="text-transform:uppercase; font-family:monospace; font-size:1.1em;">
+        <button type="button" class="btn btn-primary" id="btnBuscarPlaca">🚗 Buscar placa</button>
+      </div>
+      <div id="placasContainer"></div>
+    </div>
+
+    <!-- TAB 3: MUDANZAS -->
     <div id="tab-mudanzas" class="hidden">
       <div class="date-bar">
         <label><strong>Fecha:</strong></label>
