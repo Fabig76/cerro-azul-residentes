@@ -34,6 +34,18 @@ impreso en PDF.
     mascotas, emergencias, etc.)
   · **IMPORTANTE:** NO elimina filas del Sheet. Solo edita.
 
+## Portal de vigilancia (sept 2026)
+
+  · **URL:** https://fabig76.github.io/cerro-azul-residentes/vigilantes.html
+  · Para el personal de vigilancia del conjunto
+  · Solo consulta datos + marca checks de mudanzas (no edita registros)
+  · Contraseña separada del admin (Sheet → Config!B2, por defecto
+    `VigCerroAzul2026`)
+  · Ve datos SÍ: nombre, CC, vehículos, mascotas, parqueaderos,
+    residentes, encargado, inmobiliaria
+  · Ve datos NO: correo, celular, teléfono (privacidad)
+  · Marca check de mudanzas con su nombre para auditoría
+
 ## Stack
 
   · Frontend: HTML/CSS/JS vanilla en GitHub Pages

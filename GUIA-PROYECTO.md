@@ -1191,7 +1191,90 @@ Los logs están disponibles en el editor de Apps Script → Executions.
 
 ---
 
-## 17. Manuales de uso para residentes
+## 18. Portal de Vigilancia (vigilantes.html)
+
+Agregado el 23-Sept-2026 (commits `34a7e0b`, `44a8d7b`).
+
+### 18.1 Descripción
+
+Página web separada (`vigilantes.html`) para el personal de vigilancia.
+Permite consultar datos básicos de los residentes (sin contacto privado)
+y registrar checks sobre mudanzas (Sí/No se realizó).
+
+### 18.2 URL y credenciales
+
+  · URL: https://fabig76.github.io/cerro-azul-residentes/vigilantes.html
+  · Contraseña por defecto: `VigCerroAzul2026`
+  · Para cambiar: editar celda `Config!A2/B2` en el Google Sheet
+  · Distinta de la contraseña del admin (`Config!B1`)
+
+### 18.3 Pestaña "Config" del Sheet (actualizada)
+
+| Celda | Clave | Valor ejemplo |
+|---|---|---|
+| A1 | admin_password | cerroazul2026 |
+| B1 | (config_value) | cerroazul2026 |
+| A2 | vigilante_password | VigCerroAzul2026 |
+| B2 | (config_value) | VigCerroAzul2026 |
+
+### 18.4 Pestaña "Mudanzas" — columnas nuevas
+
+| Col | Header | Tipo | Descripción |
+|---|---|---|---|
+| T | REALIZADA | string | "Sí" / "No" / vacío |
+| U | FECHA_CHECK | datetime | Timestamp del check |
+| V | VIGILANTE | string | Nombre del vigilante que marcó |
+
+### 18.5 Datos que el vigilante SÍ puede ver vs NO
+
+**SÍ puede ver** (datos de identificación):
+- N° apartamento, NumForm, diligencia
+- Nombre y CC del propietario
+- Nombre y CC del encargado/administrador
+- Nombre, NIT y contacto de la inmobiliaria
+- Residentes (4): nombre y CC
+- Vehículos, motos: placa, marca, tipo, color, modelo, tag
+- Bicicletas: marca, color, clase, serial
+- Parqueaderos: celda y matrícula
+- Mascotas: tipo, nombre, raza, color, sexo, manejo especial
+- Firma: nombre y CC
+
+**NO puede ver** (datos de contacto privado — filtrado server-side):
+- Correo del propietario
+- Celular del propietario
+- Teléfono fijo del propietario
+- Correo/celular del encargado
+- Correo/celular de residentes
+- Correo/teléfono de la inmobiliaria
+
+### 18.6 Endpoints Apps Script (V9)
+
+| Método | Acción | Descripción |
+|---|---|---|
+| GET | `vigilanteLogin&password=X` | Valida contra Config!B2 |
+| GET | `vigilanteVerResidentes&q=X` | Busca residentes (datos FILTRADOS, sin contacto) |
+| GET | `vigilanteVerMudanzas&fecha=YYYY-MM-DD` | Lista mudanzas (Confirmadas futuras + Canceladas recientes 30 días) |
+| POST | `vigilanteCheckMudanza` | Marca check con nombre del vigilante |
+
+### 18.7 Flujo del vigilante
+
+  1. Abre `vigilantes.html`
+  2. Login con contraseña
+  3. Tab "Buscar residente" → busca por apto, nombre, CC, placa o encargado
+  4. Ve el detalle con secciones colapsables
+  5. Tab "Mudanzas" → ve reservas del día o futuras
+  6. Marca check (✓ Sí realizado / ✗ No realizado) con su nombre
+  7. Logout al final del turno
+
+### 18.8 Archivos del feature
+
+- `vigilantes.html` (nuevo, ~225 líneas)
+- `js/vigilantes.js` (nuevo, ~370 líneas)
+- `apps-script/Código.gs` — 5 funciones nuevas + enrutamiento
+
+---
+
+## 19. Manuales de uso para residentes
 
 ### Carpeta de Drive
 `https://drive.google.com/drive/folders/1NS6M0p5k7u89SiRy52CGxu7VpqmJ66fT`

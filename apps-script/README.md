@@ -49,8 +49,21 @@ Este es el código del backend que conecta el formulario público
     Crea fila en `Mudanzas`. Valida 48h anticipación + ascensor A + LockService.
     Envía email al admin y al residente.
   · `POST action=cancelarMudanza`
-    Marca Estado="Cancelada" (NO borra fila). Valida 24h anticipación.
+    Marca Estado="Cancelada" sin borrar fila. Valida 24h anticipación.
     Envía email al admin y al residente.
+
+### Vigilancia (sept 2026)
+  · `GET ?action=vigilanteLogin&password=X`
+    Valida contra Config!B2 (contraseña separada del admin).
+  · `GET ?action=vigilanteVerResidentes&q=X`
+    Busca residentes con datos FILTRADOS (sin correos, celulares ni
+    teléfonos). Devuelve nombre, CC, vehículos, mascotas, parqueaderos.
+  · `GET ?action=vigilanteVerMudanzas&fecha=YYYY-MM-DD`
+    Lista mudanzas Confirmadas futuras + Canceladas recientes (últimos
+    30 días) con campos para marcar check.
+  · `POST action=vigilanteCheckMudanza`
+    Marca check (Sí/No realizado) con LockService y nombre del vigilante.
+    Actualiza columnas T (REALIZADA), U (FECHA_CHECK), V (VIGILANTE) en Sheet Mudanzas.
 
 ## Despliegue paso a paso (~5 minutos)
 
