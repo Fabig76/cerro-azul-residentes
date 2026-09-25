@@ -112,9 +112,9 @@ const V = {
       document.getElementById('detailContainer').innerHTML = '';
       return;
     }
-    let html = '<p style="color:var(--texto-med); margin-bottom:8px;">' + resultados.length + ' resultado(s):</p>';
+    let html = '<p style="color:var(--gris-med); margin-bottom:8px;">' + resultados.length + ' resultado(s):</p>';
     html += '<table class="results-table">';
-    html += '<thead><tr><th>CA-XXXX</th><th>Apto</th><th>Tipo</th><th>Nombre</th><th>CC</th></tr></thead>';
+    html += '<thead><tr><th>CA-XXXX</th><th>Apto</th><th>Tipo</th><th>Nombre</th></tr></thead>';
     html += '<tbody>';
     for (const r of resultados) {
       html += '<tr data-row="' + r.rowNumber + '">';
@@ -122,7 +122,6 @@ const V = {
       html += '<td>' + V.escapeHtml(r.apto) + '</td>';
       html += '<td>' + V.escapeHtml(r.diligencia) + '</td>';
       html += '<td>' + V.escapeHtml(r.nombreProp) + '</td>';
-      html += '<td>' + V.escapeHtml(r.ccProp) + '</td>';
       html += '</tr>';
     }
     html += '</tbody></table>';
@@ -141,7 +140,7 @@ const V = {
       <div class="detail-card">
         <h3>${V.escapeHtml(r.apto)} — ${V.escapeHtml(r.nombreProp)}</h3>
         <div class="meta-info">
-          <strong>${V.escapeHtml(r.diligencia)}</strong> · CC ${V.escapeHtml(r.ccProp)} ·
+          <strong>${V.escapeHtml(r.diligencia)}</strong> ·
           CA-XXXX: ${V.escapeHtml(r.numForm)} · Fila Sheet: ${r.rowNumber}
         </div>
 
@@ -263,13 +262,12 @@ const V = {
     let totalVehiculos = 0;
     resultados.forEach(r => totalVehiculos += r.vehiculos.length);
 
-    let html = '<p style="color:var(--texto-med); margin-bottom:12px;">' +
+    let html = '<p style="color:var(--gris-med); margin-bottom:12px;">' +
       resultados.length + ' apartamento(s) con ' + totalVehiculos + ' vehiculo(s) que coinciden:</p>';
     for (const r of resultados) {
       html += '<div class="detail-card" style="border-left:4px solid #D32F2F;">';
       html += '<h3>🚗 Apto ' + V.escapeHtml(r.apto) + ' — ' + V.escapeHtml(r.nombreProp) + '</h3>';
       html += '<div class="meta-info">';
-      html += '<strong>CC:</strong> ' + V.escapeHtml(r.ccProp) + ' · ';
       html += '<strong>Diligencia:</strong> ' + V.escapeHtml(r.diligencia);
       html += '</div>';
       html += '<div class="detail-section">';
@@ -296,7 +294,7 @@ const V = {
   async cargarMudanzasHoy(fecha) {
     V.hideAlert();
     const cont = document.getElementById('mudList');
-    cont.innerHTML = '<p style="color:var(--texto-med);">Cargando mudanzas...</p>';
+    cont.innerHTML = '<p style="color:var(--gris-med);">Cargando mudanzas...</p>';
     try {
       const params = fecha ? '&fecha=' + encodeURIComponent(fecha) : '';
       const r = await fetch(APPS_SCRIPT_URL + '?action=vigilanteVerMudanzas' + params).then(x=>x.json());
@@ -311,7 +309,7 @@ const V = {
       cont.innerHTML = '<div class="no-results">No hay mudanzas para mostrar.</div>';
       return;
     }
-    let html = '<p style="color:var(--texto-med); margin-bottom:12px;">' + reservas.length + ' mudanza(s):</p>';
+    let html = '<p style="color:var(--gris-med); margin-bottom:12px;">' + reservas.length + ' mudanza(s):</p>';
     for (const m of reservas) {
       const cls = m.estado === 'Confirmada' ? 'confirmada' : 'cancelada';
       const realizadaCls = m.realizada === 'Sí' ? 'realizada' : (m.realizada === 'No' ? 'no-realizada' : '');
@@ -324,11 +322,11 @@ const V = {
       html += V.escapeHtml(m.nombrePropietario) + ' · ';
       html += '<strong>Apto ' + V.escapeHtml(m.apto) + '</strong> · Torre ' + V.escapeHtml(m.torre) + ' Asc ' + V.escapeHtml(m.ascensor);
       html += '</div>';
-      html += '<div style="text-align:right; font-size:0.92em; color:var(--texto-med);">';
+      html += '<div style="text-align:right; font-size:0.92em; color:var(--gris-med);">';
       html += '<strong>' + V.escapeHtml(m.fecha) + '</strong><br>';
       html += V.escapeHtml(m.horaInicio) + ' - ' + V.escapeHtml(m.horaFin);
       html += '</div></div>';
-      html += '<div style="font-size:0.82em; color:var(--texto-med); margin-top:6px;">';
+      html += '<div style="font-size:0.82em; color:var(--gris-med); margin-top:6px;">';
       html += 'CA-XXXX: ' + V.escapeHtml(m.numForm) + ' · Estado: ' + V.escapeHtml(m.estado);
       html += '</div>';
 
