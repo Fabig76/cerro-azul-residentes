@@ -212,6 +212,39 @@ main {
   .row, .row.row-3 { grid-template-columns: 1fr; }
 }
 
+/* ---------- MODE-TABS (portal principal) ---------- */
+/* 6 pestañas en desktop: flex horizontal. En mobile: wrap o scroll */
+@media (max-width: 768px) {
+  .mode-tabs {
+    flex-wrap: wrap;
+  }
+  .mode-tab {
+    flex: 1 1 33%;
+    min-width: 110px;
+    padding: 10px 8px;
+    font-size: 0.85em;
+    border-bottom: 1px solid var(--gris-borde);
+  }
+  .mode-tab.active {
+    border-bottom: 2px solid var(--azul);
+  }
+}
+@media (max-width: 480px) {
+  .mode-tabs {
+    flex-direction: column;
+  }
+  .mode-tab {
+    flex: 1 1 100%;
+    width: 100%;
+    border-bottom: 1px solid var(--gris-borde);
+    border-left: 4px solid transparent;
+  }
+  .mode-tab.active {
+    border-bottom: 1px solid var(--gris-borde);
+    border-left: 4px solid var(--azul);
+  }
+}
+
 .field {
   display: flex;
   flex-direction: column;
