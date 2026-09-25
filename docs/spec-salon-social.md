@@ -71,6 +71,12 @@ en tiempo real, reserva, paga, sube comprobante, y queda registrado.
 | **D15** | 2 slots fijos por día: **Mañana (8-13)** y **Tarde (14-22)** | Confirmado por operador |
 | **D16** | Sin restricción de día: se puede reservar festivos, domingos, cualquier día | Confirmado por operador |
 | **D17** | Se debe poder **cambiar el slot** después (mañana ↔ tarde), NO la fecha | Restricción práctica |
+| **D18** | Link de pago desde **`Config` del Sheet Registros** (`link_pago` ya existe) | P12 |
+| **D19** | Calendario: **rolling window de 30 días** desde hoy | P13 |
+| **D20** | Comprobantes expirados **se mantienen en Drive** para auditoría | P14 |
+| **D21** | Admin tiene pestaña "Salón Social" en `admin.html` con lista de reservas, ver comprobante y cancelar | P15 |
+| **D22** | Admin NO puede extender manualmente el plazo de 48h | P11 |
+| **D23** | Admin cancela manualmente solo si el comprobante es falso o no se hizo el pago | P15 |
 
 ---
 
@@ -184,7 +190,7 @@ simultáneas. Si el sistema crece, considerar caché en memoria (5 min TTL).
 
 ---
 
-## §6. Backend — 8 endpoints Apps Script nuevos
+## §6. Backend — 11 endpoints Apps Script nuevos + 1 trigger
 
 Todos al final de `apps-script/Código.gs`, después de los 5 endpoints
 del módulo residente.
@@ -412,7 +418,7 @@ del módulo residente.
 }
 ```
 
-### §6.8 Trigger time-based: `expirarReservasSalon()`
+### §6.9 Trigger time-based: `expirarReservasSalon()`
 
 **Propósito:** Cancelar reservas sin pago después de 48h.
 
@@ -420,13 +426,15 @@ del módulo residente.
 - Trigger Apps Script: time-based, cada 1 hora
 - Configurar en Apps Script editor: Triggers → Add Trigger →
   → `expirarReservasSalon` → Time-driven → Hour timer
+- O usar endpoint `configurarTriggerExpiracion()` (D22) que crea
+  el trigger automáticamente desde código
 
 **Lógica:**
 ```javascript
 function expirarReservasSalon() {
   const now = new Date();
-  const sheet = SpreadsheetApp.openById(SHEET_CARTERA_ID)
-    .getSheetByName('ReservasSalon');
+  const sheet = SpreadsheetApp.openById(SHEET_REGISTROS_ID)
+    .getSheetByName('salon social');
   const data = sheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
     const row = data[i];
@@ -443,7 +451,118 @@ function expirarReservasSalon() {
 }
 ```
 
-### §6.9 Entradas en doGet / doPost
+### §6.10 Endpoints Admin (3 nuevos — D21, D23)
+
+#### `GET ?action=adminListarReservasSalon&estado=X&fechaDesde=Y`
+
+**Propósito:** Lista de reservas para el admin.
+
+**Input:** `estado` (opcional: `PendientePago`, `Pagado`, `Cancelado`, `Expirado`, `Todos` por defecto), `fechaDesde` (opcional: YYYY-MM-DD)
+
+**Output:**
+```json
+{
+  "ok": true,
+  "reservas": [
+    {
+      "id": "RS-0003",
+      "numForm": "CA-0055",
+      "apto": "105",
+      "ccSolicitante": "26274476",
+      "tipo": "Residente",
+      "nombre": "Yasmila Cordoba Chaverra",
+      "correo": "yacorba@gmail.com",
+      "celular": "3147305409",
+      "fechaReserva": "2026-10-04",
+      "slot": "Mañana",
+      "estado": "PendientePago",
+      "fechaCreacion": "2026-09-25T15:30:00",
+      "fechaLimitePago": "2026-09-27T15:30:00",
+      "fechaPago": null,
+      "comprobanteId": null,
+      "tieneComprobante": false
+    },
+    {
+      "id": "RS-0005",
+      "apto": "105",
+      "nombre": "Yasmila Cordoba Chaverra",
+      "fechaReserva": "2026-10-18",
+      "slot": "Tarde",
+      "estado": "Pagado",
+      "comprobanteId": "1abc...xyz",
+      "tieneComprobante": true
+    }
+  ]
+}
+```
+
+**LockService:** NO
+
+#### `GET ?action=adminVerComprobanteSalon&reservaId=RS-0005`
+
+**Propósito:** Devuelve URL del comprobante en Drive para que el admin lo abra.
+
+**Output:**
+```json
+{
+  "ok": true,
+  "reservaId": "RS-0005",
+  "comprobanteId": "1abc...xyz",
+  "comprobanteUrl": "https://drive.google.com/file/d/1abc...xyz/view",
+  "nombreArchivo": "comprobante_pago.pdf",
+  "estado": "Pagado"
+}
+```
+
+**LockService:** NO
+
+#### `POST action=adminCancelarReservaSalon`
+
+**Propósito:** Admin cancela una reserva manualmente (D23).
+
+**Input:**
+```json
+{
+  "reservaId": "RS-0005",
+  "motivo": "Comprobante no corresponde al pago (foto random)",
+  "adminPassword": "cerroazul2026"
+}
+```
+
+**Validaciones:**
+- `adminPassword` debe coincidir con `Config.admin_password` (D22)
+- Reserva existe
+- Estado actual es `PendientePago` o `Pagado`
+
+**Escritura:**
+- Estado = `Cancelado` (o `CanceladoPorAdmin` si era Pagado — flag interno)
+- LockService
+- Envía correo al admin (confirmación)
+- (Opcional) Envía correo al solicitante (notificación)
+
+**Output:**
+```json
+{
+  "ok": true,
+  "estado": "Cancelado",
+  "mensaje": "Reserva cancelada por administrador. Slot liberado."
+}
+```
+
+### §6.11 Setup trigger: `configurarTriggerExpiracion()`
+
+**Propósito:** Crear el trigger time-based de 1h desde código (one-time setup).
+
+**Output:**
+```json
+{
+  "ok": true,
+  "triggerId": "abc123def",
+  "mensaje": "Trigger creado: cada 1 hora. Llamar UNA SOLA VEZ."
+}
+```
+
+### §6.12 Entradas en doGet / doPost
 
 ```javascript
 // En doGet (después de verificarResidente):
@@ -456,12 +575,20 @@ if (action === 'dispSalon') {
 if (action === 'vigilanteVerReservasSalon') {
   return jsonOut(vigilanteVerReservasSalon(e.parameter.fecha));
 }
+if (action === 'adminListarReservasSalon') {
+  return jsonOut(adminListarReservasSalon(e.parameter.estado, e.parameter.fechaDesde));
+}
+if (action === 'adminVerComprobanteSalon') {
+  return jsonOut(adminVerComprobanteSalon(e.parameter.reservaId));
+}
 
 // En doPost (después de clearResidente):
-if (action === 'reservarSalon')           return jsonOut(reservarSalon(payload));
-if (action === 'subirComprobanteSalon')  return jsonOut(subirComprobanteSalon(payload));
-if (action === 'cancelarReservaSalon')   return jsonOut(cancelarReservaSalon(payload));
-if (action === 'editarReservaSalon')      return jsonOut(editarReservaSalon(payload));
+if (action === 'reservarSalon')              return jsonOut(reservarSalon(payload));
+if (action === 'subirComprobanteSalon')     return jsonOut(subirComprobanteSalon(payload));
+if (action === 'cancelarReservaSalon')      return jsonOut(cancelarReservaSalon(payload));
+if (action === 'editarReservaSalon')         return jsonOut(editarReservaSalon(payload));
+if (action === 'adminCancelarReservaSalon') return jsonOut(adminCancelarReservaSalon(payload));
+if (action === 'configurarTriggerExpiracion') return jsonOut(configurarTriggerExpiracion());
 ```
 
 ### §6.10 Configuración de Sheet
@@ -608,6 +735,98 @@ Si `vigilantes.html` no tiene mode-switcher, agregar un enlace directo
 
 ---
 
+## §8B. Cambios a `admin.html` (D21, D23) — NUEVO
+
+### §8B.1 Pestaña "Salón Social"
+
+Agregar al mode-switcher (o lista de pestañas) de `admin.html`:
+
+```html
+<button type="button" class="mode-tab" data-mode="salon" role="tab">
+  🏛️ Salón Social
+</button>
+```
+
+### §8B.2 Vista de lista de reservas
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  🏛️ Gestión de Salón Social (admin)                         │
+├──────────────────────────────────────────────────────────────┤
+│  Filtros: [Todos ▼] [Desde: 1-Sep-2026 ▼]                    │
+├──────────────────────────────────────────────────────────────┤
+│  RS-0003 · Sábado 4-Oct ·  Mañana                          │
+│  Apto 105 · Yasmila Cordoba Chaverra (CC 26274476)         │
+│  Estado: 🟡 PendientePago (límite 27-Sep 15:30)            │
+│  Solicitante: yacorba@gmail.com · 3147305409              │
+│  [ 📎 Ver comprobante ] [ ❌ Cancelar reserva ]              │
+├──────────────────────────────────────────────────────────────┤
+│  RS-0005 · Sábado 18-Oct · Tarde                           │
+│  Apto 105 · Yasmila Cordoba Chaverra (CC 26274476)         │
+│  Estado: 🟢 Pagado (subió comprobante el 26-Sep 14:20)    │
+│  [ 📎 Ver comprobante ] [ ❌ Cancelar reserva ]              │
+├──────────────────────────────────────────────────────────────┤
+│  RS-0007 · Sábado 25-Oct · Mañana                          │
+│  Apto 107 · Deisy Villaneda (CC ????????)                  │
+│  Estado: 🔴 Cancelado (motivo: "Comprobante falso")        │
+├──────────────────────────────────────────────────────────────┤
+│  [ 🔄 Actualizar lista ]                                    │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### §8B.3 Acciones del admin
+
+**Ver comprobante:**
+- Click en "📎 Ver comprobante" → abre nueva pestaña con
+  `https://drive.google.com/file/d/{comprobanteId}/view`
+- Si `tieneComprobante = false`: botón deshabilitado con tooltip "Sin comprobante"
+
+**Cancelar reserva:**
+- Click en "❌ Cancelar reserva" → modal de confirmación con campo de motivo:
+```
+┌──────────────────────────────────────────┐
+│  ⚠️ Cancelar reserva RS-0005             │
+│                                          │
+│  Solicitante: Yasmila Cordoba (Apto 105) │
+│  Fecha: Sábado 18-Oct · Tarde            │
+│                                          │
+│  Motivo de cancelación (requerido):       │
+│  [ Comprobante no corresponde al pago ]   │
+│                                          │
+│  [ ❌ Cancelar ] [ 🔙 Volver ]            │
+└──────────────────────────────────────────┘
+```
+
+- Llama a `adminCancelarReservaSalon` con motivo
+- Admin password requerido
+- LockService
+- Envía correo de confirmación al admin
+
+### §8B.4 Decisión clave del admin
+
+> "si el ve que todo ok no hace nada pero si el archivo no corresponde
+> a un pago si no a otra cosa el podra cancelar la reserva"
+
+El admin:
+1. Ve la lista de reservas (por defecto "PendientePago" + "Pagado")
+2. Click en "Ver comprobante" para abrir el archivo subido
+3. Si el comprobante es legítimo → NO hace nada (la reserva sigue)
+4. Si el comprobante es falso / no es de pago → click "Cancelar" + motivo
+6. La reserva pasa a estado `CanceladoPorAdmin` (flag interno para auditoría)
+
+### §8B.5 API endpoints usados
+
+- `GET ?action=adminListarReservasSalon&estado=X&fechaDesde=Y`
+- `GET ?action=adminVerComprobanteSalon&reservaId=X`
+- `POST action=adminCancelarReservaSalon`
+
+### §8B.6 Archivos a modificar
+
+- `admin.html` (MOD, +50 líneas: nueva pestaña)
+- `js/admin.js` (MOD, +200 líneas: lista + vista detalle + modal cancelar)
+
+---
+
 ## §9. Cambios a `index.html`
 
 Nueva pestaña en mode-switcher:
@@ -674,8 +893,13 @@ Y enlace en footer (junto a los otros portales).
 | T-SAL-11 | cancelarReservaSalon | ok, estado:Cancelado |
 | T-SAL-12 | editarReservaSalon a slot libre | ok, slot actualizado |
 | T-SAL-13 | vigilanteVerReservasSalon día actual | ok con datos vigilantes |
-| T-SAL-14 | expirarReservasSalon (manual trigger) | ok, marca Expirado |
-| T-SAL-15 | Trigger automático (verificar después de 48h) | ok |
+| T-SAL-14 | adminListarReservasSalon todas | ok con lista completa |
+| T-SAL-15 | adminVerComprobanteSalon con reserva sin comprobante | ok con tieneComprobante:false |
+| T-SAL-16 | adminCancelarReservaSalon adminPassword incorrecta | ok:false |
+| T-SAL-17 | adminCancelarReservaSalon adminPassword correcta | ok, estado:CanceladoPorAdmin |
+| T-SAL-18 | expirarReservasSalon (manual trigger) | ok, marca Expirado |
+| T-SAL-19 | Trigger automático (verificar después de 48h) | ok |
+| T-SAL-20 | Regresión V13 (lookup, nextId, adminLogin, etc.) | ok sin regresión |
 
 ---
 
@@ -693,6 +917,9 @@ Y enlace en footer (junto a los otros portales).
 ## §14. Pendiente de aprobación
 
 - [ ] Operador aprueba el spec completo
-- [ ] Operador aprueba las decisiones D1-D17
+- [ ] Operador aprueba las decisiones D1-D23
 - [ ] Operador aprueba el plan F0-F9
 - [ ] Operador crea el trigger time-based después del deploy V14
+  (o usa `configurarTriggerExpiracion()`)
+- [ ] Operador crea la pestaña "salon social" en Sheet Registros
+  (o autoriza a Hermes a hacerlo)
