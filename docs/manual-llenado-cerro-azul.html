@@ -187,6 +187,7 @@
     <li><a href="#editar">Editar tu registro después</a></li>
     <li><a href="#mudanzas">🚚 NUEVO — Agendar una mudanza</a></li>
     <li><a href="#estado-cuenta">💳 NUEVO — Consultar estado de cuenta</a></li>
+    <li><a href="#portal-residente">👤 NUEVO — Portal del residente</a></li>
     <li><a href="#faq">Preguntas frecuentes</a></li>
   </ol>
 </div>
@@ -1002,6 +1003,16 @@
       Vea la sección <a href="#estado-cuenta" style="color:var(--azul-osc); font-weight:bold;">Consultar estado de cuenta</a> más abajo.
     </div>
 
+    <div class="info-box info-importante" style="margin-top:16px;">
+      <strong>👤 ¿Cambió de propietario o se fueron los residentes anteriores?</strong><br>
+      Si usted es el propietario (o la inmobiliaria) y hubo un cambio en los
+      residentes del apartamento, use el botón <strong>"borrado de datos residente"</strong>
+      que aparece al final del formulario cuando está en modo edición.
+      Este botón limpia las secciones 5, 5.1, 6, 7, 9 y 10 (residentes, menores,
+      vehículos, motos, bicicletas, mascotas y contactos). Los datos del
+      propietario (secciones 1-4) y la firma (11) NO se borran.
+    </div>
+
     <div class="consejo">El código CA-XXXX no cambia cuando editas. Si te asignaron CA-0042 la primera vez, seguirás siendo CA-0042 en todas las ediciones futuras.</div>
   </div>
   <div class="nav-links">
@@ -1353,6 +1364,120 @@
   <div class="nav-links">
     <a href="#mudanzas" class="nav-prev">← 🚚 Agendar mudanza</a>
     <a href="#faq" class="nav-next">Preguntas frecuentes →</a>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PORTAL DEL RESIDENTE: AUTO-REGISTRO CON QR                    -->
+<!-- ============================================================ -->
+<div class="section-manual" id="portal-residente">
+  <div class="section-header">
+    <div class="section-num">👤</div>
+    <div>
+      <h2>Portal del residente (auto-registro con QR)</h2>
+      <p>Los residentes adultos pueden llenar SUS datos escaneando un QR</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="info-box info-importante">
+      <strong>¿Qué es esto?</strong><br>
+      Si hay un cambio de propietario o nuevos residentes en el apartamento,
+      la administración o el propietario puede entregarles un <strong>código QR</strong>
+      (pegado en el ascensor o la puerta del apto). El residente adulto
+      escanea el QR con su celular, llega al portal, coloca el <strong>N° de
+      apartamento</strong> y llena directamente SUS datos personales (vehículos,
+      mascotas, bicicletas, contactos). Esto evita que el propietario tenga
+      que conocer los detalles de cada residente.
+    </div>
+
+    <div class="form-img-wrap">
+      <img src="https://fabig76.github.io/cerro-azul-residentes/assets/qr-portal-residente.png" alt="QR del Portal del Residente">
+      <div class="form-img-caption">Figura 17 — QR del portal del residente (escaneable desde el celular).</div>
+    </div>
+
+    <h3 style="color:var(--azul); margin-top:20px;">Cómo funciona (paso a paso)</h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">El residente escanea el QR del apartamento con su celular.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Llega al portal e ingresa el <strong>N° de apartamento</strong>.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">El sistema decide:
+        <ul style="margin-top:6px; padding-left:20px;">
+          <li>Si el apartamento <strong>NO tiene residentes</strong> registrados →
+            puede llenar sus datos directamente (incluye sección 5 con su nombre y cédula)</li>
+          <li>Si el apartamento <strong>SÍ tiene residentes</strong> registrados →
+            debe colocar su cédula para editar SU slot. Si su cédula no matchea
+            ninguno, debe contactar al propietario del apartamento.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">El residente llena las secciones: <strong>5 (residentes),
+        5.1 (menores), 6 (vehículos y motos), 7 (bicicletas), 9 (mascotas)
+        y 10 (contactos de emergencia)</strong>. NO llena las secciones 1-4
+        (datos del propietario), 8 (llaveros — implementación futura) ni 11 (firma).</div>
+    </div>
+
+    <h3 style="color:var(--azul); margin-top:24px;">Para editar después</h3>
+    <p>Si el residente necesita actualizar sus datos nuevamente, vuelve a
+       escanear el QR y coloca su <strong>N° de apartamento + cédula</strong>.
+       Solo podrá editar los datos personales de SU slot.</p>
+
+    <div class="info-box info-aviso">
+      <strong>⚠️ Importante para el propietario / inmobiliaria:</strong><br>
+      Antes de entregar el QR a un nuevo residente, verifique que el apartamento
+      no tenga datos de residentes anteriores. Si los tiene, use el botón
+      <strong>"borrado de datos residente"</strong> del formulario principal
+      (modo edición) para limpiar las secciones 5, 5.1, 6, 7, 9 y 10.
+      Luego el nuevo residente puede registrarse con el QR.
+    </div>
+
+    <h3 style="color:var(--azul); margin-top:24px;">Preguntas frecuentes del portal del residente</h3>
+
+    <h4 style="color:var(--texto); margin:16px 0 6px;">¿Por qué hay un QR por apartamento y no por persona?</h4>
+    <p style="color:var(--texto-med);">Porque el apartamento es la unidad de registro.
+       El QR es genérico: cualquier residente adulto del apto puede escanearlo
+       y luego identificarse con su cédula para editar SU información.</p>
+
+    <h4 style="color:var(--texto); margin:16px 0 6px;">¿Dónde imprimo el QR?</h4>
+    <p style="color:var(--texto-med);">En cualquier imprenta o papelería. Tamaño
+       mínimo recomendado: 5×5 cm. Puede plastificarlo para mayor durabilidad.
+       Péguelo en el ascensor, en la puerta del apartamento o en un lugar visible
+       del conjunto.</p>
+
+    <h4 style="color:var(--texto); margin:16px 0 6px;">¿Puedo tener varios QRs diferentes para el mismo apartamento?</h4>
+    <p style="color:var(--texto-med);">No es necesario. Un solo QR genérico
+       sirve para todos los residentes del apartamento. Lo que diferencia a
+       cada residente es su cédula, que el sistema valida al editar.</p>
+
+    <h4 style="color:var(--texto); margin:16px 0 6px;">¿Qué pasa si el propietario anterior registró residentes y yo soy el nuevo?</h4>
+    <p style="color:var(--texto-med);">El nuevo propietario debe entrar al
+       formulario principal en modo edición y usar el botón
+       <strong>"borrado de datos residente"</strong> para limpiar las secciones
+       de residentes, vehículos, mascotas, etc. Una vez borradas, los nuevos
+       residentes pueden usar el QR para registrarse.</p>
+
+    <h4 style="color:var(--texto); margin:16px 0 6px;">¿El residente puede borrar SUS PROPIOS datos?</h4>
+    <p style="color:var(--texto-med);">No. El botón "borrado de datos residente"
+       solo lo puede usar el propietario o la inmobiliaria (con cédula del
+       propietario). El residente solo puede editar y agregar a slots vacíos.</p>
+
+    <div class="info-box info-importante" style="margin-top:24px;">
+      <strong>¿Tienes otra pregunta?</strong><br>
+      Escribe a <strong>urb.cerroazul@gmail.com</strong> con tu N° de apartamento.
+    </div>
+
+  </div>
+  <div class="nav-links">
+    <a href="#estado-cuenta" class="nav-prev">← 💳 Consultar estado de cuenta</a>
+    <a href="#inicio">↑ Volver al inicio</a>
   </div>
 </div>
 

@@ -342,7 +342,7 @@ function TEST_todosLosEndpoints() {
     '?action=verificarPropietario&numForm=CA-0002&apto=218&ccProp=999999999',
     '?action=dispMudanzas&torre=1&ascensor=A&desde=2026-09-25&hasta=2026-09-25'
   ];
-  
+
   tests.forEach((test, i) => {
     try {
       const resp = UrlFetchApp.fetch(URL + test);
@@ -353,6 +353,172 @@ function TEST_todosLosEndpoints() {
   });
 }
 ```
+
+---
+
+## Tests del Portal del Residente (25-Sept-2026)
+
+Deploy Apps Script **V13**. 5 endpoints nuevos: `getEstadoResidente`,
+`verificarResidente`, `registrarResidente`, `actualizarResidente`,
+`clearResidente`. Verificados con curl + browser_console.
+
+### T-RES-1: getEstadoResidente — apto existente con residentes
+
+```bash
+curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=getEstadoResidente&apto=105"
+```
+
+**Esperado:**
+```json
+{
+  "ok": true,
+  "aptoExiste": true,
+  "hayResidentes": true,
+  "numForm": "CA-0055",
+  "numResidentes": 2,
+  "nombresResidentes": ["Yasmila Cordoba Chaverra", "Johao Alexander Becerra Cordoba"],
+  "propietario": "Luis Oswaldo Becerra Palacios"
+}
+```
+
+**Resultado verificado el 25-Sept-2026:** ✅ OK
+
+### T-RES-2: getEstadoResidente — apto NO existente
+
+```bash
+curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=getEstadoResidente&apto=99999"
+```
+
+**Esperado:** `{ok:true, apto:"99999", aptoExiste:false}`
+
+**Resultado verificado el 25-Sept-2026:** ✅ OK
+
+### T-RES-3: verificarResidente — CC que matchea
+
+```bash
+curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=verificarResidente&apto=105&cc=26274476"
+```
+
+**Esperado:**
+```json
+{
+  "ok": true,
+  "slot": 1,
+  "datos": {
+    "nombre": "Yasmila Cordoba Chaverra",
+    "cc": "26274476",
+    "parentesco": "Cónyuge",
+    "cel": "3147305409",
+    "correo": "yacorba@gmail.com"
+  }
+}
+```
+
+**Resultado verificado el 25-Sept-2026:** ✅ OK
+
+### T-RES-4: verificarResidente — CC que NO matchea
+
+```bash
+curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=verificarResidente&apto=105&cc=99999999"
+```
+
+**Esperado:** `{ok:false, error:"No se encontró un residente con esa cédula en este apartamento."}`
+
+**Resultado verificado el 25-Sept-2026:** ✅ OK
+
+### T-RES-5: registrarResidente — apto vacío (no destructivo, requiere apto de pruebas)
+
+Solo apto 9999 (CA-0083) está vacío después de T-RES-9. NO ejecutar este
+test con el Sheet real.
+
+```bash
+curl -sL -X POST -H "Content-Type: text/plain;charset=UTF-8" \
+  -d '{"action":"registrarResidente","apto":"9999","residentes":[{"nombre":"Test","cc":"9999999","parentesco":"Hijo","cel":"3000000000"}]}' \
+  "https://script.google.com/macros/s/AKfycbxp...Zp/exec"
+```
+
+**Esperado:** `{ok:true, numForm:"CA-0083", slotAsignado:1}`
+
+### T-RES-6: actualizarResidente — editar slot propio
+
+Solo si hay residentes registrados. Apto 105 con Yasmila (CC 26274476):
+
+```bash
+curl -sL -X POST -H "Content-Type: text/plain;charset=UTF-8" \
+  -d '{"action":"actualizarResidente","apto":"105","cc":"26274476","slot":1,"datosActualizados":{"residentes":[{"nombre":"Yasmila Cordoba","cc":"26274476","parentesco":"Cónyuge","cel":"3147305409","correo":"yacorba@gmail.com"}]}}' \
+  "https://script.google.com/macros/s/AKfycbxp...Zp/exec"
+```
+
+**Esperado:** `{ok:true, slotActualizado:1}`
+
+### T-RES-7: clearResidente — CC incorrecta (debe rechazar)
+
+```bash
+curl -sL -X POST -H "Content-Type: text/plain;charset=UTF-8" \
+  -d '{"action":"clearResidente","numForm":"CA-0055","apto":"105","ccPropConfirm":"99999999"}' \
+  "https://script.google.com/macros/s/AKfycbxp...Zp/exec"
+```
+
+**Esperado:** `{ok:false, error:"La cédula no corresponde al propietario del apartamento."}`
+
+**Resultado verificado el 25-Sept-2026:** ✅ OK
+
+### T-RES-8: clearResidente — CC correcta (DESTRUCTIVO, solo apto 9999)
+
+⚠️ **TEST DESTRUCTIVO** — Solo ejecutar en apto de pruebas (9999/CA-0083)
+NUNCA en registros reales.
+
+```bash
+# 1. Backup del Sheet (CRÍTICO antes de este test)
+cp pre-T9-clearResidente-20260925.xlsx backup-pre-RES8.xlsx
+
+# 2. Ejecutar clearResidente con CC correcta del propietario
+curl -sL -X POST -H "Content-Type: text/plain;charset=UTF-8" \
+  -d '{"action":"clearResidente","numForm":"CA-0083","apto":"9999","ccPropConfirm":"94501666"}' \
+  "https://script.google.com/macros/s/AKfycbxp...Zp/exec"
+```
+
+**Esperado:** `{ok:true, celdasLimpiadas:90}`
+
+**Resultado verificado el 25-Sept-2026 (apto 9999):** ✅ OK
+
+**Verificación post-clear (lectura directa del Sheet):**
+- Secciones AD-AW (residentes), AX-BI (menores), BJ-BU (vehículos),
+  BV-CG (motos), CH-CO (bicis), DG-DZ (mascotas), EA-EF (contactos):
+  **TODAS VACÍAS** ✅
+- Secciones 1-4 (datos propietario), K-Q (parqueaderos), EJ-EL (firma),
+  EM (hash): **INTACTAS** ✅
+
+### T-RES-9: Tests de regresión (no rompieron los endpoints V12)
+
+Verificar que los endpoints existentes siguen funcionando después del deploy V13:
+
+```bash
+curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=lookup&numForm=CA-0055&apto=105"
+curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=nextId"
+curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=adminLogin&password=cerroazul2026"
+curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=vigilanteLogin&password=VigCerroAzul2026"
+```
+
+**Esperado:** Todos retornan `{ok:true, ...}`
+
+**Resultado verificado el 25-Sept-2026:** ✅ OK (sin regresión)
+
+### Resumen de tests del Portal del Residente
+
+| Test | Endpoint | Resultado |
+|---|---|---|
+| T-RES-1 | getEstadoResidente apto existente | ✅ |
+| T-RES-2 | getEstadoResidente apto no existe | ✅ |
+| T-RES-3 | verificarResidente match | ✅ |
+| T-RES-4 | verificarResidente no match | ✅ |
+| T-RES-5 | registrarResidente apto vacío | (no ejecutado — sandbox) |
+| T-RES-6 | actualizarResidente editar | (no ejecutado — preserva datos) |
+| T-RES-7 | clearResidente CC incorrecta | ✅ |
+| T-RES-8 | clearResidente CC correcta (destructivo) | ✅ |
+| T-RES-9 | Regresión V12 | ✅ |
+
+**Total: 7/9 ejecutados, 7 OK, 2 preservados (T-RES-5 y T-RES-6)**
 
 ---
 

@@ -1519,3 +1519,109 @@ Búsquedas sugeridas en futuras sesiones:
   · `project:root Cerro Azul Residentes formulario público`
   · `query: Apps Script Web App Cerro Azul`
   · `query: cerro-azul-residentes formato-datos-ph`
+
+---
+
+## 22. Portal del Residente (25-Sept-2026)
+
+Quinto portal del proyecto. Permite a los residentes adultos auto-registrarse
+o actualizar SUS datos (vehículos, mascotas, bicis, contactos) escaneando
+un **QR genérico** del apartamento.
+
+### 22.1 Necesidad
+
+> "los dueños ni las inmobiliarias quiere hacer esto entonces envia el qr
+> para que los nuevos lo llenen" — operador Fabio
+
+El propietario del apartamento ya no tiene que conocer los detalles de cada
+residente (vehículos, mascotas, etc.). Cada residente adulto escanea el QR,
+identifica su apto, y llena SU información directamente.
+
+### 22.2 URLs
+
+  · **Portal:** https://fabig76.github.io/cerro-azul-residentes/residente.html
+  · **QR genérico** (mismo para todos los residentes del apto):
+    https://fabig76.github.io/cerro-azul-residentes/assets/qr-portal-residente.png
+  · **Sheet Registros:** sin cambios (143 cols, sin schema change)
+  · **Apps Script V13** desplegado el 25-Sept-2026 — URL /exec preservada
+
+### 22.3 Endpoints Apps Script nuevos (5)
+
+| Endpoint | Método | Propósito |
+|---|---|---|
+| `getEstadoResidente` | GET | Pantalla inicial (apto existe? tiene residentes?) |
+| `verificarResidente` | GET | Validar CC para edición |
+| `registrarResidente` | POST | Auto-registro cuando apto está vacío (LockService) |
+| `actualizarResidente` | POST | Editar datos del slot N (LockService) |
+| `clearResidente` | POST | Borrado por propietario/inmo (LockService + Logger.log) |
+
+### 22.4 Frontend — residente.html
+
+5 vistas: inicial, con-datos (pide CC), no-existe, registro (formulario
+completo), editar, exito. Mismo patrón que estado-cuenta.html.
+
+Estilos propios en `assets/residente.css` (~140 líneas).
+
+Lógica en `js/residente.js` (~730 líneas):
+- STATE global
+- apiGet / apiPost con text/plain;charset=UTF-8 (workaround CORS Apps Script)
+- 5 flujos: inicial, verificar, registrar, guardar-edicion
+- Formularios dinámicos para 1-4 residentes, 0-4 menores,
+ 0-2 vehículos, 0-2 motos, 0-2 bicis, 0-2 mascotas, 0-2 contactos
+
+### 22.5 Cambios a index.html (modo edición)
+
+Botón "borrado de datos residente" + modal de confirmación con texto exacto:
+"Esto borrará los residentes y vehículos del apartamento X. ¿Confirmas?"
+
+Solo visible en modo edición. Valida CC del propietario (v[6]) antes de
+ejecutar `clearResidente`.
+
+### 22.6 Slots del Sheet — sin cambios
+
+Los 4 slots de residentes (AD-AW) y los slots compartidos (2 vehículos,
+2 motos, 2 bicis, 2 mascotas, 2 emergencias) siguen iguales. Si un slot
+está ocupado por otro residente, el nuevo recibe error.
+
+### 22.7 Reglas de negocio
+
+| Acción | Quién puede |
+|---|---|
+| Auto-registrarse en apto vacío | Cualquier residente con QR |
+| Editar SU slot (datos personales) | Residente con CC + apto |
+| Editar/agregar vehículo/mascota/bici/contacto a slot vacío | Residente con CC |
+| Modificar slot ocupado por OTRO residente | ❌ (solo propietario/admin) |
+| **Borrar TODOS los datos del residente anterior** | ❌ (solo propietario/inmo con CC) |
+
+### 22.8 Datos de prueba
+
+Apto 9999 (CA-0083) usado como sandbox:
+- Propietario: Fabio Lesmes (operador), CC 94501666
+- Pre-test clearResidente ejecutado:90 celdas limpiadas selectivamente
+- Datos del propietario + parqueaderos + firma + hash INTACTOS
+- Backup pre-test en Drive: `pre-T9-clearResidente-20260925.xlsx`
+
+### 22.9 Pruebas E2E realizadas (T1-T9)
+
+| # | Test | Resultado |
+|---|---|---|
+| T1 | getEstadoResidente apto existente | ✅ OK |
+| T2 | getEstadoResidente apto NO existente | ✅ aptoExiste:false |
+| T4 | verificarResidente CC matchea slot 1 | ✅ slot=1, datos completos |
+| T4B | verificarResidente CC matchea slot 2 | ✅ slot=2, datos completos |
+| T5 | verificarResidente CC NO matchea | ✅ Rechazo correcto |
+| T6 | lookup V12 (regresión) | ✅ Sin regresión |
+| T7 | nextId V12 (regresión) | ✅ CA-0099 |
+| T8 | clearResidente CC incorrecta | ✅ Rechazo correcto |
+| T9 | clearResidente CC correcta (destructivo) | ✅ 90 celdas borradas selectivamente |
+
+### 22.10 Spec y resumen
+
+- Spec técnico: `docs/spec-residente.md` (21KB, 1300 líneas, 21 secciones)
+- Resumen operativo: `docs/proyecto-residente.md` (7.9KB, 201 líneas)
+- Notas de sesión: `docs/sesion-portal-residente.md` (21KB, 510 líneas)
+
+### 22.11 Pendiente (F8, opcional)
+
+- Script `generar_qr_residente.py` para generar 1 PDF con QRs de todos
+  los apartamentos del conjunto (para distribución masiva)
