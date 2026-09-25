@@ -188,6 +188,7 @@
     <li><a href="#mudanzas">🚚 NUEVO — Agendar una mudanza</a></li>
     <li><a href="#estado-cuenta">💳 NUEVO — Consultar estado de cuenta</a></li>
     <li><a href="#portal-residente">👤 NUEVO — Portal del residente</a></li>
+    <li><a href="#salon-social">🏛️ NUEVO — Reservar salón social</a></li>
     <li><a href="#faq">Preguntas frecuentes</a></li>
   </ol>
 </div>
@@ -1477,6 +1478,169 @@
   </div>
   <div class="nav-links">
     <a href="#estado-cuenta" class="nav-prev">← 💳 Consultar estado de cuenta</a>
+    <a href="#inicio">↑ Volver al inicio</a>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SALON SOCIAL: RESERVAS DEL SALON COMUNAL                    -->
+<!-- ============================================================ -->
+<div class="section-manual" id="salon-social">
+  <div class="section-header">
+    <div class="section-num">🏛️</div>
+    <div>
+      <h2>Reservar salón social</h2>
+      <p>Reserve el salón social para eventos — el propietario o cualquier residente puede hacerlo</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="info-box info-importante">
+      <strong>¿Qué es esto?</strong><br>
+      El salón social de la Urbanización Cerro Azul puede ser reservado por el
+      <strong>propietario</strong> del apartamento o por cualquier
+      <strong>residente adulto</strong> registrado en él (esposa, hijos, etc.).
+      Cada turno (mañana o tarde) cuesta <strong>$125.000 COP</strong>.
+      Las reservas se pagan por la plataforma Jelpit y se suben comprobantes
+      desde el portal.
+    </div>
+
+    <div class="info-box info-aviso">
+      <strong>⚠️ Requisito importante:</strong><br>
+      Solo pueden hacer reservas los apartamentos que
+      <strong>NO adeuden 2 o más meses de administración</strong>. Si el apartamento
+      está en mora, el sistema bloquea la reserva con un mensaje explicando
+      que tiene suspendidos los servicios de áreas comunes.
+    </div>
+
+    <h3 style="color:var(--azul); margin-top:20px;">Cómo funciona (paso a paso)</h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Ingrese al portal del salón social desde la pestaña
+        <strong>"🏛️ Reservar salón social"</strong> del formulario principal,
+        o abra directamente la URL del portal.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Coloque su <strong>N° de apartamento</strong> y su
+        <strong>cédula</strong>. El sistema valida que la cédula corresponda
+        al propietario o a un residente registrado en el apartamento.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Vea el <strong>calendario de los próximos 30 días</strong>
+        con los turnos disponibles (verde) y ocupados (rojo). Haga click
+        en un día disponible.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">Seleccione el turno: <strong>☀️ Mañana (8 AM – 1 PM)</strong>
+        o <strong>🌆 Tarde (2 PM – 10 PM)</strong>. Puede reservar ambos turnos del
+        mismo día si están disponibles.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-text">El sistema crea la reserva con estado
+        <strong>"Pendiente de pago"</strong> y le asigna un ID correlativo
+        (<strong>RS-0001, RS-0002, ...</strong>). Tiene <strong>48 horas</strong>
+        para pagar y subir el comprobante.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-text">Click en <strong>"Ir a pagar ahora"</strong> para ir a la
+        plataforma Jelpit. Después de pagar, vuelva aquí y suba el comprobante
+        (PDF, JPG o PNG, máximo 10MB).</div>
+    </div>
+    <div class="step">
+      <div class="step-num">7</div>
+      <div class="step-text">El administrador recibe un correo con el comprobante.
+        Si todo está OK, no hace nada. Si el comprobante es falso o no es de
+        pago, puede cancelar la reserva con un motivo.</div>
+    </div>
+
+    <h3 style="color:var(--azul); margin-top:24px;">Horarios disponibles</h3>
+    <table class="campo-table">
+      <thead>
+        <tr><th>Turno</th><th>Horario</th><th>Precio</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>☀️ Mañana</strong></td>
+          <td>8:00 AM – 1:00 PM</td>
+          <td>$125.000 COP</td>
+        </tr>
+        <tr>
+          <td><strong>🌆 Tarde</strong></td>
+          <td>2:00 PM – 10:00 PM</td>
+          <td>$125.000 COP</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.9em; color:var(--texto-med); margin-top:8px;">
+      <strong>Sin restricciones:</strong> puede reservar cualquier día
+      (incluidos festivos y domingos). Solo se permiten reservas dentro
+      de los próximos 30 días.
+    </p>
+
+    <h3 style="color:var(--azul); margin-top:24px;">Estados de una reserva</h3>
+    <ul style="margin-left:20px;">
+      <li><strong>PendientePago:</strong> recién creada, esperando pago</li>
+      <li><strong>Pagado:</strong> comprobante subido, en revisión por admin</li>
+      <li><strong>Cancelado:</strong> cancelada por el solicitante</li>
+      <li><strong>Expirado:</strong> pasaron 48h sin subir comprobante (automático)</li>
+      <li><strong>CanceladoPorAdmin:</strong> admin canceló porque el comprobante era falso</li>
+    </ul>
+
+    <h3 style="color:var(--azul); margin-top:24px;">Lo que ve cada persona</h3>
+    <table class="campo-table">
+      <thead>
+        <tr><th>Persona</th><th>Qué puede ver / hacer</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Residente / Propietario</strong></td>
+          <td>Calendario, reservar, subir comprobante, cancelar, editar su reserva</td>
+        </tr>
+        <tr>
+          <td><strong>Vigilancia</strong></td>
+          <td>Consulta por fecha: solo ve fecha + turno + apto + nombre del solicitante. NO ve contacto</td>
+        </tr>
+        <tr>
+          <td><strong>Administrador</strong></td>
+          <td>Lista completa, ve comprobantes, cancela reservas con motivo si son falsas</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3 style="color:var(--azul); margin-top:24px;">Preguntas frecuentes</h3>
+
+    <h4 style="color:var(--texto); margin:16px 0 6px;">¿Qué pasa si no puedo pagar dentro de las 48 horas?</h4>
+    <p style="color:var(--texto-med);">La reserva se cancela automáticamente y el horario se libera. Puede hacer una nueva reserva cuando quiera.</p>
+
+    <h4 style="color:var(--texto); margin:16px 0 6px;">¿Puedo editar la fecha de mi reserva después?</h4>
+    <p style="color:var(--texto-med);">Sí, desde el portal puede cambiar el turno (mañana ↔ tarde) y la fecha (dentro de los próximos 30 días), siempre que el nuevo horario esté libre.</p>
+
+    <h4 style="color:var(--texto); margin:16px 0 6px;">¿Por qué me piden la cédula si ya estoy registrado?</h4>
+    <p style="color:var(--texto-med);">Para confirmar que usted es el propietario o un residente del apartamento. Es una validación de seguridad para que solo personas autorizadas puedan reservar.</p>
+
+    <h4 style="color:var(--texto); margin:16px 0 6px;">¿Mi apartamento está en mora, qué hago?</h4>
+    <p style="color:var(--texto-med);">El sistema le mostrará un mensaje indicando los meses en mora. Primero debe ponerse al día con la administración (puede usar el link de pago del módulo de estado de cuenta). Una vez regularizado, podrá hacer reservas.</p>
+
+    <h4 style="color:var(--texto); margin:16px 0 6px;">¿Y si subo un comprobante falso?</h4>
+    <p style="color:var(--texto-med);">El administrador revisa cada comprobante. Si detecta que es falso o no corresponde al pago, cancela la reserva con un motivo. Usted verá la cancelación en el portal y un correo de aviso.</p>
+
+    <h4 style="color:var(--texto); margin:16px 0 6px;">¿Los vigilantes pueden cancelar reservas?</h4>
+    <p style="color:var(--texto-med);">No. Los vigilantes solo consultan. La cancelación la puede hacer el solicitante o el administrador.</p>
+
+    <div class="info-box info-importante" style="margin-top:24px;">
+      <strong>¿Tienes otra pregunta?</strong><br>
+      Escribe a <strong>urb.cerroazul@gmail.com</strong> con tu N° de apartamento
+      y el ID de tu reserva (RS-XXXX).
+    </div>
+
+  </div>
+  <div class="nav-links">
+    <a href="#portal-residente" class="nav-prev">← 👤 Portal del residente</a>
     <a href="#inicio">↑ Volver al inicio</a>
   </div>
 </div>
