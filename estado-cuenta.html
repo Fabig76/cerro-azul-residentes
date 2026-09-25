@@ -25,31 +25,39 @@
     <!-- ============================================================== -->
     <!-- VISTA LOGIN                                                    -->
     <!-- ============================================================== -->
-    <section id="view-login" class="card">
-      <h2>Consultar mi estado de cuenta</h2>
-      <p class="legal-banner">Información contable confidencial del inmueble. Solo el propietario registrado puede consultarla (Ley 1581 de 2012).</p>
-      <div id="alert-ec-login" role="alert" aria-live="polite"></div>
+    <div id="view-login" class="lookup-box">
+      <h3>💳 Consultar mi estado de cuenta</h3>
+      <p>Ingresa tu <strong>N° de formulario</strong>, tu <strong>N° de apartamento</strong> y tu <strong>cédula</strong> para ver tu saldo, tus últimos pagos y descargar tu factura o paz y salvo.</p>
+      <div id="alert-ec-login" class="alert hidden" role="alert" aria-live="polite"></div>
 
-      <div class="field">
-        <label for="ecNumForm">N° de formulario</label>
-        <input id="ecNumForm" placeholder="CA-0000" autocomplete="off">
+      <div class="field" style="margin-bottom:12px;">
+        <label>N° de formulario <span class="req">*</span></label>
+        <input type="text" id="ecNumForm" placeholder="Ej: CA-0042" autocomplete="off">
       </div>
-      <div class="field">
-        <label for="ecApto">N° de apartamento</label>
-        <input id="ecApto" placeholder="000" autocomplete="off">
+      <div class="field" style="margin-bottom:12px;">
+        <label>N° de apartamento <span class="req">*</span></label>
+        <input type="text" id="ecApto" placeholder="Ej: 101, 202B" autocomplete="off">
       </div>
-      <div class="field">
-        <label for="ecCc">Cédula del propietario</label>
-        <input id="ecCc" inputmode="numeric" placeholder="123456789" autocomplete="off">
+      <div class="field" style="margin-bottom:18px;">
+        <label>Cédula del propietario <span class="req">*</span></label>
+        <input type="text" id="ecCc" placeholder="Solo números, sin puntos ni guiones" inputmode="numeric" autocomplete="off">
+        <small style="color:var(--gris-med);">La cédula debe coincidir con la registrada en el formulario de residentes.</small>
       </div>
-      <button id="btnEcConsultar" class="btn btn-primary btn-block" type="button">Consultar</button>
-    </section>
+      <button type="button" class="btn btn-primary btn-block" id="btnEcConsultar">
+        🔍 Consultar
+      </button>
+      <p style="margin-top:18px; font-size:12px; color:var(--gris-med);">
+        <strong>¿Perdiste tu N° de formulario?</strong> Escríbenos a
+        <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a>.
+      </p>
+    </div>
 
     <!-- ============================================================== -->
     <!-- VISTA ESTADO                                                  -->
     <!-- ============================================================== -->
-    <section id="view-estado" class="card hidden">
-      <div id="alert-ec" role="alert" aria-live="polite"></div>
+    <div id="view-estado" class="lookup-box hidden" style="max-width:600px;">
+      <h3>💳 Mi estado de cuenta</h3>
+      <div id="alert-ec" class="alert hidden" role="alert" aria-live="polite"></div>
 
       <div id="ecResumen"></div>
       <div id="ecConceptos"></div>
@@ -62,7 +70,7 @@
       <button id="btnEcPagar" class="btn btn-primary btn-block hidden" type="button">Pagar en línea</button>
       <button id="btnEcPys" class="btn btn-primary btn-block hidden" type="button">Descargar paz y salvo</button>
       <button id="btnEcSalir" class="btn btn-secondary btn-block" type="button">Salir</button>
-    </section>
+    </div>
   </main>
 
   <footer class="site-footer">
