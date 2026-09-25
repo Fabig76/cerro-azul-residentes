@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0066CC">
+  <title>Salón Social — Cerro Azul</title>
+  <link rel="icon" href="assets/logo.jpg">
+  <link rel="stylesheet" href="assets/styles.css">
+  <link rel="stylesheet" href="assets/salon-social.css">
+  <script src="js/salon-social.js?v=1"></script>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <img src="assets/logo.jpg" alt="Logo Urbanización Cerro Azul" class="logo">
+      <div class="header-text">
+        <h1>Urbanización Cerro Azul</h1>
+        <p class="nit">NIT 900770444 · Bello / Niquía</p>
+        <p class="sub">Reservas del Salón Social</p>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ============================================================== -->
+    <!-- VISTA 1: LOGIN (apto + cédula)                                   -->
+    <!-- ============================================================== -->
+    <section id="view-login" class="lookup-box">
+      <h3>🏛️ Reservar Salón Social</h3>
+      <p>El salón social puede ser reservado por el propietario o por cualquier
+         residente adulto del apartamento. Cada turno (mañana o tarde) cuesta
+         <strong>$125.000 COP</strong>.</p>
+
+      <div id="alert-login" class="alert hidden" role="alert"></div>
+
+      <div class="field" style="margin-bottom:12px;">
+        <label>N° de apartamento <span class="req">*</span></label>
+        <input type="text" id="aptoInput" placeholder="Ej: 105, 202B" autocomplete="off">
+      </div>
+      <div class="field" style="margin-bottom:18px;">
+        <label>Su cédula <span class="req">*</span></label>
+        <input type="text" id="ccInput" placeholder="Solo números, sin puntos ni guiones" inputmode="numeric" autocomplete="off">
+        <small style="color:var(--gris-med); font-size:0.85em;">
+          La cédula debe corresponder al propietario o a un residente del apartamento.
+        </small>
+      </div>
+      <button type="button" class="btn btn-primary btn-block" id="btnIngresar">
+        🔍 Continuar
+      </button>
+      <p style="margin-top:18px; font-size:12px; color:var(--gris-med);">
+        <strong>¿Primera vez?</strong> El propietario debe haberlo agregado
+        previamente en el
+        <a href="index.html">formulario de residentes</a>.
+      </p>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VISTA 2: MORA (bloqueo si adeuda >=2 meses)                     -->
+    <!-- ============================================================== -->
+    <section id="view-mora" class="lookup-box hidden">
+      <h3>❌ Apartamento en mora</h3>
+      <div class="mora-box">
+        <h3>No puede hacer reservas</h3>
+        <p><strong>Apartamento <span id="moraApto"></span></strong></p>
+        <p id="moraMensaje"></p>
+        <p style="font-size:0.9em; margin-top:12px;">
+          Tiene suspendidos los servicios de áreas comunes. Para poder reservar,
+          primero debe ponerse al día con la administración.
+        </p>
+      </div>
+      <button type="button" class="btn btn-secondary btn-block" id="btnVolverMora">
+        ↩️ Volver al inicio
+      </button>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VISTA 3: CALENDARIO (30 días)                                   -->
+    <!-- ============================================================== -->
+    <section id="view-calendario" class="lookup-box" style="max-width:640px;">
+      <h3>📅 Disponibilidad — Salón Social</h3>
+
+      <div class="user-info">
+        <strong>👤 <span id="userNombre"></span></strong>
+        (<span id="userTipo"></span>) ·
+        Apto <strong id="userApto"></strong>
+      </div>
+
+      <div id="alert-calendario" class="alert hidden" role="alert"></div>
+
+      <p style="font-size:0.9em;">Selecciona un día disponible para ver los turnos.
+         Cada turno (mañana o tarde) cuesta <strong>$125.000 COP</strong>.</p>
+
+      <div class="calendario-grid" id="calendarioGrid">
+        <!-- Se llena dinámicamente -->
+      </div>
+
+      <div style="margin-top:16px; font-size:0.85em; color:var(--gris-med);">
+        <span style="display:inline-block; width:14px; height:14px; background:var(--ok-fondo); border:1px solid var(--ok); vertical-align:middle; margin-right:4px;"></span> Disponible
+        &nbsp;&nbsp;
+        <span style="display:inline-block; width:14px; height:14px; background:var(--err-fondo); border:1px solid var(--err); vertical-align:middle; margin-right:4px;"></span> Reservado
+        &nbsp;&nbsp;
+        <span style="display:inline-block; width:14px; height:14px; background:var(--gris-borde); vertical-align:middle; margin-right:4px;"></span> Pasado
+      </div>
+
+      <button type="button" class="btn btn-secondary btn-block" id="btnVolverLogin" style="margin-top:20px;">
+        ↩️ Cambiar de apartamento
+      </button>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VISTA 4: RESERER (seleccionar turno + link de pago)              -->
+    <!-- ============================================================== -->
+    <section id="view-reservar" class="lookup-box hidden" style="max-width:600px;">
+      <h3>📝 Reservar turno</h3>
+
+      <div class="user-info">
+        <strong>👤 <span id="userNombre2"></span></strong> ·
+        Apto <strong id="userApto2"></strong> ·
+        <strong id="reservarFecha"></strong>
+      </div>
+
+      <div id="alert-reservar" class="alert hidden" role="alert"></div>
+
+      <p style="font-size:0.9em;">Selecciona el turno que deseas reservar.
+         Ambos turnos del mismo día pueden ser reservados (si están disponibles).</p>
+
+      <div class="slot-buttons">
+        <button type="button" class="slot-btn" id="btnSlotManana">
+          <span class="slot-info">
+            <strong>☀️ Mañana</strong> 8:00 AM — 1:00 PM
+          </span>
+          <span class="slot-precio">$125.000</span>
+        </button>
+        <button type="button" class="slot-btn" id="btnSlotTarde">
+          <span class="slot-info">
+            <strong>🌆 Tarde</strong> 2:00 PM — 10:00 PM
+          </span>
+          <span class="slot-precio">$125.000</span>
+        </button>
+      </div>
+
+      <button type="button" class="btn btn-secondary btn-block" id="btnVolverCalendario" style="margin-top:20px;">
+        ↩️ Volver al calendario
+      </button>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VISTA 5: PAGO (link + subir comprobante)                         -->
+    <!-- ============================================================== -->
+    <section id="view-pago" class="lookup-box hidden" style="max-width:600px;">
+      <h3>💳 Confirmar y pagar</h3>
+
+      <div class="user-info">
+        <strong>👤 <span id="userNombre3"></span></strong> ·
+        Apto <strong id="userApto3"></strong> ·
+        <strong id="pagoFecha"></strong> (<span id="pagoSlot"></span>)
+      </div>
+
+      <div id="alert-pago" class="alert hidden" role="alert"></div>
+
+      <div class="link-pago-box">
+        <p style="margin:0; font-size:0.9em; color:var(--gris-med);">Valor a pagar</p>
+        <div class="precio">$125.000 COP</div>
+        <a id="linkPago" href="#" target="_blank" class="btn btn-primary">
+          🔗 Ir a pagar ahora
+        </a>
+        <div class="link" id="linkPagoUrl"></div>
+      </div>
+
+      <div class="steps">
+        <span class="step-item active">1. Reservar</span>
+        <span class="step-item active">2. Pagar</span>
+        <span class="step-item active">3. Subir comprobante</span>
+        <span class="step-item">4. ✅ Listo</span>
+      </div>
+
+      <p style="font-size:0.9em;">
+        <strong>⏰ Plazo:</strong> tiene <strong>48 horas</strong> para subir el comprobante.
+        Si no lo sube, la reserva se cancela automáticamente y el horario se libera.
+      </p>
+
+      <div class="upload-area" id="uploadArea">
+        <p style="margin:0;">📎 Arrastra o haz click para subir el comprobante de pago</p>
+        <p style="margin:4px 0; font-size:0.85em; color:var(--gris-med);">
+          PDF, JPG o PNG. Máximo 10MB.
+        </p>
+        <input type="file" id="comprobanteInput" accept="application/pdf,image/jpeg,image/png">
+        <div class="file-name" id="fileName"></div>
+      </div>
+
+      <button type="button" class="btn btn-primary btn-block" id="btnSubirComprobante" disabled style="margin-top:12px;">
+        📤 Subir comprobante
+      </button>
+      <button type="button" class="btn btn-secondary btn-block" id="btnCancelarReserva" style="margin-top:8px;">
+        ❌ Cancelar reserva
+      </button>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VISTA 6: MIS RESERVAS (lista de las reservas del solicitante)     -->
+    <!-- ============================================================== -->
+    <section id="view-mis-reservas" class="lookup-box hidden" style="max-width:700px;">
+      <h3>📋 Mis reservas</h3>
+
+      <div class="user-info">
+        <strong>👤 <span id="userNombre4"></span></strong> ·
+        Apto <strong id="userApto4"></strong>
+      </div>
+
+      <div id="alert-mis-reservas" class="alert hidden" role="alert"></div>
+
+      <div id="misReservasList" class="reservas-list">
+        <!-- Se llena dinámicamente -->
+      </div>
+
+      <div class="link-pago-box" id="linkPagoBoxMisReservas" style="display:none;">
+        <p style="margin:0 0 8px; font-size:0.9em; color:var(--gris-med);">Link de pago (configurado en la administración):</p>
+        <a id="linkPagoMisReservas" href="#" target="_blank" class="btn btn-primary">
+          🔗 Ir a pagar
+        </a>
+      </div>
+
+      <button type="button" class="btn btn-secondary btn-block" id="btnVolverCalDesdeMis" style="margin-top:20px;">
+        ↩️ Volver al calendario
+      </button>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VISTA 7: ÉXITO                                                   -->
+    <!-- ============================================================== -->
+    <section id="view-exito" class="lookup-box hidden">
+      <h3>✅ Datos guardados correctamente</h3>
+      <div id="alert-exito" class="alert success show" role="alert"></div>
+      <p id="exitoMensaje"></p>
+      <button type="button" class="btn btn-primary btn-block" id="btnVolverInicio">
+        ↩️ Volver al inicio
+      </button>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>
+      Urbanización Cerro Azul · NIT 900770444 · Bello / Niquía<br>
+      Reservas del Salón Social — Ley 1581 de 2012 y Decreto 768 de 2025<br>
+      ¿Dudas? <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a>
+    </p>
+  </footer>
+
+</body>
+</html>

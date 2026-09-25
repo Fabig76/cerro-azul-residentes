@@ -1,0 +1,326 @@
+/* ============================================================
+   PORTAL DEL SALON SOCIAL — estilos styles
+   Cerro Azul Residentes (spec-salon-social.md F4)
+   ============================================================ */
+
+/* Layout general (lookup-box principal) */
+.lookup-box {
+  max-width: 520px;
+  margin: 30px auto;
+  padding: 28px;
+  background: var(--fondo-card);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.lookup-box h3 {
+  color: var(--azul-osc);
+  margin: 0 0 12px;
+  font-size: 1.3em;
+}
+
+.lookup-box p {
+  margin: 8px 0;
+  color: var(--gris-tx);
+  line-height: 1.5;
+}
+
+/* Alertas contextuales */
+.alert {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.93em;
+  display: none;
+}
+.alert.hidden { display: none !important; }
+.alert.show { display: block; }
+.alert.error {
+  background: var(--err-fondo);
+  color: var(--err);
+  border-left: 4px solid var(--err);
+}
+.alert.success {
+  background: var(--ok-fondo);
+  color: var(--ok);
+  border-left: 4px solid var(--ok);
+}
+.alert.info {
+  background: var(--adv-fondo);
+  color: var(--adv);
+  border-left: 4px solid var(--adv);
+}
+
+/* Vista de calendario (grid de 30 dias) */
+.calendario-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin: 16px 0;
+}
+
+.calendario-day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  padding: 6px;
+  text-align: center;
+  font-size: 0.85em;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.calendario-day:hover { transform: scale(1.05); }
+
+.calendario-day.libre {
+  background: var(--ok-fondo);
+  border: 1px solid var(--ok);
+  color: var(--ok);
+}
+.calendario-day.reservado {
+  background: var(--err-fondo);
+  border: 1px solid var(--err);
+  color: var(--err);
+  cursor: not-allowed;
+}
+.calendario-day.pasado {
+  background: var(--gris-borde);
+  color: var(--gris-med);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.calendario-day .day-num {
+  font-size: 1.2em;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.calendario-day .day-slots {
+  font-size: 0.7em;
+  margin-top: 2px;
+}
+
+/* Slot buttons (mañana/tarde) */
+.slot-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.slot-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border: 2px solid var(--gris-borde);
+  border-radius: 8px;
+  background: var(--fondo-card);
+  cursor: pointer;
+  font-size: 1em;
+  transition: all 0.15s;
+}
+.slot-btn:hover:not(:disabled) {
+  border-color: var(--azul);
+  background: var(--azul-claro);
+}
+.slot-btn:disabled {
+  background: var(--err-fondo);
+  color: var(--err);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.slot-btn .slot-info {
+  text-align: left;
+}
+.slot-btn .slot-precio {
+  font-weight: bold;
+  color: var(--ok);
+}
+
+/* Step indicator (progreso) */
+.steps {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 0.85em;
+  color: var(--gris-med);
+}
+.step-item {
+  padding: 4px 12px;
+  border-radius: 12px;
+  background: var(--gris-borde);
+}
+.step-item.active {
+  background: var(--azul);
+  color: #fff;
+}
+
+/* Form fields */
+.field {
+  margin-bottom: 12px;
+}
+.field label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+  color: var(--gris-tx);
+  font-size: 0.92em;
+}
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--gris-borde);
+  border-radius: 4px;
+  font-size: 0.95em;
+  font-family: inherit;
+}
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--azul);
+  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.15);
+}
+.field .req { color: var(--err); }
+
+/* Lista de mis reservas */
+.reservas-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+}
+.reservas-list li {
+  padding: 12px;
+  background: var(--fondo);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  border-left: 4px solid var(--azul);
+}
+.reservas-list li.pagado {
+  border-left-color: var(--ok);
+}
+.reservas-list li.cancelado,
+.reservas-list li.expirado {
+  border-left-color: var(--gris-med);
+  opacity: 0.6;
+}
+
+/* Botones */
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background 0.15s;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+}
+.btn-primary {
+  background: var(--azul);
+  color: #fff;
+}
+.btn-primary:hover { background: var(--azul-osc); }
+.btn-primary:disabled {
+  background: var(--gris-med);
+  cursor: not-allowed;
+}
+.btn-secondary {
+  background: var(--gris-borde);
+  color: var(--gris-tx);
+}
+.btn-secondary:hover { background: #c8c8c8; }
+.btn-danger {
+  background: var(--err);
+  color: #fff;
+}
+.btn-danger:hover { background: #B71C18; }
+.btn-block {
+  display: block;
+  width: 100%;
+}
+
+/* Link de pago (boton especial) */
+.link-pago-box {
+  background: var(--azul-claro);
+  border: 2px dashed var(--azul);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  text-align: center;
+}
+.link-pago-box .precio {
+  font-size: 1.8em;
+  font-weight: bold;
+  color: var(--azul-osc);
+  margin: 8px 0;
+}
+.link-pago-box .link {
+  display: inline-block;
+  margin-top: 8px;
+  word-break: break-all;
+  font-size: 0.9em;
+  color: var(--gris-med);
+}
+
+/* Upload comprobante */
+.upload-area {
+  border: 2px dashed var(--gris-borde);
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  margin: 12px 0;
+  background: var(--fondo);
+}
+.upload-area.dragover {
+  border-color: var(--azul);
+  background: var(--azul-claro);
+}
+.upload-area input[type="file"] { display: none; }
+.upload-area .file-name {
+  margin-top: 8px;
+  color: var(--ok);
+  font-weight: 600;
+}
+
+/* Header con info del solicitante */
+.user-info {
+  background: var(--azul-claro);
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 0.92em;
+}
+.user-info strong { color: var(--azul-osc); }
+
+/* Mensaje de mora (alerta bloqueante) */
+.mora-box {
+  background: var(--err-fondo);
+  border-left: 4px solid var(--err);
+  padding: 20px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+.mora-box h3 { color: var(--err); margin: 0 0 8px; }
+.mora-box p { color: var(--err); margin: 4px 0; }
+
+/* Responsive */
+@media (max-width: 480px) {
+  .calendario-grid {
+    gap: 3px;
+    font-size: 0.8em;
+  }
+  .slot-btn {
+    padding: 12px;
+    font-size: 0.9em;
+  }
+}
