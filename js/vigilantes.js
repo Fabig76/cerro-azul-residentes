@@ -52,9 +52,10 @@ const V = {
     document.querySelectorAll('.vig-tab[data-tab]').forEach(t => {
       t.classList.toggle('active', t.dataset.tab === tab);
     });
-    document.getElementById('tab-residentes').classList.toggle('hidden', tab !== 'residentes');
-    document.getElementById('tab-placas').classList.toggle('hidden', tab !== 'placas');
-    document.getElementById('tab-mudanzas').classList.toggle('hidden', tab !== 'mudanzas');
+    // Toggle de TODOS los tabs (genérico, sirve para futuros tabs)
+    document.querySelectorAll('[id^="tab-"]').forEach(t => {
+      t.classList.toggle('hidden', t.id !== 'tab-' + tab);
+    });
     V.hideAlert();
     if (tab === 'mudanzas') V.cargarMudanzasHoy();
   },
