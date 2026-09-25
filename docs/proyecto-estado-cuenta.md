@@ -159,7 +159,7 @@ if (ctx.verif.diligencia !== 'Propietario') {
   · Maneja `PESTANA_EXISTE` con confirm()
   · onbeforeunload durante la subida
 
-### 6.2 estado-cuenta.html (portal del propietario) — FASE 4 (pendiente)
+### 6.2 estado-cuenta.html (portal del propietario) — FASE 4 ✓ COMPLETADA
 
   · Login con CA-XXXX+apto+CC (mismo flujo que pestaña "Editar mi registro")
   · Llama `ecConsultar` → muestra:
@@ -170,6 +170,7 @@ if (ctx.verif.diligencia !== 'Propietario') {
     - Botón "Descargar mi factura" si `facturaDisponible`
     - Botón "Pagar en línea" si `linkPago` configurado
     - Botón "Paz y salvo" si `pazYSalvoHabilitado` (total_cartera < tolerancia)
+  · Sin librerías externas. Descargas con `descargarBase64()` (atob + Blob).
 
 ---
 
@@ -209,6 +210,31 @@ if (ctx.verif.diligencia !== 'Propietario') {
   · **5594e1c** — cache-busting. El navegador del operador cacheaba
     `cartera-admin.js` incluso después del push. Fix: agregar `?v=3`
     al `src` del script en `cartera-admin.html`.
+
+  · **59762ca** — sin feedback en `analizar()`. El operador reportó
+    "no pasa nada" al hacer click en Analizar. Causa: `leerPdf` procesa
+    625 páginas con callback vacío (tarda 1-3 min sin señal). Fix:
+    barra de progreso visible + console.log de diagnóstico.
+
+  · **e6f9734** — `ReferenceError: pdfBuf is not defined`. El análisis
+    hacía todo el trabajo (Excel + PDF + cruzar) y fallaba AL FINAL.
+    Causa: `pdfBuf` se declaraba con `const` DENTRO del try pero se usaba
+    FUERA (`_pdfBuffer = pdfBuf.slice(0)`). `const` tiene scope de bloque.
+    Fix: declarar `let pdfBuf` fuera del try. **No lo detectó node --check**
+    (solo valida sintaxis, no alcance de variables).
+
+  · **9c652f7** — (a) `descargarBase64 is not defined`: la función se
+    usaba en descargarFactura/descargarPazYSalvo pero nunca se definió
+    (se omitió al escribir el archivo). (b) "Unexpected token '<'":
+    `post()` usaba `r.json()` directo y fallaba con error confuso si el
+    backend devolvía HTML. Fix: agregar la función + post() con
+    `r.text()` + `JSON.parse` try/catch.
+
+  · **039a24b** — `URL.createObjectURL is not a function`. Causa: la
+    variable `const URL = 'https://...'` tapaba (shadowing) el objeto
+    global `window.URL`, que expone `URL.createObjectURL`. Fix: renombrar
+    a `APP_URL`. **Lección: NUNCA nombrar una variable "URL" en JS de
+    navegador.**
 
   · **Carga de Drive requiere confirm=t**: archivos `.js` y `.html` no
     se pueden descargar de Drive con `drive.google.com/uc?export=download`
@@ -253,7 +279,7 @@ if (ctx.verif.diligencia !== 'Propietario') {
 
 ---
 
-## 10. Estado al cierre de Fase 3 (25-Sept-2026)
+## 10. Estado al cierre de Fase 5 (25-Sept-2026)
 
 | Componente                              | Estado                        |
 |-----------------------------------------|-------------------------------|
@@ -261,30 +287,25 @@ if (ctx.verif.diligencia !== 'Propietario') {
 | Config con 5 claves nuevas              | ✓ (operador las agregó)       |
 | Sheet Cartera con _Control/Pagos/PazYSalvos | ✓ (ecSetup las creó)      |
 | Procesador validado Fase 2              | ✓ (13/13 checks)              |
-| cartera-admin.html pusheado             | ✓ (commit f9862b2)             |
-| js/cartera-admin.js pusheado            | ✓ (con fixes 61a13fd + 5594e1c)|
-| js/cartera-procesador.js pusheado       | ✓ (commit 6c1a2de)             |
-| Cache-busting ?v=3                      | ✓ (commit 5594e1c)             |
-| Drive backup pre-cambios                | ✓ (14 archivos md5 OK)        |
-| Drive carpeta operativa                 | ✓ (5 archivos + 3 recursos)   |
-| Validación E2E con archivos reales      | ⏳ PENDIENTE (operador prueba)|
+| cartera-admin.html pusheado             | ✓ (con cache-busting ?v=5)    |
+| js/cartera-procesador.js pusheado       | ✓                             |
+| Carga agosto 2026 publicada             | ✓ (625 facturas en Drive)     |
+| estado-cuenta.html pusheado             | ✓ (portal del propietario)    |
+| js/estado-cuenta.js pusheado            | ✓ (con fixes de descarga)     |
+| index.html con link al pie              | ✓                             |
+| Paz y salvo generado                    | ✓ (PYS-00001..00005)          |
+| Plantilla paz y salvo a 1 página        | ✓ (eliminados 9 párrafos vacíos)|
+| Descarga de factura y paz y salvo       | ✓ (validado por el operador)  |
+| Validación 3 escenarios (saldo 0/deuda/arrendatario) | ✓            |
+
+Datos de prueba (3 escenarios):
+  · Paz y salvo (saldo 0):    CA-0055 | apto 105 | CC 11786889
+  · Factura (deuda $426.300): CA-0070 | apto 503 | CC 71745644
+  · Rechazo (arrendatario):   CA-0062 | apto 1527 | CC 1036649914
 
 ---
 
 ## 11. Próximas fases (spec §11)
-
-  · **Fase 4** — Portal del propietario
-    · `estado-cuenta.html` (sin libs externas)
-    · `js/estado-cuenta.js` (login + render + descargas)
-    · Modificar `index.html`: 1 línea agregando link al pie
-    · Validación: 8 casos (Propietario con deuda / saldo 0 / a favor /
-      1-999 / Arrendatario / apto no en cartera / 5 fallos /
-      ecPazYSalvo directo con deuda)
-
-  · **Fase 5** — Paz y salvo
-    · Generar plantilla con marcadores
-    · Probar descarga con Propietario CA-0083 + apto 9999
-    · Verificar consecutivo PYS-00001, código de 10 chars
 
   · **Fase 6** — Recarga y cambio de mes
     · Volver a publicar el mismo mes → REEMPLAZADO
