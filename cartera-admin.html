@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0066CC">
+  <title>Cargador de Cartera — Cerro Azul</title>
+  <link rel="icon" href="assets/logo.jpg">
+  <link rel="stylesheet" href="assets/styles.css">
+  <!-- Librerías externas en orden EXACTO (spec §7.2). NO cambiar versiones. -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';</script>
+  <script src="js/cartera-procesador.js"></script>
+  <script src="js/cartera-admin.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <img src="assets/logo.jpg" alt="Cerro Azul" class="logo">
+    <div>
+      <h1>Urbanización Cerro Azul</h1>
+      <p>NIT 900770444 · Bello / Niquía</p>
+    </div>
+  </header>
+
+  <main>
+    <!-- ============================================================== -->
+    <!-- VISTA LOGIN                                                    -->
+    <!-- ============================================================== -->
+    <section id="view-login" class="card">
+      <h2>Acceso del administrador</h2>
+      <p class="legal-banner">Confidencial. Solo el administrador autorizado puede cargar información contable.</p>
+      <div id="alert" role="alert" aria-live="polite"></div>
+      <div class="field">
+        <label for="loginPassword">Contraseña</label>
+        <input id="loginPassword" type="password" placeholder="••••••••" autocomplete="off">
+      </div>
+      <button id="btnLogin" class="btn btn-primary btn-block" type="button">Ingresar</button>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VISTA CARGA                                                   -->
+    <!-- ============================================================== -->
+    <section id="view-carga" class="card hidden">
+      <h2>Cargar cartera mensual</h2>
+      <p class="legal-banner">Suba el Excel y el PDF que le entrega el contador. El sistema valida y publica.</p>
+      <div id="alertCarga" role="alert" aria-live="polite"></div>
+
+      <div class="field">
+        <label for="fileCartera">Excel de cartera (del contador)</label>
+        <input id="fileCartera" type="file" accept=".xls,.xlsx">
+      </div>
+      <div class="field">
+        <label for="filePdf">PDF unificado de cuentas de cobro (625 páginas)</label>
+        <input id="filePdf" type="file" accept=".pdf,.PDF">
+      </div>
+
+      <button id="btnAnalizar" class="btn btn-primary btn-block" type="button">Analizar</button>
+
+      <div id="resumenAnalisis" class="card hidden"></div>
+
+      <button id="btnPublicar" class="btn btn-primary btn-block hidden" type="button" disabled>Publicar</button>
+
+      <div id="progreso" class="hidden">
+        <p id="progresoTexto">Subiendo facturas...</p>
+        <progress id="progresoBarra" value="0" max="100"></progress>
+      </div>
+
+      <button id="btnSalir" class="btn btn-secondary btn-block" type="button">Salir</button>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>© Cerro Azul · <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a></p>
+  </footer>
+</body>
+</html>
