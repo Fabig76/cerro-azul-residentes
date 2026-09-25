@@ -6,6 +6,25 @@
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec';
 
 const A = {
+  // Helpers para fetch (agregados en F5 del módulo salón social)
+  async apiGet(params) {
+    const url = new URL(APPS_SCRIPT_URL);
+    Object.entries(params).forEach(([k, v]) => {
+      if (v != null) url.searchParams.set(k, v);
+    });
+    const r = await fetch(url.toString(), { method: 'GET', redirect: 'follow' });
+    return r.json();
+  },
+  async apiPost(payload) {
+    const r = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: JSON.stringify(payload),
+      redirect: 'follow'
+    });
+    return r.json();
+  },
+
   state: {
     loggedIn: false,
     selectedNumForm: null,
