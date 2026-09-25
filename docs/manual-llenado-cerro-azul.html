@@ -186,6 +186,7 @@
     <li><a href="#enviar">Enviar el formulario</a></li>
     <li><a href="#editar">Editar tu registro después</a></li>
     <li><a href="#mudanzas">🚚 NUEVO — Agendar una mudanza</a></li>
+    <li><a href="#estado-cuenta">💳 NUEVO — Consultar estado de cuenta</a></li>
     <li><a href="#faq">Preguntas frecuentes</a></li>
   </ol>
 </div>
@@ -993,6 +994,14 @@
       La administración te responderá con tu código.
     </div>
 
+    <div class="info-box info-importante" style="margin-top:16px;">
+      <strong>💳 ¿También puede consultar su estado de cuenta?</strong><br>
+      Sí. Con el mismo <strong>CA-XXXX</strong>, su <strong>N° de apartamento</strong> y su <strong>cédula</strong>,
+      puede entrar al <a href="estado-cuenta.html" style="color:var(--azul-osc); font-weight:bold;">portal de estado de cuenta</a>
+      para ver su deuda, descargar su factura y generar el paz y salvo (si está al día).
+      Vea la sección <a href="#estado-cuenta" style="color:var(--azul-osc); font-weight:bold;">Consultar estado de cuenta</a> más abajo.
+    </div>
+
     <div class="consejo">El código CA-XXXX no cambia cuando editas. Si te asignaron CA-0042 la primera vez, seguirás siendo CA-0042 en todas las ediciones futuras.</div>
   </div>
   <div class="nav-links">
@@ -1251,8 +1260,99 @@
 
   </div>
   <div class="nav-links">
-    <a href="#faq" class="nav-prev">Preguntas frecuentes</a>
+    <a href="#estado-cuenta" class="nav-prev">💳 Consultar estado de cuenta →</a>
     <a href="#inicio">↑ Volver al inicio</a>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ESTADO DE CUENTA: PORTAL CONTABLE DEL PROPIETARIO            -->
+<!-- ============================================================ -->
+<div class="section-manual" id="estado-cuenta">
+  <div class="section-header">
+    <div class="section-num">💳</div>
+    <div>
+      <h2>Consultar su estado de cuenta</h2>
+      <p>Vea su deuda, descargue la factura y solicite el paz y salvo</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="info-box info-importante">
+      <strong>¿Qué es esto?</strong><br>
+      Desde esta nueva pestaña puede consultar cuánto debe a la fecha,
+      descargar su factura mensual en PDF y, si está al día, generar
+      su paz y salvo — todo sin escribir a la administración.
+    </div>
+
+    <h3 style="color:var(--azul); margin-top:20px;">Cómo ingresar</h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Abra <strong>https://fabig76.github.io/cerro-azul-residentes/estado-cuenta.html</strong>
+        o haga click en la pestaña <strong>"💳 Consultar estado de cuenta"</strong> del formulario principal.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Escriba su <strong>N° Formulario (CA-XXXX)</strong>,
+        su <strong>N° de apartamento</strong> y su <strong>cédula</strong>
+        (la misma que usó para agendar mudanza).</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">El sistema le mostrará:
+        <ul style="margin-top:6px; padding-left:20px;">
+          <li>Su <strong>estado de cuenta actual</strong> (deuda a la fecha)</li>
+          <li>Los <strong>últimos 3 pagos</strong> registrados</li>
+          <li>Un botón para <strong>descargar la factura</strong> en PDF</li>
+          <li>Un botón para <strong>generar el paz y salvo</strong> (solo si su deuda es menor a $1.000)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="info-box info-importante" style="margin-top:20px;">
+      <strong>¿Quién puede usar este portal?</strong><br>
+      <strong>Solo el propietario</strong> del apartamento. Si usted es
+      arrendatario, el propietario debe generar el paz y salvo y reenviárselo.
+    </div>
+
+    <div class="info-box info-aviso" style="margin-top:12px;">
+      <strong>¿Su apartamento tiene deuda?</strong><br>
+      El botón de paz y salvo <strong>NO</strong> aparecerá si tiene deuda pendiente. Primero
+      debe pagar (el link de pago aparece dentro de la factura PDF).
+    </div>
+
+    <div class="consejo">Si no recuerda su código CA-XXXX, use la pestaña "Editar mi registro"
+      del formulario principal — su código aparece en la parte de arriba.</div>
+
+    <h3 style="color:var(--azul); margin-top:24px;">Preguntas frecuentes específicas del estado de cuenta</h3>
+
+    <h4 style="color:var(--texto); margin:16px 0 6px;">¿Por qué me piden la cédula si ya saben mi CA-XXXX?</h4>
+    <p style="color:var(--texto-med);">Por seguridad. Su cédula confirma que es usted el propietario.
+      El sistema compara la cédula que escribe contra la registrada por el propietario original del apartamento.</p>
+
+    <h4 style="color:var(--texto); margin:16px 0 6px;">¿Puedo descargar facturas de meses anteriores?</h4>
+    <p style="color:var(--texto-med);">Por ahora solo está disponible la factura del mes en curso.
+      El historial de facturas anteriores se irá habilitando progresivamente.</p>
+
+    <h4 style="color:var(--texto); margin:16px 0 6px;">Soy arrendatario, ¿cómo obtengo mi paz y salvo?</h4>
+    <p style="color:var(--texto-med);">El portal de estado de cuenta está habilitado solo para
+      propietarios. Si usted es arrendatario, pídale al propietario que genere el paz y salvo
+      y se lo envíe por correo.</p>
+
+    <h4 style="color:var(--texto); margin:16px 0 6px;">¿Cuánto tarda en generarse el paz y salvo?</h4>
+    <p style="color:var(--texto-med);">Es inmediato — el sistema genera un PDF con los datos de
+      su apartamento y se lo descarga al dispositivo. El PDF queda registrado en el sistema con un
+      número consecutivo (PYS-XXXXX).</p>
+
+    <div class="info-box info-importante" style="margin-top:24px;">
+      <strong>¿Tienes otra pregunta?</strong><br>
+      Escribe a <strong>urb.cerroazul@gmail.com</strong> con tu CA-XXXX y tu N° de apartamento.
+    </div>
+
+  </div>
+  <div class="nav-links">
+    <a href="#mudanzas" class="nav-prev">← 🚚 Agendar mudanza</a>
+    <a href="#faq" class="nav-next">Preguntas frecuentes →</a>
   </div>
 </div>
 
