@@ -473,6 +473,45 @@
           </button>
         </div>
 
+        <!-- ============================================================ -->
+        <!-- ZONA DE BORRADO DE DATOS DEL RESIDENTE (solo modo edición) -->
+        <!-- ============================================================ -->
+        <div id="zona-borrado" class="zona-borrado hidden">
+          <h3 style="color:var(--adv); margin-top:0;">⚠️ Zona de borrado</h3>
+          <p>Si hubo cambio de propietario o los residentes anteriores ya no
+             viven en este apartamento, use este botón para limpiar las
+             secciones de residentes, menores, vehículos, motos, bicicletas,
+             mascotas y contactos.</p>
+          <p><strong>Las secciones 1-4 (datos del propietario) y 11 (firma)
+             NO se borran.</strong></p>
+          <button type="button" id="btnClearResidente" class="btn-danger">
+            🗑️ Borrado de datos residente
+          </button>
+        </div>
+
+        <!-- Modal de confirmación de borrado -->
+        <div id="modalClearResidente" class="modal-overlay hidden">
+          <div class="modal-content">
+            <h3 style="color:var(--err); margin-top:0;">⚠️ Confirmar borrado</h3>
+            <p>Esto borrará los residentes y vehículos del apartamento
+               <strong id="modalApto"></strong>. ¿Confirmas?</p>
+            <p>Se limpiarán las secciones:</p>
+            <ul style="margin-left:20px;">
+              <li>Sección 5 — Residentes</li>
+              <li>Sección 5.1 — Menores</li>
+              <li>Sección 6 — Vehículos y motos</li>
+              <li>Sección 7 — Bicicletas</li>
+              <li>Sección 9 — Mascotas</li>
+              <li>Sección 10 — Contactos de emergencia</li>
+            </ul>
+            <p>Los datos del propietario (1-4), firma (11) y llaveros (8) NO se borran.</p>
+            <div style="display:flex; gap:12px; margin-top:20px;">
+              <button type="button" id="btnCancelarClear" class="btn-secondary">❌ Cancelar</button>
+              <button type="button" id="btnConfirmarClear" class="btn-danger">🗑️ Sí, borrar</button>
+            </div>
+          </div>
+        </div>
+
       </form>
     </div>
 

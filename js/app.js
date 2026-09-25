@@ -125,6 +125,9 @@ async function buscarRegistro() {
     $('#view-edit').classList.add('hidden');
     $('#view-create').classList.remove('hidden');  // FIX 23-Sept: mostrar tambien el contenedor
     $('#form-card').classList.remove('hidden');
+    // Mostrar la zona de borrado solo en modo edición
+    const zb = $('#zona-borrado');
+    if (zb) zb.classList.remove('hidden');
     showAlert('alert-create', 'Registro cargado. Modifica los campos que necesites y haz clic en "Guardar cambios".', 'info');
     // Marca el formulario como "modo edición"
     state.mode = 'edit';
@@ -555,6 +558,9 @@ function resetForm() {
   state.numForm = '';
   state.editLookup = null;
   state.mode = 'create';
+  // Ocultar zona de borrado (solo visible en modo edición)
+  const zb = $('#zona-borrado');
+  if (zb) zb.classList.add('hidden');
   $('#editIndicator').classList.add('hidden');
   $('#success-card').classList.add('hidden');
   $('#form-card').classList.remove('hidden');
@@ -736,7 +742,84 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Bindear eventos del modulo de mudanzas
   M.bindEvents();
+
+  // Bindear eventos del boton "Borrado de datos residente" (modo edición)
+  bindClearResidente();
 });
+
+// ============================================================
+// BORRADO DE DATOS DEL RESIDENTE (spec-residente.md F3)
+// Solo visible en modo edición. Valida CC del propietario.
+// ============================================================
+function bindClearResidente() {
+  const btnShow = $('#btnClearResidente');
+  const btnCancel = $('#btnCancelarClear');
+  const btnConfirm = $('#btnConfirmarClear');
+  const modal = $('#modalClearResidente');
+
+  if (btnShow) btnShow.addEventListener('click', () => {
+    const apto = val('#apto').trim();
+    $('#modalApto').textContent = apto || '(sin número)';
+    modal.classList.remove('hidden');
+  });
+
+  if (btnCancel) btnCancel.addEventListener('click', () => {
+    modal.classList.add('hidden');
+  });
+
+  if (btnConfirm) btnConfirm.addEventListener('click', clearResidenteForm);
+}
+
+async function clearResidenteForm() {
+  const numForm = state.numForm;
+  const apto = val('#apto').trim();
+  const ccPropConfirm = val('#ccProp').trim();
+
+  if (!numForm || !apto || !ccPropConfirm) {
+    alert('Faltan datos requeridos (N° Formulario, apartamento o céd del).');
+    return;
+  }
+
+  const payload = {
+    action: 'clearResidente',
+    numForm,
+    apto,
+    ccPropConfirm
+  };
+
+  const btn = $('#btnConfirmarClear');
+  btn.disabled = true;
+  btn.textContent = 'Borrando...';
+
+  try {
+    const resp = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: JSON.stringify(payload),
+      redirect: 'follow'
+    });
+    const data = await resp.json();
+
+    if (!data.ok) {
+      alert('Error: ' + (data.error || 'No se pudo borrar.'));
+      btn.disabled = false;
+      btn.textContent = '🗑️ Sí, borrar';
+      return;
+    }
+
+    // Éxito
+    $('#modalClearResidente').classList.add('hidden');
+    alert(`✅ Se borraron ${data.celdasLimpiadas} celdas. El registro del propietario se mantiene intacto.`);
+    // Recargar el formulario para reflejar el cambio
+    if (state.editLookup) poblarFormulario(state.editLookup);
+    btn.disabled = false;
+    btn.textContent = '🗑️ Sí, borrar';
+  } catch (e) {
+    alert('Error de red: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '🗑️ Sí, borrar';
+  }
+}
 
 // ============================================================
 // MODULO MUDANZAS (M)
