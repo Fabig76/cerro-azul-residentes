@@ -13,7 +13,9 @@
   let _credenciales = null;  // { numForm, apto, ccProp }
 
   // APPS_SCRIPT_URL: copiar el valor EXACTO de js/admin.js línea 6
-  const URL = 'https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec';
+  // IMPORTANTE: NO llamarla "URL" — taparía el objeto global window.URL
+  // (que es el que expone URL.createObjectURL para las descargas).
+  const APP_URL = 'https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec';
 
   // ==================== CONSULTAR ==================================
   async function consultar() {
@@ -158,7 +160,7 @@
 
   // ==================== HELPERS ==================================
   async function post(payload) {
-    const r = await fetch(URL, {
+    const r = await fetch(APP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
       body: JSON.stringify(payload),
