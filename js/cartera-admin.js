@@ -241,9 +241,9 @@
   // Devuelve el elemento #alert de la vista actualmente visible.
   // La vista login tiene #alert; la vista carga tiene #alertCarga.
   function $alert() {
-    var v = $('#view-login');
-    if (v && !v.classList.contains('hidden')) return $('#alert');
-    return $('#alertCarga');
+    var v = $('#view-carga');
+    if (v && !v.classList.contains('hidden')) return $('#alertCarga');
+    return $('#alert');
   }
 
   function alertOk(m)  { var a = $alert(); a.className = 'alert alert-ok';  a.textContent = m; }
