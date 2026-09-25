@@ -885,7 +885,7 @@ function adminListarReservasMudanzas(estado, torre, fechaDesde) {
       placa: String(row[COL_MUD_PLACA] || ''),
       observaciones: String(row[COL_MUD_OBS] || ''),
       estado: estadoRow,
-      fechaCreacion: row[COL_MUD_FECHA_CREA] ? Utilities.formatDate(new Date(row[COL_MUD_FECHA_CREA]), 'America/Bogota', "yyyy-MM-dd'T'HH:mm:ss") : ''
+      fechaReservaRaw: row[COL_MUD_FECHARES] ? Utilities.formatDate(new Date(row[COL_MUD_FECHARES]), 'America/Bogota', "yyyy-MM-dd'T'HH:mm:ss") : ''
     });
   }
   // Ordenar por fecha descendente
