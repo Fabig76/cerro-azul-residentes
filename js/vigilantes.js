@@ -387,6 +387,64 @@ const V = {
   },
 
   // ============================================================
+  // ============================================================
+  // SALÓN SOCIAL (spec-salon-social.md F5)
+  // Vigilantes ven: fecha + slot + estado + apto + nombre
+  // ============================================================
+
+  async verReservasSalon(fecha) {
+    if (!fecha) {
+      fecha = new Date().toISOString().slice(0, 10);
+    }
+    const container = document.getElementById('salonCards');
+    container.innerHTML = '<p style="grid-column: span 2; text-align:center; color:var(--texto-med); padding:20px;">Cargando...</p>';
+
+    try {
+      const r = await V.apiGet({ action: 'vigilanteVerReservasSalon', fecha: fecha });
+
+      if (!r.ok) {
+        container.innerHTML = '<p style="grid-column: span 2; color:var(--err); padding:20px;">Error: ' + (r.error || 'desconocido') + '</p>';
+        return;
+      }
+
+      // Render de las 2 cards: mañana y tarde
+      container.innerHTML = '';
+      container.appendChild(this.renderSalonCard('☀️ Mañana (8 AM - 1 PM)', r.manana));
+      container.appendChild(this.renderSalonCard('🌆 Tarde (2 PM - 10 PM)', r.tarde));
+    } catch (e) {
+      container.innerHTML = '<p style="grid-column: span 2; color:var(--err);">Error de red: ' + e.message + '</p>';
+    }
+  },
+
+  renderSalonCard(titulo, slotData) {
+    const card = document.createElement('div');
+    card.style.cssText = 'background:white; padding:20px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.06);';
+
+    const isReservado = slotData.estado === 'reservado';
+
+    let bgColor = isReservado ? '#FFEBEE' : '#E8F5E9';
+    let borderColor = isReservado ? '#F44336' : '#4CAF50';
+    let estadoText = isReservado ? '🔴 RESERVADO' : '⚪ LIBRE';
+    let estadoColor = isReservado ? '#C62828' : '#2E7D32';
+
+    card.style.borderLeft = '4px solid ' + borderColor;
+    card.style.background = bgColor;
+
+    let html = '<h3 style="margin:0 0 12px; color:#6B4423; font-size:1.05em;">' + titulo + '</h3>';
+    html += '<div style="font-size:1.5em; font-weight:bold; color:' + estadoColor + ';">' + estadoText + '</div>';
+
+    if (isReservado) {
+      html += '<div style="margin-top:12px; font-size:0.95em;">';
+      html += '<div><strong>Apto:</strong> ' + slotData.apto + '</div>';
+      html += '<div><strong>Reservado por:</strong> ' + slotData.nombre + '</div>';
+      html += '</div>';
+    }
+
+    card.innerHTML = html;
+    return card;
+  },
+
+  // ============================================================
   // INIT
   // ============================================================
   bindEvents() {
@@ -398,7 +456,14 @@ const V = {
     document.getElementById('placaInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') V.buscarPlaca(); });
     document.getElementById('btnLogout').addEventListener('click', () => V.logout());
     document.querySelectorAll('.vig-tab[data-tab]').forEach(t => {
-      t.addEventListener('click', () => V.switchTab(t.dataset.tab));
+      t.addEventListener('click', () => {
+        V.switchTab(t.dataset.tab);
+        // Cargar datos cuando se cambia al tab salón
+        if (t.dataset.tab === 'salon') {
+          const fecha = document.getElementById('salonFecha').value || new Date().toISOString().slice(0, 10);
+          V.verReservasSalon(fecha);
+        }
+      });
     });
     // Por defecto, fecha = hoy
     const hoy = new Date().toISOString().slice(0, 10);
@@ -408,6 +473,17 @@ const V = {
       V.cargarMudanzasHoy(f);
     });
     document.getElementById('btnVerTodas').addEventListener('click', () => V.cargarMudanzasHoy(null));
+
+    // Salón social (F5)
+    document.getElementById('salonFecha').value = hoy;
+    document.getElementById('salonFecha').addEventListener('change', () => {
+      V.verReservasSalon(document.getElementById('salonFecha').value);
+    });
+    document.getElementById('btnSalonHoy').addEventListener('click', () => {
+      const h = new Date().toISOString().slice(0, 10);
+      document.getElementById('salonFecha').value = h;
+      V.verReservasSalon(h);
+    });
   }
 };
 

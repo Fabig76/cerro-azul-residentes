@@ -194,6 +194,7 @@
       <button type="button" class="vig-tab active" data-tab="residentes">🔍 Buscar residente</button>
       <button type="button" class="vig-tab" data-tab="placas">🚗 Buscar por placa</button>
       <button type="button" class="vig-tab" data-tab="mudanzas">📦 Mudanzas</button>
+      <button type="button" class="vig-tab" data-tab="salon">🏛️ Salón Social</button>
       <button type="button" class="vig-tab" style="margin-left:auto;" id="btnLogout">Cerrar sesión</button>
     </div>
 
@@ -229,6 +230,19 @@
         <button type="button" class="btn btn-secondary" id="btnVerTodas">Ver todas (futuras + canceladas recientes)</button>
       </div>
       <div id="mudList"></div>
+    </div>
+
+    <!-- TAB 4: SALON SOCIAL -->
+    <div id="tab-salon" class="hidden">
+      <div class="date-bar">
+        <label><strong>Fecha:</strong></label>
+        <input type="date" id="salonFecha" style="padding:6px 10px;">
+        <button type="button" class="btn btn-secondary" id="btnSalonHoy">Hoy</button>
+      </div>
+      <div id="salonCards" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;"></div>
+      <div id="salonLeyenda" style="margin-top:16px; font-size:0.85em; color:var(--texto-med);">
+        Solo se muestra apto + nombre del solicitante. Para más detalles, contacte a la administración.
+      </div>
     </div>
   </div>
 

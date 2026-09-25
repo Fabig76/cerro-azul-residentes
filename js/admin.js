@@ -504,6 +504,161 @@ const A = {
   },
 
   // ============================================================
+  // SALÓN SOCIAL (spec-salon-social.md F5)
+  // Pestaña admin: lista de reservas + ver comprobante + cancelar
+  // ============================================================
+
+  // Estado del salón social
+  salonState: {
+    currentReservaId: null
+  },
+
+  async navSalon() {
+    document.getElementById('tab-residentes-admin').classList.add('hidden');
+    document.getElementById('tab-salon-admin').classList.remove('hidden');
+    document.getElementById('btnNavResidentes').classList.remove('btn-primary');
+    document.getElementById('btnNavResidentes').classList.add('btn-secondary');
+    document.getElementById('btnNavSalon').classList.remove('btn-secondary');
+    document.getElementById('btnNavSalon').classList.add('btn-primary');
+    await this.cargarSalonList();
+  },
+
+  navResidentes() {
+    document.getElementById('tab-salon-admin').classList.add('hidden');
+    document.getElementById('tab-residentes-admin').classList.remove('hidden');
+    document.getElementById('btnNavSalon').classList.remove('btn-primary');
+    document.getElementById('btnNavSalon').classList.add('btn-secondary');
+    document.getElementById('btnNavResidentes').classList.remove('btn-secondary');
+    document.getElementById('btnNavResidentes').classList.add('btn-primary');
+  },
+
+  async cargarSalonList() {
+    const estado = document.getElementById('salonEstadoFilter').value;
+    const container = document.getElementById('salonList');
+    container.innerHTML = '<p style="text-align:center; color:var(--gris-med); padding:20px;">Cargando...</p>';
+
+    try {
+      const r = await A.apiGet({ action: 'adminListarReservasSalon', estado: estado });
+
+      if (!r.ok) {
+        container.innerHTML = '<p style="color:var(--err); padding:20px;">Error: ' + (r.error || 'desconocido') + '</p>';
+        return;
+      }
+
+      const reservas = r.reservas || [];
+      if (reservas.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:var(--gris-med); padding:30px;">No hay reservas con estado "' + estado + '".</p>';
+        return;
+      }
+
+      let html = '<table class="results-table"><thead><tr>';
+      html += '<th>ID</th><th>Apto</th><th>Solicitante</th><th>Fecha</th><th>Slot</th><th>Comprobante</th><th>Estado</th><th>Acciones</th>';
+      html += '</tr></thead><tbody>';
+
+      reservas.forEach(res => {
+        const estadoColor = res.estado === 'Pagado' ? 'var(--ok)' :
+                            res.estado === 'PendientePago' ? 'var(--adv)' :
+                            res.estado === 'CanceladoPorAdmin' ? 'var(--err)' :
+                            'var(--gris-med)';
+        const comprobanteCell = res.tieneComprobante
+          ? '<button class="btn btn-secondary" style="padding:4px 8px; font-size:0.85em;" onclick="A.verComprobante(\'' + res.id + '\')">📎 Ver</button>'
+          : '<span style="color:var(--gris-med); font-size:0.85em;">Sin comprobante</span>';
+
+        html += '<tr>';
+        html += '<td><code>' + res.id + '</code></td>';
+        html += '<td>' + res.apto + '</td>';
+        html += '<td>' + res.nombre + '<br><small style="color:var(--gris-med);">' + res.ccSolicitante + '</small></td>';
+        html += '<td>' + res.fechaReserva + '</td>';
+        html += '<td>' + res.slot + '</td>';
+        html += '<td>' + comprobanteCell + '</td>';
+        html += '<td style="color:' + estadoColor + ';">' + res.estado + '</td>';
+        html += '<td>';
+        if (res.estado === 'Pagado' || res.estado === 'PendientePago') {
+          html += '<button class="btn btn-danger" style="padding:4px 8px; font-size:0.85em;" onclick="A.abrirModalCancelar(\'' + res.id + '\', \'' + res.apto + '\', \'' + res.nombre.replace(/'/g, "\\'") + '\', \'' + res.fechaReserva + '\', \'' + res.slot + '\')">❌ Cancelar</button>';
+        }
+        html += '</td>';
+        html += '</tr>';
+      });
+
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    } catch (e) {
+      container.innerHTML = '<p style="color:var(--err);">Error de red: ' + e.message + '</p>';
+    }
+  },
+
+  async verComprobante(reservaId) {
+    try {
+      const r = await A.apiGet({ action: 'adminVerComprobanteSalon', reservaId: reservaId });
+      if (!r.ok) {
+        A.showAlert('Error al obtener comprobante: ' + (r.error || ''), 'err');
+        return;
+      }
+      if (!r.tieneComprobante) {
+        A.showAlert('Esta reserva no tiene comprobante subido.', 'err');
+        return;
+      }
+      // Abrir en nueva pestaña
+      window.open(r.comprobanteUrl, '_blank');
+    } catch (e) {
+      A.showAlert('Error de red: ' + e.message, 'err');
+    }
+  },
+
+  abrirModalCancelar(reservaId, apto, nombre, fecha, slot) {
+    A.salonState.currentReservaId = reservaId;
+    document.getElementById('modalSalonDetalle').innerHTML =
+      '<strong>Reserva:</strong> ' + reservaId + '<br>' +
+      '<strong>Solicitante:</strong> ' + nombre + ' (Apto ' + apto + ')<br>' +
+      '<strong>Fecha:</strong> ' + fecha + ' (' + slot + ')';
+    document.getElementById('modalSalonMotivo').value = '';
+    document.getElementById('modal-cancelar-salon').classList.remove('hidden');
+  },
+
+  cerrarModalCancelar() {
+    document.getElementById('modal-cancelar-salon').classList.add('hidden');
+    A.salonState.currentReservaId = null;
+  },
+
+  async confirmarCancelarReserva() {
+    const motivo = document.getElementById('modalSalonMotivo').value.trim();
+    if (!motivo) {
+      alert('Por favor ingrese el motivo de cancelación.');
+      return;
+    }
+    const password = prompt('Para confirmar, ingrese la contraseña de administrador:');
+    if (!password) return;
+
+    const btn = document.getElementById('btnConfirmarCancelarSalon');
+    btn.disabled = true;
+    btn.textContent = 'Cancelando...';
+
+    try {
+      const r = await A.apiPost({
+        action: 'adminCancelarReservaSalon',
+        reservaId: A.salonState.currentReservaId,
+        motivo: motivo,
+        adminPassword: password
+      });
+
+      if (!r.ok) {
+        alert('Error: ' + (r.error || 'desconocido'));
+        btn.disabled = false;
+        btn.textContent = '🗑️ Confirmar cancelación';
+        return;
+      }
+
+      A.cerrarModalCancelar();
+      A.showAlert('✅ Reserva ' + A.salonState.currentReservaId + ' cancelada por administrador.', 'ok');
+      await A.cargarSalonList();
+    } catch (e) {
+      alert('Error de red: ' + e.message);
+      btn.disabled = false;
+      btn.textContent = '🗑️ Confirmar cancelación';
+    }
+  },
+
+  // ============================================================
   // INIT
   // ============================================================
   bindEvents() {
@@ -512,6 +667,14 @@ const A = {
     document.getElementById('btnSearch').addEventListener('click', () => A.buscar());
     document.getElementById('searchInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') A.buscar(); });
     document.getElementById('btnLogout').addEventListener('click', () => A.logout());
+
+    // Salón social (F5)
+    document.getElementById('btnNavResidentes').addEventListener('click', () => A.navResidentes());
+    document.getElementById('btnNavSalon').addEventListener('click', () => A.navSalon());
+    document.getElementById('btnCargarSalon').addEventListener('click', () => A.cargarSalonList());
+    document.getElementById('salonEstadoFilter').addEventListener('change', () => A.cargarSalonList());
+    document.getElementById('btnCancelarModalSalon').addEventListener('click', () => A.cerrarModalCancelar());
+    document.getElementById('btnConfirmarCancelarSalon').addEventListener('click', () => A.confirmarCancelarReserva());
   }
 };
 

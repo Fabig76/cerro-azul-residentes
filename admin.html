@@ -158,15 +158,54 @@
 
     <!-- VISTA 2: PANEL -->
     <div id="view-panel" class="hidden">
-      <div class="search-bar">
-        <input type="text" id="searchInput" placeholder="Buscar por apto, nombre, cédula, correo, celular o CA-XXXX...">
-        <button type="button" class="btn btn-primary" id="btnSearch">🔍 Buscar</button>
-        <button type="button" class="btn btn-secondary" id="btnLogout">Cerrar sesión</button>
+      <div class="admin-nav" style="display:flex; gap:8px; margin-bottom:16px;">
+        <button type="button" class="btn btn-primary" id="btnNavResidentes">👥 Residentes</button>
+        <button type="button" class="btn btn-secondary" id="btnNavSalon">🏛️ Salón Social</button>
+        <button type="button" class="btn btn-secondary" id="btnLogout" style="margin-left:auto;">Cerrar sesión</button>
       </div>
 
-      <div id="resultsContainer"></div>
+      <div id="tab-residentes-admin">
+        <div class="search-bar">
+          <input type="text" id="searchInput" placeholder="Buscar por apto, nombre, cédula, correo, celular o CA-XXXX...">
+          <button type="button" class="btn btn-primary" id="btnSearch">🔍 Buscar</button>
+        </div>
 
-      <div id="detailContainer"></div>
+        <div id="resultsContainer"></div>
+
+        <div id="detailContainer"></div>
+      </div>
+
+      <div id="tab-salon-admin" class="hidden">
+        <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
+          <label><strong>Estado:</strong></label>
+          <select id="salonEstadoFilter">
+            <option value="PendientePago">PendientePago</option>
+            <option value="Pagado" selected>Pagado</option>
+            <option value="Cancelado">Cancelado</option>
+            <option value="Expirado">Expirado</option>
+            <option value="CanceladoPorAdmin">CanceladoPorAdmin</option>
+            <option value="Todos">Todos</option>
+          </select>
+          <button type="button" class="btn btn-primary" id="btnCargarSalon">🔄 Actualizar lista</button>
+        </div>
+        <div id="salonList"></div>
+      </div>
+    </div>
+
+    <!-- VISTA 3: MODAL CANCELAR RESERVA -->
+    <div id="modal-cancelar-salon" class="modal-overlay hidden" style="position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px;">
+      <div class="modal-content" style="background:white; padding:28px; border-radius:12px; max-width:500px; width:100%; box-shadow:0 8px 32px rgba(0,0,0,0.25);">
+        <h3 style="color:var(--err); margin:0 0 16px;">⚠️ Cancelar reserva</h3>
+        <p id="modalSalonDetalle"></p>
+        <div style="margin:16px 0;">
+          <label><strong>Motivo de cancelación (requerido):</strong></label>
+          <textarea id="modalSalonMotivo" rows="3" style="width:100%; padding:8px; margin-top:4px; border:1px solid var(--gris-borde); border-radius:4px;"></textarea>
+        </div>
+        <div style="display:flex; gap:12px; margin-top:20px;">
+          <button type="button" class="btn btn-secondary" id="btnCancelarModalSalon" style="flex:1;">❌ Cancelar (no borrar)</button>
+          <button type="button" class="btn btn-danger" id="btnConfirmarCancelarSalon" style="flex:1;">🗑️ Confirmar cancelación</button>
+        </div>
+      </div>
     </div>
 
   </main>
