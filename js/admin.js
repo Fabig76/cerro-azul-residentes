@@ -95,7 +95,7 @@ const A = {
       document.getElementById('detailContainer').innerHTML = '';
       return;
     }
-    let html = '<p style="color:var(--texto-med); margin-bottom:8px;">' + resultados.length + ' resultado(s):</p>';
+    let html = '<p style="color:var(--gris-med); margin-bottom:8px;">' + resultados.length + ' resultado(s):</p>';
     html += '<table class="results-table">';
     html += '<thead><tr><th>CA-XXXX</th><th>Apto</th><th>Tipo</th><th>Nombre</th><th>CC</th><th>Correo</th><th>Celular</th></tr></thead>';
     html += '<tbody>';
@@ -277,7 +277,7 @@ const A = {
             <div><label>Llaveros entregados</label><input id="edit-llaverosAut" value="${A.escapeHtml(r.llaverosAut)}" disabled></div>
             <div><label>Tags entregados</label><input id="edit-tagsAut" value="${A.escapeHtml(r.tagsAut)}" disabled></div>
           </div>
-          <p style="font-size:0.82em; color:var(--texto-med); margin-top:6px;">Nota: llaveros/tags aún no están operativos. Esta sección es solo informativa.</p>
+          <p style="font-size:0.82em; color:var(--gris-med); margin-top:6px;">Nota: llaveros/tags aún no están operativos. Esta sección es solo informativa.</p>
         </details>
 
         <details><summary><strong>9. Dispositivos (control de acceso)</strong></summary>
@@ -357,7 +357,7 @@ const A = {
           <button type="button" class="btn btn-secondary hidden" id="btnCancelEdit">↶ Cancelar edición</button>
           <button type="button" class="btn btn-primary hidden" id="btnSave">💾 Guardar cambios</button>
           <span style="flex:1"></span>
-          <small style="color:var(--texto-med); font-size: 0.82em;">Última edición: ${A.escapeHtml(r.fechaEdicion)}</small>
+          <small style="color:var(--gris-med); font-size: 0.82em;">Última edición: ${A.escapeHtml(r.fechaEdicion)}</small>
         </div>
       </div>
     `;
