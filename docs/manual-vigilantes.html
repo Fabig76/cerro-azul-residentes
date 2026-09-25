@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#6B4423">
+  <title>Manual del Vigilante — Cerro Azul</title>
+  <style>
+    /* ============================================================
+       ESTILOS — Manual del Vigilante
+       Cerro Azul Residentes
+       ============================================================ */
+    :root {
+      --marron:    #6B4423;
+      --marron-osc: #4A2E18;
+      --marron-claro: #8B5A2B;
+      --crema:     #FFF8E1;
+      --crema-osc: #F8F4E8;
+      --verde:     #4CAF50;
+      --verde-fondo: #E8F5E9;
+      --rojo:      #D32F2F;
+      --rojo-fondo: #FFEBEE;
+      --azul:      #1976D2;
+      --azul-fondo: #E3F2FD;
+      --naranja:   #F57C00;
+      --naranja-fondo: #FFF3E0;
+      --gris:      #757575;
+      --gris-claro: #EEEEEE;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: #212121;
+      line-height: 1.7;
+      background: #F5F5F5;
+    }
+
+    /* PORTADA */
+    .cover {
+      background: linear-gradient(135deg, var(--marron) 0%, var(--marron-osc) 100%);
+      color: white;
+      text-align: center;
+      padding: 50px 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .cover .logo {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: white;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 50px;
+    }
+    .cover h1 { font-size: 2.2em; margin-bottom: 8px; }
+    .cover .sub { font-size: 1.1em; opacity: 0.95; margin-bottom: 16px; }
+    .cover .desc { font-size: 1em; opacity: 0.8; margin-bottom: 40px; max-width: 600px; }
+    .cover .btn-start {
+      background: white; color: var(--marron);
+      padding: 16px 40px; border-radius: 50px; font-size: 1.1em;
+      font-weight: bold; text-decoration: none; display: inline-block;
+    }
+    .cover .meta { margin-top: 30px; font-size: 0.85em; opacity: 0.7; }
+
+    /* ÍNDICE */
+    .toc {
+      max-width: 800px;
+      margin: 40px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .toc h2 { color: var(--marron); margin-bottom: 16px; }
+    .toc ol { padding-left: 24px; line-height: 1.8; }
+    .toc a { color: var(--marron); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+
+    /* SECCIONES */
+    .section-manual {
+      max-width: 800px;
+      margin: 30px auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    .section-header {
+      background: var(--marron);
+      color: white;
+      padding: 20px 28px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .section-num {
+      background: rgba(255,255,255,0.2);
+      border: 2px solid rgba(255,255,255,0.5);
+      border-radius: 50%;
+      width: 48px; height: 48px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2em; font-weight: bold; flex-shrink: 0;
+    }
+    .section-header h2 { font-size: 1.3em; }
+    .section-header p { opacity: 0.85; font-size: 0.9em; margin-top: 4px; }
+    .section-body { padding: 24px 28px; }
+    .section-body h3 {
+      color: var(--marron);
+      margin: 20px 0 8px;
+      font-size: 1.1em;
+    }
+
+    /* CAJAS DE INFORMACIÓN */
+    .info-box {
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin: 16px 0;
+      font-size: 0.95em;
+    }
+    .info-box strong { display: block; margin-bottom: 4px; }
+    .info-importante {
+      background: var(--azul-fondo);
+      border-left: 4px solid var(--azul);
+      color: #0D47A1;
+    }
+    .info-aviso {
+      background: var(--naranja-fondo);
+      border-left: 4px solid var(--naranja);
+      color: #E65100;
+    }
+    .info-error {
+      background: var(--rojo-fondo);
+      border-left: 4px solid var(--rojo);
+      color: #B71C1C;
+    }
+    .info-exito {
+      background: var(--verde-fondo);
+      border-left: 4px solid var(--verde);
+      color: #1B5E20;
+    }
+    .info-consejo {
+      background: #FFFDE7;
+      border-left: 4px solid #FBC02D;
+      color: #F57F17;
+    }
+
+    /* PASOS */
+    .step {
+      display: flex;
+      gap: 16px;
+      margin: 14px 0;
+      align-items: flex-start;
+    }
+    .step-num {
+      background: var(--marron);
+      color: white;
+      border-radius: 50%;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 0.85em;
+      flex-shrink: 0;
+    }
+    .step-text { padding-top: 3px; flex: 1; }
+    .step-text strong { color: var(--marron-osc); }
+
+    /* MOCKUPS / DIAGRAMAS ASCII */
+    .mockup {
+      background: #FAFAFA;
+      border: 2px solid var(--gris-claro);
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.88em;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .mockup-phone {
+      max-width: 360px;
+      margin: 16px auto;
+      border: 8px solid #333;
+      border-radius: 24px;
+      background: white;
+      padding: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    .mockup-phone-screen {
+      background: white;
+      padding: 8px;
+    }
+
+    /* BOTONES VISUALES */
+    .btn-ejemplo {
+      display: inline-block;
+      background: var(--azul);
+      color: white;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.9em;
+      margin: 2px 4px;
+    }
+    .btn-ejemplo.green { background: var(--verde); }
+    .btn-ejemplo.red { background: var(--rojo); }
+    .btn-ejemplo.gray { background: var(--gris); }
+    .btn-ejemplo.outline {
+      background: white;
+      color: var(--azul);
+      border: 1px solid var(--azul);
+    }
+
+    /* INPUT VISUAL */
+    .input-ejemplo {
+      display: inline-block;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-family: 'Consolas', monospace;
+      font-size: 0.9em;
+      min-width: 200px;
+      color: #666;
+    }
+
+    /* TABLAS */
+    table.tabla-ejemplo {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 0.9em;
+    }
+    table.tabla-ejemplo th {
+      background: var(--marron);
+      color: white;
+      padding: 8px;
+      text-align: left;
+    }
+    table.tabla-ejemplo td {
+      padding: 8px;
+      border-bottom: 1px solid var(--gris-claro);
+    }
+    table.tabla-ejemplo tr:nth-child(even) td {
+      background: var(--crema);
+    }
+
+    /* NAVEGACIÓN INFERIOR */
+    .nav-links {
+      display: flex;
+      justify-content: space-between;
+      padding: 16px 28px;
+      background: var(--crema-osc);
+      border-top: 1px solid var(--gris-claro);
+    }
+    .nav-links a {
+      color: var(--marron);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+    .nav-links a:hover { text-decoration: underline; }
+
+    /* FAQ */
+    .faq-item {
+      margin: 12px 0;
+      padding: 12px 16px;
+      background: #FAFAFA;
+      border-radius: 6px;
+      border-left: 3px solid var(--marron-claro);
+    }
+    .faq-q { font-weight: 700; color: var(--marron-osc); margin-bottom: 4px; }
+    .faq-a { color: #424242; }
+
+    /* GLOSARIO */
+    .glosario-item {
+      margin: 8px 0;
+      padding: 8px 12px;
+      background: var(--crema-osc);
+      border-radius: 4px;
+    }
+    .glosario-item .term {
+      font-weight: 700;
+      color: var(--marron-osc);
+    }
+    .glosario-item .def {
+      color: #424242;
+    }
+
+    /* FAQ / AYUDA */
+    .help-box {
+      background: var(--crema-osc);
+      border: 2px solid var(--marron);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .help-box h3 { color: var(--marron); margin-bottom: 12px; }
+    .help-box p { margin-bottom: 8px; }
+    .help-box a {
+      display: inline-block;
+      background: var(--marron);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      margin: 8px 4px;
+    }
+
+    /* FOOTER */
+    footer {
+      background: var(--marron-osc);
+      color: white;
+      text-align: center;
+      padding: 30px 20px;
+      margin-top: 40px;
+      font-size: 0.9em;
+    }
+    footer a { color: white; text-decoration: underline; }
+    .footer-meta { margin-top: 8px; opacity: 0.8; font-size: 0.85em; }
+
+    /* RESPONSIVE */
+    @media (max-width: 600px) {
+      .section-header { padding: 16px 20px; }
+      .section-body { padding: 20px; }
+      .section-num { width: 40px; height: 40px; font-size: 1em; }
+      .cover h1 { font-size: 1.8em; }
+      .nav-links { flex-direction: column; gap: 8px; }
+      table.tabla-ejemplo { font-size: 0.8em; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================== -->
+<!-- PORTADA                                                         -->
+<!-- ============================================================== -->
+<div class="cover" id="inicio">
+  <div class="logo">👁️</div>
+  <h1>Manual del Vigilante</h1>
+  <p class="sub">Portal de Vigilancia — Cerro Azul</p>
+  <p class="desc">Guía paso a paso para usar el portal de vigilancia: cómo
+  buscar residentes, consultar placas, registrar mudanzas y consultar las
+  reservas del salón social.</p>
+  <a href="#indice" class="btn-start">📖 Ver Índice</a>
+  <p class="meta">Última actualización: 25-Sept-2026 · Versión 1.0</p>
+</div>
+
+<!-- ============================================================== -->
+<!-- ÍNDICE                                                          -->
+<!-- ============================================================== -->
+<div class="toc" id="indice">
+  <h2>📋 Índice del Manual</h2>
+  <ol>
+    <li><a href="#antes-de-empezar">Antes de empezar: lo que necesitas saber</a></li>
+    <li><a href="#seccion-1">Sección 1 — Iniciar sesión (login)</a></li>
+    <li><a href="#seccion-2">Sección 2 — Buscar un residente</a></li>
+    <li><a href="#seccion-3">Sección 3 — Ver toda la información de un residente</a></li>
+    <li><a href="#seccion-4">Sección 4 — Buscar por placa (caso de incidente)</a></li>
+    <li><a href="#seccion-5">Sección 5 — Ver mudanzas programadas para hoy</a></li>
+    <li><a href="#seccion-6">Sección 6 — Registrar check de mudanza (realizada o no)</a></li>
+    <li><a href="#seccion-7">Sección 7 — Consultar reservas del salón social</a></li>
+    <li><a href="#seccion-8">Sección 8 — Cerrar sesión</a></li>
+    <li><a href="#preguntas">Preguntas frecuentes</a></li>
+    <li><a href="#errores">Errores comunes y cómo resolverlos</a></li>
+    <li><a href="#glosario">Glosario (palabras técnicas explicadas)</a></li>
+    <li><a href="#ayuda">¿Necesitas ayuda?</a></li>
+  </ol>
+</div>
+
+<!-- ============================================================== -->
+<!-- ANTES DE EMPEZAR                                                -->
+<!-- ============================================================== -->
+<div class="section-manual" id="antes-de-empezar">
+  <div class="section-header">
+    <div class="section-num">!</div>
+    <div>
+      <h2>Antes de empezar</h2>
+      <p>Lo que necesitas saber para usar el portal</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Qué es el portal de vigilancia?</h3>
+    <p>Es una página web donde tú (como vigilante) puedes consultar
+    información de los residentes del conjunto: nombre, apartamento, vehículos
+    registrados, mascotas, y las reservas del salón social y mudanzas del día.
+    Es como una "guía telefónica digital" del conjunto.</p>
+
+    <div class="info-box info-importante">
+      <strong>¿Para qué sirve?</strong><br>
+      • Buscar rápidamente a qué apartamento pertenece una persona.<br>
+      • Buscar a qué apartamento pertenece un carro/moto por su placa.<br>
+      • Ver las mudanzas programadas para hoy y registrar si se realizaron.<br>
+      • Ver las reservas del salón social del día.
+    </div>
+
+    <h3>¿Qué necesitas para usarlo?</h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Un <strong>celular o computador</strong> con acceso a internet.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">La <strong>contraseña de vigilancia</strong> (te la entrega el administrador).</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">La <strong>dirección web (URL)</strong> del portal. Es esta:<br>
+        <code style="background:#F5F5F5; padding:4px 8px; border-radius:4px; display:inline-block; margin-top:6px;">
+          https://fabig76.github.io/cerro-azul-residentes/vigilantes.html
+        </code>
+      </div>
+    </div>
+
+    <h3>Cómo se ve el portal (vista general)</h3>
+    <p>Cuando abras el portal verás una pantalla con un encabezado color marrón
+    que dice <strong>"Portal de Vigilancia — Cerro Azul"</strong> y abajo un formulario
+    para iniciar sesión. Así se ve:</p>
+
+    <div class="mockup">
+┌─────────────────────────────────────────────┐
+│  👁️ Portal de Vigilancia — Cerro Azul       │
+│                              [Sesión activa] │
+├─────────────────────────────────────────────┤
+│                                              │
+│  Iniciar sesión                              │
+│                                              │
+│  Personal de vigilancia autorizado.          │
+│                                              │
+│  Contraseña:                                 │
+│  ┌──────────────────────────┐                │
+│  │ ••••••••                 │                │
+│  └──────────────────────────┘                │
+│                                              │
+│  [    Ingresar    ]                          │
+│                                              │
+│  ¿Problemas con la contraseña? Contacte al   │
+│  administrador.                                │
+└─────────────────────────────────────────────┘
+    </div>
+
+    <div class="info-box info-consejo">
+      <strong>💡 Consejo importante:</strong>
+      Esta pantalla es lo PRIMERO que verás. Para usar cualquier función
+      del portal, primero debes <strong>iniciar sesión</strong>.
+      Eso lo explico en la siguiente sección.
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 1 — INICIAR SESIÓN                                      -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-1">
+  <div class="section-header">
+    <div class="section-num">1</div>
+    <div>
+      <h2>Iniciar sesión (login)</h2>
+      <p>Cómo entrar al portal con tu contraseña de vigilancia</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Qué es "iniciar sesión"?</h3>
+    <p>Es el primer paso para entrar al portal. Pones tu contraseña y el
+    sistema te deja ver la información de los residentes.</p>
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Abre el portal en tu navegador (celular o computador):<br>
+        <code style="background:#F5F5F5; padding:4px 8px; border-radius:4px; display:inline-block; margin-top:6px;">
+          https://fabig76.github.io/cerro-azul-residentes/vigilantes.html
+        </code>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Escribe tu <strong>contraseña de vigilancia</strong> en el campo
+        que dice "Contraseña". La contraseña es: <code style="background:#F5F5F5; padding:2px 6px; border-radius:4px;">VigCerroAzul2026</code></div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Click en el botón <span class="btn-ejemplo">Ingresar</span></div>
+    </div>
+
+    <h3>Vista de la pantalla</h3>
+    <div class="mockup">
+┌─────────────────────────────────────────────┐
+│  👁️ Portal de Vigilancia — Cerro Azul       │
+│                              [Sesión activa] │
+├─────────────────────────────────────────────┤
+│                                              │
+│  Iniciar sesión                              │
+│                                              │
+│  Personal de vigilancia autorizado.          │
+│                                              │
+│  Contraseña:                                 │
+│  ┌──────────────────────────┐                │
+│  │ VigCerroAzul2026        │  ← ESCRIBIR AQUÍ│
+│  └──────────────────────────┘                │
+│                                              │
+│  [    Ingresar    ]   ← CLICK AQUÍ          │
+│                                              │
+└─────────────────────────────────────────────┘
+    </div>
+
+    <h3>Si te equivocas al escribir la contraseña</h3>
+    <p>Aparecerá un mensaje de error. La contraseña distingue entre
+    <strong>mayúsculas y minúsculas</strong>. Verifica que escribiste
+    correctamente: <code style="background:#F5F5F5; padding:2px 6px; border-radius:4px;">VigCerroAzul2026</code>
+    (con V y C mayúsculas, todo junto, sin espacios).</p>
+
+    <div class="info-box info-error">
+      <strong>❌ Si la contraseña es incorrecta:</strong><br>
+      Verás un mensaje rojo en la parte de arriba. Vuelve a escribirla
+      con cuidado.
+    </div>
+
+    <h3>¿Qué pasa después de iniciar sesión?</h3>
+    <p>La pantalla cambia. Verás 4 pestañas en la parte de arriba:</p>
+
+    <div class="mockup">
+┌─────────────────────────────────────────────────────────┐
+│  🔍 Buscar    🚗 Placas    📦 Mudanzas    🏛️ Salón      │
+│  residente                                           [Cerrar]
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  [Contenido de la pestaña seleccionada]                   │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+    </div>
+
+    <p>Las 4 pestañas son:</p>
+    <ul style="margin-left: 20px;">
+      <li><strong>🔍 Buscar residente</strong> — buscar por nombre, cédula o apartamento</li>
+      <li><strong>🚗 Buscar por placa</strong> — para incidentes de vehículos</li>
+      <li><strong>📦 Mudanzas</strong> — ver y registrar mudanzas del día</li>
+      <li><strong>🏛️ Salón Social</strong> — ver reservas del salón del día</li>
+    </ul>
+
+    <div class="info-box info-consejo">
+      <strong>💡 Tip:</strong> Para cambiar de pestaña solo haz <strong>click</strong>
+      en la que quieras. La información se actualiza automáticamente.
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="#indice">↑ Volver al índice</a>
+    <a href="#seccion-2">Sección 2: Buscar residente →</a>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 2 — BUSCAR UN RESIDENTE                                 -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-2">
+  <div class="section-header">
+    <div class="section-num">2</div>
+    <div>
+      <h2>Buscar un residente</h2>
+      <p>Cómo encontrar la información de cualquier persona del conjunto</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Cuándo usar esta función?</h3>
+    <p>Cuando necesitas saber <strong>a qué apartamento pertenece una persona</strong>.
+    Por ejemplo:</p>
+    <ul style="margin-left: 20px;">
+      <li>Un visitante pregunta por alguien del conjunto</li>
+      <li>Necesitas confirmar la cédula de un residente</li>
+      <li>Un propietario pregunta por su inquilino</li>
+      <li>Verificar que una persona registrada en el conjunto vive ahí</li>
+    </ul>
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Asegúrate de estar en la pestaña <strong>"🔍 Buscar residente"</strong>
+        (es la primera pestaña, ya está activa al iniciar sesión).</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">En el campo de búsqueda, escribe lo que recuerdes de la persona:
+        <ul style="margin-top: 4px;">
+          <li>El <strong>número de apartamento</strong> (ej: <code>105</code>)</li>
+          <li>El <strong>nombre</strong> (ej: <code>Becerra</code>)</li>
+          <li>La <strong>cédula</strong> (ej: <code>11786889</code>)</li>
+          <li>El <strong>celular</strong>, <strong>correo</strong> o el nombre del encargado</li>
+        </ul>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Click en <span class="btn-ejemplo">🔍 Buscar</span> (o presiona Enter)</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">Verás los resultados abajo. Click en la persona que te interesa
+        para ver toda su información.</div>
+    </div>
+
+    <h3>Vista de la pantalla</h3>
+    <div class="mockup">
+┌─────────────────────────────────────────────────────────┐
+│  [🔍 Buscar residente]  [🚗 Placas]  [📦 Mudanzas]  [🏛️ Salón]
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  Buscar por apto, nombre, cédula, encargado o inmobiliaria │
+│  ┌──────────────────────────────────────┐  [🔍 Buscar]  │
+│  │ Becerra                             │               │
+│  └──────────────────────────────────────┘               │
+│                                                          │
+│  Resultados:                                              │
+│  ┌──┬─────────┬──────────────────┬────────┐             │
+│  │# │ CA-XXXX  │ Nombre            │ Apto   │             │
+│  ├──┼─────────┼──────────────────┼────────┤             │
+│  │1 │CA-0055  │ Luis Oswaldo Bec. │ 105    │             │
+│  │2 │CA-0055  │ Yasmila Córdoba  │ 105    │             │
+│  └──┴─────────┴──────────────────┴────────┘             │
+│  ↑ click aquí para ver detalles                          │
+└─────────────────────────────────────────────────────────┘
+    </div>
+
+    <h3>Ejemplos de búsqueda</h3>
+    <table class="tabla-ejemplo">
+      <thead>
+        <tr><th>Si escribes...</th><th>Encuentras...</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>105</code></td><td>Todos los registros del apartamento 105</td></tr>
+        <tr><td><code>CA-0055</code></td><td>El registro con ese número de formulario</td></tr>
+        <tr><td><code>Becerra</code></td><td>Todas las personas con apellido Becerra</td></tr>
+        <tr><td><code>11786889</code></td><td>La persona con esa cédula</td></tr>
+        <tr><td><code>3117311383</code></td><td>La persona con ese celular</td></tr>
+        <tr><td><code>oswaldo@hotmail</code></td><td>La persona con ese correo</td></tr>
+      </tbody>
+    </table>
+
+    <div class="info-box info-consejo">
+      <strong>💡 Consejo:</strong> Si no sabes qué escribir, empieza con el
+      <strong>número de apartamento</strong> (ej: 105). Es lo más rápido y
+      siempre funciona.
+    </div>
+
+    <h3>Si no aparece ningún resultado</h3>
+    <div class="info-box info-aviso">
+      <strong>⚠️ Posibles causas:</strong><br>
+      • La persona NO está registrada en el conjunto.<br>
+      • Escribiste mal el nombre o número (revisa las tildes y mayúsculas).<br>
+      • El apartamento no existe en el conjunto.
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="#seccion-1">← Sección 1: Login</a>
+    <a href="#seccion-3">Sección 3: Ver info completa →</a>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 3 — VER TODA LA INFORMACIÓN                             -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-3">
+  <div class="section-header">
+    <div class="section-num">3</div>
+    <div>
+      <h2>Ver toda la información de un residente</h2>
+      <p>Cómo abrir el detalle completo después de buscar</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Qué pasa cuando hago click en un resultado?</h3>
+    <p>Al hacer click en una fila de resultados, se abre abajo una
+    <strong>ficha completa</strong> con TODOS los datos del residente
+    organizados en secciones que se pueden expandir y colapsar.</p>
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Después de buscar (sección anterior), verás una tabla con resultados.
+        Click en la fila de la persona que te interesa.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Aparecerá una <strong>ficha</strong> debajo con secciones colapsables.
+        Las secciones tienen un <strong>▼ flecha</strong> que indica que se pueden abrir.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Click en cualquier sección para expandirla (▼ se vuelve ▶).</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">Click de nuevo para colapsarla.</div>
+    </div>
+
+    <h3>Secciones que verás en la ficha</h3>
+    <div class="info-box info-importante">
+      <strong>La ficha tiene 11 secciones (clic para expandir cada una):</strong>
+      <ol style="margin-top: 8px;">
+        <li>📋 <strong>Datos básicos</strong> — nombre, cédula, tipo (Propietario/Arrendatario), contacto</li>
+        <li>🅿️ <strong>Parqueaderos</strong> — números de celda y matrículas de parqueo</li>
+        <li>🏠 <strong>Arrendatario / Encargado</strong> — datos del inquilino (si aplica)</li>
+        <li>🏢 <strong>Inmobiliaria</strong> — datos de la administradora del inmueble (si aplica)</li>
+        <li>👨‍👩‍👧 <strong>Residentes</strong> — hasta 4 personas registradas en el apartamento</li>
+        <li>🧒 <strong>Menores de edad</strong> — hasta 4 niños registrados</li>
+        <li>🚗 <strong>Vehículos</strong> — hasta 2 carros con placa, marca, color</li>
+        <li>🏍️ <strong>Motos</strong> — hasta 2 motos</li>
+        <li>🚴 <strong>Bicicletas</strong> — hasta 2 bicicletas</li>
+        <li>🐕 <strong>Mascotas</strong> — hasta 2 mascotas con especie y raza</li>
+        <li>📞 <strong>Contactos de emergencia</strong> — hasta 2 contactos adicionales</li>
+      </ol>
+    </div>
+
+    <h3>Vista de la ficha</h3>
+    <div class="mockup">
+┌─────────────────────────────────────────────────────────┐
+│  ▼ 📋 Datos básicos                                       │
+│  ┌───────────────────────────────────────────────────┐   │
+│  │ N° Formulario: CA-0055                          │   │
+│  │ N° Apartamento: 105                              │   │
+│  │ Nombre: Luis Oswaldo Becerra Palacios           │   │
+│  │ Cédula: 11786889                                 │   │
+│  │ Tipo: Propietario                                │   │
+│  │ Correo: oswaldobepa@hotmail.com                  │   │
+│  │ Celular: 3117311383                              │   │
+│  │ Fecha registro: 2026-09-17                      │   │
+│  └───────────────────────────────────────────────────┘   │
+│                                                          │
+│  ▶ 🅿️ Parqueaderos                                        │
+│  ▶ 🏠 Arrendatario                                       │
+│  ▶ 🏢 Inmobiliaria                                        │
+│  ▼ 👨‍👩‍👧 Residentes (2)                                   │
+│  ┌───────────────────────────────────────────────────┐   │
+│  │ Yasmila Córdoba Chaverra (Cónyuge)                │   │
+│  │ CC: 26274476                                     │   │
+│  │ Cel: 3147305409                                  │   │
+│  │                                                   │   │
+│  │ Johao Alexander Becerra Córdoba (Hijo)            │   │
+│  │ CC: 1077996990                                    │   │
+│  │ Cel: 3217517441                                  │   │
+│  └───────────────────────────────────────────────────┘   │
+│                                                          │
+│  ▶ 🚗 Vehículos (1)                                       │
+│  ▶ 🐕 Mascotas (1)                                        │
+│  ... etc.                                                │
+└─────────────────────────────────────────────────────────┘
+    </div>
+
+    <h3>¿Para qué te sirve cada sección?</h3>
+    <table class="tabla-ejemplo">
+      <thead>
+        <tr><th>Sección</th><th>Útil para...</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>📋 Datos básicos</td><td>Confirmar nombre, cédula, apartamento</td></tr>
+        <tr><td>👨‍👩‍👧 Residentes</td><td>Ver cuántas personas viven en el apto</td></tr>
+        <tr><td>🚗 Vehículos / 🏍️ Motos</td><td>Ver placas y colores para identificar carros en la calle</td></tr>
+        <tr><td>🚴 Bicicletas</td><td>Identificar bicicletas en zonas comunes</td></tr>
+        <tr><td>🐕 Mascotas</td><td>Saber qué mascotas tiene el apto (para alertas)</td></tr>
+        <tr><td>📞 Contactos emergencia</td><td>Quién llamar en caso de urgencia con el residente</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Lo que NO verás en la ficha</h3>
+    <div class="info-box info-aviso">
+      <strong>Por privacidad, el portal de vigilancia NO muestra:</strong><br>
+      ❌ Correo electrónico del propietario (privado)<br>
+      ❌ Celular personal (privado, solo emergencias)<br>
+      ❌ Número de formulario CA-XXXX (es para edición, no consulta)<br>
+      ❌ Fila del Sheet (información técnica interna)
+    </div>
+
+    <div class="info-box info-consejo">
+      <strong>💡 Tip:</strong> Para ver un carro o moto específico, es más rápido
+      usar la pestaña <strong>"🚗 Buscar por placa"</strong> (sección 4).
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="#seccion-2">← Sección 2: Buscar</a>
+    <a href="#seccion-4">Sección 4: Buscar por placa →</a>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 4 — BUSCAR POR PLACA                                   -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-4">
+  <div class="section-header">
+    <div class="section-num">4</div>
+    <div>
+      <h2>Buscar por placa (caso de incidente)</h2>
+      <p>Cómo identificar el dueño de un vehículo por su placa</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="info-box info-error">
+      <strong>🚨 CASO DE INCIDENTE VEHICULAR:</strong> Si un carro o moto genera
+      un problema dentro del conjunto (rayón, golpe, mal parqueado, etc.),
+      usa esta función para identificar al propietario y su apartamento.
+    </div>
+
+    <h3>¿Cuándo usar esta función?</h3>
+    <p>Cuando tienes la <strong>placa de un vehículo</strong> (completa o parcial)
+    y necesitas saber a quién pertenece. Por ejemplo:</p>
+    <ul style="margin-left: 20px;">
+      <li>Un carro se estacionó en zona prohibida</li>
+      <li>Un carro golpeó a otro y el responsable se fue</li>
+      <li>Un vehículo sospechoso está dando vueltas</li>
+      <li>Verificar si una moto tiene permiso de entrar</li>
+    </ul>
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Click en la pestaña <strong>"🚗 Buscar por placa"</strong>
+        (es la 2da pestaña).</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Verás un aviso amarillo explicando el caso de uso. Ignóralo
+        (es informativo, no requiere acción).</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">En el campo <strong>"Ingrese la placa"</strong> escribe la placa
+        o parte de ella. Ejemplo: <code>TES999</code> o <code>ABC12</code></div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">Click en <span class="btn-ejemplo">🚗 Buscar placa</span></div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-text">Aparecerán las coincidencias: cada vehículo con su apartamento
+        y propietario. <strong>NO muestra el nombre del propietario</strong>
+        (privacidad), solo el apartamento.</div>
+    </div>
+
+    <h3>Vista de la pantalla</h3>
+    <div class="mockup">
+┌─────────────────────────────────────────────────────────┐
+│  [🔍 Buscar]  [🚗 Placas*]  [📦 Mudanzas]  [🏛️ Salón]│
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  🚨 CASO DE INCIDENTE VEHICULAR:                         │
+│  Si un carro/moto genera un problema, busca aquí por la  │
+│  placa para identificar al propietario.                   │
+│                                                          │
+│  Ingrese la placa (ej: TES999, ABC12)...                 │
+│  ┌──────────────────────────┐  [🚗 Buscar placa]          │
+│  │ TES999                  │                            │
+│  └──────────────────────────┘                            │
+│                                                          │
+│  Resultados:                                              │
+│  ┌──┬──────┬──────┬──────┬──────┬──────────┐            │
+│  │# │Apto  │Placa │Marca │Color │Propietario│            │
+│  ├──┼──────┼──────┼──────┼──────┼──────────┤            │
+│  │1 │105   │TES999│Toyota│Blanco│CA-0055  │            │
+│  │2 │203   │TES999│Mazda │Rojo  │CA-0203  │            │
+│  └──┴──────┴──────┴──────┴──────┴──────────┘            │
+└─────────────────────────────────────────────────────────┘
+    </div>
+
+    <h3>Búsqueda parcial</h3>
+    <p>Puedes escribir <strong>solo una parte</strong> de la placa. El sistema
+    mostrará todos los vehículos que contengan ese texto. Ejemplo: si
+    escribes <code>ABC</code>, mostrará todos los vehículos con placas
+    que contengan "ABC" (ABC123, ABC456, XABC99, etc.).</p>
+
+    <h3>Lo que muestra y lo que NO muestra</h3>
+    <table class="tabla-ejemplo">
+      <thead>
+        <tr><th>✅ Muestra</th><th>❌ NO muestra</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Placa, marca, color</td><td>Nombre del propietario (privacidad)</td></tr>
+        <tr><td>Tipo de vehículo (carro/moto)</td><td>Cédula del propietario</td></tr>
+        <tr><td>Número de apartamento</td><td>Celular personal</td></tr>
+        <tr><td>N° de Formulario (CA-XXXX)</td><td>Correo electrónico</td></tr>
+      </tbody>
+    </table>
+
+    <div class="info-box info-consejo">
+      <strong>💡 Para obtener más detalles del propietario:</strong>
+      Una vez identificado el apartamento por la placa, ve a la pestaña
+      "🔍 Buscar residente", busca por el N° de apartamento y allí verás
+      la información completa (excepto contacto privado).
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="#seccion-3">← Sección 3: Ver info</a>
+    <a href="#seccion-5">Sección 5: Ver mudanzas →</a>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 5 — VER MUDANZAS PROGRAMADAS                            -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-5">
+  <div class="section-header">
+    <div class="section-num">5</div>
+    <div>
+      <h2>Ver mudanzas programadas para hoy</h2>
+      <p>Cómo consultar las mudanzas del día</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Qué es una mudanza?</h3>
+    <p>Es cuando un residente saca o mete sus muebles del apartamento usando
+    el ascensor. El sistema le asigna un horario y ascensor específicos
+    para que no se mezclen con otras mudanzas.</p>
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Click en la pestaña <strong>"📦 Mudanzas"</strong> (la 3ra pestaña).</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Por defecto aparece la fecha de <strong>hoy</strong>.
+        Si quieres ver otra fecha, cámbiala en el campo "Fecha:".</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Verás una lista de las mudanzas del día con:
+        <ul>
+          <li>ID de reserva (ej: MD-0001)</li>
+          <li>Apartamento, torre y ascensor</li>
+          <li>Horario (mañana/tarde)</li>
+          <li>Tipo (Salida o Ingreso)</li>
+          <li>Nombre del solicitante</li>
+          <li>Placa (si la puso)</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Botón "Ver todas"</h3>
+    <p>Si click en <span class="btn-ejemplo outline">Ver todas (futuras + canceladas recientes)</span>
+    verás TODAS las mudanzas: futuras, pendientes, realizadas, no realizadas
+    y canceladas recientes. Útil para ver el historial.</p>
+
+    <h3>Vista de la pantalla</h3>
+    <div class="mockup">
+┌─────────────────────────────────────────────────────────┐
+│  [🔍 Buscar]  [🚗 Placas]  [📦 Mudanzas*]  [🏛️ Salón] │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  Fecha: [2026-09-28 ▼]                                  │
+│                                                          │
+│  ┌────────────────────────────────────────────────────┐  │
+│  │ MD-0001  Apto 105  Torre 1  Ascensor A           │  │
+│  │ Sábado 28-Sept  Mañana 8:00-10:00              │  │
+│  │ Salida · Juan Pérez · Placa: ABC123            │  │
+│  │ [ 🚚 Sí se realizó ] [ ❌ No se realizó ]      │  │
+│  └────────────────────────────────────────────────────┘  │
+│                                                          │
+│  ┌────────────────────────────────────────────────────┐  │
+│  │ MD-0002  Apto 207  Torre 2  Ascensor A           │  │
+│  │ Sábado 28-Sept  Tarde 14:00-16:00               │  │
+│  │ Ingreso · María López · Placa: XYZ789            │  │
+│  │ [ 🚚 Sí se realizó ] [ ❌ No se realizó ]      │  │
+│  └────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+    </div>
+
+    <h3>Significado de los estados (colores)</h3>
+    <table class="tabla-ejemplo">
+      <thead><tr><th>Color</th><th>Significa</th></tr></thead>
+      <tbody>
+        <tr><td>🟢 Verde</td><td>La mudanza ya se realizó</td></tr>
+        <tr><td>🔴 Rojo (fondo rosa)</td><td>No se realizó</td></tr>
+        <tr><td>⚪ Gris</td><td>Está pendiente (aún no se ha registrado check)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="nav-links">
+    <a href="#seccion-4">← Sección 4: Placas</a>
+    <a href="#seccion-6">Sección 6: Registrar check →</a>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 6 — REGISTRAR CHECK DE MUDANZA                         -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-6">
+  <div class="section-header">
+    <div class="section-num">6</div>
+    <div>
+      <h2>Registrar check de mudanza</h2>
+      <p>Cómo marcar si la mudanza se realizó o no</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Para qué sirve?</h3>
+    <p>Cuando llega el momento de la mudanza, tú como vigilante debes
+    confirmar si se realizó o no. Esto le sirve a la administración
+    para llevar un control.</p>
+
+    <div class="info-box info-importante">
+      <strong>📋 Tu rol como vigilante:</strong>
+      • Verificar que la mudanza efectivamente ocurrió (subieron/bajaron muebles).<br>
+      • Verificar que usaron el ascensor y horario correctos.<br>
+      • Click en el botón correspondiente: <strong>"Sí se realizó"</strong> o
+      <strong>"No se realizó"</strong>.
+    </div>
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">En la pestaña <strong>"📦 Mudanzas"</strong>, busca la mudanza
+        del día (sección 5).</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Cuando llegue el momento de la mudanza, verifica que esté
+        usando el ascensor y horario correctos. Si todo está bien, marca:</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Click en <span class="btn-ejemplo green">🚚 Sí se realizó</span>
+        si la mudanza se hizo correctamente.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">O click en <span class="btn-ejemplo red">❌ No se realizó</span>
+        si NO se hizo (por ejemplo, no vino nadie).</div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-text">Aparecerá un campo para escribir <strong>tu nombre de vigilante</strong>.
+        Escríbelo y presiona Enter.</div>
+    </div>
+
+    <h3>Vista de los botones</h3>
+    <div class="mockup">
+┌─────────────────────────────────────────────────────┐
+│  MD-0001  Apto 105  Torre 1  Ascensor A           │
+│  Sábado 28-Sept  Mañana 8:00-10:00              │
+│  Salida · Juan Pérez · Placa: ABC123            │
+│                                                     │
+│  [ 🚚 Sí se realizó ]  [ ❌ No se realizó ]    │
+│                                                     │
+│  ↑ click aquí cuando la mudanza ocurra           │
+│                                                     │
+│  Después de click, aparece:                        │
+│  ┌─────────────────────────────────────────┐       │
+│  │ Tu nombre: [ Fabio Lesmes    ] [ OK ]   │       │
+│  └─────────────────────────────────────────┘       │
+└─────────────────────────────────────────────────────┘
+    </div>
+
+    <h3>Estados después de registrar</h3>
+    <p>Una vez que registres el check, la tarjeta de la mudanza cambia de color:
+    se pone <strong>verde</strong> si se realizó, o <strong>rojo</strong> si no.</p>
+
+    <div class="info-box info-consejo">
+      <strong>💡 Tip:</strong> Si te equivocas al registrar, avisa al
+      administrador para que él corrija el estado desde su portal.
+    </div>
+
+    <h3>¿Qué pasa si la mudanza no está en la lista?</h3>
+    <p>Si alguien llega a hacer mudanza sin haber reservado antes, NO podrás
+    registrarla aquí. Debes pedirle al administrador que agregue la reserva
+    manualmente o que el residente la reserve con anticipación.</p>
+  </div>
+  <div class="nav-links">
+    <a href="#seccion-5">← Sección 5: Ver mudanzas</a>
+    <a href="#seccion-7">Sección 7: Salón Social →</a>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 7 — CONSULTAR RESERVAS DEL SALÓN                       -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-7">
+  <div class="section-header">
+    <div class="section-num">7</div>
+    <div>
+      <h2>Consultar reservas del Salón Social</h2>
+      <p>Cómo ver si el salón está reservado hoy</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Para qué sirve?</h3>
+    <p>Para saber si el salón social está reservado hoy y por quién.
+    Si un residente o visitante pregunta por el salón, tú puedes
+    verificar si está libre o reservado.</p>
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Click en la pestaña <strong>"🏛️ Salón Social"</strong> (la 4ta pestaña).</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Aparece la fecha de <strong>hoy</strong> por defecto.
+        Para ver otra fecha, cámbiala. Click en el botón <strong>"Hoy"</strong>
+        para volver a la fecha actual.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Verás <strong>2 tarjetas</strong>: una para "Mañana" (8 AM - 1 PM) y otra
+        para "Tarde" (2 PM - 10 PM). Cada tarjeta te dice:</div>
+    </div>
+
+    <h3>Vista de la pantalla</h3>
+    <div class="mockup">
+┌─────────────────────────────────────────────────────────┐
+│  [🔍 Buscar]  [🚗 Placas]  [📦 Mudanzas]  [🏛️ Salón*]  │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  Fecha: [2026-10-04 ▼]  [Hoy]                          │
+│                                                          │
+│  ┌──────────────────────┐  ┌──────────────────────┐      │
+│  │ ☀️ Mañana (8-13)     │  │ 🌆 Tarde (14-22)     │      │
+│  │                      │  │                      │      │
+│  │ 🔴 RESERVADO         │  │ 🟢 LIBRE            │      │
+│  │                      │  │                      │      │
+│  │ Apto: 9999           │  │                      │      │
+│  │ Reservado por:       │  │                      │      │
+│  │ Fabio Lesmes         │  │                      │      │
+│  └──────────────────────┘  └──────────────────────┘      │
+│                                                          │
+│  Solo se muestra apto + nombre del solicitante.           │
+│  Para más detalles, contacte a la administración.         │
+└─────────────────────────────────────────────────────────┘
+    </div>
+
+    <h3>Significado de los colores</h3>
+    <table class="tabla-ejemplo">
+      <thead><tr><th>Color</th><th>Significado</th></tr></thead>
+      <tbody>
+        <tr><td>🟢 Verde (LIBRE)</td><td>Nadie ha reservado ese turno, se puede usar</td></tr>
+        <tr><td>🔴 Rojo (RESERVADO)</td><td>Ya está reservado por alguien</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Lo que muestra y lo que NO</h3>
+    <div class="info-box info-importante">
+      <strong>✅ El portal te muestra:</strong>
+      • Fecha y turno (Mañana/Tarde)<br>
+      • Estado (Libre/Reservado)<br>
+      • N° de apartamento del solicitante<br>
+      • Nombre del solicitante
+    </div>
+    <div class="info-box info-aviso">
+      <strong>❌ El portal NO te muestra (por privacidad):</strong>
+      • Cédula del solicitante<br>
+      • Celular del solicitante<br>
+      • Comprobante de pago<br>
+      • Datos de contacto
+    </div>
+
+    <h3>Si alguien pregunta "¿está libre el salón?"</h3>
+    <ol>
+      <li>Click en pestaña 🏛️ Salón Social</li>
+      <li>Verifica la fecha (por defecto es hoy)</li>
+      <li>Mira las tarjetas:
+        <ul>
+          <li>Si ambas son <strong>🟢 LIBRE</strong> → "Sí, el salón está libre."</li>
+          <li>Si una es <strong>🔴 RESERVADO</strong> → "Ese turno está reservado por [nombre] del apartamento [X]."</li>
+        </ul>
+      </li>
+    </ol>
+  </div>
+  <div class="nav-links">
+    <a href="#seccion-6">← Sección 6: Check mudanza</a>
+    <a href="#seccion-8">Sección 8: Cerrar sesión →</a>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 8 — CERRAR SESIÓN                                      -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-8">
+  <div class="section-header">
+    <div class="section-num">8</div>
+    <div>
+      <h2>Cerrar sesión</h2>
+      <p>Cómo salir del portal cuando termines tu turno</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Por qué es importante cerrar sesión?</h3>
+    <p>Cuando terminas tu turno, debes cerrar sesión para que otra persona
+    no pueda usar tu sesión. Es como cerrar la puerta con llave al irte.</p>
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Click en el botón <span class="btn-ejemplo gray">Cerrar sesión</span>
+        (está en la parte superior derecha, al final de las pestañas).</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">El portal vuelve a la pantalla de inicio de sesión.</div>
+    </div>
+
+    <h3>Vista del botón</h3>
+    <div class="mockup">
+┌─────────────────────────────────────────────────────────┐
+│  [🔍 Buscar]  [🚗 Placas]  [📦 Mudanzas]  [🏛️ Salón]  │
+│  ...                                          [Cerrar]   │
+│                                              ↑ click aquí│
+└─────────────────────────────────────────────────────────┘
+    </div>
+
+    <div class="info-box info-consejo">
+      <strong>💡 Buena práctica:</strong> Siempre cierra sesión al terminar
+      tu turno, aunque el celular o computador sea solo tuyo. Esto evita
+      que alguien más pueda ver información de residentes sin tu permiso.
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="#seccion-7">← Sección 7: Salón</a>
+    <a href="#preguntas">Preguntas frecuentes →</a>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- PREGUNTAS FRECUENTES                                           -->
+<!-- ============================================================== -->
+<div class="section-manual" id="preguntas">
+  <div class="section-header">
+    <div class="section-num">?</div>
+    <div>
+      <h2>Preguntas frecuentes</h2>
+      <p>Las dudas más comunes</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="faq-item">
+      <div class="faq-q">¿Qué pasa si un residente no aparece cuando lo busco?</div>
+      <div class="faq-a">Puede ser que (a) no esté registrado en el conjunto, (b) la
+        persona se mudó y su registro fue borrado, o (c) escribiste mal el nombre.
+        Verifica la ortografía. Si el residente afirma estar registrado,
+        contacta al administrador.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">¿Puedo ver el celular del propietario para llamarlo?</div>
+      <div class="faq-a">NO. El celular es información privada. Solo el administrador
+        puede verlo. Si hay una emergencia, contacta al administrador.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">¿Cómo sé si una mudanza ya pasó o no?</div>
+      <div class="faq-a">En la pestaña "📦 Mudanzas", las tarjetas verdes son
+        mudanzas realizadas, las rojas son NO realizadas, y las grises
+        (sin color) están pendientes.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">¿Puedo cancelar una reserva de salón si veo que no vino nadie?</div>
+      <div class="faq-a">NO. Solo el administrador puede cancelar reservas.
+        Si ves algo irregular, avisa al administrador para que él actúe.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">¿Qué hago si no me carga la página?</div>
+      <div class="faq-a">1) Verifica tu conexión a internet. 2) Refresca la página
+        con <code>Ctrl+Shift+R</code> (o <code>Cmd+Shift+R</code> en Mac). 3) Si
+        persiste, contacta al administrador.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">¿Por qué no veo el correo del propietario?</div>
+      <div class="faq-a">Por privacidad. El portal de vigilancia está diseñado
+        para confirmar identidad, no para tener contacto directo con el
+        residente. Para temas urgentes, contacta al administrador.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">¿Qué hago si la página se queda cargando mucho tiempo?</div>
+      <div class="faq-a">Espera hasta 30 segundos. Si después de eso no carga,
+        refresca la página. Si el problema persiste, puede ser un problema
+        del servidor — contacta al administrador.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">¿Qué significa "sesión activa"?</div>
+      <div class="faq-a">Que ya iniciaste sesión correctamente y puedes usar el
+        portal. Si ves ese mensaje en la parte superior derecha, todo está OK.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- ERRORES COMUNES                                                  -->
+<!-- ============================================================== -->
+<div class="section-manual" id="errores">
+  <div class="section-header">
+    <div class="section-num">!</div>
+    <div>
+      <h2>Errores comunes y cómo resolverlos</h2>
+      <p>Soluciones rápidas a problemas frecuentes</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="info-box info-error">
+      <strong>❌ Error: "Contraseña incorrecta"</strong><br>
+      <strong>Causa:</strong> Escribiste mal la contraseña.<br>
+      <strong>Solución:</strong> Verifica que escribes exactamente
+      <code>VigCerroAzul2026</code> (con V y C mayúsculas, sin espacios).
+    </div>
+
+    <div class="info-box info-error">
+      <strong>❌ Error: "La página no carga" / pantalla en blanco</strong><br>
+      <strong>Causa:</strong> Problema de conexión o caché del navegador.<br>
+      <strong>Solución:</strong>
+      <ol>
+        <li>Verifica tu señal de internet (3G/4G/WiFi).</li>
+        <li>Refresca con <code>Ctrl+Shift+R</code> (o <code>Cmd+Shift+R</code> en Mac).</li>
+        <li>Prueba en una pestaña de incógnito/privada.</li>
+        <li>Si nada funciona, contacta al administrador.</li>
+      </ol>
+    </div>
+
+    <div class="info-box info-error">
+      <strong>❌ No aparecen resultados en la búsqueda</strong><br>
+      <strong>Causa:</strong> La persona o vehículo NO está registrado.<br>
+      <strong>Solución:</strong> Verifica que escribes correctamente. Si
+      estás seguro de que el residente debería aparecer, contacta al
+      administrador para que revise el registro.
+    </div>
+
+    <div class="info-box info-error">
+      <strong>❌ La página se queda "Cargando..." para siempre</strong><br>
+      <strong>Causa:</strong> Conexión lenta o problema del servidor.<br>
+      <strong>Solución:</strong> Espera 30 segundos. Si no carga, refresca
+      la página. Si persiste, contacta al administrador.
+    </div>
+
+    <div class="info-box info-error">
+      <strong>❌ El botón "Sí se realizó" no responde</strong><br>
+      <strong>Causa:</strong> Problema de red o ya estaba registrado el check.<br>
+      <strong>Solución:</strong> Refresca la página. Si el problema persiste,
+      contacta al administrador para que él registre el check manualmente.
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- GLOSARIO                                                         -->
+<!-- ============================================================== -->
+<div class="section-manual" id="glosario">
+  <div class="section-header">
+    <div class="section-num">📖</div>
+    <div>
+      <h2>Glosario (palabras técnicas explicadas)</h2>
+      <p>Términos que necesitas conocer</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="glosario-item">
+      <span class="term">Apartamento (apto):</span>
+      <span class="def">La unidad de vivienda dentro del conjunto. Se identifica
+      con un número (ej: 105, 202B). Cada apartamento tiene un propietario
+      y puede tener residentes adicionales.</span>
+    </div>
+
+    <div class="glosario-item">
+      <span class="term">Cédula:</span>
+      <span class="def">Documento de identidad de la persona. Se usa para verificar
+      quién vive en cada apartamento. Cada miembro del conjunto tiene su
+      cédula registrada.</span>
+    </div>
+
+    <div class="glosario-item">
+      <span class="term">Check de mudanza:</span>
+      <span class="def">Confirmación que tú (vigilante) haces cuando una
+      mudanza efectivamente ocurrió. Es como marcar "asistió" en una lista.</span>
+    </div>
+
+    <div class="glosario-item">
+      <span class="term">Chrome / navegador:</span>
+      <span class="def">El programa que usas para abrir páginas web en tu
+      celular o computador. Ejemplos: Chrome, Safari, Firefox, Edge.</span>
+    </div>
+
+    <div class="glosario-item">
+      <span class="term">Iniciar sesión / Login:</span>
+      <span class="def">Escribir tu contraseña para entrar al portal. Es como
+      abrir la puerta de una casa con tu llave.</span>
+    </div>
+
+    <div class="glosario-item">
+      <span class="term">Mascota:</span>
+      <span class="def">Animal doméstico que vive con el residente. Ejemplos:
+      perro, gato, loro, conejo, hamster. Cada mascota debe estar registrada
+      en el formulario.</span>
+    </div>
+
+    <div class="glosario-item">
+      <span class="term">Mudanza:</span>
+      <span class="def">Acción de sacar o meter los muebles de un apartamento
+      usando el ascensor. Requiere reserva previa con fecha, hora y ascensor
+      asignado.</span>
+    </div>
+
+    <div class="glosario-item">
+      <span class="term">Navegador:</span>
+      <span class="def">Programa para ver páginas web (Chrome, Safari, etc.).</span>
+    </div>
+
+    <div class="glosario-item">
+      <span class="term">Parqueadero:</span>
+      <span class="def">Espacio de estacionamiento asignado a un apartamento.
+      Puede ser un carro o una moto. Se identifica con un número de celda
+      (ej: 12, 25B).</span>
+    </div>
+
+    <div class="glosario-item">
+      <span class="term">Pestaña:</span>
+      <span class="def">Cada una de las secciones en la parte superior del
+      portal. Como las pestañas de un folder: hay 4 (Buscar, Placas,
+      Mudanzas, Salón) y solo se ve una a la vez.</span>
+    </div>
+
+    <div class="glosario-item">
+      <span class="term">Placa:</span>
+      <span class="def">Identificación de un vehículo (carro, moto). Ejemplo:
+      "ABC123" o "TES999". En Colombia las placas tienen 3 letras y 3
+      números (o 3 letras y 2 números + 1 letra).</span>
+    </div>
+
+    <div class="glosario-item">
+      <span class="term">Portal web:</span>
+      <span class="def">Una página web a la que se accede por internet. Es
+      como una "oficina virtual" donde puedes ver y consultar información.</span>
+    </div>
+
+    <div class="glosario-item">
+      <span class="term">Propietario:</span>
+      <span class="def">La persona dueña del apartamento. Es el "jefe" de la
+      unidad. Puede vivir allí o tener arrendatarios.</span>
+    </div>
+
+    <div class="glosario-item">
+      <span class="term">Residente:</span>
+      <span class="def">Cualquier persona que vive en el apartamento, sea el
+      propietario o un arrendatario. Cada apartamento puede tener hasta 4
+      residentes registrados.</span>
+    </div>
+
+    <div class="glosario-item">
+      <span class="term">Salón social:</span>
+      <span class="def">Espacio común del conjunto donde se pueden hacer
+      fiestas, reuniones o eventos. Se debe reservar con anticipación y
+      tiene un costo de $125.000 COP por turno.</span>
+    </div>
+
+    <div class="glosario-item">
+      <span class="term">Sesión:</span>
+      <span class="def">El tiempo que estás conectado al portal. Comienza
+      cuando inicias sesión y termina cuando la cierras.</span>
+    </div>
+
+    <div class="glosario-item">
+      <span class="term">Torre:</span>
+      <span class="def">Cada uno de los edificios del conjunto. Cerro Azul tiene
+      3 torres, cada una con 2 ascensores (A y B). Para mudanzas solo se
+      puede usar el ascensor A.</span>
+    </div>
+
+    <div class="glosario-item">
+      <span class="term">URL:</span>
+      <span class="def">La dirección de una página web. Empieza con
+      "https://" y es lo que escribes en el navegador para abrir una
+      página. Ejemplo: https://fabig76.github.io/.../vigilantes.html</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- AYUDA                                                            -->
+<!-- ============================================================== -->
+<div class="section-manual" id="ayuda">
+  <div class="section-header">
+    <div class="section-num">📞</div>
+    <div>
+      <h2>¿Necesitas ayuda?</h2>
+      <p>Contactos de soporte</p>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="help-box">
+      <h3>📞 Si tienes un problema que este manual no resuelve:</h3>
+      <p>Contacta al <strong>administrador</strong> del conjunto:</p>
+      <p>
+        📧 <strong>Correo:</strong>
+        <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a>
+      </p>
+      <p>Cuando contactes al administrador, incluye:</p>
+      <ul style="text-align: left; max-width: 500px; margin: 12px auto;">
+        <li>📅 <strong>Fecha y hora</strong> del problema</li>
+        <li>📱 <strong>Qué celular o computador</strong> usas</li>
+        <li>🔍 <strong>Qué estabas haciendo</strong> cuando ocurrió</li>
+        <li>❌ <strong>Qué mensaje de error</strong> apareció (si hay)</li>
+        <li>📸 <strong>Captura de pantalla</strong> si es posible</li>
+      </ul>
+      <p style="margin-top: 16px;">El administrador puede ver los registros del
+        portal y ayudarte a resolver cualquier problema técnico.</p>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>
+    <strong>Manual del Vigilante — Cerro Azul</strong><br>
+    Urbanización Cerro Azul · NIT 900770444 · Bello / Niquía<br>
+    Portal de Vigilancia — Ley 1581 de 2012 y Decreto 768 de 2025
+  </p>
+  <p>
+    ¿Dudas? <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a>
+  </p>
+  <p class="footer-meta">
+    Versión 1.0 · Última actualización: 25-Sept-2026<br>
+    Mantenedor: Hermes Agent + Fabio Lesmes (operador)
+  </p>
+</footer>
+
+</body>
+</html>
