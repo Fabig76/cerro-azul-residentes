@@ -51,18 +51,33 @@
 
     let pc, paginas, grupos, cr;
     try {
+      // 0) Mostrar feedback inmediato (el PDF de 625 páginas tarda ~1-3 min)
+      $('#progreso').classList.remove('hidden');
+      $('#progresoTexto').textContent = 'Analizando cartera (Excel)...';
+      $('#progresoBarra').value = 0;
+      console.log('[cartera-admin] Iniciando análisis...');
+
       // 1) Parsear Excel
       const wb = XLSX.read(await fileC.arrayBuffer(), { type: 'array' });
       const filas = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
       pc = parsearCartera(filas);
+      console.log('[cartera-admin] Excel parseado: ' + pc.aptos.length + ' aptos, pestaña=' + pc.nombrePestana);
 
-      // 2) Leer PDF (sin callback de progreso en análisis)
+      // 2) Leer PDF (con progreso visible)
+      $('#progresoTexto').textContent = 'Analizando facturas (PDF)...';
       const pdfBuf = await fileP.arrayBuffer();
-      paginas = await leerPdf(pdfBuf, function () {});
+      paginas = await leerPdf(pdfBuf, function (pag, total) {
+        if (pag % 25 === 0 || pag === total) {
+          $('#progresoTexto').textContent = 'Analizando facturas: página ' + pag + ' de ' + total;
+          $('#progresoBarra').value = Math.round(100 * pag / total);
+        }
+      });
+      console.log('[cartera-admin] PDF leído: ' + paginas.length + ' páginas');
 
       // 3) Agrupar y cruzar (tira Error si ref repetida)
       grupos = agruparFacturas(paginas);
       cr = cruzar(pc.aptos, grupos);
+      console.log('[cartera-admin] Grupos=' + grupos.length + ', soloCartera=' + cr.soloCartera.length + ', soloPdf=' + cr.soloPdf.length);
 
       // 4) BLOQUEANTES: campos null o discrepancias
       const CAMPOS = ['ref','numCuentaCobro','fechaEmision','pagueseHasta',
@@ -81,6 +96,8 @@
         throw new Error('En PDF pero no en cartera: ' + cr.soloPdf.slice(0, 10).join(', '));
       }
     } catch (e) {
+      console.error('[cartera-admin] ERROR en análisis:', e.message, e.stack);
+      $('#progreso').classList.add('hidden');
       alertErr(e.message || String(e));
       return;
     }
@@ -118,6 +135,10 @@
     $('#resumenAnalisis').classList.remove('hidden');
     $('#btnPublicar').classList.remove('hidden');
     $('#btnPublicar').disabled = false;
+    $('#progreso').classList.add('hidden');
+    $('#progresoTexto').textContent = '';
+    $('#progresoBarra').value = 0;
+    console.log('[cartera-admin] Análisis completo. Resumen renderizado.');
   }
 
   // ==================== PUBLICAR ==================================
