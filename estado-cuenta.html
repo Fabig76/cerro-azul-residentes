@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0066CC">
+  <title>Estado de Cuenta — Cerro Azul</title>
+  <link rel="icon" href="assets/logo.jpg">
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="js/estado-cuenta.js?v=1"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <img src="assets/logo.jpg" alt="Logo Urbanización Cerro Azul" class="logo">
+      <div class="header-text">
+        <h1>Urbanización Cerro Azul</h1>
+        <p class="nit">NIT 900770444 · Bello / Niquía</p>
+        <p class="sub">Consulta de estado de cuenta y paz y salvo</p>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- ============================================================== -->
+    <!-- VISTA LOGIN                                                    -->
+    <!-- ============================================================== -->
+    <section id="view-login" class="card">
+      <h2>Consultar mi estado de cuenta</h2>
+      <p class="legal-banner">Información contable confidencial del inmueble. Solo el propietario registrado puede consultarla (Ley 1581 de 2012).</p>
+      <div id="alert-ec-login" role="alert" aria-live="polite"></div>
+
+      <div class="field">
+        <label for="ecNumForm">N° de formulario</label>
+        <input id="ecNumForm" placeholder="CA-0000" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="ecApto">N° de apartamento</label>
+        <input id="ecApto" placeholder="000" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="ecCc">Cédula del propietario</label>
+        <input id="ecCc" inputmode="numeric" placeholder="123456789" autocomplete="off">
+      </div>
+      <button id="btnEcConsultar" class="btn btn-primary btn-block" type="button">Consultar</button>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VISTA ESTADO                                                  -->
+    <!-- ============================================================== -->
+    <section id="view-estado" class="card hidden">
+      <div id="alert-ec" role="alert" aria-live="polite"></div>
+
+      <div id="ecResumen"></div>
+      <div id="ecConceptos"></div>
+      <div id="ecFactura"></div>
+      <div id="ecPagos"></div>
+
+      <div id="ecPysNota"></div>
+
+      <button id="btnEcFactura" class="btn btn-secondary btn-block hidden" type="button">Descargar mi factura</button>
+      <button id="btnEcPagar" class="btn btn-primary btn-block hidden" type="button">Pagar en línea</button>
+      <button id="btnEcPys" class="btn btn-primary btn-block hidden" type="button">Descargar paz y salvo</button>
+      <button id="btnEcSalir" class="btn btn-secondary btn-block" type="button">Salir</button>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>
+      Urbanización Cerro Azul · NIT 900770444 · Bello / Niquía<br>
+      Información contable confidencial — Ley 1581 de 2012<br>
+      <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a>
+    </p>
+  </footer>
+</body>
+</html>
