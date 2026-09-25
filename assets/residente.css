@@ -1,0 +1,171 @@
+/* ============================================================
+   PORTAL DEL RESIDENTE — estilos específicos
+   Cerro Azul Residentes (spec-residente.md F4)
+   ============================================================ */
+
+/* Lookup-box principal (mismo patrón que estado-cuenta.html) */
+.lookup-box {
+  max-width: 520px;
+  margin: 30px auto;
+  padding: 28px;
+  background: var(--fondo-card);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.lookup-box h3 {
+  color: var(--azul-osc);
+  margin: 0 0 12px;
+  font-size: 1.3em;
+}
+
+.lookup-box p {
+  margin: 8px 0;
+  color: var(--gris-tx);
+  line-height: 1.5;
+}
+
+/* Alertas contextuales */
+.alert {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.93em;
+  display: none;
+}
+
+.alert.hidden {
+  display: none !important;
+}
+
+.alert.show {
+  display: block;
+}
+
+.alert.error {
+  background: var(--err-fondo);
+  color: var(--err);
+  border-left: 4px solid var(--err);
+}
+
+.alert.success {
+  background: var(--ok-fondo);
+  color: var(--ok);
+  border-left: 4px solid var(--ok);
+}
+
+.alert.info {
+  background: var(--adv-fondo);
+  color: var(--adv);
+  border-left: 4px solid var(--adv);
+}
+
+/* Sección de residente en formulario */
+.residente-block {
+  border: 1px solid var(--gris-borde);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  background: var(--fondo);
+}
+
+.residente-block h4 {
+  margin: 0 0 12px;
+  color: var(--azul-osc);
+  font-size: 1em;
+}
+
+.field {
+  margin-bottom: 12px;
+}
+
+.field label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+  color: var(--gris-tx);
+  font-size: 0.92em;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--gris-borde);
+  border-radius: 4px;
+  font-size: 0.95em;
+  font-family: inherit;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--azul);
+  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.15);
+}
+
+.field .req {
+  color: var(--err);
+}
+
+.field .help {
+  display: block;
+  margin-top: 4px;
+  color: var(--gris-med);
+  font-size: 0.85em;
+}
+
+/* Lista de residentes actuales en vista con-datos */
+.residentes-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+}
+
+.residentes-list li {
+  padding: 8px 12px;
+  background: var(--azul-claro);
+  border-radius: 4px;
+  margin-bottom: 6px;
+  font-size: 0.95em;
+}
+
+/* Grid para campos múltiples */
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 480px) {
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Bloque colapsable (slots compartidos) */
+.slot-compartido {
+  border: 1px dashed var(--gris-borde);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 8px;
+  background: var(--fondo);
+}
+
+.slot-compartido h5 {
+  margin: 0 0 8px;
+  color: var(--gris-med);
+  font-size: 0.9em;
+  font-weight: 600;
+}
+
+.slot-compartido.ocupado {
+  background: var(--adv-fondo);
+  border-color: var(--adv);
+}
+
+.slot-compartido.ocupado h5 {
+  color: var(--adv);
+}
