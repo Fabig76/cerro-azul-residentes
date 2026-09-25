@@ -157,12 +157,21 @@
   }
 
   // ==================== HELPERS ==================================
-  function post(payload) {
-    return fetch(URL, {
+  async function post(payload) {
+    const r = await fetch(URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
       body: JSON.stringify(payload),
-    }).then(function (r) { return r.json(); });
+    });
+    const texto = await r.text();
+    try {
+      return JSON.parse(texto);
+    } catch (e) {
+      // El servidor devolvió algo que no es JSON (p. ej. HTML de error).
+      // Mostrar un mensaje claro en vez de "Unexpected token '<'".
+      console.error('[estado-cuenta] Respuesta no-JSON (HTTP ' + r.status + '):', texto.slice(0, 300));
+      throw new Error('El servidor respondió con un error (HTTP ' + r.status + '). Intente de nuevo.');
+    }
   }
 
   function $(s) { return document.querySelector(s); }
@@ -215,6 +224,20 @@
     const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
     const mes = MESES[parseInt(q[1], 10) - 1];
     return mes.charAt(0).toUpperCase() + mes.slice(1) + ' ' + q[0];
+  }
+
+  function descargarBase64(base64, nombre) {
+    const bin = atob(base64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nombre;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
   }
 
   // ==================== INIT =====================================
