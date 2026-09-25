@@ -106,6 +106,13 @@ function doGet(e) {
     if (action === 'vigilanteBuscarPorPlaca') {
       return jsonOut(vigilanteBuscarPorPlaca(e.parameter.placa));
     }
+    // --- RESIDENTE (portal nuevo residente.html) ---
+    if (action === 'getEstadoResidente') {
+      return jsonOut(getEstadoResidente(e.parameter.apto));
+    }
+    if (action === 'verificarResidente') {
+      return jsonOut(verificarResidente(e.parameter.apto, e.parameter.cc));
+    }
     return jsonOut({ ok: false, error: 'Acción no reconocida.' });
   } catch (err) {
     return jsonOut({ ok: false, error: String(err && err.message || err) });
@@ -139,6 +146,10 @@ function doPost(e) {
     if (action === 'vigilanteCheckMudanza') {
       return jsonOut(vigilanteCheckMudanza(payload));
     }
+    // --- RESIDENTE (portal nuevo residente.html) ---
+    if (action === 'registrarResidente')    return jsonOut(registrarResidente(payload));
+    if (action === 'actualizarResidente')  return jsonOut(actualizarResidente(payload));
+    if (action === 'clearResidente')        return jsonOut(clearResidente(payload));
     // Comportamiento por defecto (compatibilidad): submit del formulario principal
     const result = submitRecord(payload);
     return jsonOut(result);
@@ -390,6 +401,11 @@ function buildRowFromPayload(d, numForm, fechaRegistroOriginal) {
 // Normaliza N° Apto: quita puntos, comas, espacios. Torre 1 usa "9804" (sin separador).
 function normApto(s) {
   return String(s || '').replace(/[.,\s]/g, '').trim();
+}
+
+// Normaliza cédula: quita puntos, guiones, espacios. Compara siempre sin estos separadores.
+function normCc(s) {
+  return String(s || '').replace(/[.\-\s]/g, '').trim();
 }
 
 // Devuelve {ok, encontrado, matricula, fuente}
@@ -1782,4 +1798,421 @@ function vigilanteBuscarPorPlaca(placa) {
     }
   }
   return { ok: true, resultados: resultados, total: resultados.length };
+}
+
+// =====================================================================
+// MÓDULO RESIDENTE (agregado 25-Sept-2026 spec-residente.md)
+// Portal nuevo: residente.html
+// Endpoints: getEstadoResidente, verificarResidente,
+//            registrarResidente, actualizarResidente, clearResidente
+// =====================================================================
+
+// ---------------------------------------------------------------------
+// Endpoint R.1: getEstadoResidente
+// Pantalla inicial del portal: indica si el apto existe y si tiene residentes.
+// NO devuelve CCs ni teléfonos (privacidad).
+// ---------------------------------------------------------------------
+function getEstadoResidente(apto) {
+  apto = String(apto || '').trim();
+  if (!apto) return { ok: false, error: 'Falta N° de apartamento' };
+
+  const row = findRowByApto(apto);
+  if (!row) return { ok: true, apto: apto, aptoExiste: false };
+
+  const obj = rowToObject(row.values);
+  const nombresResidentes = [];
+
+  // Slots de residentes: v[29..48] (4 residentes x 5 cols)
+  for (let i = 0; i < 4; i++) {
+    const base = 29 + i * 5;
+    const nombre = String(row.values[base] || '').trim();
+    if (nombre) nombresResidentes.push(nombre);
+  }
+
+  return {
+    ok: true,
+    apto: apto,
+    aptoExiste: true,
+    numForm: String(obj.numForm || ''),
+    hayResidentes: nombresResidentes.length > 0,
+    numResidentes: nombresResidentes.length,
+    nombresResidentes: nombresResidentes,
+    propietario: String(obj.nombreProp || '')
+  };
+}
+
+// ---------------------------------------------------------------------
+// Endpoint R.2: verificarResidente
+// Valida CC contra los slots 1-4 de residentes del apto.
+// Devuelve el slot que matchea + datos básicos del residente.
+// ---------------------------------------------------------------------
+function verificarResidente(apto, cc) {
+  apto = String(apto || '').trim();
+  cc = normCc(cc);
+
+  if (!apto || !cc) return { ok: false, error: 'Falta apto o cc' };
+
+  const row = findRowByApto(apto);
+  if (!row) return { ok: false, error: 'Apartamento no encontrado.' };
+
+  for (let i = 0; i < 4; i++) {
+    const base = 29 + i * 5;
+    const ccEnSheet = normCc(row.values[base + 1] || '');
+    if (ccEnSheet && ccEnSheet === cc) {
+      return {
+        ok: true,
+        slot: i + 1,
+        datos: {
+          nombre: String(row.values[base] || '').trim(),
+          cc: String(row.values[base + 1] || '').trim(),
+          parentesco: String(row.values[base + 4] || '').trim(),
+          cel: String(row.values[base + 3] || '').trim(),
+          correo: String(row.values[base + 2] || '').trim()
+        }
+      };
+    }
+  }
+
+  return { ok: false, error: 'No se encontró un residente con esa cédula en este apartamento.' };
+}
+
+// ---------------------------------------------------------------------
+// Endpoint R.3: registrarResidente
+// Auto-registro cuando TODOS los slots 1-4 de residentes están VACÍOS.
+// Valida que el apto exista, que no haya residentes, y luego reusa
+// submitRecord para escribir el registro. LockService para concurrencia.
+// ---------------------------------------------------------------------
+function registrarResidente(data) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) {
+    return { ok: false, error: 'Otro residente está registrando en este momento. Intenta en unos segundos.' };
+  }
+  try {
+    const apto = String(data.apto || '').trim();
+    if (!apto) return { ok: false, error: 'Falta N° de apartamento' };
+
+    const row = findRowByApto(apto);
+    if (!row) return { ok: false, error: 'Apartamento no encontrado. Pida al propietario que lo registre primero.' };
+
+    // Verificar que TODOS los slots de residentes estén vacíos
+    let slotAsignado = -1;
+    for (let i = 0; i < 4; i++) {
+      const base = 29 + i * 5;
+      const nombreActual = String(row.values[base] || '').trim();
+      if (nombreActual) {
+        return { ok: false, error: 'El apartamento ya tiene residentes registrados. Use el botón "Editar mi registro" del propietario o coloque su cédula para editar.' };
+      }
+      if (slotAsignado === -1) slotAsignado = i + 1;
+    }
+
+    const residentes = Array.isArray(data.residentes) ? data.residentes : [];
+    if (residentes.length === 0) {
+      return { ok: false, error: 'Debe registrar al menos un residente.' };
+    }
+    if (residentes.length > 4) {
+      return { ok: false, error: 'Máximo 4 residentes por apartamento.' };
+    }
+
+    // Construir payload compatible con submitRecord (modo edición)
+    // Mantiene los datos del propietario intactos
+    const payload = {
+      apto: apto,
+      numForm: String(row.values[COL_NUM_FORM] || ''),
+      diligencia: String(row.values[4] || ''),
+      nombreProp: String(row.values[5] || ''),
+      ccProp: String(row.values[6] || ''),
+      correoProp: String(row.values[7] || ''),
+      celProp: String(row.values[8] || ''),
+      telFijoProp: String(row.values[9] || ''),
+      parq1Celda: String(row.values[10] || ''),
+      parq1Mat: String(row.values[11] || ''),
+      parq2Celda: String(row.values[12] || ''),
+      parq2Mat: String(row.values[13] || ''),
+      matriculaApto: String(row.values[14] || ''),
+      requiereRevision: String(row.values[15] || '') === 'Sí',
+      observMatriculas: String(row.values[16] || ''),
+      nombreArr: String(row.values[17] || ''),
+      ccArr: String(row.values[18] || ''),
+      correoArr: String(row.values[19] || ''),
+      celArr: String(row.values[20] || ''),
+      parqTerNom: String(row.values[21] || ''),
+      parqTerApto: String(row.values[22] || ''),
+      parqTerCel: String(row.values[23] || ''),
+      inmobRazon: String(row.values[24] || ''),
+      inmobNit: String(row.values[25] || ''),
+      inmobContacto: String(row.values[26] || ''),
+      inmobTel: String(row.values[27] || ''),
+      inmobCorreo: String(row.values[28] || ''),
+      residentes: residentes,
+      menores: Array.isArray(data.menores) ? data.menores : [],
+      vehiculos: Array.isArray(data.vehiculos) ? data.vehiculos : [],
+      motos: Array.isArray(data.motos) ? data.motos : [],
+      bicis: Array.isArray(data.bicis) ? data.bicis : [],
+      dispositivos: [],
+      mascotas: Array.isArray(data.mascotas) ? data.mascotas : [],
+      contactos: Array.isArray(data.contactos) ? data.contactos : [],
+      autorAcesso: String(row.values[136] || '') === 'Sí',
+      autDatos: true,
+      autImagenes: false,
+      firmaNom: String(row.values[139] || ''),
+      firmaCC: String(row.values[140] || ''),
+      firmaFecha: String(row.values[141] || '')
+    };
+
+    const result = submitRecord(payload);
+    if (result.ok) {
+      return {
+        ok: true,
+        numForm: result.editMode ? String(row.values[COL_NUM_FORM] || '') : (result.numForm || ''),
+        slotAsignado: slotAsignado,
+        message: 'Registro exitoso.'
+      };
+    }
+    return result;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ---------------------------------------------------------------------
+// Endpoint R.4: actualizarResidente
+// Edita los datos del residente identificado por CC en un slot específico.
+// Re-verifica identidad server-side. Slots compartidos se validan.
+// ---------------------------------------------------------------------
+function actualizarResidente(data) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) {
+    return { ok: false, error: 'Otro residente está actualizando en este momento. Intenta en unos segundos.' };
+  }
+  try {
+    const apto = String(data.apto || '').trim();
+    const cc = normCc(data.cc || '');
+    const slot = parseInt(data.slot || '', 10);
+
+    if (!apto || !cc || !slot || slot < 1 || slot > 4) {
+      return { ok: false, error: 'Datos inválidos (apto, cc, slot requeridos)' };
+    }
+
+    const row = findRowByApto(apto);
+    if (!row) return { ok: false, error: 'Apartamento no encontrado' };
+
+    // Re-verificar identidad contra el slot declarado
+    const baseResidente = 29 + (slot - 1) * 5;
+    const ccEnSheet = normCc(row.values[baseResidente + 1] || '');
+    if (ccEnSheet !== cc) {
+      return { ok: false, error: 'La cédula no corresponde al residente del slot ' + slot };
+    }
+
+    const datos = data.datosActualizados || {};
+    const nuevosResidentes = Array.isArray(datos.residentes) ? datos.residentes : [];
+
+    // Construir payload para submitRecord manteniendo intactos los demás residentes
+    const payload = {
+      apto: apto,
+      numForm: String(row.values[COL_NUM_FORM] || ''),
+      diligencia: String(row.values[4] || ''),
+      nombreProp: String(row.values[5] || ''),
+      ccProp: String(row.values[6] || ''),
+      correoProp: String(row.values[7] || ''),
+      celProp: String(row.values[8] || ''),
+      telFijoProp: String(row.values[9] || ''),
+      parq1Celda: String(row.values[10] || ''),
+      parq1Mat: String(row.values[11] || ''),
+      parq2Celda: String(row.values[12] || ''),
+      parq2Mat: String(row.values[13] || ''),
+      matriculaApto: String(row.values[14] || ''),
+      requiereRevision: String(row.values[15] || '') === 'Sí',
+      observMatriculas: String(row.values[16] || ''),
+      nombreArr: String(row.values[17] || ''),
+      ccArr: String(row.values[18] || ''),
+      correoArr: String(row.values[19] || ''),
+      celArr: String(row.values[20] || ''),
+      parqTerNom: String(row.values[21] || ''),
+      parqTerApto: String(row.values[22] || ''),
+      parqTerCel: String(row.values[23] || ''),
+      inmobRazon: String(row.values[24] || ''),
+      inmobNit: String(row.values[25] || ''),
+      inmobContacto: String(row.values[26] || ''),
+      inmobTel: String(row.values[27] || ''),
+      inmobCorreo: String(row.values[28] || ''),
+      // Preservar los otros residentes, solo actualizar el slot N
+      residentes: construirResidentesParaActualizar(row.values, slot, nuevosResidentes),
+      menores: Array.isArray(datos.menores) ? datos.menores : construirMenoresActuales(row.values),
+      vehiculos: validarYAplicarSlotsCompartidos(row.values, 'vehiculos', 61, 6, 2, datos.vehiculos),
+      motos: validarYAplicarSlotsCompartidos(row.values, 'motos', 73, 6, 2, datos.motos),
+      bicis: validarYAplicarSlotsCompartidos(row.values, 'bicis', 85, 4, 2, datos.bicis),
+      dispositivos: [],
+      mascotas: validarYAplicarSlotsCompartidos(row.values, 'mascotas', 110, 10, 2, datos.mascotas),
+      contactos: validarYAplicarSlotsCompartidos(row.values, 'contactos', 130, 3, 2, datos.contactos),
+      autorAcesso: String(row.values[136] || '') === 'Sí',
+      autDatos: true,
+      autImagenes: false,
+      firmaNom: String(row.values[139] || ''),
+      firmaCC: String(row.values[140] || ''),
+      firmaFecha: String(row.values[141] || '')
+    };
+
+    const result = submitRecord(payload);
+    if (result.ok) {
+      return { ok: true, slotActualizado: slot, message: 'Datos actualizados correctamente.' };
+    }
+    return result;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Helper: construye el array de 4 residentes preservando los otros slots y actualizando el slot N
+function construirResidentesParaActualizar(values, slot, nuevos) {
+  const res = [];
+  for (let i = 0; i < 4; i++) {
+    const base = 29 + i * 5;
+    if (i === (slot - 1)) {
+      // Slot a actualizar: tomar del payload del frontend
+      const nuevo = (nuevos && nuevos[0]) || {};
+      res.push({
+        nombre: nuevo.nombre || String(values[base] || '').trim(),
+        cc: nuevo.cc || String(values[base + 1] || '').trim(),
+        correo: nuevo.correo || String(values[base + 2] || '').trim(),
+        cel: nuevo.cel || String(values[base + 3] || '').trim(),
+        parent: nuevo.parentesco || nuevo.parent || String(values[base + 4] || '').trim()
+      });
+    } else {
+      // Otros slots: preservar los datos existentes
+      res.push({
+        nombre: String(values[base] || '').trim(),
+        cc: String(values[base + 1] || '').trim(),
+        correo: String(values[base + 2] || '').trim(),
+        cel: String(values[base + 3] || '').trim(),
+        parent: String(values[base + 4] || '').trim()
+      });
+    }
+  }
+  return res;
+}
+
+// Helper: extrae los menores actuales del Sheet
+function construirMenoresActuales(values) {
+  const men = [];
+  for (let i = 0; i < 4; i++) {
+    const base = 49 + i * 3;
+    men.push({
+      nombre: String(values[base] || '').trim(),
+      edad: String(values[base + 1] || '').trim(),
+      parent: String(values[base + 2] || '').trim()
+    });
+  }
+  return men;
+}
+
+// Helper: valida slots compartidos y construye el array.
+// Si un slot ya está ocupado por un valor del Sheet, se preserva.
+// Si el residente quiere agregar a un slot vacío, se permite.
+function validarYAplicarSlotsCompartidos(values, tipo, baseInicial, anchoSlot, numSlots, datosNuevos) {
+  const result = [];
+  if (!Array.isArray(datosNuevos)) datosNuevos = [];
+
+  for (let i = 0; i < numSlots; i++) {
+    const base = baseInicial + i * anchoSlot;
+    const tieneDatosSheet = anchoSlot >= 6
+      ? (String(values[base] || '').trim() || String(values[base + 3] || '').trim())  // veh/moto: marca o placa
+      : (anchoSlot === 4
+          ? String(values[base] || '').trim()  // bici: marca
+          : String(values[base] || '').trim()); // mascota/contacto: nombre
+
+    if (i < datosNuevos.length && datosNuevos[i]) {
+      result.push(datosNuevos[i]);
+    } else if (tieneDatosSheet) {
+      // Mantener datos existentes del Sheet
+      const obj = {};
+      for (let j = 0; j < anchoSlot; j++) {
+        obj['col' + j] = String(values[base + j] || '').trim();
+      }
+      // Convertir a la forma esperada por submitRecord según el tipo
+      if (tipo === 'vehiculos' || tipo === 'motos') {
+        result.push({
+          marca: obj.col0, tipo: obj.col1, color: obj.col2,
+          placa: obj.col3, modelo: obj.col4, tag: obj.col5
+        });
+      } else if (tipo === 'bicis') {
+        result.push({ marca: obj.col0, tipo: obj.col1, color: obj.col2, rodado: obj.col3 });
+      } else if (tipo === 'mascotas') {
+        result.push({
+          nombre: obj.col0, especie: obj.col1, raza: obj.col2,
+          edad: obj.col3, vacuna: obj.col4, color: obj.col5,
+          observaciones: obj.col7 || '', contacto: obj.col8 || ''
+        });
+      } else if (tipo === 'contactos') {
+        result.push({ nombre: obj.col0, parentesco: obj.col1, celular: obj.col2 });
+      }
+    } else {
+      // Slot vacío
+      if (tipo === 'vehiculos' || tipo === 'motos') {
+        result.push({ marca: '', tipo: '', color: '', placa: '', modelo: '', tag: '' });
+      } else if (tipo === 'bicis') {
+        result.push({ marca: '', tipo: '', color: '', rodado: '' });
+      } else if (tipo === 'mascotas') {
+        result.push({ nombre: '', especie: '', raza: '', edad: '', vacuna: '', color: '', observaciones: '', contacto: '' });
+      } else if (tipo === 'contactos') {
+        result.push({ nombre: '', parentesco: '', celular: '' });
+      }
+    }
+  }
+  return result;
+}
+
+// ---------------------------------------------------------------------
+// Endpoint R.5: clearResidente
+// Borra TODOS los datos del residente anterior (secciones 5, 5.1, 6, 7, 9, 10).
+// Solo el propietario o la inmobiliaria pueden ejecutarlo.
+// Valida CC del propietario contra v[6].
+// Limpia v[29..92] (residentes+menores+vehiculos+motos+bicis) y
+// v[110..135] (mascotas+contactos).
+// NO toca: secciones 1-4 (datos propietario), 8 (llaveros/futuro), 11 (firma).
+// Logger.log para auditoría.
+// ---------------------------------------------------------------------
+function clearResidente(data) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) {
+    return { ok: false, error: 'Otra operación está en curso. Intenta en unos segundos.' };
+  }
+  try {
+    const numForm = String(data.numForm || '').trim();
+    const apto = String(data.apto || '').trim();
+    const ccPropConfirm = normCc(data.ccPropConfirm || '');
+
+    if (!numForm || !apto || !ccPropConfirm) {
+      return { ok: false, error: 'Faltan datos requeridos (numForm, apto, ccPropConfirm)' };
+    }
+
+    const row = findRowByNumFormAndApto(numForm, apto);
+    if (!row) return { ok: false, error: 'No se encontró el registro con ese N° de formulario y N° de apartamento.' };
+
+    // Verificar que ccPropConfirm coincide con el CC del propietario en v[6]
+    const ccPropSheet = normCc(row.values[6] || '');
+    if (ccPropSheet !== ccPropConfirm) {
+      return { ok: false, error: 'La cédula no corresponde al propietario del apartamento.' };
+    }
+
+    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+    const rowNumber = row.rowNumber;
+
+    // Limpiar v[29..92] (índices 0-based) = columnas AD..CO (1-based 30..93)
+    // AD (30) a CO (93) = 64 columnas: residentes(20) + menores(12) + vehiculos(12) + motos(12) + bicis(8)
+    sheet.getRange(rowNumber, 30, 1, 64).clearContent();
+
+    // Limpiar v[110..135] (índices 0-based) = columnas DG..EF (1-based 110..135)
+    // DG (110) a EF (135) = 26 columnas: mascotas(20) + contactos(6)
+    sheet.getRange(rowNumber, 110, 1, 26).clearContent();
+
+    Logger.log('[clearResidente] numForm=' + numForm + ' apto=' + apto + ' ts=' + new Date().toISOString() + ' celdasLimpiadas=90');
+
+    return {
+      ok: true,
+      celdasLimpiadas: 90,  // 64 (residentes..bicis) + 26 (mascotas+contactos)
+      message: 'Datos del residente anterior borrados correctamente.'
+    };
+  } finally {
+    lock.releaseLock();
+  }
 }
