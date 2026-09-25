@@ -1,1 +1,8 @@
 *.tmp
+
+# Datos contables privados — NUNCA subir al repo público
+*.xls
+*.xlsx
+*.pdf
+*.PDF
+*.docx

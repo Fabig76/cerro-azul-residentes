@@ -69,6 +69,27 @@ Este es el código del backend que conecta el formulario público
     Marca check (Sí/No realizado) con LockService y nombre del vigilante.
     Actualiza columnas T (REALIZADA), U (FECHA_CHECK), V (VIGILANTE) en Sheet Mudanzas.
 
+### Estado de cuenta (sept 2026) — todos POST (la cédula no va en la URL)
+  · `POST action=ecConsultar` — `{numForm, apto, ccProp}`
+    Devuelve periodo, saldo por concepto, factura del mes, últimos 3 pagos,
+    `pazYSalvoHabilitado` (si `total cartera < pys_tolerancia`) y `linkPago`.
+  · `POST action=ecDescargarFactura` — `{numForm, apto, ccProp}`
+    Devuelve `{nombreArchivo, base64}` del PDF de 1 página del apto.
+  · `POST action=ecPazYSalvo` — `{numForm, apto, ccProp}`
+    Genera el paz y salvo (Google Doc → PDF) y registra en `PazYSalvos`.
+    Requiere diligencia `Propietario` (rechaza Arrendatario/Tenedor/Inmobiliaria)
+    y `total cartera < pys_tolerancia`.
+  · `POST action=ecIniciarCarga` — `{password, periodo, nombrePestana, fechaCorte, filas, pagos, reemplazar}`
+    (admin) Crea la pestaña mensual en el Sheet Cartera + carpeta en Drive.
+  · `POST action=ecSubirFacturas` — `{password, idCarga, archivos:[{apto, base64}]}`
+    (admin) Sube facturas en lotes de 1..10. Idempotente (papelera si ya existe).
+  · `POST action=ecFinalizarCarga` — `{password, idCarga}`
+    (admin) Valida el conteo de PDFs y marca ACTIVO/HISTORICO/REEMPLAZADO.
+
+  · Reutiliza: `verificarPropietario`, `adminLogin`, `normApto`, `jsonOut`, `SHEET_ID`.
+  · Config del Sheet principal → 5 claves nuevas: `cartera_sheet_id`,
+    `facturas_folder_id`, `plantilla_pys_id`, `pys_tolerancia`, `link_pago`.
+
 ## Despliegue paso a paso (~5 minutos)
 
 ### 1. Abre el proyecto Apps Script que ya creé para ti

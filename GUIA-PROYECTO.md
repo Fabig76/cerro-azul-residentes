@@ -1439,6 +1439,58 @@ desde la UI (no desde el Sheet), usa el portal admin:
 
 ---
 
+## 20. Módulo de Estado de Cuenta (sept 2026)
+
+### 20.1 Descripción
+
+Portal contable para que los propietarios consulten su estado de cuenta,
+sus últimos pagos y descarguen su factura y paz y salvo, sin pasar por el
+administrador. Mismo stack (GitHub Pages + Apps Script + Sheets + Drive).
+
+### 20.2 URLs
+
+  · Propietario: https://fabig76.github.io/cerro-azul-residentes/estado-cuenta.html
+  · Cargador admin: https://fabig76.github.io/cerro-azul-residentes/cartera-admin.html
+  · Link desde index.html: 4ta pestaña "💳 Consultar estado de cuenta"
+
+### 20.3 Backend (mismo Apps Script, V12)
+
+  · `apps-script/modulo-estado-cuenta.gs` se pega al final de `Codigo.gs`
+    (25 funciones `ec*`). Único cambio en código existente: 6 líneas de
+    enrutamiento en `doPost`.
+  · 6 endpoints POST: `ecConsultar`, `ecDescargarFactura`, `ecPazYSalvo`,
+    `ecIniciarCarga`, `ecSubirFacturas`, `ecFinalizarCarga`.
+  · Reutiliza `verificarPropietario` (rechaza Arrendatario), `adminLogin`,
+    `normApto`, `jsonOut`, `SHEET_ID`.
+  · Permisos nuevos: DriveApp + DocumentApp (autorizar con `ecSetup()`).
+
+### 20.4 Recursos (creados por el operador, Fase 0)
+
+  · Sheet `Cartera` (separado del principal): pestaña por mes +
+    `_Control` + `Pagos` + `PazYSalvos`.
+  · Carpeta Drive `Facturas/` con subcarpeta por carga
+    (`Facturas 2026-08 (xxxxxxxx)`).
+  · Google Doc plantilla paz y salvo con marcadores `{{APTO}}`,
+    `{{FECHA_EXPEDICION}}`, `{{FECHA_CORTE}}`, `{{CONSECUTIVO}}`,
+    `{{CODIGO}}`.
+  · 5 claves nuevas en Config: `cartera_sheet_id`, `facturas_folder_id`,
+    `plantilla_pys_id`, `pys_tolerancia`, `link_pago`.
+
+### 20.5 Reglas de negocio (confirmadas con el operador)
+
+  · Paz y salvo si `total cartera < pys_tolerancia` (default 1000).
+  · SOLO diligencia "Propietario" puede pedir paz y salvo (P2).
+  · Facturas: PDF unificado de 625 páginas, se divide por REF.PAGO
+    (el orden NO coincide con la cartera).
+  · El cargador admin sube el Excel + PDF del contador, sin separar a mano.
+
+### 20.6 Documentación del módulo
+
+  · `docs/spec-estado-cuenta.md` — especificación completa del analista.
+  · `docs/proyecto-estado-cuenta.md` — resumen operativo (este módulo).
+
+---
+
 ## Skills relevantes para cargar
 
 Cuando trabajes en este proyecto, carga estas skills primero:

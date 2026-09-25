@@ -48,16 +48,32 @@ impreso en PDF.
   · Pestaña especial "🚗 Buscar por placa" para incidentes vehiculares
     (búsqueda parcial, case-insensitive, devuelve apto+propietario)
 
+## Portal de estado de cuenta (sept 2026)
+
+  · **URL propietario:** https://fabig76.github.io/cerro-azul-residentes/estado-cuenta.html
+  · **URL cargador admin:** https://fabig76.github.io/cerro-azul-residentes/cartera-admin.html
+  · Los propietarios consultan su estado de cuenta, sus últimos pagos y
+    descargan su factura y paz y salvo (Ley 1581/2012)
+  · Login con CA-XXXX + N° apto + cédula (reutiliza `verificarPropietario`)
+  · Paz y salvo solo si `total cartera < tolerancia` (saldo ≤ $1.000),
+    y SOLO para diligencia "Propietario"
+  · El cargador admin sube el Excel de cartera + PDF unificado (625
+    facturas) que entrega el contador; el sistema los divide por REF.PAGO
+  · Ver `docs/spec-estado-cuenta.md` y `docs/proyecto-estado-cuenta.md`
+
 ## Stack
 
   · Frontend: HTML/CSS/JS vanilla en GitHub Pages
   · Backend: Apps Script Web App (`doPost` + `doGet`) — V8 desplegado
   · BD: Google Sheets (`Base datos Cerro azul fomato`)
-  · Pestañas del Sheet:
+  · Pestañas del Sheet principal (`Base datos Cerro azul fomato`):
     · `Registros` (143 cols, datos de residentes)
     · `Maestros` (26 cols, configuración)
     · `Mudanzas` (19 cols, reservas — sept 2026)
     · `Config` (admin password — sept 2026)
+  · Sheet separado `Cartera` (estado de cuenta — sept 2026):
+    · pestaña por mes (`Agosto 2026`, `Septiembre 2026`, …)
+    · `_Control`, `Pagos`, `PazYSalvos`
   · Sin servidor propio, sin base de datos externa
 
 ## Documentación
@@ -70,6 +86,8 @@ impreso en PDF.
   · `docs/TESTING-PROTOCOL.md` — protocolo E2E antes de deploy
   · `docs/manual-llenado-cerro-azul.html` — manual visual para residentes
   · `docs/prompt-notebooklm-video.md` — prompt para generar video instructivo
+  · `docs/spec-estado-cuenta.md` — especificación del módulo de estado de cuenta
+  · `docs/proyecto-estado-cuenta.md` — resumen operativo del módulo contable
 
 ## Contacto
 
