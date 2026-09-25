@@ -3,143 +3,146 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0066CC">
   <title>Portal Administrativo — Cerro Azul</title>
+  <link rel="icon" href="assets/logo.jpg">
   <link rel="stylesheet" href="assets/styles.css">
   <style>
-    /* Estilos especificos del portal admin */
-    .admin-wrap { max-width: 1100px; margin: 0 auto; padding: 20px; }
-    .admin-header {
-      background: var(--azul-osc, #004A99);
-      color: white;
-      padding: 16px 24px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .admin-header h1 { font-size: 1.3em; margin: 0; }
-    .admin-header .badge { background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 12px; font-size: 0.85em; }
+    /* Estilos internos del panel admin (tablas, formulario de edición) */
+    .admin-wrap { max-width: 900px; margin: 0 auto; padding: 0 16px; }
 
-    .login-card {
-      max-width: 420px;
-      margin: 60px auto;
-      background: white;
-      padding: 32px;
+    .header-badge {
+      background: var(--azul-osc, #004A99);
+      color: #fff;
+      padding: 4px 12px;
       border-radius: 12px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      font-size: 0.82em;
+      font-weight: 600;
+      white-space: nowrap;
+      margin-left: auto;
     }
-    .login-card h2 { color: var(--azul-osc, #004A99); margin-bottom: 8px; }
-    .login-card .subtitle { color: var(--texto-med, #6C757D); font-size: 0.92em; margin-bottom: 20px; }
 
     .search-bar {
       display: flex;
       gap: 10px;
       margin-bottom: 16px;
+      flex-wrap: wrap;
     }
-    .search-bar input { flex: 1; padding: 10px 14px; font-size: 15px; }
+    .search-bar input { flex: 1; min-width: 200px; padding: 10px 14px; font-size: 15px; }
 
     .results-table {
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 20px;
-      background: white;
+      background: #fff;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
       border-radius: 8px;
       overflow: hidden;
     }
     .results-table th {
-      background: var(--azul-clr, #EAF2FF);
-      color: var(--azul-osc, #004A99);
+      background: var(--azul-claro, #E6F0FA);
+      color: var(--azul-osc, #004C99);
       padding: 10px 12px;
       text-align: left;
       font-size: 0.9em;
       font-weight: 600;
     }
-    .results-table td { padding: 10px 12px; border-bottom: 1px solid var(--gris-bd, #DEE2E6); font-size: 0.92em; }
+    .results-table td { padding: 10px 12px; border-bottom: 1px solid var(--gris-borde, #DEE2E6); font-size: 0.92em; }
     .results-table tr { cursor: pointer; transition: background 0.15s; }
-    .results-table tr:hover { background: var(--azul-clr, #EAF2FF); }
-    .results-table tr.selected { background: var(--azul-clr, #EAF2FF); font-weight: 600; }
+    .results-table tr:hover { background: var(--azul-claro, #E6F0FA); }
+    .results-table tr.selected { background: var(--azul-claro, #E6F0FA); font-weight: 600; }
 
     .detail-card {
-      background: white;
+      background: #fff;
       padding: 24px;
       border-radius: 8px;
       box-shadow: 0 2px 12px rgba(0,0,0,0.08);
       margin-top: 16px;
     }
-    .detail-card h3 { color: var(--azul-osc, #004A99); margin: 0 0 16px; }
+    .detail-card h3 { color: var(--azul-osc, #004C99); margin: 0 0 16px; }
 
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .form-grid .full { grid-column: span 2; }
-    .form-grid label { font-size: 0.85em; color: var(--texto-med, #6C757D); }
+    .form-grid label { font-size: 0.85em; color: var(--gris-med, #6C757D); }
     .form-grid input { width: 100%; padding: 8px 10px; font-size: 14px; }
-    .form-grid input:disabled { background: var(--gris-bg, #F8F9FA); color: var(--texto-med, #6C757D); }
+    .form-grid input:disabled { background: #F8F9FA; color: var(--gris-med, #6C757D); }
 
-    .action-bar { display: flex; gap: 10px; margin-top: 20px; }
+    .action-bar { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
     .meta-info {
-      background: var(--gris-bg, #F8F9FA);
+      background: #F8F9FA;
       padding: 12px 16px;
       border-radius: 6px;
       margin-bottom: 16px;
       font-size: 0.92em;
-      color: var(--texto-med, #6C757D);
+      color: var(--gris-med, #6C757D);
     }
-
     .no-results {
       text-align: center;
       padding: 40px;
-      color: var(--texto-med, #6C757D);
-      background: white;
+      color: var(--gris-med, #6C757D);
+      background: #fff;
       border-radius: 8px;
     }
-
     .log { background: #f5f5f5; padding: 8px 12px; border-radius: 4px; font-family: monospace; font-size: 0.82em; max-height: 200px; overflow-y: auto; }
   </style>
 </head>
 <body>
 
-<div class="admin-wrap">
-
-  <!-- HEADER -->
-  <div class="admin-header">
-    <h1>🔧 Portal Administrativo — Cerro Azul</h1>
-    <span class="badge" id="sessionBadge" style="display:none">Sesión activa</span>
-  </div>
-
-  <!-- ALERTAS -->
-  <div id="alert" class="alert hidden" role="alert"></div>
-
-  <!-- VISTA 1: LOGIN -->
-  <div id="view-login" class="login-card">
-    <h2>Iniciar sesión</h2>
-    <p class="subtitle">Solo personal autorizado de la administración.</p>
-    <div class="field" style="margin-bottom:14px;">
-      <label>Contraseña</label>
-      <input type="password" id="loginPassword" placeholder="Ingrese la contraseña" autocomplete="current-password">
+  <header class="site-header">
+    <div class="header-inner">
+      <img src="assets/logo.jpg" alt="Logo Urbanización Cerro Azul" class="logo">
+      <div class="header-text">
+        <h1>Urbanización Cerro Azul</h1>
+        <p class="nit">NIT 900770444 · Bello / Niquía</p>
+        <p class="sub">Portal Administrativo</p>
+      </div>
+      <span class="header-badge" id="sessionBadge" style="display:none">Sesión activa</span>
     </div>
-    <button type="button" class="btn btn-primary btn-block" id="btnLogin">Ingresar</button>
-    <p style="margin-top:14px; font-size:12px; color:var(--gris-med);">
-      ¿Olvidó la contraseña? Edite la celda <strong>Config!B2</strong> en el Google Sheet.
+  </header>
+
+  <main class="admin-wrap">
+
+    <!-- ALERTAS -->
+    <div id="alert" class="alert hidden" role="alert"></div>
+
+    <!-- VISTA 1: LOGIN -->
+    <div id="view-login" class="lookup-box">
+      <h3>🔧 Acceso administrativo</h3>
+      <p>Solo personal autorizado de la administración puede ingresar.</p>
+      <div class="field" style="margin-bottom:18px;">
+        <label>Contraseña <span class="req">*</span></label>
+        <input type="password" id="loginPassword" placeholder="Ingrese la contraseña" autocomplete="current-password">
+      </div>
+      <button type="button" class="btn btn-primary btn-block" id="btnLogin">🔍 Ingresar</button>
+      <p style="margin-top:14px; font-size:12px; color:var(--gris-med);">
+        ¿Olvidó la contraseña? Edite la celda <strong>Config</strong> en el Google Sheet.
+      </p>
+    </div>
+
+    <!-- VISTA 2: PANEL -->
+    <div id="view-panel" class="hidden">
+      <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Buscar por apto, nombre, cédula, correo, celular o CA-XXXX...">
+        <button type="button" class="btn btn-primary" id="btnSearch">🔍 Buscar</button>
+        <button type="button" class="btn btn-secondary" id="btnLogout">Cerrar sesión</button>
+      </div>
+
+      <div id="resultsContainer"></div>
+
+      <div id="detailContainer"></div>
+    </div>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>
+      Urbanización Cerro Azul · NIT 900770444 · Bello / Niquía<br>
+      Portal administrativo — acceso restringido<br>
+      <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a>
     </p>
-  </div>
+  </footer>
 
-  <!-- VISTA 2: PANEL -->
-  <div id="view-panel" class="hidden">
-    <div class="search-bar">
-      <input type="text" id="searchInput" placeholder="Buscar por apto, nombre, cédula, correo, celular o CA-XXXX...">
-      <button type="button" class="btn btn-primary" id="btnSearch">🔍 Buscar</button>
-      <button type="button" class="btn btn-secondary" id="btnLogout">Cerrar sesión</button>
-    </div>
-
-    <div id="resultsContainer"></div>
-
-    <div id="detailContainer"></div>
-  </div>
-
-</div>
-
-<script src="js/admin.js"></script>
+  <script src="js/admin.js"></script>
 
 </body>
 </html>
