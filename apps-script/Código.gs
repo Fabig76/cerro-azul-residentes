@@ -123,6 +123,9 @@ function doGet(e) {
     if (action === 'vigilanteVerReservasSalon') {
       return jsonOut(vigilanteVerReservasSalon(e.parameter.fecha));
     }
+    if (action === 'adminListarReservasMudanzas') {
+      return jsonOut(adminListarReservasMudanzas(e.parameter.estado, e.parameter.torre, e.parameter.fechaDesde));
+    }
     if (action === 'adminListarReservasSalon') {
       return jsonOut(adminListarReservasSalon(e.parameter.estado, e.parameter.fechaDesde));
     }
@@ -840,6 +843,54 @@ function findReservasEnRango(torre, ascensor, desde, hasta) {
     }
   }
   return result;
+}
+
+// ---------------------------------------------------------------------
+// Endpoint MUDANZAS-ADMIN: adminListarReservasMudanzas (GET)
+// Lista todas las reservas de mudanzas para el administrador
+// Soporta filtros: estado (Confirmada/Cancelada/Todas), torre, fechaDesde
+// ---------------------------------------------------------------------
+function adminListarReservasMudanzas(estado, torre, fechaDesde) {
+  const sheet = getMudanzasSheet();
+  if (!sheet) return { ok: false, error: 'Pestaña Mudanzas no existe.' };
+  const last = sheet.getLastRow();
+  if (last < MUDANZAS_HEADER_ROW + 1) {
+    return { ok: true, reservas: [], total: 0 };
+  }
+  const data = sheet.getRange(MUDANZAS_HEADER_ROW + 1, 1, last - MUDANZAS_HEADER_ROW, MUDANZAS_NUM_COLS).getValues();
+  const reservas = [];
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i];
+    const estadoRow = String(row[COL_MUD_ESTADO] || '').trim();
+    if (estado && estado !== 'Todas' && estadoRow !== estado) continue;
+    if (torre && String(row[COL_MUD_TORRE]).trim() !== String(torre)) continue;
+    const fechaRow = formatDateOnly(row[COL_MUD_FECHA]);
+    if (fechaDesde && (!fechaRow || fechaRow < fechaDesde)) continue;
+
+    reservas.push({
+      id: String(row[COL_MUD_ID] || ''),
+      numForm: String(row[COL_MUD_NUMFORM] || ''),
+      apto: String(row[COL_MUD_APTO] || ''),
+      torre: String(row[COL_MUD_TORRE] || ''),
+      ascensor: String(row[COL_MUD_ASCENSOR] || ''),
+      tipoMudanza: String(row[COL_MUD_TIPO] || ''),
+      fecha: fechaRow,
+      horaInicio: normalizarHora(row[COL_MUD_HORA_INI]),
+      horaFin: normalizarHora(row[COL_MUD_HORA_FIN]),
+      nombreSolicitante: String(row[COL_MUD_NOMBRE] || ''),
+      ccSolicitante: String(row[COL_MUD_CC] || ''),
+      celular: String(row[COL_MUD_CEL] || ''),
+      correo: String(row[COL_MUD_CORREO] || ''),
+      empresa: String(row[COL_MUD_EMPRESA] || ''),
+      placa: String(row[COL_MUD_PLACA] || ''),
+      observaciones: String(row[COL_MUD_OBS] || ''),
+      estado: estadoRow,
+      fechaCreacion: row[COL_MUD_FECHA_CREA] ? Utilities.formatDate(new Date(row[COL_MUD_FECHA_CREA]), 'America/Bogota', "yyyy-MM-dd'T'HH:mm:ss") : ''
+    });
+  }
+  // Ordenar por fecha descendente
+  reservas.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+  return { ok: true, reservas: reservas, total: reservas.length };
 }
 
 function hashReserva(torre, ascensor, fecha, horaInicio) {

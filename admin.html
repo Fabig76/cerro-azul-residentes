@@ -160,6 +160,7 @@
     <div id="view-panel" class="hidden">
       <div class="admin-nav" style="display:flex; gap:8px; margin-bottom:16px;">
         <button type="button" class="btn btn-primary" id="btnNavResidentes">👥 Residentes</button>
+        <button type="button" class="btn btn-secondary" id="btnNavMudanzas">📦 Mudanzas</button>
         <button type="button" class="btn btn-secondary" id="btnNavSalon">🏛️ Salón Social</button>
         <button type="button" class="btn btn-secondary" id="btnLogout" style="margin-left:auto;">Cerrar sesión</button>
       </div>
@@ -173,6 +174,26 @@
         <div id="resultsContainer"></div>
 
         <div id="detailContainer"></div>
+      </div>
+
+      <div id="tab-mudanzas-admin" class="hidden">
+        <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
+          <label><strong>Estado:</strong></label>
+          <select id="mudanzasEstadoFilter">
+            <option value="Confirmada" selected>Confirmada</option>
+            <option value="Cancelada">Cancelada</option>
+            <option value="Todas">Todas</option>
+          </select>
+          <label><strong>Torre:</strong></label>
+          <select id="mudanzasTorreFilter">
+            <option value="">Todas</option>
+            <option value="1">Torre 1</option>
+            <option value="2">Torre 2</option>
+            <option value="3">Torre 3</option>
+          </select>
+          <button type="button" class="btn btn-primary" id="btnCargarMudanzas">🔄 Actualizar lista</button>
+        </div>
+        <div id="mudanzasList"></div>
       </div>
 
       <div id="tab-salon-admin" class="hidden">

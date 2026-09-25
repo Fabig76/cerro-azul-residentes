@@ -544,11 +544,82 @@ const A = {
 
   navResidentes() {
     document.getElementById('tab-salon-admin').classList.add('hidden');
+    document.getElementById('tab-mudanzas-admin').classList.add('hidden');
     document.getElementById('tab-residentes-admin').classList.remove('hidden');
     document.getElementById('btnNavSalon').classList.remove('btn-primary');
     document.getElementById('btnNavSalon').classList.add('btn-secondary');
+    document.getElementById('btnNavMudanzas').classList.remove('btn-primary');
+    document.getElementById('btnNavMudanzas').classList.add('btn-secondary');
     document.getElementById('btnNavResidentes').classList.remove('btn-secondary');
     document.getElementById('btnNavResidentes').classList.add('btn-primary');
+  },
+
+  // Pestaña Mudanzas (programadas)
+  async navMudanzas() {
+    document.getElementById('tab-residentes-admin').classList.add('hidden');
+    document.getElementById('tab-salon-admin').classList.add('hidden');
+    document.getElementById('tab-mudanzas-admin').classList.remove('hidden');
+    document.getElementById('btnNavResidentes').classList.remove('btn-primary');
+    document.getElementById('btnNavResidentes').classList.add('btn-secondary');
+    document.getElementById('btnNavSalon').classList.remove('btn-primary');
+    document.getElementById('btnNavSalon').classList.add('btn-secondary');
+    document.getElementById('btnNavMudanzas').classList.remove('btn-secondary');
+    document.getElementById('btnNavMudanzas').classList.add('btn-primary');
+    await this.cargarMudanzasList();
+  },
+
+  async cargarMudanzasList() {
+    const estado = document.getElementById('mudanzasEstadoFilter').value;
+    const torre = document.getElementById('mudanzasTorreFilter').value;
+    const container = document.getElementById('mudanzasList');
+    container.innerHTML = '<p style="text-align:center; color:var(--gris-med); padding:20px;">Cargando...</p>';
+
+    try {
+      const params = { action: 'adminListarReservasMudanzas', estado: estado };
+      if (torre) params.torre = torre;
+      const r = await A.apiGet(params);
+
+      if (!r.ok) {
+        container.innerHTML = '<p style="color:var(--err); padding:20px;">Error: ' + (r.error || 'desconocido') + '</p>';
+        return;
+      }
+
+      const reservas = r.reservas || [];
+      if (reservas.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:var(--gris-med); padding:30px;">No hay reservas de mudanzas con esos filtros.</p>';
+        return;
+      }
+
+      let html = '<p style="margin-bottom:12px; color:var(--gris-med); font-size:0.92em;">Total: <strong>' + reservas.length + '</strong> reserva(s)</p>';
+      html += '<table class="results-table"><thead><tr>';
+      html += '<th>ID</th><th>Fecha</th><th>Turno</th><th>Torre</th><th>Ascensor</th><th>Tipo</th><th>Apto</th><th>Solicitante</th><th>Celular</th><th>Placa</th><th>Estado</th>';
+      html += '</tr></thead><tbody>';
+
+      reservas.forEach(res => {
+        const estadoColor = res.estado === 'Confirmada' ? 'var(--ok)' : 'var(--gris-med)';
+        const fecha = res.fecha ? res.fecha : '(sin fecha)';
+        const hora = (res.horaInicio && res.horaFin) ? res.horaInicio + ' - ' + res.horaFin : '';
+
+        html += '<tr>';
+        html += '<td><code>' + res.id + '</code></td>';
+        html += '<td>' + fecha + '</td>';
+        html += '<td>' + hora + '</td>';
+        html += '<td>Torre ' + res.torre + '</td>';
+        html += '<td>' + res.ascensor + '</td>';
+        html += '<td>' + res.tipoMudanza + '</td>';
+        html += '<td>' + res.apto + '</td>';
+        html += '<td>' + res.nombreSolicitante + '<br><small style="color:var(--gris-med);">CC ' + res.ccSolicitante + '</small></td>';
+        html += '<td>' + res.celular + '</td>';
+        html += '<td>' + (res.placa || '-') + '</td>';
+        html += '<td style="color:' + estadoColor + ';">' + res.estado + '</td>';
+        html += '</tr>';
+      });
+
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    } catch (e) {
+      container.innerHTML = '<p style="color:var(--err);">Error de red: ' + e.message + '</p>';
+    }
   },
 
   async cargarSalonList() {
@@ -694,6 +765,12 @@ const A = {
     document.getElementById('salonEstadoFilter').addEventListener('change', () => A.cargarSalonList());
     document.getElementById('btnCancelarModalSalon').addEventListener('click', () => A.cerrarModalCancelar());
     document.getElementById('btnConfirmarCancelarSalon').addEventListener('click', () => A.confirmarCancelarReserva());
+
+    // Mudanzas (pestaña admin)
+    document.getElementById('btnNavMudanzas').addEventListener('click', () => A.navMudanzas());
+    document.getElementById('btnCargarMudanzas').addEventListener('click', () => A.cargarMudanzasList());
+    document.getElementById('mudanzasEstadoFilter').addEventListener('change', () => A.cargarMudanzasList());
+    document.getElementById('mudanzasTorreFilter').addEventListener('change', () => A.cargarMudanzasList());
   }
 };
 
