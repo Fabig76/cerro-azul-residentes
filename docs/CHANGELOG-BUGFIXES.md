@@ -297,5 +297,148 @@ Usa el protocolo de testing antes de declarar el fix completo.
 
 ---
 
-Última actualización: 23-Sept-2026
+## BUGFIX-007 · apiGet/apiPost faltantes en admin.js y vigilantes.js
+
+**Fecha:** 25-Sept-2026
+**Severidad:** ALTA — bloqueaba completamente la pestaña "Salón Social" en admin y vigilantes
+**Bug latente desde:** 25-Sept-2026 (nuevo bug introducido en F5)
+**Detectado por:** Operador (Fabio Lesmes) usando el portal admin
+
+**Síntoma reportado por el usuario:**
+> "en el portal administrativo en el salon social se ve todo ok pero
+> tambien sale este mensaje Error de red: A.apiGet is not a function"
+
+**Causa raíz:**
+En `js/admin.js`, mi código nuevo (F5 módulo salón social) llamaba a
+`A.apiGet({...})` y `A.apiPost({...})`, pero esos helpers NO existían
+en el objeto A. El código existente usaba `fetch(APPS_SCRIPT_URL + '?action=adminBuscar&...')`
+inline en todos sus métodos. Similar en vigilantes.js con `V.apiGet()`.
+
+```javascript
+// Código nuevo (F5) — FALLABA:
+const r = await A.apiGet({ action: 'adminListarReservasSalon', estado: estado });
+// Error: TypeError: A.apiGet is not a function
+```
+
+```javascript
+// Código existente — patrón inline:
+const r = await fetch(APPS_SCRIPT_URL + '?action=adminBuscar&q=' + encodeURIComponent(q)).then(x=>x.json());
+```
+
+**Por qué NO se detectó antes:**
+- Durante F5 no se ejecutaron pruebas E2E reales en el navegador
+- Las pruebas que corrí con curl bypass el JS del navegador
+- El `node --check` solo valida sintaxis, no funciones faltantes
+- Solo se notó cuando el operador hizo click en la pestaña salón social
+
+**Fix:**
+Agregar `apiGet()` y `apiPost()` como helpers en `admin.js` y `vigilantes.js`:
+
+```javascript
+async apiGet(params) {
+  const url = new URL(APPS_SCRIPT_URL);
+  Object.entries(params).forEach(([k, v]) => {
+    if (v != null) url.searchParams.set(k, v);
+  });
+  const r = await fetch(url.toString(), { method: 'GET', redirect: 'follow' });
+  return r.json();
+},
+async apiPost(payload) {
+  const r = await fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+    body: JSON.stringify(payload),
+    redirect: 'follow'
+  });
+  return r.json();
+}
+```
+
+**Archivos afectados:**
+- `js/admin.js` (MOD, +18 líneas: A.apiGet + A.apiPost)
+- `js/vigilantes.js` (MOD, +10 líneas: V.apiGet)
+
+**Lección aprendida #7:**
+**SIEMPRE probar las features en el navegador real ANTES de declararlas
+"listas"** — las pruebas con curl solo validan el backend, no el frontend.
+Cuando agregues helpers nuevos a un archivo JS existente, verifica que
+existen antes de usarlos (grep en el archivo o `typeof helper === 'function'`).
+Para futuras integraciones con portales existentes, PRIMERO auditar el
+código actual (qué funciones ya están definidas, qué patrones usa)
+y solo ENTONCES crear el código nuevo siguiendo ese mismo patrón.
+
+---
+
+## BUGFIX-008 · switchTab() no togglea tab-salon (siempre oculto)
+
+**Fecha:** 25-Sept-2026
+**Severidad:** ALTA — bloqueaba completamente la pestaña "Salón Social" en vigilantes
+**Bug latente desde:** 25-Sept-2026 (nuevo bug introducido en F5)
+**Detectado por:** Operador (Fabio Lesmes) en el portal vigilantes
+
+**Síntoma reportado por el usuario:**
+> "en el portal de vigilante en la pesta salon social no se muestra nada"
+
+**Causa raíz:**
+En `js/vigilantes.js`, el método `switchTab()` toggleaba EXPLÍCITAMENTE
+solo los 3 tabs originales:
+
+```javascript
+// ANTES (bug):
+switchTab(tab) {
+  // ...
+  document.getElementById('tab-residentes').classList.toggle('hidden', tab !== 'residentes');
+  document.getElementById('tab-placas').classList.toggle('hidden', tab !== 'placas');
+  document.getElementById('tab-mudanzas').classList.toggle('hidden', tab !== 'mudanzas');
+  // FALTA: tab-salon
+}
+```
+
+Resultado: cuando el operador hacía click en "🏛️ Salón Social":
+- ✅ El botón del tab cambiaba a `active` (correcto)
+- ✅ Los otros 3 tabs se ocultaban (correcto)
+- ❌ **`tab-salon` se quedaba con `class="hidden"` que yo le puse en el HTML**
+
+El contenedor nunca se mostraba, por eso "no se veía nada".
+
+**Por qué NO se detectó antes:**
+- Igual que BUGFIX-007: las pruebas no se ejecutaron en el navegador real
+- El bug era "silencioso" — no había error en consola, solo que el div
+  permanecía con `display: none`
+
+**Fix:**
+Cambiar el `switchTab()` a un patrón genérico que toggle TODOS los elementos
+con id que empiezan con `tab-`:
+
+```javascript
+// AHORA (fix) — patrón genérico:
+switchTab(tab) {
+  V.state.activeTab = tab;
+  document.querySelectorAll('.vig-tab[data-tab]').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === tab);
+  });
+  // Toggle genérico de TODOS los tabs (sirve para futuros tabs)
+  document.querySelectorAll('[id^="tab-"]').forEach(t => {
+    t.classList.toggle('hidden', t.id !== 'tab-' + tab);
+  });
+  V.hideAlert();
+  if (tab === 'mudanzas') V.cargarMudanzasHoy();
+}
+```
+
+**Archivos afectados:**
+- `js/vigilantes.js` (MOD, +4 líneas, -3 líneas)
+
+**Lección aprendida #8:**
+**NO usar listas explícitas de IDs en código de navegación/UI.**
+Usar selectores genéricos como `[id^="tab-"]` o querySelectorAll con clases
+compartidas. Si agregas un nuevo tab a un sistema existente, el código debe
+funcionar automáticamente sin tocar la lógica de switch.
+Para futuras integraciones con portales existentes, AUDITAR primero el
+switchTab / showView / navegación existente antes de agregar vistas nuevas
+— verificar si ya hay un patrón escalable o si hay que migrarlo.
+
+---
+
+Última actualización: 25-Sept-2026
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)

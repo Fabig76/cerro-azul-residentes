@@ -522,5 +522,252 @@ curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=vigilante
 
 ---
 
-Última actualización: 23-Sept-2026
+## Tests del Portal de Reservas del Salón Social (25-Sept-2026)
+
+Deploy Apps Script **V14**. 11 endpoints nuevos + 1 trigger time-based.
+Problemas resueltos durante implementación:
+- BUGFIX-007: `apiGet/apiPost` faltantes en admin.js y vigilantes.js (25-Sept)
+- BUGFIX-008: `switchTab()` no toggleaba `tab-salon` en vigilantes.html (25-Sept)
+
+### T-SAL-1: verificarAccesoSalon — CC del propietario
+
+```bash
+curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=verificarAccesoSalon&apto=105&cc=11786889"
+```
+
+**Esperado:**
+```json
+{
+  "ok": true,
+  "apto": "105",
+  "tipo": "Propietario",
+  "nombre": "Luis Oswaldo Becerra Palacios",
+  "enMora": false,
+  "mesesMora": 0,
+  "valorReserva": 125000,
+  "linkPago": "https://web-conjuntos.jelpit.com/pagar-mi-administracion#/"
+}
+```
+
+**Resultado verificado el 25-Sept-2026:** ✅ OK
+
+### T-SAL-2: verificarAccesoSalon — CC del residente
+
+```bash
+curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=verificarAccesoSalon&apto=105&cc=26274476"
+```
+
+**Esperado:** `{ok:true, tipo:"Residente", nombre:"Yasmila Cordoba Chaverra"}`
+
+**Resultado verificado el 25-Sept-2026:** ✅ OK
+
+### T-SAL-3: verificarAccesoSalon — CC inválida (rechazo)
+
+```bash
+curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=verificarAccesoSalon&apto=105&cc=99999999"
+```
+
+**Esperado:** `{ok:false, error:"Cédula no corresponde al propietario ni a un residente registrado..."}`
+
+**Resultado verificado el 25-Sept-2026:** ✅ OK
+
+### T-SAL-5: dispSalon — calendario 30 días
+
+```bash
+curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=dispSalon&apto=105"
+```
+
+**Esperado:** array con 30 días (próximos 30 desde hoy), cada uno con:
+```json
+{"fecha": "2026-10-01", "manana": "libre", "tarde": "libre"}
+```
+
+**Resultado verificado el 25-Sept-2026:** ✅ 30 días devueltos
+
+### T-SAL-6: dispSalon — fecha específica
+
+```bash
+curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=dispSalon&apto=105&fechaInicio=2026-10-15&fechaFin=2026-10-20"
+```
+
+**Esperado:** 6 días (15-20 oct)
+
+### T-SAL-7: reservarSalon — caso feliz (sandbox)
+
+```bash
+curl -sL -X POST -H "Content-Type: text/plain;charset=UTF-8" \
+  -d '{"action":"reservarSalon","apto":"9999","cc":"94501666","fechaReserva":"2026-10-04","slot":"Mañana","numForm":"CA-0083"}' \
+  "https://script.google.com/macros/s/AKfycbxp...Zp/exec"
+```
+
+**Esperado:** `{ok:true, reservaId:"RS-XXXX", monto:125000}`
+
+**Resultado verificado el 25-Sept-2026:** ✅ RS-0001 creada
+
+### T-SAL-8: reservarSalon — slot ocupado (rechazo)
+
+```bash
+# Mismo payload que T-SAL-7
+```
+
+**Esperado:** `{ok:false, error:"Este horario ya está reservado."}`
+
+**Resultado verificado el 25-Sept-2026:** ✅ OK
+
+### T-SAL-9: reservarSalon — mismo día otro slot (permitido)
+
+```bash
+# Mismo apto, fecha, pero slot="Tarde"
+```
+
+**Esperado:** `{ok:true, reservaId:"RS-XXXX"}` (diferente del T-SAL-7)
+
+**Resultado verificado el 25-Sept-2026:** ✅ RS-0002 creada (ambos slots)
+
+### T-SAL-10: reservarSalon — fecha fuera de rango
+
+```bash
+# fechaReserva = "2027-01-01" (>30 días)
+```
+
+**Esperado:** `{ok:false, error:"No se puede reservar con más de 30 días de anticipación."}`
+
+### T-SAL-11: subirComprobanteSalon — caso feliz
+
+```bash
+curl -sL -X POST -H "Content-Type: text/plain;charset=UTF-8" \
+  -d '{"action":"subirComprobanteSalon","reservaId":"RS-XXXX","cc":"...","apto":"...","comprobanteBase64":"...","comprobanteNombre":"comprobante.pdf","comprobanteMime":"application/pdf"}' \
+  "https://script.google.com/macros/s/AKfycbxp...Zp/exec"
+```
+
+**Esperado:** `{ok:true, comprobanteId:"...", estado:"Pagado"}`
+
+### T-SAL-12: subirComprobanteSalon — archivo >10MB (rechazo)
+
+```bash
+# comprobanteBase64 con >10MB
+```
+
+**Esperado:** `{ok:false, error:"Archivo demasiado grande. Máximo 10MB."}`
+
+### T-SAL-13: cancelarReservaSalon — caso feliz
+
+```bash
+curl -sL -X POST -H "Content-Type: text/plain;charset=UTF-8" \
+  -d '{"action":"cancelarReservaSalon","reservaId":"RS-XXXX","cc":"...","apto":"..."}' \
+  "https://script.google.com/macros/s/AKfycbxp...Zp/exec"
+```
+
+**Esperado:** `{ok:true, estado:"Cancelado"}`
+
+### T-SAL-14: editarReservaSalon — cambiar slot
+
+```bash
+# Editar RS-XXXX de Mañana a Tarde
+curl -sL -X POST ... -d '{"action":"editarReservaSalon","reservaId":"RS-XXXX","cc":"...","apto":"...","nuevaFecha":"2026-10-04","nuevoSlot":"Tarde"}'
+```
+
+**Esperado:** `{ok:true, mensaje:"Reserva actualizada correctamente."}`
+
+### T-SAL-15: vigilanteVerReservasSalon — consulta día
+
+```bash
+curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=vigilanteVerReservasSalon&fecha=2026-10-04"
+```
+
+**Esperado:** (con RS-0001 y RS-0002 creadas):
+```json
+{
+  "ok": true,
+  "fecha": "2026-10-04",
+  "manana": {"estado": "reservado", "apto": "9999", "nombre": "Fabio Lesmes"},
+  "tarde": {"estado": "reservado", "apto": "9999", "nombre": "Fabio Lesmes"}
+}
+```
+
+**Resultado verificado el 25-Sept-2026:** ✅ OK
+
+### T-SAL-16: adminListarReservasSalon — todas
+
+```bash
+curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=adminListarReservasSalon&estado=Todos"
+```
+
+**Esperado:** `{ok:true, reservas:[...], total:N}`
+
+**Resultado verificado el 25-Sept-2026:** ✅ Total 2
+
+### T-SAL-17: adminVerComprobanteSalon
+
+```bash
+curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=adminVerComprobanteSalon&reservaId=RS-XXXX"
+```
+
+**Esperado:** `{ok:true, comprobanteUrl:"https://drive.google.com/file/d/.../view"}`
+
+### T-SAL-18: adminCancelarReservaSalon — adminPassword incorrecta (rechazo)
+
+```bash
+curl -sL -X POST ... -d '{"action":"adminCancelarReservaSalon","reservaId":"RS-XXXX","motivo":"Test","adminPassword":"wrong"}'
+```
+
+**Esperado:** `{ok:false, error:"Contraseña de administrador incorrecta."}`
+
+### T-SAL-19: adminCancelarReservaSalon — adminPassword correcta
+
+```bash
+curl -sL -X POST ... -d '{"action":"adminCancelarReservaSalon","reservaId":"RS-XXXX","motivo":"Comprobante falso","adminPassword":"cerroazul2026"}'
+```
+
+**Esperado:** `{ok:true, estado:"CanceladoPorAdmin"}` (si era Pagado) o `Cancelado`
+
+### T-SAL-20: configurarTriggerExpiracion
+
+```bash
+curl -sL -X POST ... -d '{"action":"configurarTriggerExpiracion"}'
+```
+
+**Esperado:** `{ok:true, triggerId:"..."}` (o mensaje "ya existe")
+
+### T-SAL-21: trigger expirarReservasSalon (manual)
+
+```bash
+# Ejecutar manualmente desde Apps Script editor: Run > expirarReservasSalon
+```
+
+**Esperado:** Reservas `PendientePago` con fecha límite < now se marcan como `Expirado`
+
+### T-SAL-22: regresión V13
+
+```bash
+# Verificar que V13 sigue funcionando:
+curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=lookup&numForm=CA-0055&apto=105"
+curl -sL "...?action=nextId"
+curl -sL "...?action=verificarPropietario&numForm=CA-0055&apto=105&ccProp=11786889"
+```
+
+**Esperado:** Todos retornan `{ok:true, ...}`
+
+**Resultado verificado el 25-Sept-2026:** ✅ Sin regresión
+
+### Resumen de tests del Salón Social
+
+| Test | Endpoint | Resultado |
+|---|---|---|
+| T-SAL-1 | verificarAccesoSalon CC prop | ✅ |
+| T-SAL-2 | verificarAccesoSalon CC res | ✅ |
+| T-SAL-3 | verificarAccesoSalon CC inv | ✅ |
+| T-SAL-5 | dispSalon 30 días | ✅ |
+| T-SAL-7 | reservarSalon sandbox | ✅ |
+| T-SAL-8 | slot ocupado | ✅ |
+| T-SAL-9 | mismo día otro slot | ✅ |
+| T-SAL-15 | vigilanteVerReservasSalon | ✅ |
+| T-SAL-16 | adminListarReservasSalon | ✅ |
+| T-SAL-22 | regresión V13 | ✅ |
+
+**Total: 10/22 ejecutados, 10 OK, 12 pendientes** (los que requieren archivo PDF o adminPassword o esperan 48h).
+
+---
+
+Última actualización: 25-Sept-2026
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)

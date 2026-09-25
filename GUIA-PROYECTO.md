@@ -1625,3 +1625,200 @@ Apto 9999 (CA-0083) usado como sandbox:
 
 - Script `generar_qr_residente.py` para generar 1 PDF con QRs de todos
   los apartamentos del conjunto (para distribución masiva)
+
+---
+
+## 23. Portal de Reservas del Salón Social (25-Sept-2026)
+
+Sexto portal del proyecto. Permite a los residentes y propietarios
+reservar el salón social para eventos con pago de $125.000 COP por turno.
+
+### 23.1 Necesidad
+
+> "los dueños ni las inmobiliarias quiere hacer esto entonces envia el qr
+> para que los nuevos lo llenen" — operador Fabio
+
+El propietario del apartamento ya no tiene que conocer los detalles de
+cada residente. Cada residente adulto puede reservar directamente con
+solo su cédula.
+
+### 23.2 URLs
+
+  · **Portal del salón:** `https://fabig76.github.io/cerro-azul-residentes/salon-social.html`
+  · **Sheet Registros:** `16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc` (pestaña nueva "salon social", 17 cols A:Q)
+  · **Sheet Cartera:** `1IQn1y3AoArQSI4dtwhUsH3PVGm0zsZCom0TEdSAfVb4` (solo LECTURA para mora)
+  · **Web App V14 URL:** `https://script.google.com/macros/s/AKfycbxp...Zp/exec`
+  · **Manual público:** `https://fabig76.github.io/cerro-azul-residentes/docs/manual-llenado-cerro-azul.html`
+
+### 23.3 Frontend — `salon-social.html` (NUEVO, ~250 líneas)
+
+7 vistas:
+1. Login (apto + CC)
+2. Mora (bloqueo si adeuda ≥2 meses)
+3. Calendario (30 días, grid 7×5 con colores)
+4. Reservar (selección de slot Mañana/Tarde)
+5. Pago (link Jelpit + upload de comprobante)
+6. Mis reservas (placeholder para v2)
+7. Éxito
+
+### 23.4 Cambios a `admin.html` (D21, D23) — Pestaña Salón Social
+
+- Nueva navegación: [👥 Residentes] [🏛️ Salón Social] [Cerrar sesión]
+- Filtro por estado (PendientePago/Pagado/Cancelado/Expirado/CanceladoPorAdmin/Todos)
+- Tabla con ID, apto, solicitante, fecha, slot, comprobante, acciones
+- Botón "📎 Ver comprobante" → abre URL de Drive
+- Botón "❌ Cancelar" → modal con campo de motivo + adminPassword
+
+### 23.5 Cambios a `vigilantes.html` — Tab Salón Social
+
+- 4ta tab: "🏛️ Salón Social" (después de "📦 Mudanzas")
+- Selector de fecha + botón "Hoy"
+- 2 cards (Mañana 8-13 / Tarde 14-22) con colores:
+ - 🟢 LIBRE (verde)
+ - 🔴 RESERVADO por [nombre] (Apto [X]) (rojo)
+
+### 23.6 Backend — 11 endpoints Apps Script + 1 trigger (V14)
+
+| Endpoint | Método | Propósito |
+|---|---|---|
+| `verificarAccesoSalon` | GET | Login + validación de mora |
+| `dispSalon` | GET | Calendario rolling window 30 días |
+| `vigilanteVerReservasSalon` | GET | Vista vigilantes (apto + nombre) |
+| `adminListarReservasSalon` | GET | Lista para admin con filtros |
+| `adminVerComprobanteSalon` | GET | URL Drive del comprobante |
+| `reservarSalon` | POST | Crear reserva (LockService) |
+| `subirComprobanteSalon` | POST | Subir PDF/imagen + marcar Pagado |
+| `cancelarReservaSalon` | POST | Cancelar manualmente |
+| `editarReservaSalon` | POST | Cambiar fecha + slot |
+| `adminCancelarReservaSalon` | POST | Cancelar como admin (con motivo) |
+| `configurarTriggerExpiracion` | POST | Crea trigger 1h (one-time) |
+
+**Trigger time-based:** `expirarReservasSalon()` corre cada 1h, marca `PendientePago` → `Expirado` si pasó el plazo.
+
+### 23.7 Estructura del Sheet (17 cols A:Q)
+
+```
+A: ID RESERVA          (RS-0001 correlativo)
+B: NUM FORM            (CA-XXXX)
+C: N° APTO              (referencia)
+D: CC SOLICITANTE       (puede ser prop o residente del apto)
+E: TIPO SOLICITANTE     (Propietario | Residente)
+F: NOMBRE SOLICITANTE   (denormalizado)
+G: CORREO
+H: CELULAR
+I: FECHA RESERVA       (YYYY-MM-DD)
+J: SLOT                 (Mañana | Tarde)
+K: ESTADO              (PendientePago | Pagado | Cancelado | Expirado | CanceladoPorAdmin)
+L: FECHA CREACION
+M: FECHA LIMITE PAGO   (timestamp + 48h)
+N: FECHA PAGO           (cuando subió comprobante)
+O: COMPROBANTE DRIVE ID
+P: HASH DEDUPE          (sha256[:16])
+Q: MODIFICADO POR
+```
+
+### 23.8 Validación de Mora (D11) — Lógica clave
+
+**Lee col L `meses prom` de la pestaña vigente del Sheet Cartera.**
+
+```javascript
+// 1. Abre Sheet Cartera (configurado por cartera_sheet_id en Config)
+// 2. Lee _Control → busca fila con col E = 'ACTIVO'
+// 3. Lee esa pestaña → busca fila con col A = apto
+// 4. Lee col L (índice 11) → parseInt() o 0
+// 5. Si >= 2 → BLOQUEADO con mensaje
+```
+
+**Datos reales verificados:**
+- Apto 105 (Becerra): `meses prom = 0` → permitido
+- Apto 107 (Villaneda): `meses prom = 1` → permitido (1 < 2)
+- Apto 111 (Parra): `meses prom = 44` → BLOQUEADO
+
+**`meses prom` es ACUMULATIVO** (44 = 44 meses acumulados).
+
+### 23.9 Decisiones D1-D23
+
+| ID | Decisión |
+|---|---|
+| D1 | Portal nuevo `salon-social.html` |
+| D2 | Pestaña "salon social" en **Sheet Registros** (sheetId 2030042121) |
+| D3 | Auth: apto + CC del prop o residente |
+| D4 | Comprobante PDF/JPG/PNG, máx 10MB, en COMPROBANTES_FOLDER_ID |
+| D5 | Correos SOLO al admin |
+| D6 | Vigilantes ven: fecha + slot + estado + apto + nombre |
+| D7 | Calendario rolling window 30 días |
+| D8 | Ambos slots del mismo día permitidos |
+| D9 | Sin límite mensual |
+| D10 | Reserva editable (cualquier campo) |
+| D11 | Mora: `meses prom >= 2` BLOQUEA |
+| D12 | Link pago desde `link_pago` Config |
+| D13 | Trigger 48h cancela automático |
+| D14 | Valor: $125.000 COP |
+| D15 | 2 slots: Mañana (8-13) y Tarde (14-22) |
+| D16 | Sin restricción de día |
+| D17 | Editable: cambiar slot |
+| D18 | Link pago desde Config |
+| D19 | Calendario rolling window |
+| D20 | Comprobantes expirados se mantienen en Drive |
+| D21 | Admin tiene pestaña Salón Social |
+| D22 | Admin NO puede extender plazo 48h |
+| D23 | Admin cancela si comprobante falso |
+
+### 23.10 Reglas de Negocio
+
+| Acción | Quién puede |
+|---|---|
+| Auto-registrarse en apto vacío | Cualquier residente con QR |
+| Editar SU slot | Residente con CC + apto |
+| Editar slot compartido ocupado por otro | ❌ (solo propietario/admin) |
+| Subir comprobante | Residente de la reserva |
+| Cancelar propia reserva | Residente antes de 48h |
+| Cancelar cualquier reserva | Admin con motivo + adminPassword |
+
+### 23.11 Tests E2E (verificados el 25-Sept-2026)
+
+| Test | Resultado |
+|---|---|
+| T-SAL-1: CC propietario (apto 105) | ✅ OK |
+| T-SAL-2: CC residente (Yasmila) | ✅ OK |
+| T-SAL-3: CC inválida | ✅ Rechazo correcto |
+| T-SAL-5: dispSalon 30 días | ✅ 30 días |
+| T-SAL-9: reservarSalon apto 9999 | ✅ RS-0001 creada |
+| T-SAL-10: slot ocupado | ✅ Rechazo correcto |
+| T-SAL-11: mismo día otro slot | ✅ RS-0002 creada |
+| T-SAL-13: vigilanteVerReservasSalon | ✅ Ve datos |
+| T-SAL-14: adminListarReservasSalon | ✅ Total 2 |
+| Regresión V13 | ✅ Sin regresión |
+
+**Pendiente de validar manualmente:** mora (requiere CC de apto en mora registrado en Sheet Registros), subida de comprobante (requiere archivo real), trigger 48h (requiere esperar 48h).
+
+### 23.12 Bugs encontrados durante implementación
+
+| Bugfix | Descripción |
+|---|---|
+| BUGFIX-007 | `apiGet/apiPost` faltantes en `admin.js` y `vigilantes.js` |
+| BUGFIX-008 | `switchTab()` no toggleaba `tab-salon` (siempre oculto) |
+
+### 23.13 Recursos
+
+- **Drive backup:** `1RPHtWnVEFwzBKR1DCzBP1to9wLHY2F22`
+- **Backup pre-salon-social (5 archivos):** `pre-salon-social-Registros.xlsx`, `pre-salon-social-Registros.csv`, `pre-salon-social-Cartera.xlsx`, `pre-salon-social-Código.gs`, `pre-salon-social-spec.md`
+- **Codigo V14:** `Codigo_V14_SALON-SOCIAL-20260925.gs` (md5 `6532671d4b910dde6bc652c42a688e9b`)
+- **Manual público con sección salón:** `https://fabig76.github.io/cerro-azul-residentes/docs/manual-llenado-cerro-azul.html`
+- **QR de salón (N/A — futuro):** generar QR por apartamento
+- **Comprobantes folder:** `1RPHtWnVEFwzBKR1DCzBP1to9wLHY2F22` (carpeta del proyecto)
+
+### 23.14 Plan F0-F9 — todas las fases completadas
+
+| Fase | Estado |
+|---|---|
+| F0 — Backup pre-flight | ✅ 5 archivos |
+| F1 — Spec + wireframes | ✅ 2 docs (spec + proyecto) |
+| F2 — Backend Codigo.gs V14 | ✅ 11 endpoints + helpers |
+| F3 — Pestaña "salon social" Sheet | ✅ sheetId 2030042121 |
+| F4 — Frontend salon-social.html | ✅ 7 vistas |
+| F5 — admin.html + vigilantes.html | ✅ Pestañas salón agregadas |
+| F6 — Trigger 48h time-based | ✅ Configurado por operador |
+| F7 — Manual HTML público | ✅ + descargable en Drive |
+| F8 — Deploy Apps Script V14 | ✅ Verificado |
+| F9 — Docs finales | ✅ (este commit) |

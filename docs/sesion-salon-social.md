@@ -359,16 +359,54 @@ PASO 6: Si >= 2 → BLOQUEADO, si < 2 → PERMITIDO
 
 ## 10. Pendiente para futuras sesiones
 
-- [ ] Operador aprueba el spec completo
-- [ ] Operador aprueba las decisiones D1-D23
-- [ ] Operador aprueba el plan F0-F9
-- [ ] Operador crea el trigger time-based después del deploy V14
-  (o usa `configurarTriggerExpiracion()`)
-- [ ] Operador crea la pestaña "salon social" en Sheet Registros
-  (o autoriza a Hermes a hacerlo)
-- [ ] Considerar F10: script `generar_qr_salon.py` (opcional)
+- [x] Operador aprueba el spec completo (hecho durante la sesión)
+- [x] Operador aprueba las decisiones D1-D23 (hecho durante la sesión)
+- [x] Operador aprueba el plan F0-F9 (hecho durante la sesión)
+- [x] Operador crea el trigger time-based después del deploy V14 (hecho)
+- [x] Operador crea la pestaña "salon social" en Sheet Registros (hecho por Hermes)
+- [ ] F10: script `generar_qr_salon.py` (opcional, no prioritario)
 
----
+## 11. Bugs encontrados durante la implementación
+
+### BUGFIX-007 · apiGet/apiPost faltantes (commit `dfca571`)
+
+**Síntoma:** En el portal admin, al entrar a la pestaña "Salón Social"
+aparecía "Error de red: A.apiGet is not a function".
+
+**Causa raíz:** Mi código nuevo (F5 módulo salón) llamaba a `A.apiGet()`
+y `A.apiPost()`, pero esos helpers no existían en el objeto A. El código
+existente usaba `fetch(...).then(x=>x.json())` inline en todos sus métodos.
+
+**Fix:** Agregar los helpers apiGet/apiPost al inicio del objeto A en
+`js/admin.js` (y apiGet en `js/vigilantes.js`).
+
+**Lección:** Las pruebas con curl validan el backend pero NO el frontend.
+Los bugs del DOM/JS solo se ven en el navegador real. Siempre probar
+en el navegador antes de declarar "listo".
+
+### BUGFIX-008 · switchTab() no togglea tab-salon (commit `cfce441`)
+
+**Síntoma:** En el portal vigilantes, al hacer click en el tab "Salón Social"
+no se mostraba nada (el contenedor quedaba oculto).
+
+**Causa raíz:** El método `switchTab()` toggleaba EXPLÍCITAMENTE los 3 tabs
+originales (residentes, placas, mudanzas) pero NO toggleaba el nuevo
+`tab-salon`. Resultado: cuando el operador hacía click, el botón cambiaba
+a `active`, los otros 3 tabs se ocultaban, pero `tab-salon` se quedaba
+con `class="hidden"` que yo le había puesto en el HTML.
+
+**Fix:** Cambiar el switchTab a un patrón genérico que toggle TODOS los
+elementos con id que empiezan con `tab-`:
+
+```javascript
+document.querySelectorAll('[id^="tab-"]').forEach(t => {
+  t.classList.toggle('hidden', t.id !== 'tab-' + tab);
+});
+```
+
+**Lección:** NO usar listas explícitas de IDs en código de navegación/UI.
+Usar selectores genéricos. Si agregas un nuevo tab a un sistema existente,
+el código debe funcionar automáticamente sin tocar la lógica de switch.---
 
 *Archivo generado automáticamente al final de la sesión del 25-Sept-2026.
 Próxima sesión: continuar con F2 backend después de F0 + F3.*
