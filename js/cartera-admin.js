@@ -49,7 +49,7 @@
     const fileP = $('#filePdf').files[0];
     if (!fileC || !fileP) { alertErr('Seleccioná ambos archivos.'); return; }
 
-    let pc, paginas, grupos, cr;
+    let pc, paginas, grupos, cr, pdfBuf;
     try {
       // 0) Mostrar feedback inmediato (el PDF de 625 páginas tarda ~1-3 min)
       $('#progreso').classList.remove('hidden');
@@ -65,7 +65,7 @@
 
       // 2) Leer PDF (con progreso visible)
       $('#progresoTexto').textContent = 'Analizando facturas (PDF)...';
-      const pdfBuf = await fileP.arrayBuffer();
+      pdfBuf = await fileP.arrayBuffer();
       paginas = await leerPdf(pdfBuf, function (pag, total) {
         if (pag % 25 === 0 || pag === total) {
           $('#progresoTexto').textContent = 'Analizando facturas: página ' + pag + ' de ' + total;
