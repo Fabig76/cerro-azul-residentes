@@ -65,10 +65,8 @@ El vigilante necesita:
 | Dato | Columna en Sheet | Por qué |
 |---|---|---|
 | N° de apartamento | col D (3) | Para identificar el apto |
-| NumForm | col A (0) | Para buscar/citar |
 | Diligencia como | col E (4) | Para saber si es propietario/inmobiliaria |
 | Nombre del propietario | col F (5) | Para verificar identidad |
-| CC del propietario | col G (6) | Para corroborar con documento físico |
 | Nombre del encargado | col R (17) | Si hay encargado/administrador |
 | CC del encargado | col S (18) | Para verificar |
 | Nombre de la inmobiliaria | col Y (24) | Si aplica |
@@ -81,9 +79,9 @@ El vigilante necesita:
 | Parqueadero tercero | cols 21-23 | Quién está autorizado |
 | Mascotas (2) | cols 110-129 | Tipo, nombre, raza, manejo especial |
 | Bicicletas (2) | cols 85-92 | Marca, color, serial |
-| Firma | col 139-141 | Nombre firma, CC firma |
+| Firma | col 139-141 | Solo nombre de la firma (sin CC) |
 
-### 2.2 ❌ NO puede ver (datos de contacto privado)
+### 2.2 ❌ NO puede ver (datos privados y credenciales)
 
 | Dato | Columna en Sheet | Por qué se oculta |
 |---|---|---|
@@ -96,6 +94,18 @@ El vigilante necesita:
 | Celular de residentes | col AE/AG/AI/AK (32,34,36,38) | Privacidad |
 | Correo de la inmobiliaria | col AB (28) | Privacidad |
 | Teléfono de la inmobiliaria | col AC (27) | Privacidad |
+| **CC del propietario** | col G (6) | **Credencial sensible — con el apto permite editar/agendar** |
+| **NumForm (CA-XXXX)** | col A (0) | **Credencial de edición — permite modificar registro o agendar mudanza** |
+| **Fila Sheet** | — | Expone estructura interna; no es dato de negocio |
+
+> **Cambio de seguridad (25-Sept-2026):** la CC del propietario y el
+> CA-XXXX se retiraron de la interfaz del vigilante por decisión del
+> operador. Con esos datos (apto + CA-XXXX + CC) un tercero podría
+> suplantar al propietario en "Editar mi registro" o "Agendar mudanza".
+> El backend SÍ los sigue devolviendo en el JSON, pero el frontend
+> (`js/vigilantes.js`) ya no los muestra. Si se quiere eliminar del todo
+> (que ni viajen por la red), hay que ajustar `vigilanteVerResidentes`
+> en `Codigo.gs` y redeployar.
 
 ---
 

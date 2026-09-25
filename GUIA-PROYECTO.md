@@ -1258,8 +1258,8 @@ y registrar checks sobre mudanzas (Sí/No se realizó).
 ### 18.5 Datos que el vigilante SÍ puede ver vs NO
 
 **SÍ puede ver** (datos de identificación):
-- N° apartamento, NumForm, diligencia
-- Nombre y CC del propietario
+- N° apartamento, diligencia
+- Nombre del propietario (sin CC)
 - Nombre y CC del encargado/administrador
 - Nombre, NIT y contacto de la inmobiliaria
 - Residentes (4): nombre y CC
@@ -1267,7 +1267,7 @@ y registrar checks sobre mudanzas (Sí/No se realizó).
 - Bicicletas: marca, color, clase, serial
 - Parqueaderos: celda y matrícula
 - Mascotas: tipo, nombre, raza, color, sexo, manejo especial
-- Firma: nombre y CC
+- Firma: solo nombre (sin CC)
 
 **NO puede ver** (datos de contacto privado — filtrado server-side):
 - Correo del propietario
@@ -1276,6 +1276,15 @@ y registrar checks sobre mudanzas (Sí/No se realizó).
 - Correo/celular del encargado
 - Correo/celular de residentes
 - Correo/teléfono de la inmobiliaria
+- **CC del propietario** (credencial sensible — 25-Sept-2026)
+- **NumForm (CA-XXXX)** (credencial de edición — 25-Sept-2026)
+- **Fila Sheet** (expone estructura interna)
+
+> ⚠️ La CC del propietario y el CA-XXXX se retiraron de la interfaz el
+> 25-Sept-2026 por decisión del operador: con apto + CA-XXXX + CC un
+> tercero podría suplantar al propietario en "Editar mi registro" o
+> "Agendar mudanza". El filtrado es en el FRONTEND (`js/vigilantes.js`);
+> el backend aún los devuelve en el JSON. Ver `docs/spec-vigilantes.md` §2.
 
 ### 18.6 Endpoints Apps Script (V10)
 

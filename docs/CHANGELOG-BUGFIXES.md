@@ -223,6 +223,50 @@ Si `display: 'none'` después de poblar el formulario, es BUGFIX-002 regresivo.
 
 ---
 
+## Cambios de seguridad (no son bugs, son decisiones de privacidad)
+
+### SEG-001 · Vigilante no debe ver CC del propietario ni CA-XXXX (commit `9397230` + `58c0985`)
+
+**Fecha:** 25-Sept-2026
+**Detectado por:** Operador (Fabio Lesmes) revisando el portal de vigilantes
+**Severidad:** ALTA (riesgo de suplantación de identidad del propietario)
+
+**Síntoma reportado:**
+> "cuando consultan un apto sale la cedula del propietario, y eso no esta
+> bien... con estos datos el vigilante puede hacer que un arrendatario
+> modifique los datos o cree una mudanza"
+
+**Causa raíz:**
+`vigilanteVerResidentes` (backend) devolvía `ccProp` (cédula del propietario,
+col G), `numForm` (CA-XXXX) y `firmaCC`, y `js/vigilantes.js` los mostraba
+en 3+4 lugares (tabla de resultados, detalle, búsqueda por placa, mudanzas).
+
+**Por qué era un riesgo:**
+"Editar mi registro" y "Agendar mudanza" autentican con CA-XXXX + apto +
+cédula del propietario. El vigilante veía apto + CA-XXXX + CC, es decir,
+todas las credenciales necesarias para suplantar al propietario.
+
+**Fix (solo frontend, sin redeploy):**
+Quitada la visualización en `js/vigilantes.js`:
+  · cédula del propietario (ccProp) en tabla, detalle y búsqueda por placa
+  · CA-XXXX (numForm) en tabla, detalle y mudanzas
+  · Fila Sheet (rowNumber) en el detalle
+
+**Importante:** el backend SIGUE devolviendo `ccProp` y `numForm` en el
+JSON (el filtrado es visual). Para que ni viajen por la red, hay que
+ajustar `vigilanteVerResidentes` en `Codigo.gs` y redeployar (pendiente).
+
+**Archivos afectados:**
+  · `js/vigilantes.js` (solo frontend)
+  · `docs/spec-vigilantes.md` §2 (datos SÍ/NO ve, actualizado)
+  · `GUIA-PROYECTO.md` §18.5 (actualizado)
+
+**Lección aprendida:** al diseñar un portal de consulta, verificar que
+los datos visibles no incluyan credenciales de otros módulos (el CA-XXXX
+es una llave de edición, no un simple identificador para mostrar).
+
+---
+
 ## Convención para nuevos bugfixes
 
 Cuando corrijas un bug, agrega una entrada aquí con este formato:
