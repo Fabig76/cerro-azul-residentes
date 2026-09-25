@@ -113,6 +113,22 @@ function doGet(e) {
     if (action === 'verificarResidente') {
       return jsonOut(verificarResidente(e.parameter.apto, e.parameter.cc));
     }
+    // --- SALON SOCIAL (portal salon-social.html) ---
+    if (action === 'verificarAccesoSalon') {
+      return jsonOut(verificarAccesoSalon(e.parameter.apto, e.parameter.cc));
+    }
+    if (action === 'dispSalon') {
+      return jsonOut(dispSalon(e.parameter.apto, e.parameter.fechaInicio, e.parameter.fechaFin));
+    }
+    if (action === 'vigilanteVerReservasSalon') {
+      return jsonOut(vigilanteVerReservasSalon(e.parameter.fecha));
+    }
+    if (action === 'adminListarReservasSalon') {
+      return jsonOut(adminListarReservasSalon(e.parameter.estado, e.parameter.fechaDesde));
+    }
+    if (action === 'adminVerComprobanteSalon') {
+      return jsonOut(adminVerComprobanteSalon(e.parameter.reservaId));
+    }
     return jsonOut({ ok: false, error: 'Acción no reconocida.' });
   } catch (err) {
     return jsonOut({ ok: false, error: String(err && err.message || err) });
@@ -150,6 +166,13 @@ function doPost(e) {
     if (action === 'registrarResidente')    return jsonOut(registrarResidente(payload));
     if (action === 'actualizarResidente')  return jsonOut(actualizarResidente(payload));
     if (action === 'clearResidente')        return jsonOut(clearResidente(payload));
+    // --- SALON SOCIAL (portal salon-social.html) ---
+    if (action === 'reservarSalon')              return jsonOut(reservarSalon(payload));
+    if (action === 'subirComprobanteSalon')     return jsonOut(subirComprobanteSalon(payload));
+    if (action === 'cancelarReservaSalon')      return jsonOut(cancelarReservaSalon(payload));
+    if (action === 'editarReservaSalon')         return jsonOut(editarReservaSalon(payload));
+    if (action === 'adminCancelarReservaSalon') return jsonOut(adminCancelarReservaSalon(payload));
+    if (action === 'configurarTriggerExpiracion') return jsonOut(configurarTriggerExpiracion());
     // Comportamiento por defecto (compatibilidad): submit del formulario principal
     const result = submitRecord(payload);
     return jsonOut(result);
@@ -2214,5 +2237,824 @@ function clearResidente(data) {
     };
   } finally {
     lock.releaseLock();
+  }
+}
+
+// =====================================================================
+// MÓDULO SALÓN SOCIAL (agregado 25-Sept-2026 spec-salon-social.md)
+// Portal nuevo: salon-social.html
+// Endpoints: verificarAccesoSalon, dispSalon, reservarSalon,
+//            subirComprobanteSalon, cancelarReservaSalon,
+//            editarReservaSalon, vigilanteVerReservasSalon,
+//            adminListarReservasSalon, adminVerComprobanteSalon,
+//            adminCancelarReservaSalon, configurarTriggerExpiracion
+// =====================================================================
+
+// IDs externos (configurables via Config del Sheet Registros)
+const CARTERA_SHEET_ID_FOR_SALON = '1IQn1y3AoArQSI4dtwhUsH3PVGm0zsZCom0TEdSAfVb4';
+const COMPROBANTES_FOLDER_ID = '1RPHtWnVEFwzBKR1DCzBP1to9wLHY2F22'; // Reutilizar carpeta del proyecto
+const SALON_SHEET_NAME = 'salon social';
+const VALOR_POR_SLOT = 125000;
+
+// ---------------------------------------------------------------------
+// Helper: asegura que la pestaña "salon social" exista
+// ---------------------------------------------------------------------
+function ensureSalonSocialSheet() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sheet = ss.getSheetByName(SALON_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(SALON_SHEET_NAME);
+    sheet.getRange(1, 1, 1, 17).setValues([[
+      'ID RESERVA', 'NUM FORM', 'N° APTO', 'CC SOLICITANTE',
+      'TIPO SOLICITANTE', 'NOMBRE SOLICITANTE', 'CORREO', 'CELULAR',
+      'FECHA RESERVA', 'SLOT', 'ESTADO', 'FECHA CREACION',
+      'FECHA LIMITE PAGO', 'FECHA PAGO', 'COMPROBANTE DRIVE ID',
+      'HASH DEDUPE', 'MODIFICADO POR'
+    ]]);
+    sheet.setFrozenRows(1);
+    sheet.getRange(1, 1, 1, 17)
+      .setBackground('#0066CC')
+      .setFontColor('#FFFFFF')
+      .setFontWeight('bold');
+  }
+  return sheet;
+}
+
+// ---------------------------------------------------------------------
+// Helper: obtener siguiente ID correlativo RS-XXXX
+// ---------------------------------------------------------------------
+function getNextReservaId() {
+  const sheet = ensureSalonSocialSheet();
+  const last = sheet.getLastRow();
+  if (last < 2) return 'RS-0001';
+  const lastId = String(sheet.getRange(last, 1).getValue() || '');
+  const match = lastId.match(/RS-(\d+)/);
+  const num = match ? parseInt(match[1], 10) + 1 : 1;
+  return 'RS-' + String(num).padStart(4, '0');
+}
+
+// ---------------------------------------------------------------------
+// Helper: leer config del Sheet Registros (link_pago)
+// ---------------------------------------------------------------------
+function getConfigValue(key) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const sheet = ss.getSheetByName('Config');
+  if (!sheet) return null;
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]).trim() === key) {
+      return String(data[i][1] || '').trim();
+    }
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------
+// Helper: leer cartera activa del Sheet Cartera (para validar mora)
+// ---------------------------------------------------------------------
+function verificarMoraApto(apto) {
+  try {
+    const ssCartera = SpreadsheetApp.openById(CARTERA_SHEET_ID_FOR_SALON);
+    const control = ssCartera.getSheetByName('_Control');
+    if (!control) return { enMora: false, mesesProm: 0, error: 'No _Control' };
+    const dataCtl = control.getDataRange().getValues();
+    let pestanaVigente = null;
+    for (let i = 1; i < dataCtl.length; i++) {
+      if (String(dataCtl[i][4]).trim() === 'ACTIVO') {
+        pestanaVigente = String(dataCtl[i][2]).trim();
+        break;
+      }
+    }
+    if (!pestanaVigente) return { enMora: false, mesesProm: 0, error: 'Sin pestaña activa' };
+
+    const cartera = ssCartera.getSheetByName(pestanaVigente);
+    if (!cartera) return { enMora: false, mesesProm: 0, error: 'Pestaña ' + pestanaVigente + ' no existe' };
+    const dataCartera = cartera.getDataRange().getValues();
+    for (let i = 3; i < dataCartera.length; i++) {
+      if (String(dataCartera[i][0]).trim() === String(apto).trim()) {
+        const mesesProm = parseInt(dataCartera[i][11]) || 0;
+        return {
+          enMora: mesesProm >= 2,
+          mesesProm: mesesProm,
+          pestana: pestanaVigente,
+          totalCartera: dataCartera[i][10] || 0
+        };
+      }
+    }
+    return { enMora: false, mesesProm: 0, error: 'Apto no en cartera' };
+  } catch (e) {
+    return { enMora: false, mesesProm: 0, error: String(e.message) };
+  }
+}
+
+// ---------------------------------------------------------------------
+// Helper: verificar si CC matchea propietario o residente del apto
+// ---------------------------------------------------------------------
+function verificarAccesoResidenteOPropietario(apto, cc) {
+  const row = findRowByApto(apto);
+  if (!row) return null;
+  const ccNorm = normCc(cc);
+  // Propietario
+  if (normCc(String(row.values[6] || '')) === ccNorm) {
+    return {
+      tipo: 'Propietario',
+      numForm: String(row.values[0] || ''),
+      nombre: String(row.values[5] || ''),
+      cc: String(row.values[6] || ''),
+      correo: String(row.values[7] || ''),
+      celular: String(row.values[8] || '')
+    };
+  }
+  // Residentes slots 1-4
+  for (let i = 0; i < 4; i++) {
+    const base = 29 + i * 5;
+    if (normCc(String(row.values[base + 1] || '')) === ccNorm) {
+      return {
+        tipo: 'Residente',
+        slot: i + 1,
+        numForm: String(row.values[0] || ''),
+        nombre: String(row.values[base] || ''),
+        cc: String(row.values[base + 1] || ''),
+        correo: String(row.values[base + 2] || ''),
+        celular: String(row.values[base + 3] || '')
+      };
+    }
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------
+// Helper: hash dedupe sha256[:16] de apto+slot+fecha
+// ---------------------------------------------------------------------
+function hashReservaDedupe(apto, fecha, slot) {
+  const input = String(apto) + '|' + String(fecha) + '|' + String(slot);
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, input)
+    .map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('').slice(0, 16);
+}
+
+// ---------------------------------------------------------------------
+// Endpoint SAL-1: verificarAccesoSalon (GET)
+// Login (apto+CC) + validación de mora
+// ---------------------------------------------------------------------
+function verificarAccesoSalon(apto, cc) {
+  apto = String(apto || '').trim();
+  cc = String(cc || '').trim();
+  if (!apto || !cc) return { ok: false, error: 'Falta N° de apartamento o cédula' };
+
+  // 1. Verificar acceso (CC matchea propietario o residente)
+  const acceso = verificarAccesoResidenteOPropietario(apto, cc);
+  if (!acceso) {
+    return { ok: false, error: 'Cédula no corresponde al propietario ni a un residente registrado en este apartamento. Si es la primera vez, pídale al propietario que lo agregue en el formulario de residentes.' };
+  }
+
+  // 2. Verificar mora (>= 2 meses)
+  const mora = verificarMoraApto(apto);
+  if (mora.enMora) {
+    return {
+      ok: true,
+      apto: apto,
+      numForm: acceso.numForm,
+      cc: cc,
+      tipo: acceso.tipo,
+      nombre: acceso.nombre,
+      celular: acceso.celular,
+      correo: acceso.correo,
+      enMora: true,
+      mesesMora: mora.mesesProm,
+      mensaje: 'El apartamento ' + apto + ' está en mora de administración (' + mora.mesesProm + ' meses). Tiene suspendidos los servicios de áreas comunes.'
+    };
+  }
+
+  // 3. Link de pago desde Config
+  const linkPago = getConfigValue('link_pago') || 'https://web-conjuntos.jelpit.com/pagar-mi-administracion#/';
+
+  return {
+    ok: true,
+    apto: apto,
+    numForm: acceso.numForm,
+    cc: cc,
+    tipo: acceso.tipo,
+    nombre: acceso.nombre,
+    celular: acceso.celular,
+    correo: acceso.correo,
+    enMora: false,
+    mesesMora: mora.mesesProm,
+    valorReserva: VALOR_POR_SLOT,
+    linkPago: linkPago
+  };
+}
+
+// ---------------------------------------------------------------------
+// Endpoint SAL-2: dispSalon (GET)
+// Devuelve los próximos 30 días con slots disponibles/bloqueados
+// ---------------------------------------------------------------------
+function dispSalon(apto, fechaInicio, fechaFin) {
+  ensureSalonSocialSheet();
+  // Si no se pasan fechas, calcular hoy + 30 días
+  const today = new Date();
+  let inicio = fechaInicio ? new Date(fechaInicio + 'T00:00:00') : today;
+  let fin = fechaFin ? new Date(fechaFin + 'T00:00:00') : new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+  // Limitar a 30 días desde inicio
+  const maxFin = new Date(inicio.getTime() + 31 * 24 * 60 * 60 * 1000);
+  if (fin > maxFin) fin = maxFin;
+
+  // Leer reservas del rango
+  const sheet = ensureSalonSocialSheet();
+  const data = sheet.getDataRange().getValues();
+  const reservas = {};
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const fecha = row[8]; // col I (idx 8)
+    const estado = String(row[10] || '').trim();
+    const slot = String(row[9] || '').trim();
+    if (!fecha || (estado !== 'PendientePago' && estado !== 'Pagado')) continue;
+    const fechaStr = Utilities.formatDate(new Date(fecha), 'America/Bogota', 'yyyy-MM-dd');
+    if (!reservas[fechaStr]) reservas[fechaStr] = {};
+    reservas[fechaStr][slot] = {
+      estado: estado,
+      reservaId: String(row[0] || ''),
+      apto: String(row[2] || ''),
+      nombre: String(row[5] || '')
+    };
+  }
+
+  // Generar días del rango
+  const dias = [];
+  const cur = new Date(inicio);
+  while (cur <= fin) {
+    const fechaStr = Utilities.formatDate(cur, 'America/Bogota', 'yyyy-MM-dd');
+    const manana = reservas[fechaStr] && reservas[fechaStr]['Mañana'] ? 'reservado' : 'libre';
+    const tarde = reservas[fechaStr] && reservas[fechaStr]['Tarde'] ? 'reservado' : 'libre';
+    dias.push({
+      fecha: fechaStr,
+      manana: manana,
+      tarde: tarde
+    });
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  return {
+    ok: true,
+    apto: apto,
+    dias: dias,
+    linkPago: getConfigValue('link_pago') || 'https://web-conjuntos.jelpit.com/pagar-mi-administracion#/'
+  };
+}
+
+// ---------------------------------------------------------------------
+// Endpoint SAL-3: reservarSalon (POST)
+// Crea una nueva reserva
+// ---------------------------------------------------------------------
+function reservarSalon(data) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) {
+    return { ok: false, error: 'Otra operación está en curso. Intenta en unos segundos.' };
+  }
+  try {
+    const apto = String(data.apto || '').trim();
+    const cc = String(data.cc || '').trim();
+    const fechaReserva = String(data.fechaReserva || '').trim();
+    const slot = String(data.slot || '').trim();
+    const numForm = String(data.numForm || '').trim();
+
+    if (!apto || !cc || !fechaReserva || !slot) {
+      return { ok: false, error: 'Faltan datos requeridos (apto, cc, fechaReserva, slot)' };
+    }
+    if (slot !== 'Mañana' && slot !== 'Tarde') {
+      return { ok: false, error: 'Slot inválido. Use "Mañana" o "Tarde".' };
+    }
+
+    // Validar acceso + mora (re-validar al momento de reservar)
+    const acceso = verificarAccesoSalon(apto, cc);
+    if (!acceso.ok) return { ok: false, error: acceso.error };
+    if (acceso.enMora) {
+      return { ok: false, error: acceso.mensaje };
+    }
+
+    // Validar fecha (no más de 30 días)
+    const today = new Date();
+    const fechaObj = new Date(fechaReserva + 'T00:00:00');
+    const diffDias = Math.floor((fechaObj - today) / (24 * 60 * 60 * 1000));
+    if (diffDias < 0) return { ok: false, error: 'No se puede reservar en el pasado.' };
+    if (diffDias > 30) return { ok: false, error: 'No se puede reservar con más de 30 días de anticipación.' };
+
+    // Validar slot libre
+    const sheet = ensureSalonSocialSheet();
+    const dataSheet = sheet.getDataRange().getValues();
+    for (let i = 1; i < dataSheet.length; i++) {
+      const row = dataSheet[i];
+      const fechaRow = row[8] ? Utilities.formatDate(new Date(row[8]), 'America/Bogota', 'yyyy-MM-dd') : '';
+      const slotRow = String(row[9] || '').trim();
+      const estadoRow = String(row[10] || '').trim();
+      if (fechaRow === fechaReserva && slotRow === slot && (estadoRow === 'PendientePago' || estadoRow === 'Pagado')) {
+        return { ok: false, error: 'Este horario ya está reservado. Seleccione otro.' };
+      }
+    }
+
+    // Crear reserva
+    const id = getNextReservaId();
+    const now = new Date();
+    const fechaLimite = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+    const hash = hashReservaDedupe(apto, fechaReserva, slot);
+
+    sheet.appendRow([
+      id,                                    // A
+      acceso.numForm || numForm,             // B
+      apto,                                  // C
+      cc,                                    // D
+      acceso.tipo,                           // E
+      acceso.nombre,                         // F
+      acceso.correo || '',                   // G
+      acceso.celular || '',                  // H
+      fechaReserva,                          // I
+      slot,                                  // J
+      'PendientePago',                       // K
+      now,                                   // L
+      fechaLimite,                           // M
+      '',                                    // N
+      '',                                    // O
+      hash,                                  // P
+      now                                    // Q
+    ]);
+
+    // Notificar al admin
+    MailApp.sendEmail(
+      'urb.cerroazul@gmail.com',
+      'Nueva reserva salón social — ' + id,
+      'Reserva creada:\n' +
+      '  ID: ' + id + '\n' +
+      '  Apto: ' + apto + '\n' +
+      '  Solicitante: ' + acceso.nombre + ' (CC ' + cc + ')\n' +
+      '  Fecha: ' + fechaReserva + ' (' + slot + ')\n' +
+      '  Límite de pago: ' + Utilities.formatDate(fechaLimite, 'America/Bogota', 'yyyy-MM-dd HH:mm') + '\n'
+    );
+
+    return {
+      ok: true,
+      reservaId: id,
+      fechaLimitePago: Utilities.formatDate(fechaLimite, 'America/Bogota', "yyyy-MM-dd'T'HH:mm:ss"),
+      monto: VALOR_POR_SLOT,
+      linkPago: getConfigValue('link_pago') || 'https://web-conjuntos.jelpit.com/pagar-mi-administracion#/',
+      mensaje: 'Reserva creada. Tiene 48 horas para subir el comprobante.'
+    };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ---------------------------------------------------------------------
+// Endpoint SAL-4: subirComprobanteSalon (POST)
+// Sube el archivo a Drive y marca Pagado
+// ---------------------------------------------------------------------
+function subirComprobanteSalon(data) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) {
+    return { ok: false, error: 'Otra operación está en curso.' };
+  }
+  try {
+    const reservaId = String(data.reservaId || '').trim();
+    const cc = String(data.cc || '').trim();
+    const apto = String(data.apto || '').trim();
+    const base64 = String(data.comprobanteBase64 || '');
+    const nombreArchivo = String(data.comprobanteNombre || 'comprobante.pdf');
+    const mime = String(data.comprobanteMime || 'application/pdf');
+
+    if (!reservaId || !cc || !apto || !base64) {
+      return { ok: false, error: 'Faltan datos requeridos' };
+    }
+    if (mime !== 'application/pdf' && mime !== 'image/jpeg' && mime !== 'image/png') {
+      return { ok: false, error: 'Tipo de archivo inválido. Use PDF, JPG o PNG.' };
+    }
+
+    // Decodificar base64
+    const bytes = Utilities.base64Decode(base64);
+    if (bytes.length > 10 * 1024 * 1024) {
+      return { ok: false, error: 'Archivo demasiado grande. Máximo 10MB.' };
+    }
+
+    // Crear blob y subir a Drive
+    const blob = Utilities.newBlob(bytes, mime, nombreArchivo);
+    const file = DriveApp.createFile(blob);
+    file.setName('RS-' + reservaId.replace('RS-', '') + '_' + nombreArchivo);
+    // Mover a carpeta de comprobantes
+    try {
+      const folder = DriveApp.getFolderById(COMPROBANTES_FOLDER_ID);
+      file.moveTo(folder);
+    } catch (e) {
+      Logger.log('No se pudo mover a carpeta: ' + e.message);
+    }
+
+    // Actualizar reserva
+    const sheet = ensureSalonSocialSheet();
+    const dataSheet = sheet.getDataRange().getValues();
+    let rowFound = -1;
+    for (let i = 1; i < dataSheet.length; i++) {
+      if (String(dataSheet[i][0]).trim() === reservaId) {
+        // Verificar CC matchea
+        if (normCc(String(dataSheet[i][3])) !== normCc(cc)) {
+          return { ok: false, error: 'La cédula no corresponde al solicitante de esta reserva.' };
+        }
+        if (String(dataSheet[i][2]).trim() !== apto) {
+          return { ok: false, error: 'El apartamento no corresponde.' };
+        }
+        const estado = String(dataSheet[i][10]).trim();
+        if (estado === 'Cancelado' || estado === 'Expirado' || estado === 'CanceladoPorAdmin') {
+          return { ok: false, error: 'Esta reserva ya no está activa (' + estado + ').' };
+        }
+        rowFound = i + 1;
+        break;
+      }
+    }
+    if (rowFound < 0) return { ok: false, error: 'Reserva no encontrada.' };
+
+    const now = new Date();
+    sheet.getRange(rowFound, 11).setValue('Pagado');           // K
+    sheet.getRange(rowFound, 14).setValue(now);               // N (FECHA PAGO)
+    sheet.getRange(rowFound, 15).setValue(file.getId());       // O (COMPROBANTE ID)
+    sheet.getRange(rowFound, 17).setValue(now);               // Q (MODIFICADO POR)
+
+    // Notificar al admin
+    MailApp.sendEmail(
+      'urb.cerroazul@gmail.com',
+      'Comprobante subido — ' + reservaId,
+      'El residente ' + cc + ' subió un comprobante para la reserva ' + reservaId + '.\n\n' +
+      'Verificar legitimidad del archivo:\n' +
+      file.getUrl() + '\n\n' +
+      'Si el comprobante es legítimo, no haga nada.\n' +
+      'Si es falso, cancele la reserva desde el portal admin.'
+    );
+
+    return {
+      ok: true,
+      comprobanteId: file.getId(),
+      estado: 'Pagado',
+      mensaje: 'Comprobante subido. El administrador verificará la legitimidad.'
+    };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ---------------------------------------------------------------------
+// Endpoint SAL-5: cancelarReservaSalon (POST)
+// Cancelar reserva por el solicitante
+// ---------------------------------------------------------------------
+function cancelarReservaSalon(data) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) {
+    return { ok: false, error: 'Otra operación está en curso.' };
+  }
+  try {
+    const reservaId = String(data.reservaId || '').trim();
+    const cc = String(data.cc || '').trim();
+    const apto = String(data.apto || '').trim();
+
+    if (!reservaId || !cc || !apto) {
+      return { ok: false, error: 'Faltan datos requeridos' };
+    }
+
+    const sheet = ensureSalonSocialSheet();
+    const dataSheet = sheet.getDataRange().getValues();
+    let rowFound = -1;
+    let rowData = null;
+    for (let i = 1; i < dataSheet.length; i++) {
+      if (String(dataSheet[i][0]).trim() === reservaId) {
+        if (normCc(String(dataSheet[i][3])) !== normCc(cc)) {
+          return { ok: false, error: 'La cédula no corresponde al solicitante.' };
+        }
+        if (String(dataSheet[i][2]).trim() !== apto) {
+          return { ok: false, error: 'El apartamento no corresponde.' };
+        }
+        const estado = String(dataSheet[i][10]).trim();
+        if (estado === 'Cancelado' || estado === 'Expirado' || estado === 'CanceladoPorAdmin') {
+          return { ok: false, error: 'La reserva ya está cancelada o expirada.' };
+        }
+        rowFound = i + 1;
+        rowData = dataSheet[i];
+        break;
+      }
+    }
+    if (rowFound < 0) return { ok: false, error: 'Reserva no encontrada.' };
+
+    const now = new Date();
+    sheet.getRange(rowFound, 11).setValue('Cancelado');
+    sheet.getRange(rowFound, 17).setValue(now);
+
+    Logger.log('[cancelarReservaSalon] ' + reservaId + ' por CC ' + cc + ' apto ' + apto);
+
+    MailApp.sendEmail(
+      'urb.cerroazul@gmail.com',
+      'Reserva cancelada — ' + reservaId,
+      'El solicitante CC ' + cc + ' canceló la reserva ' + reservaId +
+      ' del apto ' + apto + '. Slot liberado.'
+    );
+
+    return { ok: true, estado: 'Cancelado', mensaje: 'Reserva cancelada. Slot liberado.' };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ---------------------------------------------------------------------
+// Endpoint SAL-6: editarReservaSalon (POST)
+// Cambiar fecha + slot de una reserva existente
+// ---------------------------------------------------------------------
+function editarReservaSalon(data) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) {
+    return { ok: false, error: 'Otra operación está en curso.' };
+  }
+  try {
+    const reservaId = String(data.reservaId || '').trim();
+    const cc = String(data.cc || '').trim();
+    const apto = String(data.apto || '').trim();
+    const nuevaFecha = String(data.nuevaFecha || '').trim();
+    const nuevoSlot = String(data.nuevoSlot || '').trim();
+
+    if (!reservaId || !cc || !apto || !nuevaFecha || !nuevoSlot) {
+      return { ok: false, error: 'Faltan datos requeridos' };
+    }
+    if (nuevoSlot !== 'Mañana' && nuevoSlot !== 'Tarde') {
+      return { ok: false, error: 'Slot inválido.' };
+    }
+
+    // Validar fecha
+    const today = new Date();
+    const fechaObj = new Date(nuevaFecha + 'T00:00:00');
+    const diffDias = Math.floor((fechaObj - today) / (24 * 60 * 60 * 1000));
+    if (diffDias < 0 || diffDias > 30) {
+      return { ok: false, error: 'Fecha fuera del rango (hoy + 30 días).' };
+    }
+
+    const sheet = ensureSalonSocialSheet();
+    const dataSheet = sheet.getDataRange().getValues();
+
+    // Verificar que CC matchea
+    let rowFound = -1;
+    for (let i = 1; i < dataSheet.length; i++) {
+      if (String(dataSheet[i][0]).trim() === reservaId) {
+        if (normCc(String(dataSheet[i][3])) !== normCc(cc)) {
+          return { ok: false, error: 'La cédula no corresponde al solicitante.' };
+        }
+        if (String(dataSheet[i][2]).trim() !== apto) {
+          return { ok: false, error: 'El apartamento no corresponde.' };
+        }
+        rowFound = i + 1;
+        break;
+      }
+    }
+    if (rowFound < 0) return { ok: false, error: 'Reserva no encontrada.' };
+
+    // Verificar que el nuevo slot esté libre (excluyendo la reserva actual)
+    for (let i = 1; i < dataSheet.length; i++) {
+      if (i + 1 === rowFound) continue; // saltar la misma reserva
+      const row = dataSheet[i];
+      const fechaRow = row[8] ? Utilities.formatDate(new Date(row[8]), 'America/Bogota', 'yyyy-MM-dd') : '';
+      const slotRow = String(row[9] || '').trim();
+      const estadoRow = String(row[10] || '').trim();
+      if (fechaRow === nuevaFecha && slotRow === nuevoSlot && (estadoRow === 'PendientePago' || estadoRow === 'Pagado')) {
+        return { ok: false, error: 'El nuevo horario ya está reservado. Elija otro.' };
+      }
+    }
+
+    const now = new Date();
+    sheet.getRange(rowFound, 9).setValue(nuevaFecha);   // I
+    sheet.getRange(rowFound, 10).setValue(nuevoSlot);  // J
+    sheet.getRange(rowFound, 16).setValue(hashReservaDedupe(apto, nuevaFecha, nuevoSlot)); // P
+    sheet.getRange(rowFound, 17).setValue(now);        // Q
+
+    return { ok: true, mensaje: 'Reserva actualizada correctamente.' };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ---------------------------------------------------------------------
+// Endpoint SAL-7: vigilanteVerReservasSalon (GET)
+// Vista para vigilantes (fecha + slot + estado + apto + nombre)
+// ---------------------------------------------------------------------
+function vigilanteVerReservasSalon(fecha) {
+  ensureSalonSocialSheet();
+  if (!fecha) {
+    fecha = Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd');
+  }
+  const sheet = ensureSalonSocialSheet();
+  const data = sheet.getDataRange().getValues();
+  const resultado = {
+    ok: true,
+    fecha: fecha,
+    manana: { estado: 'libre' },
+    tarde: { estado: 'libre' }
+  };
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const fechaRow = row[8] ? Utilities.formatDate(new Date(row[8]), 'America/Bogota', 'yyyy-MM-dd') : '';
+    if (fechaRow !== fecha) continue;
+    const slot = String(row[9] || '').trim();
+    const estado = String(row[10] || '').trim();
+    if (estado !== 'PendientePago' && estado !== 'Pagado') continue;
+    if (slot === 'Mañana') {
+      resultado.manana = { estado: 'reservado', apto: String(row[2]), nombre: String(row[5]) };
+    } else if (slot === 'Tarde') {
+      resultado.tarde = { estado: 'reservado', apto: String(row[2]), nombre: String(row[5]) };
+    }
+  }
+  return resultado;
+}
+
+// ---------------------------------------------------------------------
+// Endpoint SAL-8: adminListarReservasSalon (GET)
+// Lista de reservas para admin con filtros opcionales
+// ---------------------------------------------------------------------
+function adminListarReservasSalon(estado, fechaDesde) {
+  ensureSalonSocialSheet();
+  const sheet = ensureSalonSocialSheet();
+  const data = sheet.getDataRange().getValues();
+  const reservas = [];
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const estadoRow = String(row[10] || '').trim();
+    if (estado && estado !== 'Todos' && estadoRow !== estado) continue;
+    if (fechaDesde) {
+      const fechaRow = row[8] ? Utilities.formatDate(new Date(row[8]), 'America/Bogota', 'yyyy-MM-dd') : '';
+      if (fechaRow < fechaDesde) continue;
+    }
+    reservas.push({
+      id: String(row[0] || ''),
+      numForm: String(row[1] || ''),
+      apto: String(row[2] || ''),
+      ccSolicitante: String(row[3] || ''),
+      tipo: String(row[4] || ''),
+      nombre: String(row[5] || ''),
+      correo: String(row[6] || ''),
+      celular: String(row[7] || ''),
+      fechaReserva: row[8] ? Utilities.formatDate(new Date(row[8]), 'America/Bogota', 'yyyy-MM-dd') : '',
+      slot: String(row[9] || ''),
+      estado: estadoRow,
+      fechaCreacion: row[11] ? Utilities.formatDate(new Date(row[11]), 'America/Bogota', "yyyy-MM-dd'T'HH:mm:ss") : '',
+      fechaLimitePago: row[12] ? Utilities.formatDate(new Date(row[12]), 'America/Bogota', "yyyy-MM-dd'T'HH:mm:ss") : '',
+      fechaPago: row[13] ? Utilities.formatDate(new Date(row[13]), 'America/Bogota', "yyyy-MM-dd'T'HH:mm:ss") : '',
+      comprobanteId: String(row[14] || ''),
+      tieneComprobante: !!String(row[14] || '').trim()
+    });
+  }
+  return { ok: true, reservas: reservas, total: reservas.length };
+}
+
+// ---------------------------------------------------------------------
+// Endpoint SAL-9: adminVerComprobanteSalon (GET)
+// Devuelve URL del comprobante en Drive
+// ---------------------------------------------------------------------
+function adminVerComprobanteSalon(reservaId) {
+  reservaId = String(reservaId || '').trim();
+  if (!reservaId) return { ok: false, error: 'Falta reservaId' };
+  const sheet = ensureSalonSocialSheet();
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]).trim() === reservaId) {
+      const comprobanteId = String(data[i][14] || '').trim();
+      if (!comprobanteId) {
+        return { ok: true, reservaId: reservaId, tieneComprobante: false, estado: String(data[i][10]) };
+      }
+      try {
+        const file = DriveApp.getFileById(comprobanteId);
+        return {
+          ok: true,
+          reservaId: reservaId,
+          comprobanteId: comprobanteId,
+          comprobanteUrl: file.getUrl(),
+          nombreArchivo: file.getName(),
+          estado: String(data[i][10])
+        };
+      } catch (e) {
+        return { ok: false, error: 'No se pudo acceder al archivo: ' + e.message };
+      }
+    }
+  }
+  return { ok: false, error: 'Reserva no encontrada.' };
+}
+
+// ---------------------------------------------------------------------
+// Endpoint SAL-10: adminCancelarReservaSalon (POST)
+// Admin cancela manualmente con motivo + adminPassword
+// ---------------------------------------------------------------------
+function adminCancelarReservaSalon(data) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) {
+    return { ok: false, error: 'Otra operación está en curso.' };
+  }
+  try {
+    const reservaId = String(data.reservaId || '').trim();
+    const motivo = String(data.motivo || '').trim();
+    const adminPassword = String(data.adminPassword || '').trim();
+
+    if (!reservaId || !motivo || !adminPassword) {
+      return { ok: false, error: 'Faltan datos requeridos (reservaId, motivo, adminPassword)' };
+    }
+
+    // Verificar admin password
+    const adminPwdStored = getConfigValue('admin_password');
+    if (adminPassword !== adminPwdStored) {
+      return { ok: false, error: 'Contraseña de administrador incorrecta.' };
+    }
+
+    const sheet = ensureSalonSocialSheet();
+    const dataSheet = sheet.getDataRange().getValues();
+    let rowFound = -1;
+    let rowData = null;
+    for (let i = 1; i < dataSheet.length; i++) {
+      if (String(dataSheet[i][0]).trim() === reservaId) {
+        const estado = String(dataSheet[i][10]).trim();
+        if (estado === 'Cancelado' || estado === 'Expirado' || estado === 'CanceladoPorAdmin') {
+          return { ok: false, error: 'La reserva ya está cancelada.' };
+        }
+        rowFound = i + 1;
+        rowData = dataSheet[i];
+        break;
+      }
+    }
+    if (rowFound < 0) return { ok: false, error: 'Reserva no encontrada.' };
+
+    const estadoOriginal = String(rowData[10]).trim();
+    const estadoNuevo = estadoOriginal === 'Pagado' ? 'CanceladoPorAdmin' : 'Cancelado';
+    const now = new Date();
+
+    sheet.getRange(rowFound, 11).setValue(estadoNuevo);
+    sheet.getRange(rowFound, 17).setValue(now);
+
+    Logger.log('[adminCancelarReservaSalon] ' + reservaId + ' motivo: ' + motivo + ' estadoOriginal: ' + estadoOriginal);
+
+    MailApp.sendEmail(
+      'urb.cerroazul@gmail.com',
+      'Reserva cancelada por admin — ' + reservaId,
+      'El administrador canceló la reserva ' + reservaId + '.\n\n' +
+      'Motivo: ' + motivo + '\n' +
+      'Estado original: ' + estadoOriginal + '\n' +
+      'Solicitante: ' + String(rowData[5]) + ' (CC ' + String(rowData[3]) + ')\n' +
+      'Apto: ' + String(rowData[2]) + '\n' +
+      'Fecha: ' + Utilities.formatDate(new Date(rowData[8]), 'America/Bogota', 'yyyy-MM-dd') + ' (' + String(rowData[9]) + ')'
+    );
+
+    return { ok: true, estado: estadoNuevo, mensaje: 'Reserva cancelada por administrador. Slot liberado.' };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ---------------------------------------------------------------------
+// Endpoint SAL-11: configurarTriggerExpiracion (POST/ejecutable)
+// Crea el trigger time-based de 1h para cancelar reservas sin pago
+// ---------------------------------------------------------------------
+function configurarTriggerExpiracion() {
+  try {
+    // Verificar si ya existe un trigger para esta función
+    const triggers = ScriptApp.getProjectTriggers();
+    for (let i = 0; i < triggers.length; i++) {
+      if (triggers[i].getHandlerFunction() === 'expirarReservasSalon') {
+        return { ok: true, triggerId: triggers[i].getUniqueId(), mensaje: 'El trigger ya existe. No se creó uno nuevo.' };
+      }
+    }
+    // Crear nuevo trigger cada 1 hora
+    const trigger = ScriptApp.newTrigger('expirarReservasSalon')
+      .timeBased()
+      .everyHours(1)
+      .create();
+    return {
+      ok: true,
+      triggerId: trigger.getUniqueId(),
+      mensaje: 'Trigger creado: cada 1 hora. Llamar UNA SOLA VEZ.'
+    };
+  } catch (e) {
+    return { ok: false, error: String(e.message) };
+  }
+}
+
+// ---------------------------------------------------------------------
+// Trigger time-based: expirarReservasSalon (corre cada 1h)
+// Marca reservas PendientePago con fecha límite < now como Expirado
+// ---------------------------------------------------------------------
+function expirarReservasSalon() {
+  const now = new Date();
+  const sheet = ensureSalonSocialSheet();
+  const data = sheet.getDataRange().getValues();
+  let count = 0;
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (String(row[10]).trim() !== 'PendientePago') continue;
+    if (!row[12]) continue;
+    const limite = new Date(row[12]);
+    if (limite >= now) continue;
+    sheet.getRange(i + 1, 11).setValue('Expirado');
+    sheet.getRange(i + 1, 17).setValue(now);
+    count++;
+    Logger.log('[expirarReservasSalon] RS-' + String(row[0]).replace('RS-', '') + ' apto ' + String(row[2]) + ' expirada');
+  }
+  if (count > 0) {
+    MailApp.sendEmail(
+      'urb.cerroazul@gmail.com',
+      count + ' reservas de salón social expiradas',
+      'El trigger automático canceló ' + count + ' reservas PendientePago que superaron las 48 horas sin subir comprobante.\n\nLos slots han sido liberados.'
+    );
   }
 }
