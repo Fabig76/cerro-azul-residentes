@@ -114,11 +114,10 @@ const V = {
     }
     let html = '<p style="color:var(--gris-med); margin-bottom:8px;">' + resultados.length + ' resultado(s):</p>';
     html += '<table class="results-table">';
-    html += '<thead><tr><th>CA-XXXX</th><th>Apto</th><th>Tipo</th><th>Nombre</th></tr></thead>';
+    html += '<thead><tr><th>Apto</th><th>Tipo</th><th>Nombre</th></tr></thead>';
     html += '<tbody>';
     for (const r of resultados) {
       html += '<tr data-row="' + r.rowNumber + '">';
-      html += '<td><strong>' + V.escapeHtml(r.numForm) + '</strong></td>';
       html += '<td>' + V.escapeHtml(r.apto) + '</td>';
       html += '<td>' + V.escapeHtml(r.diligencia) + '</td>';
       html += '<td>' + V.escapeHtml(r.nombreProp) + '</td>';
@@ -140,8 +139,7 @@ const V = {
       <div class="detail-card">
         <h3>${V.escapeHtml(r.apto)} — ${V.escapeHtml(r.nombreProp)}</h3>
         <div class="meta-info">
-          <strong>${V.escapeHtml(r.diligencia)}</strong> ·
-          CA-XXXX: ${V.escapeHtml(r.numForm)} · Fila Sheet: ${r.rowNumber}
+          <strong>${V.escapeHtml(r.diligencia)}</strong>
         </div>
 
         ${r.nombreEncargado ? `
@@ -327,7 +325,7 @@ const V = {
       html += V.escapeHtml(m.horaInicio) + ' - ' + V.escapeHtml(m.horaFin);
       html += '</div></div>';
       html += '<div style="font-size:0.82em; color:var(--gris-med); margin-top:6px;">';
-      html += 'CA-XXXX: ' + V.escapeHtml(m.numForm) + ' · Estado: ' + V.escapeHtml(m.estado);
+      html += 'Estado: ' + V.escapeHtml(m.estado);
       html += '</div>';
 
       // Si está confirmada y no está cancelada, mostrar check
