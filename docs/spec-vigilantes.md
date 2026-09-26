@@ -4,9 +4,26 @@
 > los datos de los residentes para corroborar quién vive en cada apartamento,
 > verificar vehículos/parqueaderos/mascotas/bicis, y marcar check sobre las
 > mudanzas (ingresos/salidas) que se realizan o no se realizan en el día.
->
+> Más la consulta de reservas del Salón Social del día.
+
 > **Audiencia:** Personal de vigilancia del conjunto (turnos diurnos/nocturnos).
-> **Estado:** DRAFT — pendiente OK del operador antes de implementar.
+
+> **Estado al 25-Sept-2026:** ✅ **IMPLEMENTADO Y DESPLEGADO** (V9 inicial, V10 con
+> endpoint de placas, V17 con pestaña Salón Social). 6 endpoints backend, 4
+> pestañas frontend (residentes / placas / mudanzas / salón social), 2 fixes
+> aplicados (BUGFIX-007 apiGet faltante, BUGFIX-008 switchTab no togglea
+> tab-salon), manual del vigilante en `docs/manual-vigilantes.html` (68KB).
+
+---
+
+## CHANGELOG
+
+- **25-Sept-2026 (V9):** implementación inicial, 6 endpoints
+- **25-Sept-2026 (V10):** añadido `vigilanteBuscarPorPlaca`
+- **25-Sept-2026 (V14):** añadida pestaña "Salón Social" (con F5 admin)
+- **25-Sept-2026 (V14):** `adminListarReservasSalon` (admin usa)
+- **25-Sept-2026 (V17):** añadida pestaña Salón Social también al portal vigilantes
+  (no requiere nuevo endpoint — reusa `vigilanteVerReservasSalon` que ya existía)
 
 ---
 
@@ -142,6 +159,18 @@ El vigilante necesita:
 ---
 
 ## 4. ENDPOINTS BACKEND (Apps Script)
+
+### 4.0 Resumen (al 25-Sept-2026, V9-V17)
+
+| Endpoint | Método | Versión | Auth |
+|---|---|---|---|
+| `vigilanteLogin` | GET | V9 | público (password en Config!B2) |
+| `vigilanteVerResidentes` | GET | V9 | público (login) |
+| `vigilanteVerMudanzas` | GET | V9 | público (login) |
+| `vigilanteCheckMudanza` | POST | V9 | público (login) |
+| `vigilanteBuscarPorPlaca` | GET | V10 | público (login) |
+| `vigilanteLeerContrasena` | GET | V9 | público (login) |
+| `vigilanteVerReservasSalon` | GET | V14 | público (login) |
 
 ### 4.1 `GET ?action=vigilanteLogin&password=X`
 
@@ -423,6 +452,82 @@ Una vez confirmado, procedo con F1 (Backend).
 
 ---
 
+### 4.6 `GET ?action=vigilanteVerReservasSalon&fecha=YYYY-MM-DD` (V14, salón)
+
+```javascript
+Input: ?action=vigilanteVerReservasSalon&fecha=2026-10-04
+Devuelve:
+  {
+    ok: true,
+    fecha: "2026-10-04",
+    manana: {estado: "reservado"|"libre", apto: "105", nombre: "Yasmila C."},
+    tarde:  {estado: "reservado"|"libre", apto: "9999", nombre: "Fabio L."}
+  }
+
+Para los vigilantes solo se muestra:
+  - Fecha y turno (Mañana/Tarde)
+  - Estado (Libre/Reservado)
+  - N° de apartamento del solicitante
+  - Nombre del solicitante
+
+NO se muestra: cédula, correo, celular, comprobante de pago.
+```
+
+### 4.7 Resumen de las 4 pestañas del portal
+
+| Pestaña | Función | Endpoint principal |
+|---|---|---|
+| 🔍 Buscar residente | Buscar por apto/nombre/cédula | `vigilanteVerResidentes?q=X` |
+| 🚗 Buscar por placa | Identificar vehículo | `vigilanteBuscarPorPlaca?placa=X` |
+| 📦 Mudanzas | Ver y marcar checks | `vigilanteVerMudanzas?fecha=X` + `vigilanteCheckMudanza` |
+| 🏛️ Salón Social | Ver reservas del día | `vigilanteVerReservasSalon?fecha=X` (V14+) |
+
+---
+
+## 11. FRONTEND — Pestañas (al 25-Sept-2026)
+
+El portal vigilantes tiene 4 pestañas implementadas:
+
+```
+[🔍 Buscar residente] [🚗 Buscar por placa] [📦 Mudanzas] [🏛️ Salón Social] [Cerrar sesión]
+```
+
+### 11.1 Detalle por pestaña
+
+**🔍 Buscar residente** — input de búsqueda + tabla de resultados. Click
+en fila → muestra ficha con 11 secciones plegables (datos básicos,
+parqueaderos, residentes, vehículos, motos, bicis, mascotas, etc.).
+
+**🚗 Buscar por placa** — input de placa (parcial o completa) → lista
+de vehículos coincidentes con apto y nombre del propietario. Caso de
+incidente vehicular.
+
+**📦 Mudanzas** — selector de fecha → lista de reservas del día → botones
+"Sí se realizó" / "No se realizó" + campo de nombre del vigilante.
+
+**🏛️ Salón Social (V14+)** — selector de fecha → 2 cards (Mañana/Tarde)
+con estado (Libre/Reservado), apto y nombre del solicitante. Solo info
+esencial para el control de acceso.
+
+### 11.2 Manual del vigilante
+
+Manual detallado paso a paso en `docs/manual-vigilantes.html` (68KB).
+Cubre: login, búsqueda, ficha de residente, placas, mudanzas, salón
+social, glosario, errores comunes, FAQ.
+
+URL pública: https://fabig76.github.io/cerro-azul-residentes/docs/manual-vigilantes.html
+
+---
+
+## 12. BUGFIX APLICADOS (25-Sept-2026)
+
+- **BUGFIX-007:** `V.apiGet` no estaba definido (admin + vigilantes). Agregado helper.
+- **BUGFIX-008:** `switchTab()` no toggleaba `tab-salon` (quedaba siempre oculto). Cambiado a patrón genérico.
+
+Ver `docs/CHANGELOG-BUGFIXES.md` para detalles completos.
+
+---
+
 **Autor:** Hermes Agent
-**Fecha:** 23-Sept-2026
-**Estado:** DRAFT — pendiente aprobación
+**Fecha:** 23-Sept-2026 (inicial) / 25-Sept-2026 (actualizaciones V14+V17)
+**Estado:** IMPLEMENTADO Y DESPLEGADO ✅

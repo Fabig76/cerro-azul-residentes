@@ -3,6 +3,11 @@
 > Documento vivo del módulo contable. Para el detalle técnico ver
 > `docs/spec-estado-cuenta.md` y `apps-script/modulo-estado-cuenta.gs`.
 
+> **Estado al 25-Sept-2026:** ✅ **IMPLEMENTADO Y DESPLEGADO** (V12).
+> Fases 1-5+7 completas. Falta F6 (cambio de mes: cargar cartera septiembre).
+> Pestaña en `index.html` mode-switcher. Manual HTML público con
+> sección completa. Ver GUIA-PROYECTO.md §20 para el detalle completo.
+
 ---
 
 ## 1. Contexto
