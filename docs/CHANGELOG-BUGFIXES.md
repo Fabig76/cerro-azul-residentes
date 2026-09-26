@@ -549,6 +549,29 @@ El protocolo de testing para futuros deploys del módulo estado de cuenta
 
 Y los 6 endpoints DEBEN probarse **antes** de declarar el deploy exitoso.
 
+**Estado del fix al 26-Sept-2026 12:15:**
+
+V18 desplegado por el operador (urb.cerroazul@gmail.com) con Codigo.gs
+completo (módulo pegado + 6 líneas de routing).
+
+Validación E2E post-deploy (13/13 OK):
+- T-EC-1 ecConsultar (CA-0055 apto105) → estado completo, totalCartera=0
+- T-EC-2 ecDescargarFactura (mismo) → Factura_105_2026-08.pdf, 157KB
+- T-EC-3 ecPazYSalvo (mismo) → PYS-00012 PazYSalvo_105_2026-08.pdf
+- T-EC-4 ecConsultar (CA-0070 apto503) → totalCartera=$426.300, pazYSalvo=false
+- T-EC-5 ecPazYSalvo (CA-0062 apto1527 Arrendatario) → rechazado por P2
+- T-EC-6 ecConsultar (mismo) → rechazado por P2
+- Regresión: dispSalon, verificarAccesoSalon (V14 salón) ✓
+- Regresión: getEstadoResidente (V13 residente) ✓
+- Regresión: adminLogin, vigilanteLogin (V8/V9) ✓
+- Regresión: verificarPropietario (V8 mudanzas) ✓
+- Regresión: lookup, nextId (V8 formulario) ✓
+
+Confirmado: el bug SIEMPRE estuvo ahí desde V12 (25-Sept-2026).
+Las memorias "V12 OK 22 endpoints 18 ec*" eran incorrectas: los
+endpoints ec* existían en el módulo descargado pero NUNCA se
+enrutaron en doPost del Codigo.gs desplegado.
+
 ---
 
 Última actualización: 26-Sept-2026
