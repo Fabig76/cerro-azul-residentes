@@ -642,7 +642,7 @@ const A = {
       }
 
       let html = '<table class="results-table"><thead><tr>';
-      html += '<th>ID</th><th>Apto</th><th>Solicitante</th><th>Fecha</th><th>Slot</th><th>Comprobante</th><th>Estado</th><th>Acciones</th>';
+      html += '<th>ID</th><th>Apto</th><th>Solicitante</th><th>Fecha</th><th>Slot</th><th>Comprobante</th><th>Subido por</th><th>Estado</th><th>Acciones</th>';
       html += '</tr></thead><tbody>';
 
       reservas.forEach(res => {
@@ -661,6 +661,7 @@ const A = {
         html += '<td>' + res.fechaReserva + '</td>';
         html += '<td>' + res.slot + '</td>';
         html += '<td>' + comprobanteCell + '</td>';
+        html += '<td>' + (res.subidoPor || '<span style="color:var(--gris-med);">-</span>') + '</td>';
         html += '<td style="color:' + estadoColor + ';">' + res.estado + '</td>';
         html += '<td>';
         if (res.estado === 'Pagado' || res.estado === 'PendientePago') {

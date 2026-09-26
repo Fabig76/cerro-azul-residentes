@@ -2641,6 +2641,9 @@ function reservarSalon(data) {
       '  Límite de pago: ' + Utilities.formatDate(fechaLimite, 'America/Bogota', 'yyyy-MM-dd HH:mm') + '\n'
     );
 
+    // W1: Auditoria (Logger.log)
+    Logger.log('[reservarSalon] ' + id + ' creada por apto ' + apto + ' CC ' + cc + ' fecha ' + fechaReserva + ' ' + slot);
+
     return {
       ok: true,
       reservaId: id,
@@ -2724,6 +2727,7 @@ function subirComprobanteSalon(data) {
     sheet.getRange(rowFound, 14).setValue(now);               // N (FECHA PAGO)
     sheet.getRange(rowFound, 15).setValue(file.getId());       // O (COMPROBANTE ID)
     sheet.getRange(rowFound, 17).setValue(now);               // Q (MODIFICADO POR)
+    sheet.getRange(rowFound, 18).setValue(cc);                // R (B3: SUBIDO POR)
 
     // Notificar al admin
     MailApp.sendEmail(
@@ -2874,6 +2878,9 @@ function editarReservaSalon(data) {
     sheet.getRange(rowFound, 10).setValue(nuevoSlot);  // J
     sheet.getRange(rowFound, 16).setValue(hashReservaDedupe(apto, nuevaFecha, nuevoSlot)); // P
     sheet.getRange(rowFound, 17).setValue(now);        // Q
+
+    // W1: Auditoria (Logger.log)
+    Logger.log('[editarReservaSalon] ' + reservaId + ' editada por apto ' + apto + ' CC ' + cc + ' nueva fecha ' + nuevaFecha + ' ' + nuevoSlot);
 
     return { ok: true, mensaje: 'Reserva actualizada correctamente.' };
   } finally {
