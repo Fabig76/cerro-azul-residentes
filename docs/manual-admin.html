@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#6B4423">
+  <title>Manual del Vigilante — Cerro Azul</title>
+  <style>
+    /* ============================================================
+       ESTILOS — Manual del Vigilante
+       Cerro Azul Residentes
+       ============================================================ */
+    :root {
+      --marron:    #6B4423;
+      --marron-osc: #4A2E18;
+      --marron-claro: #8B5A2B;
+      --crema:     #FFF8E1;
+      --crema-osc: #F8F4E8;
+      --verde:     #4CAF50;
+      --verde-fondo: #E8F5E9;
+      --rojo:      #D32F2F;
+      --rojo-fondo: #FFEBEE;
+      --azul:      #1976D2;
+      --azul-fondo: #E3F2FD;
+      --naranja:   #F57C00;
+      --naranja-fondo: #FFF3E0;
+      --gris:      #757575;
+      --gris-claro: #EEEEEE;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: #212121;
+      line-height: 1.7;
+      background: #F5F5F5;
+    }
+
+    /* PORTADA */
+    .cover {
+      background: linear-gradient(135deg, var(--marron) 0%, var(--marron-osc) 100%);
+      color: white;
+      text-align: center;
+      padding: 50px 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .cover .logo {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: white;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 50px;
+    }
+    .cover h1 { font-size: 2.2em; margin-bottom: 8px; }
+    .cover .sub { font-size: 1.1em; opacity: 0.95; margin-bottom: 16px; }
+    .cover .desc { font-size: 1em; opacity: 0.8; margin-bottom: 40px; max-width: 600px; }
+    .cover .btn-start {
+      background: white; color: var(--marron);
+      padding: 16px 40px; border-radius: 50px; font-size: 1.1em;
+      font-weight: bold; text-decoration: none; display: inline-block;
+    }
+    .cover .meta { margin-top: 30px; font-size: 0.85em; opacity: 0.7; }
+
+    /* ÍNDICE */
+    .toc {
+      max-width: 800px;
+      margin: 40px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .toc h2 { color: var(--marron); margin-bottom: 16px; }
+    .toc ol { padding-left: 24px; line-height: 1.8; }
+    .toc a { color: var(--marron); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+
+    /* SECCIONES */
+    .section-manual {
+      max-width: 800px;
+      margin: 30px auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    .section-header {
+      background: var(--marron);
+      color: white;
+      padding: 20px 28px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .section-num {
+      background: rgba(255,255,255,0.2);
+      border: 2px solid rgba(255,255,255,0.5);
+      border-radius: 50%;
+      width: 48px; height: 48px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2em; font-weight: bold; flex-shrink: 0;
+    }
+    .section-header h2 { font-size: 1.3em; }
+    .section-header p { opacity: 0.85; font-size: 0.9em; margin-top: 4px; }
+    .section-body { padding: 24px 28px; }
+    .section-body h3 {
+      color: var(--marron);
+      margin: 20px 0 8px;
+      font-size: 1.1em;
+    }
+
+    /* CAJAS DE INFORMACIÓN */
+    .info-box {
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin: 16px 0;
+      font-size: 0.95em;
+    }
+    .info-box strong { display: block; margin-bottom: 4px; }
+    .info-importante {
+      background: var(--azul-fondo);
+      border-left: 4px solid var(--azul);
+      color: #0D47A1;
+    }
+    .info-aviso {
+      background: var(--naranja-fondo);
+      border-left: 4px solid var(--naranja);
+      color: #E65100;
+    }
+    .info-error {
+      background: var(--rojo-fondo);
+      border-left: 4px solid var(--rojo);
+      color: #B71C1C;
+    }
+    .info-exito {
+      background: var(--verde-fondo);
+      border-left: 4px solid var(--verde);
+      color: #1B5E20;
+    }
+    .info-consejo {
+      background: #FFFDE7;
+      border-left: 4px solid #FBC02D;
+      color: #F57F17;
+    }
+
+    /* PASOS */
+    .step {
+      display: flex;
+      gap: 16px;
+      margin: 14px 0;
+      align-items: flex-start;
+    }
+    .step-num {
+      background: var(--marron);
+      color: white;
+      border-radius: 50%;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 0.85em;
+      flex-shrink: 0;
+    }
+    .step-text { padding-top: 3px; flex: 1; }
+    .step-text strong { color: var(--marron-osc); }
+
+    /* MOCKUPS / DIAGRAMAS ASCII */
+    .mockup {
+      background: #FAFAFA;
+      border: 2px solid var(--gris-claro);
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.88em;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .mockup-phone {
+      max-width: 360px;
+      margin: 16px auto;
+      border: 8px solid #333;
+      border-radius: 24px;
+      background: white;
+      padding: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    .mockup-phone-screen {
+      background: white;
+      padding: 8px;
+    }
+
+    /* BOTONES VISUALES */
+    .btn-ejemplo {
+      display: inline-block;
+      background: var(--azul);
+      color: white;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.9em;
+      margin: 2px 4px;
+    }
+    .btn-ejemplo.green { background: var(--verde); }
+    .btn-ejemplo.red { background: var(--rojo); }
+    .btn-ejemplo.gray { background: var(--gris); }
+    .btn-ejemplo.outline {
+      background: white;
+      color: var(--azul);
+      border: 1px solid var(--azul);
+    }
+
+    /* INPUT VISUAL */
+    .input-ejemplo {
+      display: inline-block;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-family: 'Consolas', monospace;
+      font-size: 0.9em;
+      min-width: 200px;
+      color: #666;
+    }
+
+    /* TABLAS */
+    table.tabla-ejemplo {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 0.9em;
+    }
+    table.tabla-ejemplo th {
+      background: var(--marron);
+      color: white;
+      padding: 8px;
+      text-align: left;
+    }
+    table.tabla-ejemplo td {
+      padding: 8px;
+      border-bottom: 1px solid var(--gris-claro);
+    }
+    table.tabla-ejemplo tr:nth-child(even) td {
+      background: var(--crema);
+    }
+
+    /* NAVEGACIÓN INFERIOR */
+    .nav-links {
+      display: flex;
+      justify-content: space-between;
+      padding: 16px 28px;
+      background: var(--crema-osc);
+      border-top: 1px solid var(--gris-claro);
+    }
+    .nav-links a {
+      color: var(--marron);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+    .nav-links a:hover { text-decoration: underline; }
+
+    /* FAQ */
+    .faq-item {
+      margin: 12px 0;
+      padding: 12px 16px;
+      background: #FAFAFA;
+      border-radius: 6px;
+      border-left: 3px solid var(--marron-claro);
+    }
+    .faq-q { font-weight: 700; color: var(--marron-osc); margin-bottom: 4px; }
+    .faq-a { color: #424242; }
+
+    /* GLOSARIO */
+    .glosario-item {
+      margin: 8px 0;
+      padding: 8px 12px;
+      background: var(--crema-osc);
+      border-radius: 4px;
+    }
+    .glosario-item .term {
+      font-weight: 700;
+      color: var(--marron-osc);
+    }
+    .glosario-item .def {
+      color: #424242;
+    }
+
+    /* FAQ / AYUDA */
+    .help-box {
+      background: var(--crema-osc);
+      border: 2px solid var(--marron);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .help-box h3 { color: var(--marron); margin-bottom: 12px; }
+    .help-box p { margin-bottom: 8px; }
+    .help-box a {
+      display: inline-block;
+      background: var(--marron);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      margin: 8px 4px;
+    }
+
+    /* FOOTER */
+    footer {
+      background: var(--marron-osc);
+      color: white;
+      text-align: center;
+      padding: 30px 20px;
+      margin-top: 40px;
+      font-size: 0.9em;
+    }
+    footer a { color: white; text-decoration: underline; }
+    .footer-meta { margin-top: 8px; opacity: 0.8; font-size: 0.85em; }
+
+    /* RESPONSIVE */
+    @media (max-width: 600px) {
+      .section-header { padding: 16px 20px; }
+      .section-body { padding: 20px; }
+      .section-num { width: 40px; height: 40px; font-size: 1em; }
+      .cover h1 { font-size: 1.8em; }
+      .nav-links { flex-direction: column; gap: 8px; }
+      table.tabla-ejemplo { font-size: 0.8em; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================== -->
+<!-- PORTADA                                                         -->
+<!-- ============================================================== -->
+<!-- ============================================================== -->
+<!-- PORTADA                                                         -->
+<!-- ============================================================== -->
+<div class="cover" id="inicio">
+  <div class="logo">🔧</div>
+  <h1>Manual del Administrador</h1>
+  <p class="sub">Portal Administrativo — Cerro Azul</p>
+  <p class="desc">Guía paso a paso para que el administrador use el portal:
+  cómo buscar residentes, editar registros, ver mudanzas y gestionar
+  las reservas del salón social.</p>
+  <a href="#indice" class="btn-start">📖 Ver Índice</a>
+  <p class="meta">Última actualización: 26-Sept-2026 · Versión 1.0</p>
+</div>
+
+<!-- ============================================================== -->
+<!-- ÍNDICE                                                          -->
+<!-- ============================================================== -->
+<div class="toc" id="indice">
+  <h2>📋 Índice del Manual</h2>
+  <ol>
+    <li><a href="#antes-de-empezar">Antes de empezar: lo que necesitas saber</a></li>
+    <li><a href="#seccion-1">Sección 1 — Iniciar sesión (login de admin)</a></li>
+    <li><a href="#seccion-2">Sección 2 — Pestaña Residentes: buscar y ver</a></li>
+    <li><a href="#seccion-3">Sección 3 — Pestaña Residentes: editar un registro</a></li>
+    <li><a href="#seccion-4">Sección 4 — Pestaña Mudanzas: ver y filtrar</a></li>
+    <li><a href="#seccion-5">Sección 5 — Pestaña Salón Social: ver y cancelar</a></li>
+    <li><a href="#seccion-6">Sección 6 — Cerrar sesión</a></li>
+    <li><a href="#preguntas">Preguntas frecuentes</a></li>
+    <li><a href="#errores">Errores comunes y cómo resolverlos</a></li>
+    <li><a href="#glosario">Glosario (palabras técnicas explicadas)</a></li>
+    <li><a href="#ayuda">¿Necesitas ayuda?</a></li>
+  </ol>
+</div>
+
+<!-- ============================================================== -->
+<!-- ANTES DE EMPEZAR                                                -->
+<!-- ============================================================== -->
+<div class="section-manual" id="antes-de-empezar">
+  <div class="section-header">
+    <div class="section-num">!</div>
+    <div>
+      <h2>Antes de empezar</h2>
+      <p>Lo que necesitas saber para usar el portal</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Qué es el Portal Administrativo?</h3>
+    <p>Es una página web donde <strong>tú (como administrador del conjunto)</strong>
+    puedes buscar, ver y editar los registros de TODOS los residentes
+    (no necesitas el CA-XXXX de cada uno). También puedes ver las
+    mudanzas agendadas y las reservas del salón social.</p>
+
+    <h3>Las 3 pestañas principales</h3>
+    <div class="info info-blue">
+      <p><strong>👥 Residentes:</strong> buscar por apto, nombre, cédula,
+      correo, celular o CA-XXXX. Ver los 143 campos del registro. Editar
+      cualquier campo.</p>
+    </div>
+
+    <div class="info info-blue">
+      <p><strong>📦 Mudanzas:</strong> ver todas las mudanzas agendadas,
+      filtrar por estado (Confirmada/Cancelada) y por torre (1/2/3).</p>
+    </div>
+
+    <div class="info info-blue">
+      <p><strong>🏛️ Salón Social:</strong> ver todas las reservas del salón,
+      filtrar por estado, ver comprobantes, cancelar reservas si el
+      comprobante es falso o no se hizo el pago.</p>
+    </div>
+
+    <h3>¿Qué necesito para usarlo?</h3>
+    <div class="step">
+      <ol>
+        <li><strong>La contraseña de administrador</strong> (almacenada en el
+        Google Sheet de la administración, en la pestaña <strong>Config</strong>,
+        celda <strong>B1</strong>). Por defecto es <code>cerroazul2026</code>.</li>
+        <li><strong>Un computador</strong> con acceso a internet (recomendado,
+        no funciona bien en celular por el tamaño de las tablas).</li>
+        <li><strong>Un navegador</strong> actualizado (Chrome, Edge, Firefox, Safari).</li>
+      </ol>
+    </div>
+
+    <div class="info info-orange">
+      <p><strong>⚠️ Importante sobre la contraseña:</strong> NO la compartas
+      con vigilantes ni residentes. Esta contraseña da acceso a editar
+      los 143 campos del registro de cualquier apartamento. Si necesitas
+      cambiarla, edita la celda B1 de la pestaña <strong>Config</strong>
+      del Google Sheet.</p>
+    </div>
+
+    <h3>Cómo se ve el portal (vista inicial)</h3>
+    <div class="mockup">
+<pre>
+┌──────────────────────────────────────────────┐
+│ 🔧 Acceso administrativo                       │
+│                                              │
+│  Solo personal autorizado de la              │
+│  administración puede ingresar.              │
+│                                              │
+│  ┌────────────────────────────────┐         │
+│  │ Contraseña  *                   │         │
+│  │ ●●●●●●●●●●●●                   │         │
+│  └────────────────────────────────┘         │
+│                                              │
+│  ┌────────────────────────────────┐         │
+│  │     🔍 Ingresar                 │         │
+│  └────────────────────────────────┘         │
+│                                              │
+│  ¿Olvidó la contraseña? Edite la celda       │
+│  Config en el Google Sheet.                  │
+└──────────────────────────────────────────────┘
+</pre>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 1: LOGIN                                                -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-1">
+  <div class="section-header">
+    <div class="section-num">1</div>
+    <div>
+      <h2>Sección 1 — Iniciar sesión (login)</h2>
+      <p>Cómo entrar al portal de administración</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <ol>
+        <li><strong>Abre el portal</strong>:<br>
+        <code>https://fabig76.github.io/cerro-azul-residentes/admin.html</code></li>
+        <li><strong>Escribe la contraseña</strong> en el campo (es un campo
+        de tipo "password", así que se ve como puntos ●●●).</li>
+        <li><strong>Haz click en "🔍 Ingresar"</strong>.</li>
+        <li>Si la contraseña es correcta, pasas al panel con 3 pestañas.</li>
+        <li>Si es incorrecta, aparece un mensaje de error rojo.</li>
+      </ol>
+    </div>
+
+    <h3>Si te equivocas con la contraseña</h3>
+    <div class="info info-red">
+      <p>Aparece "Contraseña incorrecta". Verifica que estés escribiendo
+      la contraseña exacta (distingue mayúsculas y minúsculas). Si la
+      olvidaste, edita la celda B1 de la pestaña <strong>Config</strong>
+      del Google Sheet.</p>
+    </div>
+
+    <h3>Vista del panel (después de login)</h3>
+    <p>Una vez dentro, verás un menú con 3 botones grandes en la parte de
+    arriba:</p>
+    <ul>
+      <li><strong>👥 Residentes</strong> (pestaña por defecto)</li>
+      <li><strong>📦 Mudanzas</strong></li>
+      <li><strong>🏛️ Salón Social</strong></li>
+      <li><strong>Cerrar sesión</strong> (esquina superior derecha)</li>
+    </ul>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 2: BUSCAR RESIDENTE                                     -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-2">
+  <div class="section-header">
+    <div class="section-num">2</div>
+    <div>
+      <h2>Sección 2 — Buscar un residente</h2>
+      <p>Cómo encontrar el registro de cualquier apartamento</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Cuándo usar esta función?</h3>
+    <p>Cuando necesitas ver o editar los datos de un apartamento. Por ejemplo:</p>
+    <ul>
+      <li>Un residente te llamó para actualizar su teléfono.</li>
+      <li>El vigilante reportó una inconsistencia en los datos.</li>
+      <li>Necesitas verificar el N° de formulario de un apartamento.</li>
+    </ul>
+
+    <h3>¿Qué puedes buscar?</h3>
+    <p>Puedes buscar por <strong>cualquiera de estos 6 criterios</strong>:</p>
+    <ul>
+      <li><strong>N° de apartamento</strong>: ej: "105", "202B", "1419"</li>
+      <li><strong>Nombre del titular</strong>: ej: "Becerra", "Pérez"</li>
+      <li><strong>Cédula</strong>: ej: "12345678"</li>
+      <li><strong>Correo electrónico</strong>: ej: "maria@ejemplo.com"</li>
+      <li><strong>Celular</strong>: ej: "3001234567"</li>
+      <li><strong>CA-XXXX (N° de formulario)</strong>: ej: "CA-0042"</li>
+    </ul>
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <ol>
+        <li>Haz click en la pestaña <strong>👥 Residentes</strong> (si no estás ahí).</li>
+        <li>Escribe lo que quieres buscar en el campo de texto. Ejemplo:
+        "105" para buscar el apartamento 105.</li>
+        <li>Haz click en <strong>"🔍 Buscar"</strong> (botón azul).</li>
+        <li>Aparecerá una tabla con los resultados. Cada fila es un apartamento
+        que coincide con tu búsqueda.</li>
+        <li>Haz click en una fila para ver su detalle completo.</li>
+      </ol>
+    </div>
+
+    <h3>Vista de los resultados</h3>
+    <div class="mockup">
+<pre>
+┌────────────────────────────────────────────────────────┐
+│ Buscar: [105          ] [🔍 Buscar]                   │
+│                                                        │
+│ Resultados de búsqueda (3):                            │
+│ ┌─────┬──────────────────┬─────────┬──────────┐      │
+│ │ CA- │ Apto  │ Nombre    │ Cédula  │ Celular  │      │
+│ ├─────┼──────────────────┼─────────┼──────────┤      │
+│ │0042 │ 105   │ Becerra..  │ 1178..  │ 3001..   │ ←   │
+│ │0089 │ 105T  │ Pérez..    │ 1036..  │ 3155..   │      │
+│ │0123 │ 1105  │ Castrill.. │ 7174..  │ 3046..   │      │
+│ └─────┴──────────────────┴─────────┴──────────┘      │
+│                                                        │
+│ (Haz click en una fila para ver el detalle completo)   │
+└────────────────────────────────────────────────────────┘
+</pre>
+    </div>
+
+    <h3>Si no aparece el apartamento que buscas</h3>
+    <p>Posibles razones:</p>
+    <ul>
+      <li>El apartamento aún no está registrado → el residente debe llenar
+      el <a href="index.html">formulario principal</a>.</li>
+      <li>Escribiste mal el dato → verifica mayúsculas, acentos, números.</li>
+      <li>El dato está en otro campo que no buscaste → prueba con otro criterio.</li>
+    </ul>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 3: EDITAR REGISTRO                                      -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-3">
+  <div class="section-header">
+    <div class="section-num">3</div>
+    <div>
+      <h2>Sección 3 — Editar un registro</h2>
+      <p>Cómo modificar los datos de un apartamento</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>⚠️ Antes de editar</h3>
+    <div class="info info-red">
+      <p><strong>Esta es una operación delicada.</strong> Estás modificando
+      los datos personales de un residente. Verifica siempre con el
+      residente ANTES de cambiar algo. Si te equivocas, no hay "deshacer"
+      (aunque puedes corregirlo editando de nuevo).</p>
+    </div>
+
+    <h3>Los 143 campos que puedes editar</h3>
+    <p>El registro tiene 11 secciones:</p>
+    <ol>
+      <li>Datos del propietario (6 campos)</li>
+      <li>Parqueaderos del apto (4 campos)</li>
+      <li>Matrícula del apto (1 campo)</li>
+      <li>Datos del encargado / administrador (4 campos)</li>
+      <li>Autorización de parqueadero a tercero (3 campos)</li>
+      <li>Inmobiliaria / representante (5 campos)</li>
+      <li>Otros residentes del apto (hasta 4, 5 campos cada uno)</li>
+      <li>Menores de edad (hasta 4, 3 campos cada uno)</li>
+      <li>Vehículos (hasta 2, 6 campos cada uno)</li>
+      <li>Motos (hasta 2, 6 campos cada uno)</li>
+      <li>Bicicletas (hasta 2, 4 campos cada uno)</li>
+      <li>Llaveros / Tags autorizados (2 campos)</li>
+      <li>Dispositivos entregados (hasta 3, 5 campos cada uno)</li>
+      <li>Mascotas (hasta 2, 10 campos cada uno)</li>
+      <li>Contactos de emergencia (hasta 2, 3 campos cada uno)</li>
+      <li>Autorizaciones legales (3 campos)</li>
+      <li>Firma (3 campos)</li>
+    </ol>
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <ol>
+        <li>Busca el apartamento (Sección 2).</li>
+        <li>Haz click en la fila del resultado. Se abrirá el detalle con
+        todas las secciones plegables.</li>
+        <li>Expande cada sección haciendo click en su título.</li>
+        <li>Edita los campos que necesites (los campos que NO puedes editar
+        aparecen deshabilitados, en gris).</li>
+        <li>Verifica que los cambios sean correctos.</li>
+        <li>Haz click en <strong>"💾 Guardar cambios"</strong> (botón azul al
+        final del formulario).</li>
+        <li>Aparece un mensaje de confirmación verde.</li>
+      </ol>
+    </div>
+
+    <h3>Vista del detalle (algunas secciones)</h3>
+    <div class="mockup">
+<pre>
+┌────────────────────────────────────────────────────┐
+│ Editar registro CA-0042 — apto 105                │
+│                                                    │
+│ ▼ 1. Datos del propietario                         │
+│   Nombre: Luis Oswaldo Becerra Palacios             │
+│   Cédula: 11786889 (no editable)                    │
+│   Correo: luis@ejemplo.com                          │
+│   Celular: 3001234567  ← puedes editar              │
+│   Tel fijo: 6041234                                 │
+│   N° apto: 105 (no editable)                       │
+│                                                    │
+│ ▼ 2. Parqueaderos                                  │
+│   Parqueadero 1: P-101  Matrícula: 5377499          │
+│   Parqueadero 2: (vacío)                           │
+│                                                    │
+│ ▶ 3. Matrícula del apto (plegado)                  │
+│ ▶ 4. Encargado / Administrador                     │
+│ ...                                                │
+│                                                    │
+│ [💾 Guardar cambios]   [↩️ Cancelar]               │
+└────────────────────────────────────────────────────┘
+</pre>
+    </div>
+
+    <h3>¿Qué campos NO puedo editar?</h3>
+    <p>Por seguridad y porque son identificadores únicos:</p>
+    <ul>
+      <li>N° de formulario (CA-XXXX)</li>
+      <li>Cédula del titular</li>
+      <li>N° de apartamento</li>
+    </ul>
+    <p>Si necesitas cambiar alguno de estos, contáctanos (es un caso
+    excepcional).</p>
+
+    <h3>Después de guardar</h3>
+    <p>El sistema te muestra un mensaje de éxito. Los cambios son
+    <strong>inmediatos</strong> en el Google Sheet. Si abres el Sheet
+    directamente, verás los nuevos valores inmediatamente.</p>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 4: MUDANZAS                                             -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-4">
+  <div class="section-header">
+    <div class="section-num">4</div>
+    <div>
+      <h2>Sección 4 — Pestaña Mudanzas</h2>
+      <p>Cómo ver y filtrar las mudanzas agendadas</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Qué muestra esta pestaña?</h3>
+    <p>Lista de TODAS las mudanzas agendadas en el conjunto, con
+    información del solicitante, fecha, hora, torre y estado.</p>
+
+    <h3>Los 2 filtros disponibles</h3>
+    <div class="info info-blue">
+      <p><strong>Filtro por Estado:</strong></p>
+      <ul>
+        <li><strong>Confirmada</strong> (por defecto): solo mudanzas confirmadas
+        con pago.</li>
+        <li><strong>Cancelada</strong>: solo mudanzas canceladas.</li>
+        <li><strong>Todas</strong>: muestra todas (confirmadas + canceladas).</li>
+      </ul>
+    </div>
+
+    <div class="info info-blue">
+      <p><strong>Filtro por Torre:</strong></p>
+      <ul>
+        <li><strong>Todas</strong> (por defecto)</li>
+        <li><strong>Torre 1</strong></li>
+        <li><strong>Torre 2</strong></li>
+        <li><strong>Torre 3</strong></li>
+      </ul>
+    </div>
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <ol>
+        <li>Haz click en la pestaña <strong>📦 Mudanzas</strong>.</li>
+        <li>Selecciona el estado que quieres ver (Confirmada/Cancelada/Todas).</li>
+        <li>Selecciona la torre (si quieres filtrar por una específica).</li>
+        <li>Haz click en <strong>"🔄 Actualizar lista"</strong> (botón azul).</li>
+        <li>Aparece la tabla con las mudanzas que coinciden con los filtros.</li>
+      </ol>
+    </div>
+
+    <h3>Vista de la tabla</h3>
+    <div class="mockup">
+<pre>
+┌────────────────────────────────────────────────────────────┐
+│ Estado: [Confirmada ▼] Torre: [Todas ▼] [🔄 Actualizar]  │
+│                                                            │
+│ ┌──────┬──────┬────────────┬────────┬─────┬─────────────┐  │
+│ │ ID   │ Apto │ Solicitante│ Fecha  │Hora │ Tipo mudanza │  │
+│ ├──────┼──────┼────────────┼────────┼─────┼─────────────┤  │
+│ │M-0042│ 105  │ Luis Becerra│25-Oct  │8-12 │ Con ascensor│  │
+│ │M-0089│ 305  │ María Pérez │28-Oct  │9-13 │ Con ascensor│  │
+│ └──────┴──────┴────────────┴────────┴─────┴─────────────┘  │
+└────────────────────────────────────────────────────────────┘
+</pre>
+    </div>
+
+    <h3>¿Para qué sirve esta pestaña?</h3>
+    <ul>
+      <li>Verificar mudanzas programadas para hoy/mañana.</li>
+      <li>Coordinar con vigilancia qué mudanzas habrá en cada torre.</li>
+      <li>Resolver conflictos de horarios.</li>
+      <li>Auditar quién reservó cada ascensor.</li>
+    </ul>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 5: SALÓN SOCIAL ADMIN                                   -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-5">
+  <div class="section-header">
+    <div class="section-num">5</div>
+    <div>
+      <h2>Sección 5 — Pestaña Salón Social</h2>
+      <p>Cómo ver y cancelar reservas del salón</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Qué muestra esta pestaña?</h3>
+    <p>Lista de TODAS las reservas del salón social, con información del
+    solicitante, fecha, turno, estado y comprobante.</p>
+
+    <h3>Los 6 estados posibles</h3>
+    <ul>
+      <li><strong>PendientePago</strong>: reserva recién creada, sin comprobante</li>
+      <li><strong>Pagado</strong>: comprobante subido, reserva confirmada</li>
+      <li><strong>Cancelado</strong>: el solicitante canceló</li>
+      <li><strong>Expirado</strong>: pasaron 48h sin comprobante (auto-cancelada)</li>
+      <li><strong>CanceladoPorAdmin</strong>: la administración canceló</li>
+      <li><strong>Todos</strong>: muestra todos los estados</li>
+    </ul>
+
+    <h3>¿Cuándo cancelar una reserva como admin?</h3>
+    <p>Solo en estos casos:</p>
+    <ul>
+      <li>El comprobante subido NO corresponde al pago del salón (foto de
+      otro recibo, monto incorrecto, etc.).</li>
+      <li>El solicitante informa que no pudo asistir y pide cancelación
+      después del plazo.</li>
+      <li>El solicitante no subió comprobante pero pagó por otro medio
+      que tú ya verificaste.</li>
+    </ul>
+
+    <h3>Paso a paso para cancelar una reserva</h3>
+    <div class="step">
+      <ol>
+        <li>En la pestaña <strong>🏛️ Salón Social</strong>, busca la reserva
+        sospechosa.</li>
+        <li>Haz click en <strong>"Ver comprobante"</strong> para ver el archivo
+        subido (si está Pagado). Verifica que sea válido.</li>
+        <li>Si el comprobante es falso o el caso lo amerita, haz click en
+        <strong>"❌ Cancelar"</strong>.</li>
+        <li>Aparece un modal pidiendo la contraseña de admin (para confirmar)
+        y un motivo (texto libre obligatorio).</li>
+        <li>Escribe el motivo (ej: "Comprobante no corresponde al pago").</li>
+        <li>Escribe la contraseña de admin.</li>
+        <li>Haz click en <strong>"🗑️ Confirmar cancelación"</strong>.</li>
+        <li>La reserva se marca como "CanceladoPorAdmin" con tu motivo.</li>
+      </ol>
+    </div>
+
+    <h3>Vista del modal de cancelación</h3>
+    <div class="mockup">
+<pre>
+┌────────────────────────────────────────────┐
+│ ⚠️ Cancelar reserva                          │
+│                                            │
+│ Reserva RS-0042 — Apto 105 — 25-Oct         │
+│ (☀️ Mañana) — Solicitante: Luis Becerra     │
+│                                            │
+│ Motivo de cancelación (requerido):          │
+│ ┌────────────────────────────────────┐     │
+│ │ Comprobante no corresponde al pago  │     │
+│ │ del salón social.                  │     │
+│ └────────────────────────────────────┘     │
+│                                            │
+│ [❌ Cancelar (no borrar)] [🗑️ Confirmar]    │
+└────────────────────────────────────────────┘
+</pre>
+    </div>
+
+    <div class="info info-orange">
+      <p><strong>⚠️ Importante:</strong> la contraseña que pidas en el modal
+      es LA MISMA contraseña del login admin (no es una segunda contraseña).
+      Esto es para confirmar que eres TÚ quien cancela, no alguien con
+      acceso accidental.</p>
+    </div>
+
+    <h3>Si NO quieres cancelar la reserva</h3>
+    <p>Solo cierra el modal con "Cancelar (no borrar)" o la X. La reserva
+    seguirá activa.</p>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 6: CERRAR SESIÓN                                        -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-6">
+  <div class="section-header">
+    <div class="section-num">6</div>
+    <div>
+      <h2>Sección 6 — Cerrar sesión</h2>
+      <p>Cómo salir del portal de forma segura</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Por qué es importante cerrar sesión?</h3>
+    <p>El portal admin da acceso a editar datos sensibles de TODOS los
+    residentes. Si dejas la sesión abierta, cualquier persona con acceso
+    a tu computador podría modificar registros.</p>
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <ol>
+        <li>Haz click en <strong>"Cerrar sesión"</strong> (botón gris, esquina
+        superior derecha).</li>
+        <li>El sistema te regresa a la pantalla de login y borra la sesión
+        del navegador.</li>
+        <li>Listo. Nadie más puede usar el portal sin volver a ingresar la
+        contraseña.</li>
+      </ol>
+    </div>
+
+    <div class="info info-orange">
+      <p><strong>⚠️ Importante:</strong> SIEMPRE cierra sesión cuando
+      termines de trabajar, especialmente si compartes el computador con
+      otras personas (familia, en la oficina, etc.).</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- PREGUNTAS FRECUENTES                                            -->
+<!-- ============================================================== -->
+<div class="section-manual" id="preguntas">
+  <div class="section-header">
+    <div class="section-num">?</div>
+    <div>
+      <h2>Preguntas frecuentes</h2>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>1. ¿Cómo cambio la contraseña de admin?</h3>
+    <p>Edita la celda <strong>B1</strong> de la pestaña <strong>Config</strong>
+    del Google Sheet. Cambia el valor por la nueva contraseña. El cambio
+    es inmediato.</p>
+
+    <h3>2. ¿Por qué no aparece un apartamento en la búsqueda?</h3>
+    <p>Posibles causas:</p>
+    <ul>
+      <li>El apartamento aún no está registrado (el residente no ha llenado
+      el <a href="index.html">formulario principal</a>).</li>
+      <li>Estás buscando con un dato incorrecto (mayúsculas, acentos).</li>
+    </ul>
+
+    <h3>3. ¿Puedo eliminar un registro?</h3>
+    <p><strong>NO.</strong> El portal NO permite eliminar registros. Solo
+    editar. Esto es por seguridad (Ley 1581 de 2012) y para mantener un
+    historial de cambios. Si un registro está mal, edítalo con los datos
+    correctos.</p>
+
+    <h3>4. ¿Cómo veo el historial de cambios de un registro?</h3>
+    <p>El portal admin no muestra historial de cambios directamente. Para
+    verlo, abre el Google Sheet y revisa las versiones anteriores con
+    <strong>Archivo → Historial de versiones</strong>.</p>
+
+    <h3>5. ¿Puedo agregar un residente nuevo desde el portal admin?</h3>
+    <p>NO. Los registros nuevos deben hacerse desde el formulario público
+    (para que el residente confirme los datos y acepte los términos
+    legales). El admin solo puede EDITAR registros existentes.</p>
+
+    <h3>6. ¿Por qué hay 143 campos en el registro?</h3>
+    <p>Porque incluye TODOS los datos del conjunto: propietario,
+    encargado, residentes, menores, vehículos, motos, bicis, mascotas,
+    contactos de emergencia, etc. Es un formulario integral obligatorio
+    por la Ley 1581 de 2012 y el Decreto 768 de 2025.</p>
+
+    <h3>7. ¿Cómo cancelo una mudanza como admin?</h3>
+    <p>El portal admin actual no permite cancelar mudanzas (solo verlas).
+    Si necesitas cancelar una mudanza, edita directamente la fila en el
+    Google Sheet en la pestaña <strong>Mudanzas</strong>, columna
+    <strong>Estado</strong>: cambia "Confirmada" a "Cancelada".</p>
+
+    <h3>8. ¿Qué pasa si edito un registro por error?</h3>
+    <p>El cambio es inmediato. Para corregirlo, edita de nuevo con los
+    valores correctos. El sistema no tiene "deshacer" pero puedes revisar
+    el historial de versiones del Sheet.</p>
+
+    <h3>9. ¿Por qué hay pestañas de "Salón Social" y "Mudanzas" en admin?</h3>
+    <p>Para que tengas visibilidad de todo lo que pasa en el conjunto sin
+    tener que abrir el Sheet. También puedes cancelar reservas de salón
+    si el comprobante es falso.</p>
+
+    <h3>10. ¿Hay un límite de acciones por minuto?</h3>
+    <p>Google Apps Script tiene límites diarios (no por minuto). Para el
+    uso normal del portal admin, NO deberías llegar al límite.</p>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- ERRORES COMUNES                                                 -->
+<!-- ============================================================== -->
+<div class="section-manual" id="errores">
+  <div class="section-header">
+    <div class="section-num">!</div>
+    <div>
+      <h2>Errores comunes y cómo resolverlos</h2>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>"Contraseña incorrecta"</h3>
+    <p><strong>Causa:</strong> escribiste mal la contraseña o es otra distinta.</p>
+    <p><strong>Solución:</strong></p>
+    <ul>
+      <li>Verifica mayúsculas y minúsculas.</li>
+      <li>Si no recuerdas la contraseña, abre el Google Sheet y revisa la
+      celda B1 de la pestaña Config.</li>
+      <li>Si quieres cambiarla, edita esa celda con la nueva contraseña.</li>
+    </ul>
+
+    <h3>"No se encontró ningún residente"</h3>
+    <p><strong>Causa:</strong> tu búsqueda no coincide con ningún registro.</p>
+    <p><strong>Solución:</strong></p>
+    <ul>
+      <li>Prueba con otro criterio (ej: si buscaste por apto, prueba por
+      cédula).</li>
+      <li>Verifica mayúsculas y acentos.</li>
+      <li>Si el residente es nuevo, dile que llene primero el formulario
+      principal.</li>
+    </ul>
+
+    <h3>"No se pudo guardar el registro"</h3>
+    <p><strong>Causa:</strong> error de conexión o falta algún campo
+    obligatorio.</p>
+    <p><strong>Solución:</strong></p>
+    <ul>
+      <li>Verifica tu conexión a internet.</li>
+      <li>Revisa que todos los campos obligatorios estén llenos.</li>
+      <li>Intenta guardar de nuevo.</li>
+    </ul>
+
+    <h3>"El comprobante no se pudo abrir"</h3>
+    <p><strong>Causa:</strong> el archivo subido está dañado o no es válido.</p>
+    <p><strong>Solución:</strong> pídele al residente que lo suba de nuevo en
+    formato PDF, JPG o PNG menor a 10MB.</p>
+
+    <h3>"No se pudo cancelar la reserva"</h3>
+    <p><strong>Causa:</strong> la contraseña ingresada en el modal no
+    coincide con la contraseña admin.</p>
+    <p><strong>Solución:</strong> verifica que estés escribiendo la contraseña
+    correcta. Es la misma del login.</p>
+
+    <h3>"Demasiados intentos fallidos"</h3>
+    <p><strong>Causa:</strong> 5 intentos de login con contraseña incorrecta.</p>
+    <p><strong>Solución:</strong> espera 15 minutos y vuelve a intentar.</p>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- GLOSARIO                                                        -->
+<!-- ============================================================== -->
+<div class="section-manual" id="glosario">
+  <div class="section-header">
+    <div class="section-num">A</div>
+    <div>
+      <h2>Glosario (palabras técnicas explicadas)</h2>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>CA-XXXX</h3>
+    <p>N° de formulario que se genera cuando un residente llena el formulario
+    principal. Es único por apartamento.</p>
+
+    <h3>Config (pestaña)</h3>
+    <p>Hoja del Google Sheet donde se guardan las contraseñas del sistema
+    (admin, vigilante) y la configuración del módulo contable.</p>
+
+    <h3>Comprobante</h3>
+    <p>Documento que demuestra un pago (PDF, JPG o PNG).</p>
+
+    <h3>Ley 1581 de 2012</h3>
+    <p>Ley colombiana de protección de datos personales. Por eso el portal
+    pide contraseñas, valida cédulas y limita las operaciones de edición.</p>
+
+    <h3>Decreto 768 de 2025</h3>
+    <p>Decreto colombiano que obliga a las propiedades horizontales a tener
+    un censo de animales de compañía. Por eso el formulario tiene la
+    sección 9 de mascotas.</p>
+
+    <h3>Link de pago</h3>
+    <p>URL de Jelpit (plataforma de pagos) donde los residentes pagan
+    la administración o el salón social.</p>
+
+    <h3>Mora</h3>
+    <p>Deuda de 2 o más meses de administración. Apartamentos en mora no
+    pueden reservar el salón.</p>
+
+    <h3>Mudanza</h3>
+    <p>Traslado de muebles y enseres al entrar o salir de un apartamento.
+    Se reserva el ascensor con anticipación.</p>
+
+    <h3>Pestaña (del portal admin)</h3>
+    <p>Cada una de las 3 secciones principales: Residentes, Mudanzas,
+    Salón Social.</p>
+
+    <h3>Salón Social</h3>
+    <p>Espacio común del conjunto destinado a eventos. Se reserva por
+    turnos (mañana o tarde).</p>
+
+    <h3>Sheet (Google Sheet)</h3>
+    <p>Hoja de cálculo de Google donde se guardan TODOS los registros. El
+    portal admin es una interfaz sobre esa hoja.</p>
+
+    <h3>URL</h3>
+    <p>La dirección de una página web. La del portal admin es:<br>
+    <code>https://fabig76.github.io/cerro-azul-residentes/admin.html</code></p>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- AYUDA                                                           -->
+<!-- ============================================================== -->
+<div class="section-manual" id="ayuda">
+  <div class="section-header">
+    <div class="section-num">?</div>
+    <div>
+      <h2>¿Necesitas ayuda?</h2>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <p>Si después de leer este manual aún tienes dudas o problemas:</p>
+
+    <h3>📧 Correo electrónico</h3>
+    <p>Escríbenos a: <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a></p>
+
+    <h3>🔐 Sobre la contraseña</h3>
+    <p>Si la olvidaste o quieres cambiarla, edita la celda B1 de la
+    pestaña <strong>Config</strong> del Google Sheet.</p>
+
+    <h3>🕐 Horario de atención</h3>
+    <p>Lunes a viernes de 8:00 AM a 5:00 PM.<br>
+    Sábados de 9:00 AM a 12:00 PM (solo urgencias).</p>
+
+    <div class="info info-green">
+      <p><strong>✅ Antes de escribirnos, verifica:</strong></p>
+      <ul>
+        <li>La contraseña es correcta (mayúsculas/minúsculas).</li>
+        <li>Tu conexión a internet está funcionando.</li>
+        <li>Estás usando un navegador actualizado.</li>
+        <li>El residente ya hizo el registro inicial en el formulario
+        principal.</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<footer class="site-footer">
+  <p>
+    Urbanización Cerro Azul · NIT 900770444 · Bello / Niquía<br>
+    Manual del Administrador — Portal Administrativo<br>
+    Versión 1.0 · 26-Sept-2026<br>
+    <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a>
+  </p>
+</footer>
+
+</body>
+</html>

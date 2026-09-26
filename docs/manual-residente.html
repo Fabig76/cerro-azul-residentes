@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#6B4423">
+  <title>Manual del Vigilante — Cerro Azul</title>
+  <style>
+    /* ============================================================
+       ESTILOS — Manual del Vigilante
+       Cerro Azul Residentes
+       ============================================================ */
+    :root {
+      --marron:    #6B4423;
+      --marron-osc: #4A2E18;
+      --marron-claro: #8B5A2B;
+      --crema:     #FFF8E1;
+      --crema-osc: #F8F4E8;
+      --verde:     #4CAF50;
+      --verde-fondo: #E8F5E9;
+      --rojo:      #D32F2F;
+      --rojo-fondo: #FFEBEE;
+      --azul:      #1976D2;
+      --azul-fondo: #E3F2FD;
+      --naranja:   #F57C00;
+      --naranja-fondo: #FFF3E0;
+      --gris:      #757575;
+      --gris-claro: #EEEEEE;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: #212121;
+      line-height: 1.7;
+      background: #F5F5F5;
+    }
+
+    /* PORTADA */
+    .cover {
+      background: linear-gradient(135deg, var(--marron) 0%, var(--marron-osc) 100%);
+      color: white;
+      text-align: center;
+      padding: 50px 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .cover .logo {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: white;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 50px;
+    }
+    .cover h1 { font-size: 2.2em; margin-bottom: 8px; }
+    .cover .sub { font-size: 1.1em; opacity: 0.95; margin-bottom: 16px; }
+    .cover .desc { font-size: 1em; opacity: 0.8; margin-bottom: 40px; max-width: 600px; }
+    .cover .btn-start {
+      background: white; color: var(--marron);
+      padding: 16px 40px; border-radius: 50px; font-size: 1.1em;
+      font-weight: bold; text-decoration: none; display: inline-block;
+    }
+    .cover .meta { margin-top: 30px; font-size: 0.85em; opacity: 0.7; }
+
+    /* ÍNDICE */
+    .toc {
+      max-width: 800px;
+      margin: 40px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .toc h2 { color: var(--marron); margin-bottom: 16px; }
+    .toc ol { padding-left: 24px; line-height: 1.8; }
+    .toc a { color: var(--marron); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+
+    /* SECCIONES */
+    .section-manual {
+      max-width: 800px;
+      margin: 30px auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    .section-header {
+      background: var(--marron);
+      color: white;
+      padding: 20px 28px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .section-num {
+      background: rgba(255,255,255,0.2);
+      border: 2px solid rgba(255,255,255,0.5);
+      border-radius: 50%;
+      width: 48px; height: 48px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2em; font-weight: bold; flex-shrink: 0;
+    }
+    .section-header h2 { font-size: 1.3em; }
+    .section-header p { opacity: 0.85; font-size: 0.9em; margin-top: 4px; }
+    .section-body { padding: 24px 28px; }
+    .section-body h3 {
+      color: var(--marron);
+      margin: 20px 0 8px;
+      font-size: 1.1em;
+    }
+
+    /* CAJAS DE INFORMACIÓN */
+    .info-box {
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin: 16px 0;
+      font-size: 0.95em;
+    }
+    .info-box strong { display: block; margin-bottom: 4px; }
+    .info-importante {
+      background: var(--azul-fondo);
+      border-left: 4px solid var(--azul);
+      color: #0D47A1;
+    }
+    .info-aviso {
+      background: var(--naranja-fondo);
+      border-left: 4px solid var(--naranja);
+      color: #E65100;
+    }
+    .info-error {
+      background: var(--rojo-fondo);
+      border-left: 4px solid var(--rojo);
+      color: #B71C1C;
+    }
+    .info-exito {
+      background: var(--verde-fondo);
+      border-left: 4px solid var(--verde);
+      color: #1B5E20;
+    }
+    .info-consejo {
+      background: #FFFDE7;
+      border-left: 4px solid #FBC02D;
+      color: #F57F17;
+    }
+
+    /* PASOS */
+    .step {
+      display: flex;
+      gap: 16px;
+      margin: 14px 0;
+      align-items: flex-start;
+    }
+    .step-num {
+      background: var(--marron);
+      color: white;
+      border-radius: 50%;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 0.85em;
+      flex-shrink: 0;
+    }
+    .step-text { padding-top: 3px; flex: 1; }
+    .step-text strong { color: var(--marron-osc); }
+
+    /* MOCKUPS / DIAGRAMAS ASCII */
+    .mockup {
+      background: #FAFAFA;
+      border: 2px solid var(--gris-claro);
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.88em;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .mockup-phone {
+      max-width: 360px;
+      margin: 16px auto;
+      border: 8px solid #333;
+      border-radius: 24px;
+      background: white;
+      padding: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    .mockup-phone-screen {
+      background: white;
+      padding: 8px;
+    }
+
+    /* BOTONES VISUALES */
+    .btn-ejemplo {
+      display: inline-block;
+      background: var(--azul);
+      color: white;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.9em;
+      margin: 2px 4px;
+    }
+    .btn-ejemplo.green { background: var(--verde); }
+    .btn-ejemplo.red { background: var(--rojo); }
+    .btn-ejemplo.gray { background: var(--gris); }
+    .btn-ejemplo.outline {
+      background: white;
+      color: var(--azul);
+      border: 1px solid var(--azul);
+    }
+
+    /* INPUT VISUAL */
+    .input-ejemplo {
+      display: inline-block;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-family: 'Consolas', monospace;
+      font-size: 0.9em;
+      min-width: 200px;
+      color: #666;
+    }
+
+    /* TABLAS */
+    table.tabla-ejemplo {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 0.9em;
+    }
+    table.tabla-ejemplo th {
+      background: var(--marron);
+      color: white;
+      padding: 8px;
+      text-align: left;
+    }
+    table.tabla-ejemplo td {
+      padding: 8px;
+      border-bottom: 1px solid var(--gris-claro);
+    }
+    table.tabla-ejemplo tr:nth-child(even) td {
+      background: var(--crema);
+    }
+
+    /* NAVEGACIÓN INFERIOR */
+    .nav-links {
+      display: flex;
+      justify-content: space-between;
+      padding: 16px 28px;
+      background: var(--crema-osc);
+      border-top: 1px solid var(--gris-claro);
+    }
+    .nav-links a {
+      color: var(--marron);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+    .nav-links a:hover { text-decoration: underline; }
+
+    /* FAQ */
+    .faq-item {
+      margin: 12px 0;
+      padding: 12px 16px;
+      background: #FAFAFA;
+      border-radius: 6px;
+      border-left: 3px solid var(--marron-claro);
+    }
+    .faq-q { font-weight: 700; color: var(--marron-osc); margin-bottom: 4px; }
+    .faq-a { color: #424242; }
+
+    /* GLOSARIO */
+    .glosario-item {
+      margin: 8px 0;
+      padding: 8px 12px;
+      background: var(--crema-osc);
+      border-radius: 4px;
+    }
+    .glosario-item .term {
+      font-weight: 700;
+      color: var(--marron-osc);
+    }
+    .glosario-item .def {
+      color: #424242;
+    }
+
+    /* FAQ / AYUDA */
+    .help-box {
+      background: var(--crema-osc);
+      border: 2px solid var(--marron);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .help-box h3 { color: var(--marron); margin-bottom: 12px; }
+    .help-box p { margin-bottom: 8px; }
+    .help-box a {
+      display: inline-block;
+      background: var(--marron);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      margin: 8px 4px;
+    }
+
+    /* FOOTER */
+    footer {
+      background: var(--marron-osc);
+      color: white;
+      text-align: center;
+      padding: 30px 20px;
+      margin-top: 40px;
+      font-size: 0.9em;
+    }
+    footer a { color: white; text-decoration: underline; }
+    .footer-meta { margin-top: 8px; opacity: 0.8; font-size: 0.85em; }
+
+    /* RESPONSIVE */
+    @media (max-width: 600px) {
+      .section-header { padding: 16px 20px; }
+      .section-body { padding: 20px; }
+      .section-num { width: 40px; height: 40px; font-size: 1em; }
+      .cover h1 { font-size: 1.8em; }
+      .nav-links { flex-direction: column; gap: 8px; }
+      table.tabla-ejemplo { font-size: 0.8em; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================== -->
+<!-- PORTADA                                                         -->
+<!-- ============================================================== -->
+<!-- ============================================================== -->
+<!-- PORTADA                                                         -->
+<!-- ============================================================== -->
+<div class="cover" id="inicio">
+  <div class="logo">👤</div>
+  <h1>Manual del Residente</h1>
+  <p class="sub">Portal del Residente — Cerro Azul</p>
+  <p class="desc">Guía paso a paso para que te registres o actualices tus
+  datos como residente del apartamento (vehículos, mascotas, contactos de
+  emergencia). También explica cómo editar tus datos si ya estás registrado.</p>
+  <a href="#indice" class="btn-start">📖 Ver Índice</a>
+  <p class="meta">Última actualización: 26-Sept-2026 · Versión 1.0</p>
+</div>
+
+<!-- ============================================================== -->
+<!-- ÍNDICE                                                          -->
+<!-- ============================================================== -->
+<div class="toc" id="indice">
+  <h2>📋 Índice del Manual</h2>
+  <ol>
+    <li><a href="#antes-de-empezar">Antes de empezar: lo que necesitas saber</a></li>
+    <li><a href="#seccion-1">Sección 1 — Ingresar tu N° de apartamento</a></li>
+    <li><a href="#seccion-2">Sección 2 — Verificar tu cédula (si el apto ya tiene residentes)</a></li>
+    <li><a href="#seccion-3">Sección 3 — Registrarse por primera vez (apto vacío)</a></li>
+    <li><a href="#seccion-4">Sección 4 — Editar tus datos (ya registrado)</a></li>
+    <li><a href="#seccion-5">Sección 5 — Confirmación de guardado</a></li>
+    <li><a href="#preguntas">Preguntas frecuentes</a></li>
+    <li><a href="#errores">Errores comunes y cómo resolverlos</a></li>
+    <li><a href="#glosario">Glosario (palabras técnicas explicadas)</a></li>
+    <li><a href="#ayuda">¿Necesitas ayuda?</a></li>
+  </ol>
+</div>
+
+<!-- ============================================================== -->
+<!-- ANTES DE EMPEZAR                                                -->
+<!-- ============================================================== -->
+<div class="section-manual" id="antes-de-empezar">
+  <div class="section-header">
+    <div class="section-num">!</div>
+    <div>
+      <h2>Antes de empezar</h2>
+      <p>Lo que necesitas saber para usar el portal</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Qué es el Portal del Residente?</h3>
+    <p>Es una página web donde <strong>tú (como residente del apartamento)</strong>
+    puedes registrar tus datos personales, vehículos, mascotas y contactos
+    de emergencia. También puedes actualizar tu información cuando cambie
+    (ej: compraste un carro, tuviste una mascota nueva, etc.).</p>
+
+    <p>Este portal está pensado para los residentes que <strong>NO son
+    el propietario</strong> del apartamento. Si eres el propietario, debes
+    usar el <strong>formulario principal</strong> en su lugar.</p>
+
+    <div class="info info-blue">
+      <p><strong>📌 Importante — quién usa este portal:</strong></p>
+      <ul>
+        <li>✅ Esposa/esposo del propietario</li>
+        <li>✅ Hijos mayores de edad del propietario</li>
+        <li>✅ Padres, hermanos, tíos, sobrinos, etc. que vivan en el apto</li>
+        <li>✅ Arrendatario (debe estar registrado por el propietario primero)</li>
+        <li>❌ El PROPIETARIO debe usar el <a href="index.html">formulario principal</a></li>
+      </ul>
+    </div>
+
+    <h3>¿Qué necesito para usarlo?</h3>
+    <div class="step">
+      <ol>
+        <li><strong>Tu N° de apartamento</strong> (ej: 105, 202B, 1419).</li>
+        <li><strong>Tu cédula de ciudadanía</strong> (la misma con la que el
+        propietario te registró).</li>
+        <li><strong>Un celular o computador</strong> con acceso a internet.</li>
+        <li><strong>Un navegador</strong> actualizado (Chrome, Edge, Safari, Firefox).</li>
+        <li>Si es tu primera vez: <strong>que el propietario ya te haya
+        registrado</strong> en el apartamento. Si el propietario NO te ha
+        agregado, este portal no funcionará.</li>
+      </ol>
+    </div>
+
+    <div class="info info-orange">
+      <p><strong>⚠️ Antes de continuar, verifica:</strong></p>
+      <ul>
+        <li>El propietario del apartamento ya hizo el registro inicial en el
+        <a href="index.html">formulario principal</a>.</li>
+        <li>El propietario incluyó tu nombre y cédula al registrar el apartamento.</li>
+        <li>Tienes acceso a la URL del portal.</li>
+      </ul>
+    </div>
+
+    <h3>Cómo se ve el portal (vista inicial)</h3>
+    <div class="mockup">
+<pre>
+┌──────────────────────────────────────────────┐
+│ 👤 Portal del Residente                       │
+│                                              │
+│  Ingrese el N° de apartamento para continuar.  │
+│  Si el apartamento aún no tiene residentes    │
+│  registrados, podrá llenar sus datos         │
+│  directamente. Si ya hay residentes, coloque  │
+│  su cédula para editar.                       │
+│                                              │
+│  ┌────────────────────────────────┐         │
+│  │ N° de apartamento  *            │         │
+│  │ Ej: 105, 202B                  │         │
+│  └────────────────────────────────┘         │
+│  El mismo número que aparece en su contrato.  │
+│                                              │
+│  ┌────────────────────────────────┐         │
+│  │     🔍 Continuar                │         │
+│  └────────────────────────────────┘         │
+│                                              │
+│  ¿Primera vez? El propietario del            │
+│  apartamento debe haber registrado el apto    │
+│  previamente en el formulario principal.      │
+└──────────────────────────────────────────────┘
+</pre>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 1: INGRESAR N° APARTAMENTO                              -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-1">
+  <div class="section-header">
+    <div class="section-num">1</div>
+    <div>
+      <h2>Sección 1 — Ingresar tu N° de apartamento</h2>
+      <p>El primer paso para entrar al portal</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Por qué empiezo con el N° de apartamento?</h3>
+    <p>El portal necesita saber a cuál apartamento perteneces para mostrarte
+    los residentes ya registrados (si los hay) o permitirte registrarte
+    si eres el primero.</p>
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <ol>
+        <li><strong>Abre el portal</strong> en tu navegador. La URL es:<br>
+        <code>https://fabig76.github.io/cerro-azul-residentes/residente.html</code><br>
+        (También puedes llegar desde el formulario principal o escaneando el QR).</li>
+        <li><strong>Escribe tu N° de apartamento</strong> en el campo. Ejemplo:
+        <code>105</code> o <code>202B</code>. Tal cual como aparece en tu contrato.</li>
+        <li><strong>Haz click en "🔍 Continuar"</strong> (el botón azul).</li>
+        <li><strong>Espera unos segundos</strong>. El sistema hace una de 3 cosas
+        según el estado del apartamento:
+          <ul>
+            <li>Si el apartamento <strong>NO está registrado</strong>: te muestra
+            una pantalla con un error (Sección 2.A).</li>
+            <li>Si el apartamento <strong>ya tiene residentes</strong>: te pide
+            tu cédula para identificarte (Sección 2.B).</li>
+            <li>Si el apartamento <strong>está vacío</strong>: te lleva al
+            formulario de auto-registro (Sección 3).</li>
+          </ul>
+        </li>
+      </ol>
+    </div>
+
+    <h3>Vista de la pantalla</h3>
+    <div class="mockup">
+<pre>
+┌──────────────────────────────────────────────┐
+│ 👤 Portal del Residente                       │
+│                                              │
+│  ┌────────────────────────────────┐         │
+│  │ N° de apartamento: 105          │         │
+│  └────────────────────────────────┘         │
+│                                              │
+│  ┌────────────────────────────────┐         │
+│  │     🔍 Continuar                │         │
+│  └────────────────────────────────┘         │
+└──────────────────────────────────────────────┘
+</pre>
+    </div>
+
+    <h3>Si te equivocas al escribir el apartamento</h3>
+    <p>Aparecerá un mensaje en rojo arriba del formulario. Verifica que
+    estés escribiendo el número correcto (sin letras extras, sin espacios).
+    Si no lo encuentras, pregúntale al propietario de tu apartamento.</p>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 2: VERIFICAR CÉDULA / NO EXISTE                         -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-2">
+  <div class="section-header">
+    <div class="section-num">2</div>
+    <div>
+      <h2>Sección 2 — Verificar tu cédula</h2>
+      <p>Si el apartamento ya tiene residentes registrados</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Cuándo me pide la cédula?</h3>
+    <p>Si el apartamento que ingresaste <strong>ya tiene al menos un residente
+    registrado</strong> (generalmente el propietario), el portal te mostrará
+    la lista de residentes y te pedirá tu cédula para identificarte y
+    darte acceso a editar SOLO TUS datos.</p>
+
+    <h3>¿Por qué la cédula?</h3>
+    <p>Por seguridad (Ley 1581 de 2012). El sistema necesita confirmar que
+    TÚ eres quien dices ser, y la cédula es el dato que el propietario
+    usó para registrarte. Sin la cédula correcta, no puedes editar datos
+    de otros residentes.</p>
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <ol>
+        <li>Después de ingresar tu N° de apartamento, verás la pantalla
+        "Apartamento X" con la lista de residentes ya registrados.</li>
+        <li>Lee la lista para confirmar que TÚ estás entre ellos.</li>
+        <li>Escribe <strong>tu cédula</strong> en el campo. SOLO números,
+        sin puntos ni guiones. Ejemplo: si tu cédula es "12.345.678", escribe
+        <code>12345678</code>.</li>
+        <li>Haz click en <strong>"🔍 Editar mis datos"</strong>.</li>
+        <li>Si la cédula coincide, pasas a la Sección 4 (editar).</li>
+        <li>Si NO coincide, el sistema te rechaza.</li>
+      </ol>
+    </div>
+
+    <h3>Vista de la pantalla</h3>
+    <div class="mockup">
+<pre>
+┌──────────────────────────────────────────────┐
+│ 🏠 Apartamento 105                            │
+│                                              │
+│  Este apartamento ya tiene los siguientes     │
+│  residentes registrados:                      │
+│                                              │
+│  • Luis Oswaldo Becerra Palacios             │
+│  • María del Carmen Pérez                      │
+│                                              │
+│  Si USTED es uno de ellos y quiere actualizar │
+│  sus datos (vehículos, mascotas, etc.),      │
+│  coloque su cédula:                           │
+│                                              │
+│  ┌────────────────────────────────┐         │
+│  │ Su cédula  *                   │         │
+│  │ Solo números, sin puntos       │         │
+│  └────────────────────────────────┘         │
+│  Debe coincidir con la registrada por el     │
+│  propietario.                                │
+│                                              │
+│  ┌────────────────────────────────┐         │
+│  │  🔍 Editar mis datos            │         │
+│  └────────────────────────────────┘         │
+│  ┌────────────────────────────────┐         │
+│  │  ↩️ Volver                       │         │
+│  └────────────────────────────────┘         │
+└──────────────────────────────────────────────┘
+</pre>
+    </div>
+
+    <h3>Si tu nombre NO aparece en la lista</h3>
+    <p>Eso significa que el propietario NO te ha registrado todavía.
+    Comunícate con él/ella para que te agregue primero usando el formulario
+    principal.</p>
+
+    <h3>Si tu cédula no coincide</h3>
+    <div class="info info-red">
+      <p><strong>"No se encontró un residente con esa cédula en este apartamento"</strong></p>
+      <p>Posibles causas:</p>
+      <ul>
+        <li>El propietario te registró con una cédula distinta a la tuya.</li>
+        <li>Tu cédula tiene cambios (actualización de Registraduría) y el
+        sistema tiene la vieja.</li>
+        <li>Estás escribiendo la cédula con puntos o guiones.</li>
+      </ul>
+      <p><strong>Solución:</strong> Confirma con el propietario qué cédula
+      usó al registrarte. Si hay inconsistencia, escríbenos a
+      <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a>.</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 3: REGISTRARSE POR PRIMERA VEZ                         -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-3">
+  <div class="section-header">
+    <div class="section-num">3</div>
+    <div>
+      <h2>Sección 3 — Registrarse por primera vez</h2>
+      <p>Si el apartamento está vacío y eres el primer residente</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Cuándo me aparece esta pantalla?</h3>
+    <p>Si ingresas un N° de apartamento que <strong>NO tiene ningún residente
+    registrado</strong> todavía. Esto suele pasar con apartamentos nuevos
+    o apartamentos donde nadie se ha registrado aún.</p>
+
+    <div class="info info-orange">
+      <p><strong>⚠️ Importante:</strong> Esta pantalla aparece SOLO si tu
+      apartamento está completamente vacío en el sistema. Si ya hay
+      residentes, el sistema te pide la cédula (Sección 2).</p>
+    </div>
+
+    <h3>¿Qué datos me pide?</h3>
+    <p>El formulario de auto-registro tiene varias secciones. Puedes
+    registrar hasta 4 residentes, 4 menores de edad, 2 vehículos, 2 motos,
+    2 bicicletas, 2 mascotas y 2 contactos de emergencia. Los campos
+    obligatorios están marcados con asterisco rojo (*).</p>
+
+    <h3>Las 5 secciones del formulario</h3>
+
+    <h4>Sección 5 — Residentes (hasta 4)</h4>
+    <div class="step">
+      <p>Cada residente tiene 5 campos:</p>
+      <ul>
+        <li><strong>Nombre completo</strong> * (obligatorio)</li>
+        <li><strong>Cédula</strong> * (sin puntos ni guiones)</li>
+        <li><strong>Correo electrónico</strong></li>
+        <li><strong>Celular</strong></li>
+        <li><strong>Parentesco</strong> (Propietario, Esposa, Hijo, Padre,
+        Hermano, Tío, Sobrino, Abuelo, Nieto, Primo, Cuñado, Yerno, Suegro,
+        Nuera, Arrendatario, Inmobiliaria, Tenedor / Otro)</li>
+      </ul>
+      <p>Puedes agregar hasta 4 residentes con el botón "+ Agregar otro residente".</p>
+    </div>
+
+    <h4>Sección 5.1 — Menores de edad (hasta 4)</h4>
+    <div class="step">
+      <p>Cada menor tiene 3 campos:</p>
+      <ul>
+        <li><strong>Nombre completo</strong> *</li>
+        <li><strong>Edad</strong> (en años)</li>
+        <li><strong>Parentesco</strong> / representante legal</li>
+      </ul>
+    </div>
+
+    <h4>Sección 6 — Vehículos y motos (2 + 2)</h4>
+    <div class="step">
+      <p>Por cada vehículo o moto, 6 campos:</p>
+      <ul>
+        <li>Marca (ej: Chevrolet, Yamaha)</li>
+        <li>Tipo (ej: Familiar, Deportivo)</li>
+        <li>Color (ej: Gris, Rojo)</li>
+        <li>Placa (ej: IAR 729)</li>
+        <li>Modelo (año, ej: 2015)</li>
+        <li>N° Tag (etiqueta del conjunto, si la tiene)</li>
+      </ul>
+      <p>Son <strong>compartidos</strong>: si el apto tiene 2 vehículos, son
+      los del apartamento completo (no por persona).</p>
+    </div>
+
+    <h4>Sección 7 — Bicicletas (máximo 2)</h4>
+    <div class="step">
+      <p>Cada bicicleta tiene 4 campos:</p>
+      <ul>
+        <li>Marca</li>
+        <li>Color</li>
+        <li>Clase (ej: Montaña, Ruta, Urbana)</li>
+        <li>N° serial del marco</li>
+      </ul>
+    </div>
+
+    <h4>Sección 9 — Mascotas (máximo 2)</h4>
+    <div class="step">
+      <p>Cada mascota tiene 7 campos:</p>
+      <ul>
+        <li>Tipo (Perro, Gato, Ave, Otro)</li>
+        <li>Nombre</li>
+        <li>Raza</li>
+        <li>Color</li>
+        <li>Sexo (Macho / Hembra)</li>
+        <li>Fecha última vacuna</li>
+        <li>¿Manejo especial? (Sí / No) — para caninos potencialmente peligrosos</li>
+      </ul>
+    </div>
+
+    <h4>Sección 10 — Contactos de emergencia (máximo 2)</h4>
+    <div class="step">
+      <p>Cada contacto tiene 3 campos:</p>
+      <ul>
+        <li>Nombre</li>
+        <li>Parentesco</li>
+        <li>Teléfonos (puede incluir fijo y celular)</li>
+      </ul>
+    </div>
+
+    <h3>Paso a paso para auto-registrarte</h3>
+    <div class="step">
+      <ol>
+        <li>Ingresa tu N° de apartamento (Sección 1).</li>
+        <li>Como está vacío, el sistema te lleva directo al formulario.</li>
+        <li>Llena la Sección 5 (al menos 1 residente: tú).</li>
+        <li>Si hay más personas viviendo contigo, agrégalas con el botón
+        "+ Agregar otro residente".</li>
+        <li>Llena las demás secciones según corresponda (menores, vehículos,
+        mascotas, contactos). Puedes dejar secciones vacías si no aplican.</li>
+        <li>Verifica que todos los campos obligatorios (*) estén llenos.</li>
+        <li>Haz click en <strong>"💾 Registrarme como residente"</strong> (botón azul).</li>
+        <li>Si todo está bien, verás la pantalla de éxito.</li>
+      </ol>
+    </div>
+
+    <div class="info info-green">
+      <p><strong>💡 Tip:</strong> Puedes dejar secciones vacías si no tienes
+      vehículos, mascotas, etc. Solo llena lo que aplique a tu apartamento.</p>
+    </div>
+
+    <div class="info info-orange">
+      <p><strong>⚠️ Importante sobre menores:</strong> Los datos de menores
+      se tratan con protección especial según la Ley 1581 de 2012. Solo
+      debes agregar a menores que vivan contigo en el apartamento.</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 4: EDITAR DATOS                                        -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-4">
+  <div class="section-header">
+    <div class="section-num">4</div>
+    <div>
+      <h2>Sección 4 — Editar tus datos (ya registrado)</h2>
+      <p>Cómo actualizar tu información cuando cambie</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Cuándo uso esta sección?</h3>
+    <p>Cuando ya estás registrado y necesitas actualizar tu información.
+    Ejemplos comunes:</p>
+    <ul>
+      <li>Compraste un carro nuevo</li>
+      <li>Vendiste tu carro anterior</li>
+      <li>Adoptaste una mascota</li>
+      <li>Cambiaste de celular o correo</li>
+      <li>Agregaste un contacto de emergencia nuevo</li>
+    </ul>
+
+    <h3>¿Qué datos puedo editar?</h3>
+    <p>Puedes editar SOLO TUS datos personales y los slots compartidos
+    del apartamento. Específicamente:</p>
+    <ul>
+      <li><strong>Mis datos personales:</strong> nombre (no editable, es
+      tu identidad), cédula (no editable), parentesco, celular, correo.</li>
+      <li><strong>Mis vehículos:</strong> los slots compartidos del apto
+      (si están vacíos, puedes agregar; si están ocupados, NO puedes
+      modificarlos).</li>
+      <li><strong>Mis mascotas:</strong> hasta 2 slots compartidos.</li>
+      <li><strong>Mis contactos de emergencia:</strong> hasta 2 slots compartidos.</li>
+    </ul>
+
+    <div class="info info-red">
+      <p><strong>❌ NO puedes editar:</strong></p>
+      <ul>
+        <li>Los datos de OTROS residentes</li>
+        <li>Los datos del PROPIETARIO</li>
+        <li>Los vehículos/mascotas/contactos ocupados por otro residente</li>
+        <li>Los parqueaderos del apartamento</li>
+      </ul>
+      <p>Para esos cambios, contacta al propietario directamente.</p>
+    </div>
+
+    <h3>Paso a paso para editar tus datos</h3>
+    <div class="step">
+      <ol>
+        <li>Ingresa tu N° de apartamento (Sección 1).</li>
+        <li>Ingresa tu cédula (Sección 2).</li>
+        <li>Si todo está bien, verás el formulario <strong>"📋 Mis datos"</strong>
+        con tu nombre en el título.</li>
+        <li>Modifica los campos que quieras (parentesco, celular, correo).</li>
+        <li>Si quieres agregar/eliminar vehículos, mascotas o contactos:
+          <ul>
+            <li>Para agregar: llena un slot vacío.</li>
+            <li>Para "eliminar": deja el campo "Marca" vacío y guarda.</li>
+          </ul>
+        </li>
+        <li>Verifica que todo esté correcto.</li>
+        <li>Haz click en <strong>"💾 Guardar mis datos"</strong> (botón azul).</li>
+        <li>Si todo está bien, verás la pantalla de éxito.</li>
+      </ol>
+    </div>
+
+    <h3>Vista de la pantalla</h3>
+    <div class="mockup">
+<pre>
+┌──────────────────────────────────────────────┐
+│ 📋 Mis datos — María del Carmen Pérez         │
+│    (Residente 2)                             │
+│                                              │
+│  Apartamento 105. Actualice su información.   │
+│  Los datos del propietario y de los demás      │
+│  residentes NO se modifican.                 │
+│                                              │
+│  Mis datos personales                         │
+│  ┌────────────────────────────────┐         │
+│  │ Nombre: María del Carmen Pérez  │         │
+│  │ Cédula: 12345678 (solo lectura) │         │
+│  │ Parentesco: Esposa             │         │
+│  │ Celular: 3001234567            │         │
+│  │ Correo: maria@ejemplo.com      │         │
+│  └────────────────────────────────┘         │
+│                                              │
+│  Mis vehículos (slots compartidos)             │
+│  ┌────────────────────────────────┐         │
+│  │ Vehículo 1: Chevrolet Sail 2015│         │
+│  │ Placa: IAR 729                  │         │
+│  └────────────────────────────────┘         │
+│                                              │
+│  ┌────────────────────────────────┐         │
+│  │  💾 Guardar mis datos            │         │
+│  └────────────────────────────────┘         │
+│  ┌────────────────────────────────┐         │
+│  │  ↩️ Cancelar                     │         │
+│  └────────────────────────────────┘         │
+└──────────────────────────────────────────────┘
+</pre>
+    </div>
+
+    <h3>¿Cómo "elimino" un vehículo/mascota?</h3>
+    <p>El sistema no tiene un botón "Eliminar" para proteger los datos.
+    Para eliminar:</p>
+    <ol>
+      <li>Ve al campo "Marca" del slot que quieres limpiar.</li>
+      <li>Bórralo completamente (déjalo vacío).</li>
+      <li>Borra también los demás campos de ese slot (tipo, color, placa, etc.).</li>
+      <li>Guarda los cambios.</li>
+    </ol>
+    <p>El sistema interpretará el slot vacío como "no hay vehículo/mascota aquí".</p>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 5: CONFIRMACIÓN                                        -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-5">
+  <div class="section-header">
+    <div class="section-num">5</div>
+    <div>
+      <h2>Sección 5 — Confirmación de guardado</h2>
+      <p>Cómo saber que tus datos se guardaron correctamente</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Qué pasa después de hacer click en "Guardar"?</h3>
+    <p>Si todos los datos están correctos, el sistema te muestra una pantalla
+    con un mensaje verde que dice <strong>"✅ Datos guardados correctamente"</strong>.
+    Eso significa que tu información se guardó en el sistema.</p>
+
+    <h3>Vista de la pantalla de éxito</h3>
+    <div class="mockup">
+<pre>
+┌──────────────────────────────────────────────┐
+│ ✅ Datos guardados correctamente              │
+│                                              │
+│  Su información ha sido registrada/           │
+│  actualizada en el sistema.                   │
+│                                              │
+│  Si necesita actualizar de nuevo, escanee     │
+│  el QR o vuelva a este portal.                │
+│                                              │
+│  ┌────────────────────────────────┐         │
+│  │  ↩️ Volver al inicio             │         │
+│  └────────────────────────────────┘         │
+└──────────────────────────────────────────────┘
+</pre>
+    </div>
+
+    <h3>Si ves un mensaje de error</h3>
+    <p>Si aparece un mensaje en rojo arriba del formulario, tus datos NO se
+    guardaron. Lee el mensaje con atención. Las causas más comunes son:</p>
+
+    <div class="info info-red">
+      <p><strong>"Faltan campos obligatorios"</strong> → algún campo marcado con
+      asterisco (*) está vacío. Llénalo y vuelve a intentar.</p>
+    </div>
+
+    <div class="info info-red">
+      <p><strong>"Este slot ya está ocupado por otro residente"</strong> → estás
+      intentando llenar un slot que ya tiene datos de otra persona. Borra
+      los datos de ese slot o usa otro slot vacío.</p>
+    </div>
+
+    <div class="info info-red">
+      <p><strong>"No tienes permiso para modificar este slot"</strong> → intentas
+      editar un slot que pertenece a otro residente. Solo puedes editar TU
+      slot.</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- PREGUNTAS FRECUENTES                                            -->
+<!-- ============================================================== -->
+<div class="section-manual" id="preguntas">
+  <div class="section-header">
+    <div class="section-num">?</div>
+    <div>
+      <h2>Preguntas frecuentes</h2>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>1. ¿Quién debe usar este portal?</h3>
+    <p>Los residentes del apartamento que <strong>NO son el propietario</strong>:
+    esposa/esposo, hijos mayores, padres, hermanos, etc. El propietario usa
+    el <a href="index.html">formulario principal</a>.</p>
+
+    <h3>2. ¿Qué pasa si soy arrendatario?</h3>
+    <p>También puedes usar este portal. Solo necesitas que el propietario
+    te haya registrado primero con tu cédula.</p>
+
+    <h3>3. ¿Por qué no puedo editar los datos del propietario?</h3>
+    <p>Por seguridad. El propietario es el responsable legal del apartamento.
+    Si necesitas modificar algo del registro del propietario, él/ella debe
+    hacerlo directamente en el formulario principal.</p>
+
+    <h3>4. ¿Puedo agregar a mi hijo menor de edad?</h3>
+    <p>Sí, en la Sección 5.1 (Menores de edad). Solo se pide nombre, edad
+    y parentesco (no cédula porque no todos los menores la tienen).</p>
+
+    <h3>5. ¿Cómo elimino un vehículo que ya no tengo?</h3>
+    <p>No hay botón "Eliminar". Para limpiar un slot de vehículo, borra TODOS
+    los campos del slot (marca, tipo, color, placa, modelo, tag) y deja
+    el slot completamente vacío. El sistema lo interpretará como "no hay
+    vehículo aquí".</p>
+
+    <h3>6. ¿Puedo registrar más de 4 residentes?</h3>
+    <p>No, el límite es 4 residentes por apartamento. Si hay más personas
+    viviendo contigo, agrega las más importantes y contacta a la administración.</p>
+
+    <h3>7. ¿Por qué mi slot de vehículo aparece "ocupado"?</h3>
+    <p>Porque otro residente del apartamento ya usó ese slot. Los vehículos
+    son <strong>compartidos</strong> entre todos los residentes del apto.
+    Si necesitas agregar un vehículo y los 2 slots están ocupados,
+    primero limpia uno (siguiendo el procedimiento de la pregunta 5) y
+    luego agrega el nuevo.</p>
+
+    <h3>8. ¿Mis datos están seguros?</h3>
+    <p>Sí. Solo puedes editar TU información. Los demás residentes no
+    pueden ver ni modificar tus datos. La comunicación es HTTPS (candadito).</p>
+
+    <h3>9. ¿Cómo puedo ver mi información actual antes de editarla?</h3>
+    <p>El portal te muestra tus datos actuales al entrar. Puedes revisarlos
+    antes de modificar algo.</p>
+
+    <h3>10. ¿Necesito hacer esto cada año?</h3>
+    <p>Solo cuando cambie algo (compra de vehículo, mascota nueva, etc.).
+    No es necesario actualizar periódicamente.</p>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- ERRORES COMUNES                                                 -->
+<!-- ============================================================== -->
+<div class="section-manual" id="errores">
+  <div class="section-header">
+    <div class="section-num">!</div>
+    <div>
+      <h2>Errores comunes y cómo resolverlos</h2>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>"El apartamento X no está registrado en el sistema"</h3>
+    <p><strong>Causa:</strong> el propietario aún no ha hecho el registro
+    inicial del apartamento.</p>
+    <p><strong>Solución:</strong> Pídele al propietario que primero llene el
+    formulario principal. Una vez que el propietario registre el apto, TÚ
+    podrás entrar a este portal.</p>
+
+    <h3>"Este apartamento ya tiene los siguientes residentes registrados..." pero tu nombre NO está en la lista</h3>
+    <p><strong>Causa:</strong> el propietario ya registró el apartamento pero
+    NO te incluyó a ti.</p>
+    <p><strong>Solución:</strong> Pídele al propietario que te agregue primero
+    (puede hacerlo desde el formulario principal o el portal admin).</p>
+
+    <h3>"No se encontró un residente con esa cédula en este apartamento"</h3>
+    <p><strong>Causa:</strong> la cédula que escribiste no coincide con la que
+    usó el propietario.</p>
+    <p><strong>Solución:</strong></p>
+    <ul>
+      <li>Confirma con el propietario qué cédula usó.</li>
+      <li>Verifica que estés escribiendo solo números, sin puntos ni guiones.</li>
+      <li>Si tu cédula cambió recientemente (ej: renovación), el sistema tiene
+      la antigua. Escríbenos para actualizar.</li>
+    </ul>
+
+    <h3>"Este slot ya está ocupado por otro residente"</h3>
+    <p><strong>Causa:</strong> intentas llenar un slot de vehículo/mascota/
+    contacto que ya tiene datos de otra persona.</p>
+    <p><strong>Solución:</strong> usa un slot vacío diferente. Si necesitas
+    limpiar un slot ocupado, primero borra todos los datos de ese slot.</p>
+
+    <h3>"No tienes permiso para modificar este slot"</h3>
+    <p><strong>Causa:</strong> intentas editar datos de otro residente.</p>
+    <p><strong>Solución:</strong> solo puedes editar TU slot. Si necesitas
+    modificar datos de otra persona, contacta al propietario.</p>
+
+    <h3>"Faltan campos obligatorios"</h3>
+    <p><strong>Causa:</strong> algún campo con asterisco rojo (*) está vacío.</p>
+    <p><strong>Solución:</strong> revisa todos los campos obligatorios y
+    llénalos. Pasa el cursor por encima del asterisco (*) para ver qué
+    campo es.</p>
+
+    <h3>No me deja agregar más residentes</h3>
+    <p><strong>Causa:</strong> el límite es 4 residentes por apartamento.</p>
+    <p><strong>Solución:</strong> Si hay más personas viviendo contigo,
+    contacta a la administración para ampliar el límite.</p>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- GLOSARIO                                                        -->
+<!-- ============================================================== -->
+<div class="section-manual" id="glosario">
+  <div class="section-header">
+    <div class="section-num">A</div>
+    <div>
+      <h2>Glosario (palabras técnicas explicadas)</h2>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>Apartamento</h3>
+    <p>Tu unidad de vivienda en la Urbanización Cerro Azul. Tiene un número
+    único (ej: 105, 202B, 1419).</p>
+
+    <h3>Cédula</h3>
+    <p>Tu documento de identidad. La pide el portal para verificar que TÚ
+    eres el residente registrado.</p>
+
+    <h3>Menor de edad</h3>
+    <p>Persona menor de 18 años que vive contigo (hijo, sobrino, etc.).
+    Sus datos se piden pero con menos campos (sin cédula).</p>
+
+    <h3>Parentesco</h3>
+    <p>Relación que tienes con el propietario del apartamento (esposa, hijo,
+    padre, hermano, etc.). Es importante para la administración.</p>
+
+    <h3>Slot</h3>
+    <p>Un "espacio" en el sistema para guardar datos. Por ejemplo, hay
+    2 slots de vehículos: si los 2 están vacíos, puedes agregar 2. Si
+    1 está ocupado, solo puedes agregar 1 más.</p>
+
+    <h3>Slot compartido</h3>
+    <p>Slots que pertenecen al apartamento, no a una persona específica.
+    Los vehículos, mascotas y contactos son compartidos.</p>
+
+    <h3>URL</h3>
+    <p>La dirección de una página web. Empieza con "https://" y termina
+    en ".com", ".html", etc. La del portal del residente es:<br>
+    <code>https://fabig76.github.io/cerro-azul-residentes/residente.html</code></p>
+
+    <h3>Ley 1581 de 2012</h3>
+    <p>Ley colombiana de protección de datos personales. Por eso el portal
+    te pide la cédula (para verificar tu identidad) y solo te permite
+    editar TUS datos.</p>
+
+    <h3>Tag</h3>
+    <p>Etiqueta física que da la administración a los vehículos autorizados.
+    Si tu vehículo tiene tag, escríbelo en el campo "N° Tag".</p>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- AYUDA                                                           -->
+<!-- ============================================================== -->
+<div class="section-manual" id="ayuda">
+  <div class="section-header">
+    <div class="section-num">?</div>
+    <div>
+      <h2>¿Necesitas ayuda?</h2>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <p>Si después de leer este manual aún tienes dudas o problemas:</p>
+
+    <h3>📧 Correo electrónico</h3>
+    <p>Escríbenos a: <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a></p>
+    <p>Por favor incluye en tu correo:</p>
+    <ul>
+      <li>Tu N° de apartamento</li>
+      <li>Tu nombre completo y cédula</li>
+      <li>Una descripción clara del problema (con captura de pantalla si es posible)</li>
+      <li>El error exacto que te aparece (si aplica)</li>
+    </ul>
+
+    <h3>📞 Habla con el propietario del apto</h3>
+    <p>Si el problema es con tus datos o tu registro, primero habla con el
+    propietario. Él/ella puede verificar el registro y, si es necesario,
+    pedir a la administración que corrija algo.</p>
+
+    <h3>🕐 Horario de atención</h3>
+    <p>Lunes a viernes de 8:00 AM a 5:00 PM.<br>
+    Sábados de 9:00 AM a 12:00 PM (solo urgencias).</p>
+
+    <div class="info info-green">
+      <p><strong>✅ Antes de escribirnos, verifica:</strong></p>
+      <ul>
+        <li>Tu N° de apartamento está escrito correctamente.</li>
+        <li>Tu cédula está sin puntos ni guiones.</li>
+        <li>El propietario ya hizo el registro inicial.</li>
+        <li>Estás usando un navegador actualizado (Chrome, Edge, Safari o Firefox).</li>
+        <li>Tu conexión a internet está funcionando.</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<footer class="site-footer">
+  <p>
+    Urbanización Cerro Azul · NIT 900770444 · Bello / Niquía<br>
+    Manual del Residente — Portal del Residente<br>
+    Versión 1.0 · 26-Sept-2026<br>
+    <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a>
+  </p>
+</footer>
+
+</body>
+</html>

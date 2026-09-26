@@ -92,6 +92,11 @@ impreso en PDF.
   · `docs/CHANGELOG-BUGFIXES.md` — bugs críticos documentados
   · `docs/TESTING-PROTOCOL.md` — protocolo E2E antes de deploy
   · `docs/manual-llenado-cerro-azul.html` — manual visual para residentes
+  · `docs/manual-vigilantes.html` — manual del portal de vigilancia
+  · `docs/manual-estado-cuenta.html` — manual del portal contable (propietarios)
+  · `docs/manual-residente.html` — manual del portal del residente (auto-registro)
+  · `docs/manual-salon-social.html` — manual del portal de reservas del salón
+  · `docs/manual-admin.html` — manual del portal administrativo
   · `docs/prompt-notebooklm-video.md` — prompt para generar video instructivo
   · `docs/spec-estado-cuenta.md` — especificación del módulo de estado de cuenta
   · `docs/proyecto-estado-cuenta.md` — resumen operativo del módulo contable

@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#6B4423">
+  <title>Manual del Vigilante — Cerro Azul</title>
+  <style>
+    /* ============================================================
+       ESTILOS — Manual del Vigilante
+       Cerro Azul Residentes
+       ============================================================ */
+    :root {
+      --marron:    #6B4423;
+      --marron-osc: #4A2E18;
+      --marron-claro: #8B5A2B;
+      --crema:     #FFF8E1;
+      --crema-osc: #F8F4E8;
+      --verde:     #4CAF50;
+      --verde-fondo: #E8F5E9;
+      --rojo:      #D32F2F;
+      --rojo-fondo: #FFEBEE;
+      --azul:      #1976D2;
+      --azul-fondo: #E3F2FD;
+      --naranja:   #F57C00;
+      --naranja-fondo: #FFF3E0;
+      --gris:      #757575;
+      --gris-claro: #EEEEEE;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: #212121;
+      line-height: 1.7;
+      background: #F5F5F5;
+    }
+
+    /* PORTADA */
+    .cover {
+      background: linear-gradient(135deg, var(--marron) 0%, var(--marron-osc) 100%);
+      color: white;
+      text-align: center;
+      padding: 50px 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .cover .logo {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: white;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 50px;
+    }
+    .cover h1 { font-size: 2.2em; margin-bottom: 8px; }
+    .cover .sub { font-size: 1.1em; opacity: 0.95; margin-bottom: 16px; }
+    .cover .desc { font-size: 1em; opacity: 0.8; margin-bottom: 40px; max-width: 600px; }
+    .cover .btn-start {
+      background: white; color: var(--marron);
+      padding: 16px 40px; border-radius: 50px; font-size: 1.1em;
+      font-weight: bold; text-decoration: none; display: inline-block;
+    }
+    .cover .meta { margin-top: 30px; font-size: 0.85em; opacity: 0.7; }
+
+    /* ÍNDICE */
+    .toc {
+      max-width: 800px;
+      margin: 40px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .toc h2 { color: var(--marron); margin-bottom: 16px; }
+    .toc ol { padding-left: 24px; line-height: 1.8; }
+    .toc a { color: var(--marron); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+
+    /* SECCIONES */
+    .section-manual {
+      max-width: 800px;
+      margin: 30px auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    .section-header {
+      background: var(--marron);
+      color: white;
+      padding: 20px 28px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .section-num {
+      background: rgba(255,255,255,0.2);
+      border: 2px solid rgba(255,255,255,0.5);
+      border-radius: 50%;
+      width: 48px; height: 48px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2em; font-weight: bold; flex-shrink: 0;
+    }
+    .section-header h2 { font-size: 1.3em; }
+    .section-header p { opacity: 0.85; font-size: 0.9em; margin-top: 4px; }
+    .section-body { padding: 24px 28px; }
+    .section-body h3 {
+      color: var(--marron);
+      margin: 20px 0 8px;
+      font-size: 1.1em;
+    }
+
+    /* CAJAS DE INFORMACIÓN */
+    .info-box {
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin: 16px 0;
+      font-size: 0.95em;
+    }
+    .info-box strong { display: block; margin-bottom: 4px; }
+    .info-importante {
+      background: var(--azul-fondo);
+      border-left: 4px solid var(--azul);
+      color: #0D47A1;
+    }
+    .info-aviso {
+      background: var(--naranja-fondo);
+      border-left: 4px solid var(--naranja);
+      color: #E65100;
+    }
+    .info-error {
+      background: var(--rojo-fondo);
+      border-left: 4px solid var(--rojo);
+      color: #B71C1C;
+    }
+    .info-exito {
+      background: var(--verde-fondo);
+      border-left: 4px solid var(--verde);
+      color: #1B5E20;
+    }
+    .info-consejo {
+      background: #FFFDE7;
+      border-left: 4px solid #FBC02D;
+      color: #F57F17;
+    }
+
+    /* PASOS */
+    .step {
+      display: flex;
+      gap: 16px;
+      margin: 14px 0;
+      align-items: flex-start;
+    }
+    .step-num {
+      background: var(--marron);
+      color: white;
+      border-radius: 50%;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 0.85em;
+      flex-shrink: 0;
+    }
+    .step-text { padding-top: 3px; flex: 1; }
+    .step-text strong { color: var(--marron-osc); }
+
+    /* MOCKUPS / DIAGRAMAS ASCII */
+    .mockup {
+      background: #FAFAFA;
+      border: 2px solid var(--gris-claro);
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.88em;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .mockup-phone {
+      max-width: 360px;
+      margin: 16px auto;
+      border: 8px solid #333;
+      border-radius: 24px;
+      background: white;
+      padding: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    .mockup-phone-screen {
+      background: white;
+      padding: 8px;
+    }
+
+    /* BOTONES VISUALES */
+    .btn-ejemplo {
+      display: inline-block;
+      background: var(--azul);
+      color: white;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.9em;
+      margin: 2px 4px;
+    }
+    .btn-ejemplo.green { background: var(--verde); }
+    .btn-ejemplo.red { background: var(--rojo); }
+    .btn-ejemplo.gray { background: var(--gris); }
+    .btn-ejemplo.outline {
+      background: white;
+      color: var(--azul);
+      border: 1px solid var(--azul);
+    }
+
+    /* INPUT VISUAL */
+    .input-ejemplo {
+      display: inline-block;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-family: 'Consolas', monospace;
+      font-size: 0.9em;
+      min-width: 200px;
+      color: #666;
+    }
+
+    /* TABLAS */
+    table.tabla-ejemplo {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 0.9em;
+    }
+    table.tabla-ejemplo th {
+      background: var(--marron);
+      color: white;
+      padding: 8px;
+      text-align: left;
+    }
+    table.tabla-ejemplo td {
+      padding: 8px;
+      border-bottom: 1px solid var(--gris-claro);
+    }
+    table.tabla-ejemplo tr:nth-child(even) td {
+      background: var(--crema);
+    }
+
+    /* NAVEGACIÓN INFERIOR */
+    .nav-links {
+      display: flex;
+      justify-content: space-between;
+      padding: 16px 28px;
+      background: var(--crema-osc);
+      border-top: 1px solid var(--gris-claro);
+    }
+    .nav-links a {
+      color: var(--marron);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+    .nav-links a:hover { text-decoration: underline; }
+
+    /* FAQ */
+    .faq-item {
+      margin: 12px 0;
+      padding: 12px 16px;
+      background: #FAFAFA;
+      border-radius: 6px;
+      border-left: 3px solid var(--marron-claro);
+    }
+    .faq-q { font-weight: 700; color: var(--marron-osc); margin-bottom: 4px; }
+    .faq-a { color: #424242; }
+
+    /* GLOSARIO */
+    .glosario-item {
+      margin: 8px 0;
+      padding: 8px 12px;
+      background: var(--crema-osc);
+      border-radius: 4px;
+    }
+    .glosario-item .term {
+      font-weight: 700;
+      color: var(--marron-osc);
+    }
+    .glosario-item .def {
+      color: #424242;
+    }
+
+    /* FAQ / AYUDA */
+    .help-box {
+      background: var(--crema-osc);
+      border: 2px solid var(--marron);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .help-box h3 { color: var(--marron); margin-bottom: 12px; }
+    .help-box p { margin-bottom: 8px; }
+    .help-box a {
+      display: inline-block;
+      background: var(--marron);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      margin: 8px 4px;
+    }
+
+    /* FOOTER */
+    footer {
+      background: var(--marron-osc);
+      color: white;
+      text-align: center;
+      padding: 30px 20px;
+      margin-top: 40px;
+      font-size: 0.9em;
+    }
+    footer a { color: white; text-decoration: underline; }
+    .footer-meta { margin-top: 8px; opacity: 0.8; font-size: 0.85em; }
+
+    /* RESPONSIVE */
+    @media (max-width: 600px) {
+      .section-header { padding: 16px 20px; }
+      .section-body { padding: 20px; }
+      .section-num { width: 40px; height: 40px; font-size: 1em; }
+      .cover h1 { font-size: 1.8em; }
+      .nav-links { flex-direction: column; gap: 8px; }
+      table.tabla-ejemplo { font-size: 0.8em; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================== -->
+<!-- PORTADA                                                         -->
+<!-- ============================================================== -->
+<!-- ============================================================== -->
+<!-- PORTADA                                                         -->
+<!-- ============================================================== -->
+<div class="cover" id="inicio">
+  <div class="logo">💳</div>
+  <h1>Manual del Propietario</h1>
+  <p class="sub">Portal de Estado de Cuenta — Cerro Azul</p>
+  <p class="desc">Guía paso a paso para que consultes tu estado de cuenta, descargues tu factura y generes tu paz y salvo, sin necesidad de ir a la administración.</p>
+  <a href="#indice" class="btn-start">📖 Ver Índice</a>
+  <p class="meta">Última actualización: 26-Sept-2026 · Versión 1.0</p>
+</div>
+
+<!-- ============================================================== -->
+<!-- ÍNDICE                                                          -->
+<!-- ============================================================== -->
+<div class="toc" id="indice">
+  <h2>📋 Índice del Manual</h2>
+  <ol>
+    <li><a href="#antes-de-empezar">Antes de empezar: lo que necesitas saber</a></li>
+    <li><a href="#seccion-1">Sección 1 — Iniciar sesión (login)</a></li>
+    <li><a href="#seccion-2">Sección 2 — Ver tu estado de cuenta (saldo y conceptos)</a></li>
+    <li><a href="#seccion-3">Sección 3 — Ver tus últimos pagos</a></li>
+    <li><a href="#seccion-4">Sección 4 — Descargar tu factura en PDF</a></li>
+    <li><a href="#seccion-5">Sección 5 — Pagar en línea</a></li>
+    <li><a href="#seccion-6">Sección 6 — Descargar tu paz y salvo</a></li>
+    <li><a href="#seccion-7">Sección 7 — Cerrar sesión (salir)</a></li>
+    <li><a href="#preguntas">Preguntas frecuentes</a></li>
+    <li><a href="#errores">Errores comunes y cómo resolverlos</a></li>
+    <li><a href="#glosario">Glosario (palabras técnicas explicadas)</a></li>
+    <li><a href="#ayuda">¿Necesitas ayuda?</a></li>
+  </ol>
+</div>
+
+<!-- ============================================================== -->
+<!-- ANTES DE EMPEZAR                                                -->
+<!-- ============================================================== -->
+<div class="section-manual" id="antes-de-empezar">
+  <div class="section-header">
+    <div class="section-num">!</div>
+    <div>
+      <h2>Antes de empezar</h2>
+      <p>Lo que necesitas saber para usar el portal</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Qué es el portal de estado de cuenta?</h3>
+    <p>Es una página web donde <strong>tú (como propietario)</strong> puedes consultar
+    tu saldo con la administración de la Urbanización Cerro Azul, descargar
+    tu factura mensual en PDF y generar tu certificado de paz y salvo, todo
+    sin tener que ir a la administración ni enviar correos.</p>
+
+    <div class="info info-blue">
+      <p><strong>🔐 ¿Es seguro?</strong> Sí. Solo TÚ puedes ver TU información
+      porque necesitas 3 datos privados para entrar: tu <strong>N° de formulario</strong>
+      (CA-XXXX), tu <strong>N° de apartamento</strong> y tu <strong>cédula</strong>.
+      Esta información es personal y no la debes compartir.</p>
+    </div>
+
+    <h3>¿Qué necesito para usarlo?</h3>
+    <div class="step">
+      <ol>
+        <li><strong>Tu N° de formulario</strong> (CA-XXXX): te lo dieron cuando registraste
+        tu apartamento por primera vez en el formulario principal. Si lo perdiste,
+        escríbenos a <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a>.</li>
+        <li><strong>Tu N° de apartamento</strong>: el mismo que aparece en tu contrato de
+        arrendamiento o escritura (ej: 105, 202B, 1419).</li>
+        <li><strong>Tu cédula</strong>: la cédula de ciudadanía del propietario registrado.</li>
+        <li><strong>Un celular o computador</strong> con acceso a internet.</li>
+        <li><strong>Un navegador</strong> actualizado (Chrome, Edge, Safari o Firefox).</li>
+      </ol>
+    </div>
+
+    <div class="info info-green">
+      <p><strong>💡 Tip:</strong> Ten estos 3 datos a la mano antes de abrir el portal.
+      Si los escribes mal, no podrás entrar.</p>
+    </div>
+
+    <h3>Cómo se ve el portal (vista general)</h3>
+    <p>Cuando abras el portal verás una pantalla con un encabezado color azul
+    que dice <strong>Urbanización Cerro Azul</strong>, y debajo una caja blanca
+    centrada con el título <strong>"💳 Consultar mi estado de cuenta"</strong>.
+    Esa caja tiene 3 campos para llenar y un botón azul que dice
+    <strong>"🔍 Consultar"</strong>.</p>
+
+    <div class="mockup">
+<pre>
+┌──────────────────────────────────────────────┐
+│ 💳 Consultar mi estado de cuenta             │
+│                                              │
+│  Ingresa tu N° de formulario, tu N° de       │
+│  apartamento y tu cédula para ver tu saldo,  │
+│  tus últimos pagos y descargar tu factura    │
+│  o paz y salvo.                              │
+│                                              │
+│  ┌────────────────────────────────┐         │
+│  │ N° de formulario  *            │         │
+│  │ Ej: CA-0042                    │         │
+│  └────────────────────────────────┘         │
+│                                              │
+│  ┌────────────────────────────────┐         │
+│  │ N° de apartamento  *            │         │
+│  │ Ej: 101, 202B                  │         │
+│  └────────────────────────────────┘         │
+│                                              │
+│  ┌────────────────────────────────┐         │
+│  │ Cédula del propietario  *      │         │
+│  │ Solo números, sin puntos       │         │
+│  └────────────────────────────────┘         │
+│  La cédula debe coincidir con la registrada │
+│  en el formulario de residentes.             │
+│                                              │
+│  ┌────────────────────────────────┐         │
+│  │     🔍 Consultar               │         │
+│  └────────────────────────────────┘         │
+│                                              │
+│  ¿Perdiste tu N° de formulario? Escríbenos   │
+│  a urb.cerroazul@gmail.com.                  │
+└──────────────────────────────────────────────┘
+</pre>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 1: INICIAR SESIÓN                                       -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-1">
+  <div class="section-header">
+    <div class="section-num">1</div>
+    <div>
+      <h2>Sección 1 — Iniciar sesión (login)</h2>
+      <p>Cómo entrar al portal con tus datos privados</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Qué es "iniciar sesión"?</h3>
+    <p>Es el primer paso para entrar al portal. Escribes tus 3 datos (N° de
+    formulario, N° de apartamento y cédula) y el sistema verifica que seas
+    el propietario registrado. Si todo está bien, te muestra tu estado
+    de cuenta.</p>
+
+    <div class="info info-orange">
+      <p><strong>⚠️ Importante:</strong> Si no eres el propietario del apartamento
+      (por ejemplo, si eres arrendatario), el sistema te rechazará aunque
+      tengas la cédula correcta. El paz y salvo SOLO lo puede solicitar
+      el propietario.</p>
+    </div>
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <ol>
+        <li><strong>Abre el portal</strong> en tu navegador. La dirección es:<br>
+        <code>https://fabig76.github.io/cerro-azul-residentes/estado-cuenta.html</code><br>
+        (También puedes llegar desde el formulario principal: pestaña
+        "💳 Consultar estado de cuenta" en la parte de arriba).</li>
+        <li><strong>Escribe tu N° de formulario</strong> en el primer campo.
+        Ejemplo: <code>CA-0042</code>. Recuerda: empieza con "CA-" en mayúsculas,
+        seguido de 4 dígitos. Sin espacios.</li>
+        <li><strong>Escribe tu N° de apartamento</strong> en el segundo campo.
+        Ejemplo: <code>105</code> o <code>202B</code>. Tal cual como aparece en tu
+        contrato.</li>
+        <li><strong>Escribe tu cédula</strong> en el tercer campo. SOLO números,
+        sin puntos ni guiones. Ejemplo: si tu cédula es "12.345.678", escribe
+        <code>12345678</code>.</li>
+        <li><strong>Haz click en "🔍 Consultar"</strong> (el botón azul).</li>
+        <li><strong>Espera unos segundos</strong>. El sistema verifica tus datos.
+        Si todo está correcto, verás tu estado de cuenta. Si hay un error,
+        aparecerá un mensaje en rojo arriba del formulario.</li>
+      </ol>
+    </div>
+
+    <h3>Vista de la pantalla (después de iniciar sesión)</h3>
+    <div class="mockup">
+<pre>
+┌──────────────────────────────────────────────┐
+│ 💳 Mi estado de cuenta                       │
+│                                              │
+│  Apto 105 · Luis Oswaldo Becerra Palacios    │
+│  Sin saldo pendiente al 31 de agosto de 2026. │
+│  Cuota de administración mensual: $205.800    │
+│                                              │
+│  ┌── Detalle por concepto ──────────────┐    │
+│  │ Concepto              │ Valor       │    │
+│  │ Cuotas de administración │ $0       │    │
+│  └────────────────────────────────────┘    │
+│                                              │
+│  Cuenta de cobro N° 1257 · Emitida          │
+│  01/09/2026 · Páguese hasta 30/09/2026      │
+│                                              │
+│  ┌── Últimos pagos ────────────────────┐    │
+│  │ Agosto 2026: $205.800               │    │
+│  └────────────────────────────────────┘    │
+│                                              │
+│  ┌────────────────────────────────┐         │
+│  │  📄 Descargar mi factura          │         │
+│  └────────────────────────────────┘         │
+│  ┌────────────────────────────────┐         │
+│  │  🔗 Pagar en línea              │         │
+│  └────────────────────────────────┘         │
+│  ┌────────────────────────────────┐         │
+│  │  📄 Descargar paz y salvo       │         │
+│  └────────────────────────────────┘         │
+│  ┌────────────────────────────────┐         │
+│  │  ↩️ Salir                       │         │
+│  └────────────────────────────────┘         │
+└──────────────────────────────────────────────┘
+</pre>
+    </div>
+
+    <h3>Si te equivocas al escribir tus datos</h3>
+    <p>Aparecerá un mensaje en rojo arriba del formulario con la explicación.
+    Los casos más comunes son:</p>
+
+    <div class="info info-red">
+      <p><strong>"No se encontró ningún registro con ese N° de formulario y
+      N° de apartamento"</strong> → Verifica que ambos datos coincidan
+      exactamente. Si no encuentras tu N° de formulario, escríbenos a
+      <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a>.</p>
+    </div>
+
+    <div class="info info-red">
+      <p><strong>"La cédula ingresada no coincide con el propietario registrado"</strong>
+      → La cédula que escribiste NO es la del titular del apartamento.
+      Verifica que estés poniendo tu propia cédula sin puntos ni guiones.</p>
+    </div>
+
+    <div class="info info-red">
+      <p><strong>"Esta autorización debe ser solicitada por el propietario"</strong>
+      → NO eres el propietario (probablemente eres arrendatario). El sistema
+      solo permite al propietario consultar el estado de cuenta y descargar
+      el paz y salvo.</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 2: VER ESTADO DE CUENTA                                -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-2">
+  <div class="section-header">
+    <div class="section-num">2</div>
+    <div>
+      <h2>Sección 2 — Ver tu estado de cuenta</h2>
+      <p>Cómo entender el saldo, los conceptos y la fecha de corte</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Qué información me muestra?</h3>
+    <p>Después de iniciar sesión correctamente, el portal te muestra 4 bloques
+    de información:</p>
+
+    <div class="info info-blue">
+      <p><strong>Bloque 1 — Resumen:</strong> tu apartamento, tu nombre, si tienes
+      saldo pendiente, a favor o al día, la fecha de corte y el valor de la
+      cuota de administración mensual.</p>
+    </div>
+
+    <div class="info info-blue">
+      <p><strong>Bloque 2 — Detalle por concepto:</strong> una tabla con cada
+      concepto de tu deuda (cuotas, sanciones, cuota extra, etc.) y su valor.
+      Solo aparecen los conceptos con valor distinto de cero.</p>
+    </div>
+
+    <div class="info info-blue">
+      <p><strong>Bloque 3 — Factura del mes:</strong> número de cuenta de cobro,
+      fecha de emisión, fecha límite de pago y total a pagar.</p>
+    </div>
+
+    <div class="info info-blue">
+      <p><strong>Bloque 4 — Últimos pagos:</strong> hasta 3 pagos de los últimos
+      meses, mostrando el periodo y el valor del abono.</p>
+    </div>
+
+    <h3>Los 3 estados posibles de tu cuenta</h3>
+
+    <div class="info info-green">
+      <p><strong>1. Sin saldo pendiente (al día):</strong> Tu total a pagar es
+      $0 o menor a $1.000. El botón "Descargar paz y salvo" está visible.</p>
+    </div>
+
+    <div class="info info-orange">
+      <p><strong>2. Saldo pendiente (deuda):</strong> tienes un valor mayor
+      a $1.000 que pagar. El botón "Descargar paz y salvo" NO está visible.
+      Aparece el botón "Pagar en línea" para que pagues con Jelpit.</p>
+    </div>
+
+    <div class="info info-blue">
+      <p><strong>3. Saldo a favor:</strong> el sistema te debe dinero (pago de más
+      en meses anteriores). El botón "Descargar paz y salvo" SÍ está visible.</p>
+    </div>
+
+    <h3>Paso a paso para ver tu estado de cuenta</h3>
+    <div class="step">
+      <ol>
+        <li>Si no estás dentro del portal, abre la URL y haz login con tus
+        3 datos (ver Sección 1).</li>
+        <li>Una vez dentro, mira la parte de arriba. Verás tu nombre y apartamento
+        en negrita.</li>
+        <li>Lee el resumen: ¿tienes saldo pendiente, saldo a favor, o estás al día?</li>
+        <li>Baja con la barra de desplazamiento para ver los conceptos, la
+        factura y los últimos pagos.</li>
+      </ol>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 3: VER ÚLTIMOS PAGOS                                   -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-3">
+  <div class="section-header">
+    <div class="section-num">3</div>
+    <div>
+      <h2>Sección 3 — Ver tus últimos pagos</h2>
+      <p>Cómo consultar el historial de abonos del apartamento</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Qué información aparece?</h3>
+    <p>En la sección <strong>"Últimos pagos"</strong> verás hasta 3 abonos
+    de los últimos meses, ordenados del más reciente al más antiguo. Cada
+    pago tiene:</p>
+
+    <ul>
+      <li><strong>Periodo</strong>: el mes y año del pago (ej: "Agosto 2026")</li>
+      <li><strong>Abono</strong>: el valor que pagaste en ese mes. Si fue $0,
+        aparece "sin abonos registrados".</li>
+    </ul>
+
+    <div class="info info-blue">
+      <p><strong>¿Por qué solo 3 pagos?</strong> El sistema guarda solo los
+      últimos 3 abonos para mantener la pantalla simple. Si necesitas un
+      historial completo, solicítalo a la administración por correo.</p>
+    </div>
+
+    <h3>Ejemplo de últimos pagos</h3>
+    <div class="mockup">
+<pre>
+┌── Últimos pagos ────────────────────────────┐
+│ Agosto 2026: $205.800                       │
+│ Julio 2026: $205.800                        │
+│ Junio 2026: sin abonos registrados          │
+│                                              │
+│ Corresponde al valor "Abono último mes"     │
+│ reportado en la cuenta de cobro de cada      │
+│ periodo.                                    │
+└────────────────────────────────────────────┘
+</pre>
+    </div>
+
+    <h3>Si ves "sin abonos registrados" en muchos meses</h3>
+    <p>Eso significa que el sistema no tiene registrado un pago tuyo en ese
+    mes. Verifica si:</p>
+    <ul>
+      <li>Pagaste en otro apartamento por error</li>
+      <li>El contador aún no cargó el pago del mes</li>
+      <li>El pago se hizo con una referencia distinta</li>
+    </ul>
+    <p>Si tienes dudas, escríbenos a
+    <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a>.</p>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 4: DESCARGAR FACTURA                                   -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-4">
+  <div class="section-header">
+    <div class="section-num">4</div>
+    <div>
+      <h2>Sección 4 — Descargar tu factura en PDF</h2>
+      <p>Cómo obtener la cuenta de cobro del mes en PDF</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Para qué sirve la factura?</h3>
+    <p>La factura es la cuenta de cobro oficial del mes que te entrega la
+    administración. Te sirve para:</p>
+    <ul>
+      <li>Tener un comprobante con el detalle de tu cargo</li>
+      <li>Presentarla si te la piden (banco, contador, etc.)</li>
+      <li>Saber el número de cuenta de cobro y la fecha límite</li>
+    </ul>
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <ol>
+        <li>Entra al portal (Sección 1).</li>
+        <li>Busca el botón <strong>"📄 Descargar mi factura"</strong>
+        (está debajo del bloque de últimos pagos).</li>
+        <li>Haz click en ese botón.</li>
+        <li>Espera unos segundos. El navegador descargará un archivo PDF
+        automáticamente.</li>
+        <li>Abre el PDF con cualquier visor (Adobe Reader, Chrome, etc.).</li>
+      </ol>
+    </div>
+
+    <div class="info info-green">
+      <p><strong>Nombre del archivo:</strong> el PDF descargado se llama
+      <code>Factura_[tu_apartamento]_[periodo].pdf</code>. Por ejemplo:
+      <code>Factura_105_2026-08.pdf</code>. Eso te ayuda a identificarlo
+      fácilmente en tu carpeta de descargas.</p>
+    </div>
+
+    <h3>El PDF tiene 1 página con:</h3>
+    <ul>
+      <li>Tu N° de apartamento (REF.PAGO)</li>
+      <li>El nombre del titular</li>
+      <li>El valor total a pagar</li>
+      <li>La fecha de emisión y fecha límite</li>
+      <li>El número de cuenta donde debes consignar</li>
+    </ul>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 5: PAGAR EN LÍNEA                                      -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-5">
+  <div class="section-header">
+    <div class="section-num">5</div>
+    <div>
+      <h2>Sección 5 — Pagar en línea</h2>
+      <p>Cómo pagar tu administración usando Jelpit</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Qué es Jelpit?</h3>
+    <p>Jelpit es la plataforma de pagos que usa la Urbanización Cerro Azul
+    para recibir la administración por internet (tarjeta de crédito,
+    débito, PSE, etc.). El botón <strong>"🔗 Pagar en línea"</strong>
+    te lleva al sitio de Jelpit donde puedes pagar de forma segura.</p>
+
+    <div class="info info-blue">
+      <p><strong>¿Aparece el botón?</strong> Solo si tienes saldo pendiente
+      (deuda mayor a $1.000) Y si la administración configuró el link de
+      pago en Jelpit. Si no ves el botón, escríbenos para verificar.</p>
+    </div>
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <ol>
+        <li>Entra al portal (Sección 1).</li>
+        <li>Busca el botón <strong>"🔗 Pagar en línea"</strong>.</li>
+        <li>Haz click en ese botón. Se abrirá una pestaña nueva con el sitio
+        de Jelpit.</li>
+        <li>Allí verás el valor a pagar (que coincide con tu saldo pendiente).</li>
+        <li>Selecciona tu método de pago (tarjeta, PSE, etc.) y completa el
+        proceso.</li>
+        <li>Cuando termines, Jelpit te dará un comprobante. Guárdalo.</li>
+        <li>Vuelve al portal de Cerro Azul y refresca la página para ver tu
+        nuevo saldo.</li>
+      </ol>
+    </div>
+
+    <div class="info info-orange">
+      <p><strong>⚠️ Importante:</strong> Si pagaste pero el portal sigue mostrando
+      la deuda, puede ser porque el contador aún no ha cargado tu pago en
+      el sistema. Espera 24-48 horas. Si después de ese tiempo sigue la
+      deuda, escríbenos con el comprobante de Jelpit.</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 6: DESCARGAR PAZ Y SALVO                               -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-6">
+  <div class="section-header">
+    <div class="section-num">6</div>
+    <div>
+      <h2>Sección 6 — Descargar tu paz y salvo</h2>
+      <p>Cómo obtener el certificado que confirma que estás al día</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Qué es el paz y salvo?</h3>
+    <p>Es un certificado oficial emitido por la administración que dice
+    que <strong>estás al día en tus pagos</strong>. Te sirve para:</p>
+    <ul>
+      <li>Presentarlo cuando vendes o alquilas el apartamento</li>
+      <li>Trámites legales o bancarios</li>
+      <li>Comprobar que no tienes deudas con el conjunto</li>
+    </ul>
+
+    <div class="info info-orange">
+      <p><strong>⚠️ Requisitos para pedirlo:</strong></p>
+      <ul>
+        <li>Debes ser el <strong>PROPIETARIO</strong> del apartamento (no arrendatario).</li>
+        <li>Tu saldo debe ser <strong>$0 o menor a $1.000</strong> (saldo a favor
+        también califica).</li>
+      </ul>
+      <p>Si tienes deuda, NO verás el botón de paz y salvo. Primero paga
+      y espera a que se actualice el sistema.</p>
+    </div>
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <ol>
+        <li>Entra al portal (Sección 1).</li>
+        <li>Verifica que tu saldo sea $0 o saldo a favor.</li>
+        <li>Busca el botón <strong>"📄 Descargar paz y salvo"</strong>.</li>
+        <li>Haz click en ese botón.</li>
+        <li>Espera unos segundos. El navegador descargará un PDF.</li>
+        <li>Abre el PDF con cualquier visor.</li>
+      </ol>
+    </div>
+
+    <div class="info info-green">
+      <p><strong>Nombre del archivo:</strong>
+      <code>PazYSalvo_[tu_apartamento]_[periodo].pdf</code>. Ejemplo:
+      <code>PazYSalvo_105_2026-08.pdf</code>.</p>
+    </div>
+
+    <h3>El PDF del paz y salvo tiene 1 página con:</h3>
+    <ul>
+      <li>Logo de la Urbanización Cerro Azul</li>
+      <li>Tu N° de apartamento</li>
+      <li>Tu nombre como propietario</li>
+      <li>Fecha de expedición (la fecha de hoy)</li>
+      <li>Fecha de corte de la cartera</li>
+      <li>Un número consecutivo (ej: PYS-00001) y un código de verificación</li>
+      <li>La firma del representante legal</li>
+      <li>Texto legal que respalda el certificado</li>
+    </ul>
+
+    <h3>Si no puedes pedir paz y salvo siendo propietario</h3>
+    <p>Posibles causas:</p>
+    <ul>
+      <li>Tienes una deuda mayor a $1.000 → paga primero.</li>
+      <li>El saldo a favor NO se reconoce como paz y salvo → verifica con
+      la administración.</li>
+      <li>Tu cédula en el sistema no coincide con la que escribes → revisa
+      los datos de tu registro.</li>
+    </ul>
+    <p>Si ninguna de estas aplica, escríbenos a
+    <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a>.</p>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 7: CERRAR SESIÓN                                        -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-7">
+  <div class="section-header">
+    <div class="section-num">7</div>
+    <div>
+      <h2>Sección 7 — Cerrar sesión (salir)</h2>
+      <p>Cómo salir del portal de forma segura</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Por qué es importante cerrar sesión?</h3>
+    <p>Si dejas la sesión abierta y otra persona usa tu computador, podría
+    ver tu información. Por seguridad, siempre cierra sesión cuando termines.</p>
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <ol>
+        <li>En la parte de abajo de tu estado de cuenta, busca el botón
+        <strong>"↩️ Salir"</strong>.</li>
+        <li>Haz click en él.</li>
+        <li>El sistema te regresa a la pantalla de login y BORRA los datos
+        de tu sesión de la memoria del navegador.</li>
+        <li>Listo. Ahora nadie podrá ver tu información.</li>
+      </ol>
+    </div>
+
+    <div class="info info-orange">
+      <p><strong>⚠️ Importante:</strong> Si simplemente cierras la pestaña
+      o el navegador SIN hacer click en "Salir", la próxima persona que
+      abra el portal podrá ver tu información si presiona "atrás" en el
+      navegador. SIEMPRE usa el botón "Salir".</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- PREGUNTAS FRECUENTES                                            -->
+<!-- ============================================================== -->
+<div class="section-manual" id="preguntas">
+  <div class="section-header">
+    <div class="section-num">?</div>
+    <div>
+      <h2>Preguntas frecuentes</h2>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>1. ¿Qué es el "N° de formulario" (CA-XXXX)?</h3>
+    <p>Es el identificador único que se genera cuando registraste tu apartamento
+    por primera vez en el formulario principal. Lo recibiste al final del
+    registro y deberías guardarlo. Formato: <code>CA-0001</code>, <code>CA-0042</code>,
+    etc. (siempre empieza con "CA-" en mayúsculas).</p>
+
+    <h3>2. ¿Por qué NO puedo entrar si soy arrendatario?</h3>
+    <p>Por seguridad y por la Ley 1581 de 2012 (protección de datos personales).
+    Solo el propietario puede ver el estado de cuenta y descargar el paz
+    y salvo. El arrendatario debe pedírselos al propietario directamente.</p>
+
+    <h3>3. ¿Por qué no veo el botón "Descargar paz y salvo"?</h3>
+    <p>Solo aparece si tu saldo es $0 o menor a $1.000. Si tienes deuda,
+    primero paga y espera a que se actualice el sistema.</p>
+
+    <h3>4. ¿Por qué veo una deuda que ya pagué?</h3>
+    <p>El sistema tarda entre 24 y 48 horas en actualizar después de un
+    pago. Si después de 48 horas sigue la deuda, escríbenos con tu comprobante.</p>
+
+    <h3>5. ¿Puedo ver el historial completo de pagos?</h3>
+    <p>No desde el portal (solo muestra los últimos 3 abonos). Para un
+    historial completo, solicítalo a la administración por correo.</p>
+
+    <h3>6. ¿La factura PDF es válida como comprobante de pago?</h3>
+    <p>La factura es la cuenta de cobro (lo que DEBES pagar), NO es un
+    comprobante de lo que ya pagaste. Para eso, descarga el paz y salvo
+    o pide el historial a la administración.</p>
+
+    <h3>7. ¿Puedo pagar con tarjeta desde el portal?</h3>
+    <p>Sí, mediante Jelpit (el botón "🔗 Pagar en línea"). Acepta tarjetas,
+    PSE y otros métodos según la configuración.</p>
+
+    <h3>8. ¿Mis datos están seguros?</h3>
+    <p>Sí. El portal usa el mismo Google Apps Script del formulario público.
+    La comunicación es HTTPS (candadito en el navegador). Solo tú puedes
+    ver tu información porque necesitas 3 datos privados.</p>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- ERRORES COMUNES                                                 -->
+<!-- ============================================================== -->
+<div class="section-manual" id="errores">
+  <div class="section-header">
+    <div class="section-num">!</div>
+    <div>
+      <h2>Errores comunes y cómo resolverlos</h2>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>"No se encontró ningún registro con ese N° de formulario y N° de apartamento"</h3>
+    <p><strong>Causa:</strong> El N° de formulario o el N° de apartamento no
+    coinciden con ningún registro del sistema.</p>
+    <p><strong>Solución:</strong></p>
+    <ul>
+      <li>Verifica que el N° de formulario empiece con "CA-" (mayúsculas) y
+      tenga 4 dígitos. Ejemplo: <code>CA-0042</code>.</li>
+      <li>Verifica que el N° de apartamento esté escrito exactamente como en
+      tu contrato (sin letras extras, sin espacios).</li>
+      <li>Si no encuentras tu N° de formulario, escríbenos a
+      <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a>.</li>
+    </ul>
+
+    <h3>"La cédula ingresada no coincide con el propietario registrado"</h3>
+    <p><strong>Causa:</strong> La cédula que escribiste NO es la del titular.</p>
+    <p><strong>Solución:</strong></p>
+    <ul>
+      <li>Verifica que estás usando tu propia cédula (la del titular).</li>
+      <li>Escribe SOLO números, sin puntos ni guiones.</li>
+      <li>Si tu cédula tiene cambios (actualización de Registraduría),
+      avísanos para actualizar el sistema.</li>
+    </ul>
+
+    <h3>"Esta autorización debe ser solicitada por el propietario"</h3>
+    <p><strong>Causa:</strong> NO eres el propietario del apartamento.</p>
+    <p><strong>Solución:</strong></p>
+    <ul>
+      <li>Si eres arrendatario, NO puedes usar este portal. Pídele al
+      propietario el estado de cuenta y el paz y salvo.</li>
+      <li>Si crees que SÍ eres el propietario pero el sistema no te
+      reconoce, escríbenos para verificar el registro.</li>
+    </ul>
+
+    <h3>"Aún no hay información contable publicada"</h3>
+    <p><strong>Causa:</strong> La administración aún no ha publicado la
+    cartera del mes en curso.</p>
+    <p><strong>Solución:</strong> Espera a que el contador termine de cargar
+    la cartera del mes. Esto suele hacerse entre los días 1 y 5 de cada mes.
+    Si después del día 5 sigue el error, avísanos.</p>
+
+    <h3>"Demasiados intentos fallidos para este apartamento. Intente de nuevo en 15 minutos"</h3>
+    <p><strong>Causa:</strong> Has escrito mal tus datos 5 veces seguidas.</p>
+    <p><strong>Solución:</strong> Espera 15 minutos y vuelve a intentar.
+    Verifica tus datos antes de escribir (especialmente la cédula, que es
+    fácil equivocarse al transcribir).</p>
+
+    <h3>"El apartamento X no aparece en la cartera de [Pestaña]. Contacte a la administración"</h3>
+    <p><strong>Causa:</strong> Tu apartamento no está en la cartera del mes actual.</p>
+    <p><strong>Solución:</strong> Esto puede pasar con apartamentos muy nuevos
+    o con aptos de parqueadero. Escríbenos para verificar.</p>
+
+    <h3>El botón "Descargar mi factura" no hace nada</h3>
+    <p><strong>Causa:</strong> Problema temporal de conexión, o el PDF es
+    muy grande y tarda.</p>
+    <p><strong>Solución:</strong></p>
+    <ul>
+      <li>Espera 10-15 segundos. El PDF del estado de cuenta mide
+      aproximadamente 100KB y puede tardar.</li>
+      <li>Si no descarga nada, abre la consola del navegador (F12) y
+      busca errores rojos.</li>
+      <li>Si el problema persiste, escríbenos a
+      <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a>.</li>
+    </ul>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- GLOSARIO                                                        -->
+<!-- ============================================================== -->
+<div class="section-manual" id="glosario">
+  <div class="section-header">
+    <div class="section-num">A</div>
+    <div>
+      <h2>Glosario (palabras técnicas explicadas)</h2>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>Apartamento</h3>
+    <p>Tu unidad de vivienda en la Urbanización Cerro Azul. Tiene un número
+    único (ej: 105, 202B, 1419).</p>
+
+    <h3>CA-XXXX</h3>
+    <p>Tu "N° de formulario". Es el identificador único que se genera cuando
+    registraste tu apartamento. Lo necesitas para entrar al portal.</p>
+
+    <h3>Cartera</h3>
+    <p>El registro contable de la administración que muestra lo que cada
+    apartamento debe. Se publica cada mes con corte al último día del mes
+    anterior.</p>
+
+    <h3>Cédula</h3>
+    <p>Tu documento de identidad (cédula de ciudadanía en Colombia). La
+    pide el sistema para verificar que TÚ eres el propietario.</p>
+
+    <h3>Cuota de administración</h3>
+    <p>El valor mensual que pagas por servicios comunes (vigilancia, aseo,
+    mantenimiento, etc.). Para Cerro Azul es aproximadamente $205.800 COP.</p>
+
+    <h3>Jelpit</h3>
+    <p>Plataforma de pagos en línea que usa la administración para recibir
+    pagos por tarjeta de crédito, débito o PSE.</p>
+
+    <h3>Paz y salvo</h3>
+    <p>Certificado oficial que dice que NO tienes deudas con la administración.
+    Solo lo puede pedir el propietario (no el arrendatario).</p>
+
+    <h3>PDF</h3>
+    <p>Formato de archivo que se ve igual en cualquier computador. Para
+    abrirlo necesitas un visor como Adobe Reader o el navegador Chrome.</p>
+
+    <h3>REF.PAGO</h3>
+    <p>"Referencia de pago". Es tu N° de apartamento, que se usa como
+    identificador único en las facturas y pagos. Ejemplo: REF.PAGO: 105.</p>
+
+    <h3>Saldo a favor</h3>
+    <p>Cuando el sistema te debe dinero (pagaste de más en meses anteriores).
+    Se muestra como valor negativo.</p>
+
+    <h3>Saldo pendiente</h3>
+    <p>Lo que DEBES pagar a la administración. Aparece en rojo o naranja si
+    es mayor a $1.000.</p>
+
+    <h3>URL</h3>
+    <p>La dirección de una página web. Empieza con "https://" y termina
+    en ".com", ".html", etc. La del portal de estado de cuenta es:<br>
+    <code>https://fabig76.github.io/cerro-azul-residentes/estado-cuenta.html</code></p>
+
+    <h3>Últimos pagos</h3>
+    <p>Sección del portal que muestra hasta 3 abonos recientes que has hecho.</p>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- AYUDA                                                           -->
+<!-- ============================================================== -->
+<div class="section-manual" id="ayuda">
+  <div class="section-header">
+    <div class="section-num">?</div>
+    <div>
+      <h2>¿Necesitas ayuda?</h2>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <p>Si después de leer este manual aún tienes dudas o problemas:</p>
+
+    <h3>📧 Correo electrónico</h3>
+    <p>Escríbenos a: <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a></p>
+    <p>Por favor incluye en tu correo:</p>
+    <ul>
+      <li>Tu N° de apartamento</li>
+      <li>Tu nombre completo</li>
+      <li>Una descripción clara del problema (con captura de pantalla si es posible)</li>
+      <li>El error exacto que te aparece (si aplica)</li>
+    </ul>
+
+    <h3>📞 Contacto directo</h3>
+    <p>Si el problema es urgente y no puedes esperar, contacta directamente
+    a la administración del conjunto.</p>
+
+    <h3>🕐 Horario de atención</h3>
+    <p>Lunes a viernes de 8:00 AM a 5:00 PM.<br>
+    Sábados de 9:00 AM a 12:00 PM (solo urgencias).</p>
+
+    <div class="info info-green">
+      <p><strong>✅ Antes de escribirnos, verifica:</strong></p>
+      <ul>
+        <li>Tu N° de formulario empieza con "CA-" y tiene 4 dígitos.</li>
+        <li>Tu N° de apartamento está escrito correctamente.</li>
+        <li>Tu cédula está sin puntos ni guiones.</li>
+        <li>Estás usando un navegador actualizado (Chrome, Edge, Safari o Firefox).</li>
+        <li>Tu conexión a internet está funcionando.</li>
+      </ul>
+      <p>Si todo está bien y aún tienes problemas, escríbenos con los detalles.</p>
+    </div>
+
+  </div>
+</div>
+
+<footer class="site-footer">
+  <p>
+    Urbanización Cerro Azul · NIT 900770444 · Bello / Niquía<br>
+    Manual del Propietario — Portal de Estado de Cuenta<br>
+    Versión 1.0 · 26-Sept-2026<br>
+    <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a>
+  </p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#6B4423">
+  <title>Manual del Vigilante — Cerro Azul</title>
+  <style>
+    /* ============================================================
+       ESTILOS — Manual del Vigilante
+       Cerro Azul Residentes
+       ============================================================ */
+    :root {
+      --marron:    #6B4423;
+      --marron-osc: #4A2E18;
+      --marron-claro: #8B5A2B;
+      --crema:     #FFF8E1;
+      --crema-osc: #F8F4E8;
+      --verde:     #4CAF50;
+      --verde-fondo: #E8F5E9;
+      --rojo:      #D32F2F;
+      --rojo-fondo: #FFEBEE;
+      --azul:      #1976D2;
+      --azul-fondo: #E3F2FD;
+      --naranja:   #F57C00;
+      --naranja-fondo: #FFF3E0;
+      --gris:      #757575;
+      --gris-claro: #EEEEEE;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: #212121;
+      line-height: 1.7;
+      background: #F5F5F5;
+    }
+
+    /* PORTADA */
+    .cover {
+      background: linear-gradient(135deg, var(--marron) 0%, var(--marron-osc) 100%);
+      color: white;
+      text-align: center;
+      padding: 50px 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .cover .logo {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: white;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 50px;
+    }
+    .cover h1 { font-size: 2.2em; margin-bottom: 8px; }
+    .cover .sub { font-size: 1.1em; opacity: 0.95; margin-bottom: 16px; }
+    .cover .desc { font-size: 1em; opacity: 0.8; margin-bottom: 40px; max-width: 600px; }
+    .cover .btn-start {
+      background: white; color: var(--marron);
+      padding: 16px 40px; border-radius: 50px; font-size: 1.1em;
+      font-weight: bold; text-decoration: none; display: inline-block;
+    }
+    .cover .meta { margin-top: 30px; font-size: 0.85em; opacity: 0.7; }
+
+    /* ÍNDICE */
+    .toc {
+      max-width: 800px;
+      margin: 40px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .toc h2 { color: var(--marron); margin-bottom: 16px; }
+    .toc ol { padding-left: 24px; line-height: 1.8; }
+    .toc a { color: var(--marron); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+
+    /* SECCIONES */
+    .section-manual {
+      max-width: 800px;
+      margin: 30px auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    .section-header {
+      background: var(--marron);
+      color: white;
+      padding: 20px 28px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .section-num {
+      background: rgba(255,255,255,0.2);
+      border: 2px solid rgba(255,255,255,0.5);
+      border-radius: 50%;
+      width: 48px; height: 48px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2em; font-weight: bold; flex-shrink: 0;
+    }
+    .section-header h2 { font-size: 1.3em; }
+    .section-header p { opacity: 0.85; font-size: 0.9em; margin-top: 4px; }
+    .section-body { padding: 24px 28px; }
+    .section-body h3 {
+      color: var(--marron);
+      margin: 20px 0 8px;
+      font-size: 1.1em;
+    }
+
+    /* CAJAS DE INFORMACIÓN */
+    .info-box {
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin: 16px 0;
+      font-size: 0.95em;
+    }
+    .info-box strong { display: block; margin-bottom: 4px; }
+    .info-importante {
+      background: var(--azul-fondo);
+      border-left: 4px solid var(--azul);
+      color: #0D47A1;
+    }
+    .info-aviso {
+      background: var(--naranja-fondo);
+      border-left: 4px solid var(--naranja);
+      color: #E65100;
+    }
+    .info-error {
+      background: var(--rojo-fondo);
+      border-left: 4px solid var(--rojo);
+      color: #B71C1C;
+    }
+    .info-exito {
+      background: var(--verde-fondo);
+      border-left: 4px solid var(--verde);
+      color: #1B5E20;
+    }
+    .info-consejo {
+      background: #FFFDE7;
+      border-left: 4px solid #FBC02D;
+      color: #F57F17;
+    }
+
+    /* PASOS */
+    .step {
+      display: flex;
+      gap: 16px;
+      margin: 14px 0;
+      align-items: flex-start;
+    }
+    .step-num {
+      background: var(--marron);
+      color: white;
+      border-radius: 50%;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 0.85em;
+      flex-shrink: 0;
+    }
+    .step-text { padding-top: 3px; flex: 1; }
+    .step-text strong { color: var(--marron-osc); }
+
+    /* MOCKUPS / DIAGRAMAS ASCII */
+    .mockup {
+      background: #FAFAFA;
+      border: 2px solid var(--gris-claro);
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.88em;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .mockup-phone {
+      max-width: 360px;
+      margin: 16px auto;
+      border: 8px solid #333;
+      border-radius: 24px;
+      background: white;
+      padding: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    .mockup-phone-screen {
+      background: white;
+      padding: 8px;
+    }
+
+    /* BOTONES VISUALES */
+    .btn-ejemplo {
+      display: inline-block;
+      background: var(--azul);
+      color: white;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.9em;
+      margin: 2px 4px;
+    }
+    .btn-ejemplo.green { background: var(--verde); }
+    .btn-ejemplo.red { background: var(--rojo); }
+    .btn-ejemplo.gray { background: var(--gris); }
+    .btn-ejemplo.outline {
+      background: white;
+      color: var(--azul);
+      border: 1px solid var(--azul);
+    }
+
+    /* INPUT VISUAL */
+    .input-ejemplo {
+      display: inline-block;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-family: 'Consolas', monospace;
+      font-size: 0.9em;
+      min-width: 200px;
+      color: #666;
+    }
+
+    /* TABLAS */
+    table.tabla-ejemplo {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 0.9em;
+    }
+    table.tabla-ejemplo th {
+      background: var(--marron);
+      color: white;
+      padding: 8px;
+      text-align: left;
+    }
+    table.tabla-ejemplo td {
+      padding: 8px;
+      border-bottom: 1px solid var(--gris-claro);
+    }
+    table.tabla-ejemplo tr:nth-child(even) td {
+      background: var(--crema);
+    }
+
+    /* NAVEGACIÓN INFERIOR */
+    .nav-links {
+      display: flex;
+      justify-content: space-between;
+      padding: 16px 28px;
+      background: var(--crema-osc);
+      border-top: 1px solid var(--gris-claro);
+    }
+    .nav-links a {
+      color: var(--marron);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+    .nav-links a:hover { text-decoration: underline; }
+
+    /* FAQ */
+    .faq-item {
+      margin: 12px 0;
+      padding: 12px 16px;
+      background: #FAFAFA;
+      border-radius: 6px;
+      border-left: 3px solid var(--marron-claro);
+    }
+    .faq-q { font-weight: 700; color: var(--marron-osc); margin-bottom: 4px; }
+    .faq-a { color: #424242; }
+
+    /* GLOSARIO */
+    .glosario-item {
+      margin: 8px 0;
+      padding: 8px 12px;
+      background: var(--crema-osc);
+      border-radius: 4px;
+    }
+    .glosario-item .term {
+      font-weight: 700;
+      color: var(--marron-osc);
+    }
+    .glosario-item .def {
+      color: #424242;
+    }
+
+    /* FAQ / AYUDA */
+    .help-box {
+      background: var(--crema-osc);
+      border: 2px solid var(--marron);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .help-box h3 { color: var(--marron); margin-bottom: 12px; }
+    .help-box p { margin-bottom: 8px; }
+    .help-box a {
+      display: inline-block;
+      background: var(--marron);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      margin: 8px 4px;
+    }
+
+    /* FOOTER */
+    footer {
+      background: var(--marron-osc);
+      color: white;
+      text-align: center;
+      padding: 30px 20px;
+      margin-top: 40px;
+      font-size: 0.9em;
+    }
+    footer a { color: white; text-decoration: underline; }
+    .footer-meta { margin-top: 8px; opacity: 0.8; font-size: 0.85em; }
+
+    /* RESPONSIVE */
+    @media (max-width: 600px) {
+      .section-header { padding: 16px 20px; }
+      .section-body { padding: 20px; }
+      .section-num { width: 40px; height: 40px; font-size: 1em; }
+      .cover h1 { font-size: 1.8em; }
+      .nav-links { flex-direction: column; gap: 8px; }
+      table.tabla-ejemplo { font-size: 0.8em; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================== -->
+<!-- PORTADA                                                         -->
+<!-- ============================================================== -->
+<!-- ============================================================== -->
+<!-- PORTADA                                                         -->
+<!-- ============================================================== -->
+<div class="cover" id="inicio">
+  <div class="logo">🏛️</div>
+  <h1>Manual del Salón Social</h1>
+  <p class="sub">Reservas del Salón Social — Cerro Azul</p>
+  <p class="desc">Guía paso a paso para que reserves el salón social del
+  conjunto: cómo consultar disponibilidad, hacer tu reserva, pagar en
+  línea, subir el comprobante y ver tus reservas.</p>
+  <a href="#indice" class="btn-start">📖 Ver Índice</a>
+  <p class="meta">Última actualización: 26-Sept-2026 · Versión 1.0</p>
+</div>
+
+<!-- ============================================================== -->
+<!-- ÍNDICE                                                          -->
+<!-- ============================================================== -->
+<div class="toc" id="indice">
+  <h2>📋 Índice del Manual</h2>
+  <ol>
+    <li><a href="#antes-de-empezar">Antes de empezar: lo que necesitas saber</a></li>
+    <li><a href="#seccion-1">Sección 1 — Iniciar sesión (login)</a></li>
+    <li><a href="#seccion-2">Sección 2 — Consultar disponibilidad (calendario 30 días)</a></li>
+    <li><a href="#seccion-3">Sección 3 — Reservar un turno (mañana o tarde)</a></li>
+    <li><a href="#seccion-4">Sección 4 — Pagar y subir comprobante (48h de plazo)</a></li>
+    <li><a href="#seccion-5">Sección 5 — Ver tus reservas (Mis reservas)</a></li>
+    <li><a href="#seccion-6">Sección 6 — Cancelar una reserva</a></li>
+    <li><a href="#preguntas">Preguntas frecuentes</a></li>
+    <li><a href="#errores">Errores comunes y cómo resolverlos</a></li>
+    <li><a href="#glosario">Glosario (palabras técnicas explicadas)</a></li>
+    <li><a href="#ayuda">¿Necesitas ayuda?</a></li>
+  </ol>
+</div>
+
+<!-- ============================================================== -->
+<!-- ANTES DE EMPEZAR                                                -->
+<!-- ============================================================== -->
+<div class="section-manual" id="antes-de-empezar">
+  <div class="section-header">
+    <div class="section-num">!</div>
+    <div>
+      <h2>Antes de empezar</h2>
+      <p>Lo que necesitas saber para usar el portal</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Qué es el Salón Social?</h3>
+    <p>Es el salón de eventos del conjunto. Lo puedes reservar para
+    cumpleaños, grados, reuniones familiares, etc. Tiene 2 turnos al día:</p>
+    <ul>
+      <li><strong>☀️ Mañana:</strong> 8:00 AM a 1:00 PM</li>
+      <li><strong>🌆 Tarde:</strong> 2:00 PM a 10:00 PM</li>
+    </ul>
+    <p>Cada turno cuesta <strong>$125.000 COP</strong>. Si quieres ambos turnos
+    del mismo día (todo el día), pagas <strong>$250.000 COP</strong>.</p>
+
+    <h3>¿Quién puede reservar?</h3>
+    <p>Cualquier residente adulto del apartamento, siempre y cuando:</p>
+    <ul>
+      <li>El propietario haya registrado el apartamento previamente.</li>
+      <li>El apartamento esté <strong>al día en la administración</strong> (no
+      debe 2 o más meses).</li>
+      <li>Tengas tu cédula a la mano.</li>
+    </ul>
+
+    <div class="info info-orange">
+      <p><strong>⚠️ Restricción importante:</strong> Si tu apartamento debe 2
+      o más meses de administración, NO podrás hacer reservas. Primero
+      ponte al día con la administración.</p>
+    </div>
+
+    <h3>¿Qué necesito para usarlo?</h3>
+    <div class="step">
+      <ol>
+        <li><strong>Tu N° de apartamento</strong> (ej: 105, 202B, 1419).</li>
+        <li><strong>Tu cédula</strong> del propietario o de cualquier residente del apartamento.</li>
+        <li><strong>Un comprobante de pago</strong> en PDF, JPG o PNG (después
+        de pagar).</li>
+        <li><strong>Un celular o computador</strong> con acceso a internet.</li>
+        <li><strong>Un navegador</strong> actualizado.</li>
+      </ol>
+    </div>
+
+    <h3>Cómo se ve el portal (vista inicial)</h3>
+    <div class="mockup">
+<pre>
+┌──────────────────────────────────────────────┐
+│ 🏛️ Reservar Salón Social                     │
+│                                              │
+│  El salón social puede ser reservado por el  │
+│  propietario o por cualquier residente      │
+│  adulto del apartamento. Cada turno cuesta   │
+│  $125.000 COP.                              │
+│                                              │
+│  ┌────────────────────────────────┐         │
+│  │ N° de apartamento  *            │         │
+│  │ Ej: 105, 202B                  │         │
+│  └────────────────────────────────┘         │
+│  ┌────────────────────────────────┐         │
+│  │ Su cédula  *                   │         │
+│  │ Solo números, sin puntos       │         │
+│  └────────────────────────────────┘         │
+│  La cédula debe corresponder al propietario │
+│  o a un residente del apartamento.           │
+│                                              │
+│  ┌────────────────────────────────┐         │
+│  │     🔍 Continuar                │         │
+│  └────────────────────────────────┘         │
+└──────────────────────────────────────────────┘
+</pre>
+    </div>
+
+    <div class="info info-green">
+      <p><strong>💡 Tip:</strong> El flujo completo toma unos 5-10 minutos:
+      consulta disponibilidad, elige turno, paga, sube comprobante. Ten
+      tu comprobante listo ANTES de iniciar el proceso para que sea más
+      rápido.</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 1: INICIAR SESIÓN                                       -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-1">
+  <div class="section-header">
+    <div class="section-num">1</div>
+    <div>
+      <h2>Sección 1 — Iniciar sesión (login)</h2>
+      <p>Cómo entrar al portal del salón</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <ol>
+        <li><strong>Abre el portal</strong> en tu navegador. La URL es:<br>
+        <code>https://fabig76.github.io/cerro-azul-residentes/salon-social.html</code><br>
+        (También puedes llegar desde el formulario principal: pestaña
+        "🏛️ Reservar Salón Social").</li>
+        <li><strong>Escribe tu N° de apartamento</strong> en el primer campo.</li>
+        <li><strong>Escribe tu cédula</strong> en el segundo campo. SOLO números,
+        sin puntos ni guiones.</li>
+        <li><strong>Haz click en "🔍 Continuar"</strong>.</li>
+        <li>El sistema verifica tu información. Tres posibles resultados:
+          <ul>
+            <li>✅ <strong>Todo bien</strong>: pasas al calendario (Sección 2).</li>
+            <li>❌ <strong>Apartamento en mora</strong>: te muestra un bloqueo
+            porque debes 2+ meses.</li>
+            <li>❌ <strong>Cédula o apartamento no reconocido</strong>: te
+            muestra un mensaje de error.</li>
+          </ul>
+        </li>
+      </ol>
+    </div>
+
+    <h3>Si tu apartamento está en mora</h3>
+    <div class="info info-red">
+      <p>Aparece una pantalla roja con el mensaje <strong>"❌ Apartamento en
+      mora"</strong> y se te indica que tienes suspendidos los servicios
+      de áreas comunes. Para poder reservar, primero debes:</p>
+      <ol>
+        <li>Pagar las cuotas atrasadas a la administración.</li>
+        <li>Esperar a que el sistema actualice el saldo (24-48 horas).</li>
+        <li>Volver a intentar el login en el portal.</li>
+      </ol>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 2: CALENDARIO                                           -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-2">
+  <div class="section-header">
+    <div class="section-num">2</div>
+    <div>
+      <h2>Sección 2 — Consultar disponibilidad</h2>
+      <p>Cómo ver qué días y turnos están libres</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Qué muestra el calendario?</h3>
+    <p>El calendario muestra los <strong>próximos 30 días</strong>. Cada
+    día aparece con un color según su estado:</p>
+
+    <div class="info info-green">
+      <p><strong>🟢 Verde (Disponible):</strong> ambos turnos (mañana y tarde)
+      están libres. Puedes reservar.</p>
+    </div>
+
+    <div class="info info-red">
+      <p><strong>🔴 Rojo (Reservado):</strong> el día tiene al menos una
+      reserva. Puedes reservar el turno libre (si hay uno).</p>
+    </div>
+
+    <div class="info info-orange">
+      <p><strong>⚪ Gris (Pasado):</strong> el día ya pasó. No se puede reservar.</p>
+    </div>
+
+    <h3>Paso a paso para consultar disponibilidad</h3>
+    <div class="step">
+      <ol>
+        <li>Después de iniciar sesión correctamente, verás el calendario de
+        30 días.</li>
+        <li>Encuentra tu nombre en la parte de arriba (ej: "👤 María del Carmen Pérez (Esposa)").</li>
+        <li>Busca un día con fondo VERDE (ambos turnos libres).</li>
+        <li>Si solo quieres un turno, también puedes elegir un día ROJO
+        (que tenga un turno libre).</li>
+        <li>Haz click en el día que quieras.</li>
+        <li>El sistema te lleva a la pantalla de reserva (Sección 3).</li>
+      </ol>
+    </div>
+
+    <h3>Vista del calendario</h3>
+    <div class="mockup">
+<pre>
+┌──────────────────────────────────────────────┐
+│ 📅 Disponibilidad — Salón Social              │
+│                                              │
+│  👤 María del Carmen Pérez (Esposa) ·         │
+│  Apto 105                                    │
+│                                              │
+│  Selecciona un día disponible para ver los    │
+│  turnos. Cada turno cuesta $125.000 COP.      │
+│                                              │
+│  ┌─── OCTUBRE 2026 ─────────────────────┐    │
+│  │ Lun  Mar  Mié  Jue  Vie  Sáb  Dom │    │
+│  │  1    2    3    4    5    6    7  │    │
+│  │ 🟢  🟢  🔴  🟢  🟢  🟢  ⚪        │    │
+│  │  8    9   10   11   12   13   14  │    │
+│  │ 🟢  🟢  🟢  🟢  🔴  🟢  ⚪        │    │
+│  │ 15   16   17   18   19   20   21  │    │
+│  │ 🟢  🔴  🟢  🟢  🟢  🟢  ⚪        │    │
+│  └────────────────────────────────────┘    │
+│                                              │
+│  🟢 Disponible  🔴 Reservado  ⚪ Pasado      │
+│                                              │
+│  [↩️ Cambiar de apartamento]                  │
+└──────────────────────────────────────────────┘
+</pre>
+    </div>
+
+    <h3>Si no encuentras días disponibles</h3>
+    <p>Si todos los días próximos están rojos o grises:</p>
+    <ul>
+      <li>Espera unos días: las reservas con pago pendiente (más de 48h)
+      se cancelan automáticamente y se libera el turno.</li>
+      <li>Intenta con fechas más lejanas (más allá de 30 días contactando
+      a la administración directamente).</li>
+    </ul>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 3: RESERVAR TURNO                                       -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-3">
+  <div class="section-header">
+    <div class="section-num">3</div>
+    <div>
+      <h2>Sección 3 — Reservar un turno</h2>
+      <p>Cómo elegir y reservar la mañana o tarde</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>Los 2 turnos disponibles</h3>
+    <p>Cuando haces click en un día disponible, el sistema te muestra los
+    2 turnos de ese día. Puedes elegir uno o ambos.</p>
+
+    <div class="info info-green">
+      <p><strong>☀️ Turno Mañana:</strong> 8:00 AM a 1:00 PM — $125.000 COP</p>
+    </div>
+
+    <div class="info info-green">
+      <p><strong>🌆 Turno Tarde:</strong> 2:00 PM a 10:00 PM — $125.000 COP</p>
+    </div>
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <ol>
+        <li>Haz click en el día que quieras (Sección 2).</li>
+        <li>Aparecen 2 botones grandes: "☀️ Mañana" y "🌆 Tarde".</li>
+        <li>Si un turno NO está disponible, ese botón aparece deshabilitado
+        (color gris).</li>
+        <li>Haz click en el turno que quieras (mañana, tarde o ambos). Si
+        haces ambos, pagas $250.000 en lugar de $125.000.</li>
+        <li>El sistema te lleva a la pantalla de pago (Sección 4).</li>
+      </ol>
+    </div>
+
+    <h3>Vista de la pantalla</h3>
+    <div class="mockup">
+<pre>
+┌──────────────────────────────────────────────┐
+│ 📝 Reservar turno                             │
+│                                              │
+│  👤 María del Carmen Pérez ·                  │
+│  Apto 105 · 25 de octubre de 2026             │
+│                                              │
+│  Selecciona el turno que deseas reservar.      │
+│  Ambos turnos del mismo día pueden ser         │
+│  reservados (si están disponibles).           │
+│                                              │
+│  ┌────────────────────────────────┐         │
+│  │  ☀️ Mañana  8:00 AM — 1:00 PM   │         │
+│  │            $125.000             │         │
+│  └────────────────────────────────┘         │
+│  ┌────────────────────────────────┐         │
+│  │  🌆 Tarde  2:00 PM — 10:00 PM   │         │
+│  │            $125.000             │         │
+│  └────────────────────────────────┘         │
+│                                              │
+│  [↩️ Volver al calendario]                    │
+└──────────────────────────────────────────────┘
+</pre>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 4: PAGAR Y SUBIR COMPROBANTE                           -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-4">
+  <div class="section-header">
+    <div class="section-num">4</div>
+    <div>
+      <h2>Sección 4 — Pagar y subir comprobante</h2>
+      <p>Cómo confirmar tu reserva con el pago (48 horas de plazo)</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>El flujo completo: 3 pasos</h3>
+    <p>Después de elegir tu turno, el sistema te lleva a la pantalla de
+    pago. Debes completar estos 3 pasos en orden:</p>
+    <ol>
+      <li>📝 <strong>Reservar</strong> (ya completado)</li>
+      <li>💳 <strong>Pagar</strong> con Jelpit</li>
+      <li>📤 <strong>Subir comprobante</strong> (foto/PDF del recibo)</li>
+    </ol>
+
+    <div class="info info-orange">
+      <p><strong>⏰ IMPORTANTE: tienes 48 horas</strong> desde que reservaste
+      para subir el comprobante. Si NO lo subes en ese plazo, la reserva
+      se cancela automáticamente y el horario se libera para otra persona.</p>
+    </div>
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <ol>
+        <li><strong>Paga primero</strong>: haz click en el botón <strong>"🔗 Ir a
+        pagar ahora"</strong> (se abrirá una pestaña nueva con Jelpit, la
+        plataforma de pagos).</li>
+        <li>En Jelpit: selecciona tu método de pago (tarjeta de crédito,
+        débito, PSE, etc.) y completa el pago. <strong>Guarda el comprobante</strong>
+        (PDF, captura de pantalla o foto).</li>
+        <li><strong>Vuelve al portal del salón</strong> (la pestaña con el
+        formulario de comprobante sigue abierta).</li>
+        <li><strong>Sube tu comprobante</strong>: arrastra el archivo a la
+        zona de "Arrastra o haz click para subir el comprobante", O haz
+        click en esa zona y selecciona el archivo desde tu computador.
+          <ul>
+            <li>Formatos aceptados: <strong>PDF, JPG, PNG</strong>.</li>
+            <li>Tamaño máximo: <strong>10MB</strong>.</li>
+          </ul>
+        </li>
+        <li>Una vez seleccionado el archivo, verás su nombre debajo de la
+        zona de subida.</li>
+        <li>Haz click en <strong>"📤 Subir comprobante"</strong> (botón azul).</li>
+        <li>El sistema sube el archivo y marca tu reserva como Pagado.</li>
+        <li>Recibirás un email de confirmación (si lo configuraste).</li>
+      </ol>
+    </div>
+
+    <h3>Vista de la pantalla</h3>
+    <div class="mockup">
+<pre>
+┌──────────────────────────────────────────────┐
+│ 💳 Confirmar y pagar                          │
+│                                              │
+│  👤 María del Carmen Pérez ·                   │
+│  Apto 105 · 25 de octubre (☀️ Mañana)         │
+│                                              │
+│  ┌── Valor a pagar ────────────────────┐     │
+│  │             $125.000 COP            │     │
+│  │  [🔗 Ir a pagar ahora]              │     │
+│  │  https://web-conjuntos.jelpit.com/...│     │
+│  └─────────────────────────────────────┘     │
+│                                              │
+│  1.Reservar → 2.Pagar → 3.Subir → 4.Listo   │
+│                                              │
+│  ⏰ Plazo: tiene 48 horas para subir el        │
+│  comprobante.                                │
+│                                              │
+│  ┌── Subir comprobante ──────────────────┐   │
+│  │ 📎 Arrastra o haz click para subir   │   │
+│  │ PDF, JPG o PNG. Máximo 10MB.         │   │
+│  │ [Seleccionar archivo]                │   │
+│  │ comprobante_pago.pdf (125KB)        │   │
+│  └─────────────────────────────────────┘   │
+│                                              │
+│  [📤 Subir comprobante]                      │
+│  [❌ Cancelar reserva]                       │
+└──────────────────────────────────────────────┘
+</pre>
+    </div>
+
+    <h3>¿Qué pasa si no subo el comprobante a tiempo?</h3>
+    <p>El sistema tiene un trigger automático que corre cada hora y verifica
+    las reservas. Si tu reserva tiene más de 48 horas sin comprobante,
+    se marca automáticamente como <strong>"Expirado"</strong> y el turno se
+    libera para otra persona. Recibirás un email avisándote.</p>
+
+    <h3>Si ya pagaste pero el comprobante no se sube</h3>
+    <p>Puede pasar que:</p>
+    <ul>
+      <li>El archivo es muy pesado (>10MB): comprímelo o conviértelo a JPG.</li>
+      <li>El formato no es válido: usa PDF, JPG o PNG.</li>
+      <li>El internet está lento: espera y reintenta.</li>
+    </ul>
+    <p>Si el problema persiste, escríbenos a
+    <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a>.</p>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 5: MIS RESERVAS                                         -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-5">
+  <div class="section-header">
+    <div class="section-num">5</div>
+    <div>
+      <h2>Sección 5 — Ver tus reservas</h2>
+      <p>Cómo consultar el estado de tus reservas</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Qué muestra "Mis reservas"?</h3>
+    <p>La lista completa de tus reservas (no canceladas). Cada reserva
+    muestra:</p>
+    <ul>
+      <li><strong>ID de reserva</strong>: número único (ej: RS-0001)</li>
+      <li><strong>Fecha</strong>: día reservado</li>
+      <li><strong>Turno</strong>: mañana o tarde</li>
+      <li><strong>Estado</strong>: PendientePago, Pagado, Cancelado, Expirado, CanceladoPorAdmin</li>
+      <li><strong>Comprobante</strong>: link para ver tu archivo subido</li>
+      <li><strong>Acciones</strong>: cancelar (si todavía está dentro del plazo)</li>
+    </ul>
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <ol>
+        <li>Después de iniciar sesión, en el calendario hay un botón para
+        ver "Mis reservas" (visible según el flujo).</li>
+        <li>También puedes volver al calendario y seleccionar la opción
+        "Mis reservas" si está disponible.</li>
+        <li>Verás una lista con todas tus reservas activas y pasadas.</li>
+        <li>Para cada reserva: revisa el estado y el comprobante.</li>
+      </ol>
+    </div>
+
+    <h3>Los 5 estados posibles</h3>
+    <div class="info info-orange">
+      <p><strong>PendientePago:</strong> acabas de reservar pero aún NO has
+      subido el comprobante. Tienes 48h para hacerlo.</p>
+    </div>
+
+    <div class="info info-green">
+      <p><strong>Pagado:</strong> subiste el comprobante y fue aceptado.
+      Tu reserva está confirmada. ¡Nos vemos en el salón!</p>
+    </div>
+
+    <div class="info info-blue">
+      <p><strong>Cancelado:</strong> tú mismo cancelaste la reserva antes
+      del plazo.</p>
+    </div>
+
+    <div class="info info-red">
+      <p><strong>Expirado:</strong> pasaron más de 48h sin subir comprobante.
+      El sistema la canceló automáticamente.</p>
+    </div>
+
+    <div class="info info-red">
+      <p><strong>CanceladoPorAdmin:</strong> la administración canceló tu
+      reserva (por motivo justificado, ej: el comprobante no correspondía).</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- SECCIÓN 6: CANCELAR RESERVA                                     -->
+<!-- ============================================================== -->
+<div class="section-manual" id="seccion-6">
+  <div class="section-header">
+    <div class="section-num">6</div>
+    <div>
+      <h2>Sección 6 — Cancelar una reserva</h2>
+      <p>Cómo cancelar si cambias de planes</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>¿Cuándo puedo cancelar?</h3>
+    <p>Puedes cancelar tu reserva en cualquier momento <strong>antes del
+    evento</strong>. La cancelación:</p>
+    <ul>
+      <li>Si la cancelas <strong>sin haber pagado</strong>: simplemente se
+      elimina, sin cobros.</li>
+      <li>Si la cancelas <strong>después de haber pagado</strong>: la
+      administración evaluará si hay reembolso (depende de la anticipación).</li>
+    </ul>
+
+    <h3>Paso a paso</h3>
+    <div class="step">
+      <ol>
+        <li>Ve a "Mis reservas" (Sección 5).</li>
+        <li>Busca la reserva que quieres cancelar.</li>
+        <li>Haz click en el botón <strong>"❌ Cancelar reserva"</strong>.</li>
+        <li>Confirma la cancelación en el cuadro de diálogo que aparece.</li>
+        <li>El sistema marca la reserva como "Cancelada" y libera el turno.</li>
+      </ol>
+    </div>
+
+    <div class="info info-orange">
+      <p><strong>⚠️ Importante:</strong> si ya pagaste y cancelas con menos
+      de 48h de anticipación, la administración podría no reembolsar el
+      dinero. Consulta las políticas en
+      <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a>.</p>
+    </div>
+
+    <h3>¿Qué pasa con el turno liberado?</h3>
+    <p>El turno vuelve a estar disponible en el calendario para que otra
+    persona lo reserve. No pierdes tu lugar de prioridad.</p>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- PREGUNTAS FRECUENTES                                            -->
+<!-- ============================================================== -->
+<div class="section-manual" id="preguntas">
+  <div class="section-header">
+    <div class="section-num">?</div>
+    <div>
+      <h2>Preguntas frecuentes</h2>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>1. ¿Cuánto cuesta reservar el salón?</h3>
+    <p>Cada turno cuesta $125.000 COP. Si quieres todo el día (mañana +
+    tarde), son $250.000 COP.</p>
+
+    <h3>2. ¿Puedo reservar el salón por más de un día?</h3>
+    <p>Sí, pero debes hacer una reserva por cada día (cada reserva cubre
+    un solo día). Por ejemplo, si quieres sábado y domingo, haces 2
+    reservas separadas.</p>
+
+    <h3>3. ¿Puedo reservar un día festivo?</h3>
+    <p>Sí, el salón se puede reservar cualquier día, incluyendo festivos
+    y domingos.</p>
+
+    <h3>4. ¿Qué pasa si no subo el comprobante a tiempo?</h3>
+    <p>El sistema cancela automáticamente la reserva después de 48 horas y
+    libera el turno. Te llega un email avisándote.</p>
+
+    <h3>5. ¿Puedo pagar en efectivo?</h3>
+    <p>No desde el portal. Solo pago en línea con Jelpit (tarjeta o PSE).
+    Si necesitas otro método de pago, contacta directamente a la
+    administración.</p>
+
+    <h3>6. ¿Por qué mi apartamento aparece en "mora"?</h3>
+    <p>Porque debe 2 o más meses de administración. Solo puedes reservar
+    cuando estés al día.</p>
+
+    <h3>7. ¿Puedo cambiar el turno después de reservar?</h3>
+    <p>Sí, pero debes cancelar la reserva actual y hacer una nueva. Solo
+    se puede editar el comprobante (reemplazarlo) si la reserva aún está
+    en estado PendientePago.</p>
+
+    <h3>8. ¿Qué pasa si la administración cancela mi reserva?</h3>
+    <p>La reserva se marca como "CanceladoPorAdmin" con un motivo. Te
+    contactarán por email explicándote el motivo y, si aplica, el
+    procedimiento de reembolso.</p>
+
+    <h3>9. ¿Puedo ver quién más ha reservado el salón?</h3>
+    <p>No, la información de otras reservas es privada. Solo ves la
+    disponibilidad (verde/rojo) en el calendario.</p>
+
+    <h3>10. ¿Necesito limpiar el salón después de usarlo?</h3>
+    <p>Sí, las condiciones de uso incluyen dejar el salón limpio y en
+    buen estado. Si no se cumple, se pueden cobrar cargos adicionales.</p>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- ERRORES COMUNES                                                 -->
+<!-- ============================================================== -->
+<div class="section-manual" id="errores">
+  <div class="section-header">
+    <div class="section-num">!</div>
+    <div>
+      <h2>Errores comunes y cómo resolverlos</h2>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>"Apartamento en mora"</h3>
+    <p><strong>Causa:</strong> el apartamento debe 2+ meses de administración.</p>
+    <p><strong>Solución:</strong> paga las cuotas atrasadas y espera 24-48h
+    para que el sistema actualice.</p>
+
+    <h3>"No se reconoce la cédula"</h3>
+    <p><strong>Causa:</strong> la cédula no corresponde a ningún residente
+    del apartamento registrado.</p>
+    <p><strong>Solución:</strong> verifica que estés usando tu propia cédula
+    (sin puntos ni guiones). Si el propietario aún no te ha agregado,
+    pídele que lo haga primero.</p>
+
+    <h3>"Este turno ya está reservado"</h3>
+    <p><strong>Causa:</strong> otra persona acaba de reservar ese turno
+    mientras tú lo elegías.</p>
+    <p><strong>Solución:</strong> vuelve al calendario y elige otro turno
+    libre.</p>
+
+    <h3>"No se pudo subir el comprobante"</h3>
+    <p><strong>Causa:</strong> archivo muy pesado (>10MB), formato incorrecto,
+    o internet lento.</p>
+    <p><strong>Solución:</strong></p>
+    <ul>
+      <li>Verifica que el archivo sea PDF, JPG o PNG.</li>
+      <li>Verifica que pese menos de 10MB (comprímelo si es necesario).</li>
+      <li>Verifica tu conexión a internet.</li>
+      <li>Intenta de nuevo.</li>
+    </ul>
+
+    <h3>"El comprobante expiró (más de 48h)"</h3>
+    <p><strong>Causa:</strong> pasaron más de 48 horas desde que reservaste
+    y no subiste el comprobante.</p>
+    <p><strong>Solución:</strong> la reserva se canceló automáticamente.
+    Empieza el proceso de nuevo, haz una nueva reserva, paga y sube
+    comprobante de inmediato.</p>
+
+    <h3>"Este archivo no es PDF, JPG ni PNG"</h3>
+    <p><strong>Causa:</strong> el formato del archivo no es válido.</p>
+    <p><strong>Solución:</strong> convierte tu comprobante a PDF (recomendado),
+    JPG o PNG. Puedes usar cualquier app de fotos para convertir.</p>
+
+    <h3>"Demasiados intentos fallidos"</h3>
+    <p><strong>Causa:</strong> escribiste mal tus datos 5 veces seguidas.</p>
+    <p><strong>Solución:</strong> espera 15 minutos y vuelve a intentar con
+    tus datos correctos.</p>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- GLOSARIO                                                        -->
+<!-- ============================================================== -->
+<div class="section-manual" id="glosario">
+  <div class="section-header">
+    <div class="section-num">A</div>
+    <div>
+      <h2>Glosario (palabras técnicas explicadas)</h2>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>Comprobante</h3>
+    <p>Documento que demuestra que hiciste un pago. Puede ser PDF (descarga
+    del banco), JPG o PNG (foto o captura de pantalla).</p>
+
+    <h3>Jelpit</h3>
+    <p>Plataforma de pagos en línea que usa el conjunto. Acepta tarjetas
+    de crédito, débito y PSE.</p>
+
+    <h3>Mora</h3>
+    <p>Cuando debes 2 o más meses de administración. En mora NO puedes
+    usar servicios comunes como el salón.</p>
+
+    <h3>PendientePago</h3>
+    <p>Estado de una reserva recién creada que aún NO tiene comprobante
+    subido. Tienes 48h para subirlo.</p>
+
+    <h3>Pagado</h3>
+    <p>Estado de una reserva que ya tiene comprobante subido y aceptado.
+    Está confirmada.</p>
+
+    <h3>PSE</h3>
+    <p>Pagos Seguros en Línea. Sistema de pago con débito directo a tu
+    cuenta bancaria colombiana (disponible en Jelpit).</p>
+
+    <h3>Reserva</h3>
+    <p>Solicitud para usar el salón social en una fecha y turno específicos.</p>
+
+    <h3>Salón Social</h3>
+    <p>Espacio común del conjunto destinado a eventos (cumpleaños, grados,
+    reuniones familiares, etc.).</p>
+
+    <h3>Slot / Turno</h3>
+    <p>Bloque de tiempo en que se puede reservar el salón. Hay 2 turnos
+    por día: mañana y tarde.</p>
+
+    <h3>Trigger automático</h3>
+    <p>Programa interno de Apps Script que corre cada hora para cancelar
+    reservas que superaron las 48h sin comprobante.</p>
+
+    <h3>URL</h3>
+    <p>La dirección de una página web. La del salón social es:<br>
+    <code>https://fabig76.github.io/cerro-azul-residentes/salon-social.html</code></p>
+
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- AYUDA                                                           -->
+<!-- ============================================================== -->
+<div class="section-manual" id="ayuda">
+  <div class="section-header">
+    <div class="section-num">?</div>
+    <div>
+      <h2>¿Necesitas ayuda?</h2>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <p>Si después de leer este manual aún tienes dudas o problemas:</p>
+
+    <h3>📧 Correo electrónico</h3>
+    <p>Escríbenos a: <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a></p>
+    <p>Por favor incluye:</p>
+    <ul>
+      <li>Tu N° de apartamento</li>
+      <li>Tu nombre completo</li>
+      <li>Fecha y turno que intentabas reservar (si aplica)</li>
+      <li>Una descripción clara del problema (con captura de pantalla)</li>
+      <li>El error exacto que te aparece (si aplica)</li>
+    </ul>
+
+    <h3>🕐 Horario de atención</h3>
+    <p>Lunes a viernes de 8:00 AM a 5:00 PM.<br>
+    Sábados de 9:00 AM a 12:00 PM (solo urgencias).</p>
+
+    <div class="info info-green">
+      <p><strong>✅ Antes de escribirnos, verifica:</strong></p>
+      <ul>
+        <li>Tu N° de apartamento está escrito correctamente.</li>
+        <li>Tu cédula está sin puntos ni guiones.</li>
+        <li>El apartamento está al día en administración.</li>
+        <li>El archivo del comprobante es PDF, JPG o PNG menor a 10MB.</li>
+        <li>Estás usando un navegador actualizado.</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<footer class="site-footer">
+  <p>
+    Urbanización Cerro Azul · NIT 900770444 · Bello / Niquía<br>
+    Manual del Salón Social — Portal de Reservas<br>
+    Versión 1.0 · 26-Sept-2026<br>
+    <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a>
+  </p>
+</footer>
+
+</body>
+</html>
