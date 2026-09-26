@@ -1577,12 +1577,17 @@ function vigilanteVerResidentes(query) {
       inmobContacto + ' ' + vehiculoTexto).toLowerCase();
     if (todo.indexOf(query) !== -1) {
       // Construir respuesta FILTRADA (sin correos/celulares/telefonos)
+      // BUGFIX-010 (SEG-001 backend): NO enviar campos sensibles que son
+      // credenciales de edición (numForm, ccProp, firmaNom, firmaCC,
+      // cc de residentes). El vigilante NO los necesita y son suficientes
+      // para suplantar al propietario en "Editar mi registro".
+      // Mantenemos rowNumber porque el frontend lo usa para identificar
+      // el resultado clickeado, y ccEncargado porque se muestra en el
+      // detalle (no es credencial de edición).
       const resultado = {
-        numForm: numForm,
         apto: apto,
         diligencia: diligencia,
         nombreProp: nombre,
-        ccProp: cc,
         nombreEncargado: encargado,
         ccEncargado: ccEncargado,
         nombreInmobiliaria: inmobRazon,
@@ -1599,18 +1604,15 @@ function vigilanteVerResidentes(query) {
         parqTerNom: String(row[21] || ''),
         parqTerApto: String(row[22] || ''),
         mascotas: [],
-        firmaNom: String(row[139] || ''),
-        firmaCC: String(row[140] || ''),
         rowNumber: HEADER_ROW + 1 + i
       };
-      // Residentes (4): solo nombre y CC
+      // Residentes (4): solo nombre y parentesco (NO CC — BUGFIX-010)
       for (let r = 0; r < 4; r++) {
         const base = 29 + r * 5;
         const rn = String(row[base] || '');
         if (rn) {
           resultado.residentes.push({
             nombre: rn,
-            cc: String(row[base + 1] || ''),
             parent: String(row[base + 4] || '')
           });
         }

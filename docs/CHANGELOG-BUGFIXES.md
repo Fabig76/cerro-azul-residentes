@@ -574,5 +574,110 @@ enrutaron en doPost del Codigo.gs desplegado.
 
 ---
 
-Última actualización: 26-Sept-2026
+**Última actualización:** 25-Sept-2026
+Mantenedor: Hermes Agent + Fabio Lesmes (operador)
+
+---
+
+## BUGFIX-010 · SEG-001 backend vigilante devuelve credenciales de edición
+
+**Fecha:** 26-Sept-2026 (esta sesión, BUGFIX-009 día anterior)
+**Severidad:** ALTA — riesgo legal bajo Ley 1581/2012
+**Bug latente desde:** V9 (24-Sept-2026) cuando se agregó `vigilanteVerResidentes`
+**Detectado por:** Revisión de hallazgos de seguridad en sesión BUGFIX-009
+
+**Síntoma:**
+El backend `vigilanteVerResidentes` (Codigo.gs líneas 1541-1680) enviaba
+al vigilante campos que son **credenciales de edición** suficientes para
+suplantar al propietario en "Editar mi registro" del formulario público:
+- `numForm` (CA-XXXX — llave de edición)
+- `ccProp` (cédula del propietario — requerida para editar)
+- `firmaNom`, `firmaCC` (datos de firma)
+- `residentes[].cc` (CCs de otros residentes del apto)
+
+Aunque el frontend `vigilantes.js` ya no mostraba estos campos en pantalla
+(fix anterior de solo frontend, 25-Sept), el backend **seguía enviándolos
+por la red**. Cualquier vigilante con DevTools podía verlos en la respuesta
+JSON del fetch y usarlos para:
+1. Abrir `index.html` → "Editar mi registro"
+2. Ingresar CA-XXXX + apto + CC del propietario
+3. Modificar datos del propietario sin su consentimiento
+
+**Fix (específico de este bug):**
+
+En `apps-script/Código.gs` línea 1581-1603, eliminar del JSON de respuesta:
+
+```diff
+const resultado = {
+-  numForm: numForm,                        // ELIMINADO
+   apto: apto,
+   diligencia: diligencia,
+   nombreProp: nombre,
+-  ccProp: cc,                              // ELIMINADO
+   nombreEncargado: encargado,
+   ccEncargado: ccEncargado,                // MANTENIDO (no es credencial de edición)
+   ...
+   mascotas: [],
+-  firmaNom: String(row[139] || ''),        // ELIMINADO
+-  firmaCC: String(row[140] || ''),         // ELIMINADO
+   rowNumber: HEADER_ROW + 1 + i           // MANTENIDO (frontend lo usa)
+ };
+-// Residentes: solo nombre y CC
++// Residentes: solo nombre y parentesco (NO CC)
+ for (let r = 0; r < 4; r++) {
+   resultado.residentes.push({
+     nombre: rn,
+-    cc: String(row[base + 1] || ''),     // ELIMINADO
+     parent: String(row[base + 4] || '')
+   });
+ }
+```
+
+**Por qué mantener `rowNumber` y `ccEncargado`:**
+- `rowNumber` lo usa el frontend para identificar qué resultado fue clickeado
+  (vigilantes.js líneas 131, 141-142)
+- `ccEncargado` se muestra en el detalle del encargado (vigilantes.js línea 160)
+  y NO es credencial de edición (no sirve para "Editar mi registro")
+
+**Por qué esto resuelve SEG-001 sin falsos negativos:**
+- `numForm` + `ccProp` eran las **únicas** llaves necesarias para "Editar mi
+  registro". Al eliminarlas del JSON, el vigilante ya no puede extraer
+  estas credenciales inspeccionando la respuesta del fetch
+
+**Archivos afectados:**
+- `apps-script/Código.gs` (MOD, -4 campos sensibles)
+
+**Verificación de no-regresión:**
+- `grep -c "ccProp" vigilantes.js` → 0 (frontend NO usa ccProp)
+- `grep -c "numForm" vigilantes.js` → 0 (frontend NO usa numForm)
+- `grep -c "firmaNom" vigilantes.js` → 0
+- `grep -c "firmaCC" vigilantes.js` → 0
+- `grep -c "ccEncargado" vigilantes.js` → 1 (sigue usado, no se rompió)
+- `grep -c "rowNumber" vigilantes.js` → 3 (sigue usado, no se rompió)
+- `node --check Código.gs` → ✓ OK
+
+**Otros archivos JS que usan los campos quitados (todos OK porque usan otros endpoints):**
+- `js/admin.js` — usa `ccProp`/`numForm`/`firmaNom`/`firmaCC` pero con
+  endpoints `adminBuscar`/`adminObtener` (diferentes)
+- `js/estado-cuenta.js` — usa `ccProp`/`numForm` con endpoint `ecConsultar`
+- `js/app.js` — usa `firmaNom`/`firmaCC` con endpoint `lookup`
+
+**Test E2E nuevo (T-VIG-3):**
+Ver `docs/TESTING-PROTOCOL.md` §6 — el vigilante, al hacer una búsqueda,
+NO debe recibir en el JSON los campos `numForm`, `ccProp`, `firmaNom`,
+`firmaCC`, ni `residentes[].cc`.
+
+**Lección aprendida #10:**
+**Siempre filtrar campos sensibles en el BACKEND, no solo en el frontend.**
+El filtrado en frontend es solo cosmético: cualquier persona con
+herramientas de desarrollador puede ver el JSON completo. La verdadera
+protección de datos sensibles es **no enviarlos nunca por la red** si
+no son necesarios para la funcionalidad del usuario que los pide.
+
+**Deploy:** V19 (operador debe hacer deploy manual; ver archivo V19 que
+se subirá a Drive tras aprobación del operador)
+
+---
+
+Última actualización: 26-Sept-2026 13:00
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)

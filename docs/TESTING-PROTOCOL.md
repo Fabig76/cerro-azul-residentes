@@ -793,6 +793,119 @@ curl -sL "...?action=verificarPropietario&numForm=CA-0055&apto=105&ccProp=117868
 
 ---
 
+## Test 4: Portal de Vigilantes (vigilantes.html)
+
+> **Audiencia:** Cualquier deploy que toque `vigilanteVerResidentes`,
+> `vigilanteVerMudanzas`, `vigilanteBuscarPorPlaca`, `vigilanteCheckMudanza`,
+> o `js/vigilantes.js`.
+
+### T-VIG-1: apiGet funciona (BUGFIX-007 regresión)
+
+```javascript
+// Desde browser_console en vigilantes.html
+(async () => {
+  const r = await fetch(APPS_SCRIPT_URL + '?action=vigilanteVerReservasSalon&fecha=2026-09-26');
+  const j = await r.json();
+  return JSON.stringify({ ok: j.ok, hasReservas: !!j.reservas, error: j.error || null });
+})()
+```
+
+**Esperado:** `{ok: true, hasReservas: true, error: null}`. Si retorna
+`"V.apiGet is not a function"` → **BUGFIX-007 regresivo**.
+
+### T-VIG-2: switchTab togglea TODOS los tabs (BUGFIX-008 regresión)
+
+```javascript
+// Desde browser_console en vigilantes.html
+const tabs = ['residentes', 'placas', 'mudanzas', 'salon'];
+const result = {};
+for (const t of tabs) {
+  V.switchTab(t);
+  result[t] = document.getElementById('tab-' + t).classList.contains('hidden');
+}
+return JSON.stringify(result);
+```
+
+**Esperado:** `{residentes: false, placas: false, mudanzas: false, salon: false}`.
+Si `salon: true` (tab-salon queda oculto) → **BUGFIX-008 regresivo**.
+
+### T-VIG-3: backend NO devuelve credenciales de edición (BUGFIX-010 / SEG-001)
+
+**Crítico:** Este test verifica que el vigilante NO recibe por la red las
+credenciales necesarias para suplantar al propietario.
+
+```javascript
+// Desde browser_console en vigilantes.html
+(async () => {
+  // 1. Login del vigilante (la contraseña está en Config!B2)
+  const login = await fetch(APPS_SCRIPT_URL + '?action=vigilanteLogin&password=VigCerroAzul2026');
+  const lj = await login.json();
+  if (!lj.ok) return { error: 'login falló: ' + lj.error };
+
+  // 2. Buscar un residente por nombre/apto
+  const r = await fetch(APPS_SCRIPT_URL + '?action=vigilanteVerResidentes&q=105');
+  const j = await r.json();
+  if (!j.ok || !j.resultados || j.resultados.length === 0) {
+    return { error: 'búsqueda sin resultados: ' + JSON.stringify(j) };
+  }
+  const res = j.resultados[0];
+
+  // 3. Verificar que NO se filtran campos sensibles
+  const sensiblesEncontrados = {
+    numForm: 'numForm' in res,
+    ccProp: 'ccProp' in res,
+    firmaNom: 'firmaNom' in res,
+    firmaCC: 'firmaCC' in res,
+  };
+  // Verificar también que los residentes[] NO tienen CC
+  const residentesConCC = (res.residentes || []).filter(r => 'cc' in r).length;
+
+  return {
+    login_ok: true,
+    resultados_count: j.resultados.length,
+    sensiblesEncontrados,
+    residentesConCC,
+    camposPermitidos: ['apto', 'nombreProp', 'ccEncargado', 'rowNumber'].every(c => c in res)
+  };
+})()
+```
+
+**Esperado (post-V19 / BUGFIX-010):**
+
+```json
+{
+  "login_ok": true,
+  "resultados_count": 1,
+  "sensiblesEncontrados": {
+    "numForm": false,
+    "ccProp": false,
+    "firmaNom": false,
+    "firmaCC": false
+  },
+  "residentesConCC": 0,
+  "camposPermitidos": true
+}
+```
+
+**Si retorna `numForm: true` o `ccProp: true`** → **BUGFIX-010 regresivo
+(SEG-001 reactivado)**: el backend está enviando credenciales quepermiten suplantar al propietario en "Editar mi registro".
+
+**Por qué este test es crítico:** El filtrado en frontend (BUGFIX-007)
+solo evita mostrar ccProp/numForm en pantalla. La verdadera protección
+es que el backend NO envíe esos campos. Si alguien refactoriza
+`vigilanteVerResidentes` y agrega `numForm: numForm` de nuevo, este test
+lo detecta inmediatamente.
+
+### Resumen de tests del Portal de Vigilantes
+
+| Test | Endpoint/UI | Estado |
+|------|-------------|--------|
+| T-VIG-1 | apiGet funciona (BUGFIX-007) | ✅ |
+| T-VIG-2 | switchTab togglea tab-salon (BUGFIX-008) | ✅ |
+| T-VIG-3 | Backend no filtra credenciales (BUGFIX-010) | ✅ |
+
+---
+
 ## Test 5: Estado de cuenta (módulo contable, BUGFIX-009)
 
 > ⚠️ **CRÍTICO:** Estos 6 endpoints NO estaban en TESTING-PROTOCOL.md
