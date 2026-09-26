@@ -131,3 +131,24 @@ https://raw.githubusercontent.com/Fabig76/cerro-azul-residentes/main/docs/manual
 *Archivo generado automáticamente al final de la sesión del 25-Sept-2026.
 Próxima sesión: continuar con mejoras del módulo salón social o cualquier
 otra tarea del proyecto.*
+---
+
+## 8. Validación post-deploy (sesión 26-Sept-2026)
+
+**Apps Script desplegado:** V20 (26-Sept 13:10)
+
+**V19 (BUGFIX-010) — SEG-001 backend vigilante:**
+- T-VIG-3 verificado: `vigilanteVerResidentes?q=105` NO devuelve
+  `numForm`, `ccProp`, `firmaNom`, `firmaCC`, `residentes[].cc`. ✓
+- T-VIG-4 verificado: SÍ devuelve `apto`, `nombreProp`, `ccEncargado`,
+  `rowNumber`, `vehiculos`, `mascotas`, `parqueaderos`. ✓
+- Frontend `vigilantes.html` sigue renderizando el resultado correctamente
+  con los datos no sensibles.
+
+**V20 (BUGFIX-011):** No afecta al portal de vigilancia (solo al admin).
+Pero `vigilanteVerMudanzas` (vigilante) sigue funcionando igual.
+
+**Pendiente:** Ninguno. El portal de vigilancia está estable.
+
+Última actualización: 26-Sept-2026 13:30
+Mantenedor: Hermes Agent + Fabio Lesmes (operador)

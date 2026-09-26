@@ -1938,5 +1938,102 @@ mudanzas, lookup, nextId — todos OK.
 
 ---
 
-Última actualización: 26-Sept-2026 12:30
+## 25. BUGFIX-010 / SEG-001 — Backend vigilante sin credenciales de edición (V19, 26-Sept-2026)
+
+**Severidad:** ALTA — riesgo legal bajo Ley 1581/2012.
+
+**Síntoma:** El backend `vigilanteVerResidentes` (Codigo.gs líneas 1541-1680)
+enviaba al vigilante campos que son **credenciales de edición** suficientes
+para suplantar al propietario en "Editar mi registro":
+- `numForm` (CA-XXXX — llave de edición)
+- `ccProp` (cédula del propietario)
+- `firmaNom`, `firmaCC`
+- `residentes[].cc`
+
+Aunque el frontend `vigilantes.js` ya no mostraba estos campos (fix anterior
+25-Sept), el backend los seguía enviando por la red.
+
+**Fix (V19, 26-Sept 12:37):**
+
+En `apps-script/Código.gs` `vigilanteVerResidentes`:
+- Eliminar del JSON de respuesta: `numForm`, `ccProp`, `firmaNom`, `firmaCC`,
+  `residentes[].cc`
+- Mantener: `apto`, `nombreProp`, `diligencia`, `ccEncargado`, `rowNumber`,
+  `vehiculos`, `mascotas`, `parqueaderos`
+
+**Archivos:**
+- `apps-script/Código.gs` (-4 campos sensibles)
+- `docs/CHANGELOG-BUGFIXES.md` (BUGFIX-010)
+- `docs/TESTING-PROTOCOL.md` (Test 4 vigilantes T-VIG-1/2/3)
+
+**V19 Drive:**
+- ID `1G5ifUbsUgZ9jqjQI6IU1bsAlWUgKK4up`
+- MD5 `40e224f2d0071388fc46aff72e6910f4` (149.081 bytes, 95 funciones)
+
+**Lección aprendida #10:** Siempre filtrar campos sensibles en el BACKEND,
+no solo en el frontend. La verdadera protección es NO enviar los datos
+por la red si no son necesarios.
+
+---
+
+## 26. BUGFIX-011 — Admin mudanzas con filtro "Próximos N días" (V20, 26-Sept-2026)
+
+**Severidad:** MEDIA — funcionalidad faltante.
+
+**Síntoma:** El portal admin (admin.html → pestaña "Mudanzas") NO tenía
+forma rápida de ver las mudanzas de los próximos días. Solo podía filtrar
+por estado, torre y fechaDesde (≥), pero NO tenía un filtro equivalente
+al del vigilante ("Confirmadas futuras + Canceladas recientes").
+
+**Fix (V20, 26-Sept 13:10):**
+
+Backend `adminListarReservasMudanzas` ahora acepta parámetro opcional
+`proxDias` que filtra por [hoy, hoy+N]:
+```javascript
+function adminListarReservasMudanzas(estado, torre, fechaDesde, fechaHasta, proxDias) {
+  // ... si proxDias está definido, calcular rango desde hoy hasta hoy+N
+}
+```
+
+Frontend `admin.html`: nuevo checkbox "Solo próximos N días" (marcado por
+defecto, valor 8) + input num para cambiar rango (1-60 días).
+
+Frontend `js/admin.js`: `cargarMudanzasList()` envía `proxDias` si el
+checkbox está marcado.
+
+**Archivos:**
+- `apps-script/Código.gs` (+18 backend + 6 routing)
+- `admin.html` (+4 UI)
+- `js/admin.js` (+7 lógica)
+- `docs/CHANGELOG-BUGFIXES.md` (BUGFIX-011)
+- `docs/TESTING-PROTOCOL.md` (Test 2.5.0 con 4 variantes de proxDias)
+
+**V20 Drive:**
+- ID `1Ncb8gwD1-m2RMnX7w8Sbw3pKpzJI044A`
+- MD5 `70ca1033084c9dc27fdf0aefa562f2c9` (149.880 bytes, 95 funciones)
+
+**Lección aprendida #11:** Mantener paridad entre portales admin y
+vigilancia. Si el vigilante tiene una lógica útil, replicarla en admin.
+
+---
+
+## Resumen de versiones Apps Script desplegadas (26-Sept-2026)
+
+| Versión | Hora | MD5 | Descripción |
+|---------|------|-----|-------------|
+| V20 | 13:10 | `70ca1033...` | BUGFIX-011: admin mudanzas filtro "Próximos N días" |
+| V19 | 12:37 | `40e224f2...` | BUGFIX-010: SEG-001 backend vigilante |
+| V18 | 12:15 | `691a6f3a...` | BUGFIX-009: routing 6 endpoints `ec*` en `doPost` |
+
+**URL preservada entre todas las versiones:**
+`https://script.google.com/macros/s/AKfycbxp...Zp/exec`
+
+**Validación total post-deploys:**
+- V18: 13/13 tests OK (Test 5 estado cuenta)
+- V19: 12/12 tests OK (Test 4 vigilantes + regresión)
+- V20: 4/4 tests OK (Test 2.5.0 admin mudanzas + validacion rango)
+
+---
+
+Última actualización: 26-Sept-2026 13:30
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)

@@ -200,3 +200,31 @@ final).
 - **D8** Botón BORRA TODO: secciones 5, 5.1, 6, 7, 9, 10
 - **D9** Solo propietario/inmobiliaria puede borrar (valida CC del propietario)
 - **D10** Residente NO tiene botón borrar
+---
+
+## 12. Estado al cierre (sesión 26-Sept-2026 13:30)
+
+**Apps Script desplegado:** V20 (26-Sept 13:10)
+
+El portal del residente (`residente.html`) desplegó con éxito el 25-Sept-2026
+como parte del Apps Script V13. En la sesión del 26-Sept se hicieron 3
+deploys adicionales (V18, V19, V20) que NO afectaron este portal porque
+solo modificaron:
+
+- **V18 (BUGFIX-009):** routing de los 6 endpoints `ec*` del módulo de
+  estado de cuenta. Este portal no usa esos endpoints.
+- **V19 (BUGFIX-010):** eliminación de campos sensibles del JSON de
+  `vigilanteVerResidentes`. Este portal no llama a ese endpoint.
+- **V20 (BUGFIX-011):** filtro "Próximos N días" en la pestaña de mudanzas
+  del portal admin. Este portal no muestra mudanzas.
+
+**Verificación post-deploy (regresión):** El portal del residente sigue
+funcionando con todos sus flujos (auto-registro, edición, etc.).
+
+**Manual HTML:** `docs/manual-residente.html` (47KB) subido a Drive
+carpeta `1YxXTIvezRpu-0R0fOCNOoVF_iTARTOCN` el 26-Sept-2026.
+
+**Pendiente:** Ninguno (todas las fases completas).
+
+Última actualización: 26-Sept-2026 13:30
+Mantenedor: Hermes Agent + Fabio Lesmes (operador)

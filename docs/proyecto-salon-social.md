@@ -182,3 +182,31 @@ Ver sección §23.6 de GUIA-PROYECTO.md para tabla completa.
 
 *Archivo generado automáticamente al final de la sesión del 25-Sept-2026.
 Sesión cerrada con todas las fases F0-F9 completadas.*
+---
+
+## 13. Estado al cierre (sesión 26-Sept-2026 13:30)
+
+**Apps Script desplegado:** V20 (26-Sept 13:10)
+
+El portal del salón (`salon-social.html`) desplegó con éxito el 25-Sept-2026
+como parte del Apps Script V14. En la sesión del 26-Sept se hicieron 3
+deploys adicionales que NO afectaron este portal:
+
+- **V18 (BUGFIX-009):** routing de los 6 endpoints `ec*` del módulo
+  contable. El salón social usa `reservarSalon`, `subirComprobanteSalon`,
+  etc., NO usa endpoints `ec*`.
+- **V19 (BUGFIX-010):** SEG-001 backend vigilante. No afecta al salón.
+- **V20 (BUGFIX-011):** filtro "Próximos N días" en admin mudanzas. La
+  pestaña Salón Social del admin sigue funcionando igual.
+
+**Verificación post-deploy (regresión):** El portal del salón sigue
+funcionando: `dispSalon`, `verificarAccesoSalon` retornan OK desde
+navegador real.
+
+**Manual HTML:** `docs/manual-salon-social.html` (43KB) subido a Drive
+carpeta `1YxXTIvezRpu-0R0fOCNOoVF_iTARTOCN` el 26-Sept-2026.
+
+**Pendiente:** Ninguno (F0-F9 completas, V14-V20 sin regresiones).
+
+Última actualización: 26-Sept-2026 13:30
+Mantenedor: Hermes Agent + Fabio Lesmes (operador)

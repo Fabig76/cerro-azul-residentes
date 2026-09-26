@@ -22,7 +22,7 @@ impreso en PDF.
   · **🚚 Agendar mudanza** (sept 2026) — reserva de ascensor para
     mudanzas con validación de cédula del propietario
 
-## Portal administrativo (sept 2026)
+## Portal administrativo (sept 2026, V20 desplegado 26-Sept-2026)
 
   · **URL:** https://fabig76.github.io/cerro-azul-residentes/admin.html
   · Permite al admin buscar, ver y editar TODOS los registros sin
@@ -32,9 +32,13 @@ impreso en PDF.
   · Busca por apto, nombre, cédula, correo, celular o CA-XXXX
   · Edita los 143 campos del registro (básicos, residentes, vehículos,
     mascotas, emergencias, etc.)
+  · **3 pestañas de gestión:**
+    · 👥 Residentes: buscar y editar registros
+    · 📦 Mudanzas: ver reservas con filtro "Próximos N días" (BUGFIX-011)
+    · 🏛️ Salón Social: ver y cancelar reservas
   · **IMPORTANTE:** NO elimina filas del Sheet. Solo edita.
 
-## Portal de vigilancia (sept 2026)
+## Portal de vigilancia (sept 2026, V19 desplegado 26-Sept-2026)
 
   · **URL:** https://fabig76.github.io/cerro-azul-residentes/vigilantes.html
   · Para el personal de vigilancia del conjunto
@@ -47,6 +51,10 @@ impreso en PDF.
   · Marca check de mudanzas con su nombre para auditoría
   · Pestaña especial "🚗 Buscar por placa" para incidentes vehiculares
     (búsqueda parcial, case-insensitive, devuelve apto+propietario)
+  · **BUGFIX-010 / SEG-001 resuelto (V19):** el backend ya NO envía
+    `numForm`, `ccProp`, `firmaNom`, `firmaCC` ni `residentes[].cc` en
+    el JSON de `vigilanteVerResidentes` (Ley 1581/2012). Ver
+    `docs/CHANGELOG-BUGFIXES.md` BUGFIX-010.
 
 ## Portal de estado de cuenta (sept 2026, V18 desplegado 26-Sept-2026)
 
@@ -71,7 +79,7 @@ impreso en PDF.
 ## Stack
 
   · Frontend: HTML/CSS/JS vanilla en GitHub Pages
-  · Backend: Apps Script Web App (`doPost` + `doGet`) — V8 desplegado
+  · Backend: Apps Script Web App (`doPost` + `doGet`) — **V20 desplegado**
   · BD: Google Sheets (`Base datos Cerro azul fomato`)
   · Pestañas del Sheet principal (`Base datos Cerro azul fomato`):
     · `Registros` (143 cols, datos de residentes)
@@ -82,6 +90,25 @@ impreso en PDF.
     · pestaña por mes (`Agosto 2026`, `Septiembre 2026`, …)
     · `_Control`, `Pagos`, `PazYSalvos`
   · Sin servidor propio, sin base de datos externa
+
+## Backend Apps Script — última versión desplegada
+
+- **Apps Script ID:** `17nuyzVYK2yN_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy`
+- **URL preservada:** `https://script.google.com/macros/s/AKfycbxp...Zp/exec`
+- **Última versión: V20 (26-Sept-2026 13:10)**
+  · 149.880 bytes, 95 funciones (70 Codigo.gs + 25 ec* del módulo)
+  · MD5: `70ca1033084c9dc27fdf0aefa562f2c9`
+  · Drive V20: `Codigo_V20_BUGFIX011_MUDANZAS_PROX_DIAS-20260926.gs`
+
+### Historial de deploys recientes (sesión 26-Sept)
+
+| Versión | Hora | BUGFIX | Descripción |
+|---------|------|--------|-------------|
+| V20 | 13:10 | BUGFIX-011 | Admin mudanzas: filtro "Próximos N días" (paridad vigilante) |
+| V19 | 12:37 | BUGFIX-010 | SEG-001: backend vigilante NO envía credenciales de edición |
+| V18 | 12:15 | BUGFIX-009 | Routing 6 endpoints `ec*` en `doPost` (portal estado cuenta) |
+
+Ver `docs/CHANGELOG-BUGFIXES.md` para detalle de cada fix.
 
 ## Documentación
 
