@@ -440,5 +440,116 @@ switchTab / showView / navegación existente antes de agregar vistas nuevas
 
 ---
 
-Última actualización: 25-Sept-2026
+## BUGFIX-009 · 6 endpoints ec* sin routing en doPost (caen a submitRecord)
+
+**Fecha:** 26-Sept-2026
+**Severidad:** ALTA — bloqueaba completamente el portal de estado de cuenta
+ (`estado-cuenta.html`) y `cartera-admin.html` para el administrador
+**Bug latente desde:** 25-Sept-2026 (deploy V12, día del despliegue del módulo)
+**Detectado por:** Operador (Fabio Lesmes) cuando un propietario del apto 504
+ intentó consultar su estado de cuenta
+
+**Síntoma reportado por el usuario:**
+> "un propietario del apto 504 intentó ingresar y salió este mensaje
+> Diligencia como debe ser Propietario, Arrendatario o Tenedor / Otro."
+
+**Causa raíz:**
+En `apps-script/Código.gs`, la función `doPost(e)` (líneas 144-185) tiene
+routing por `action` para los módulos residentes, mudanzas, admin, vigilancia
+y salón social. Pero **NO tiene routing para los 6 endpoints del módulo
+de estado de cuenta** (`ecConsultar`, `ecDescargarFactura`, `ecPazYSalvo`,
+`ecIniciarCarga`, `ecSubirFacturas`, `ecFinalizarCarga`).
+
+Cuando el frontend `estado-cuenta.js` (o `cartera-admin.js` para admin) hace
+un POST con `action: 'ecConsultar'` y `{numForm, apto, ccProp}`, el código
+cae al default `submitRecord(payload)`, que valida `diligencia` y como ese
+campo NO viene en el payload, retorna:
+
+```json
+{"ok": false, "error": "Diligencia como debe ser Propietario, Arrendatario o Tenedor / Otro."}
+```
+
+El frontend muestra ese mensaje literal (no de submitRecord) porque el JSON
+llega correctamente pero el `ok:false` se interpreta como error.
+
+**Por qué NO se detectó durante 30 horas:**
+
+1. **El módulo `modulo-estado-cuenta.gs` SÍ estaba pegado** en Apps Script
+   editor (las funciones `ec*` existen — verificado con `ecConsultar`
+   línea 248 del modulo).
+2. **Las pruebas E2E del V17 (25-Sept 19:35)** se concentraron en el salón
+   social (`adminListarReservasSalon`, `dispSalon`, `verificarAccesoSalon`)
+   y regresiones V13 (`lookup`, `adminLogin`, `vigilanteLogin`).
+3. **Ningún test E2E invocó los 6 endpoints ec***. La sesión del 25-Sept
+   declaró "V12 OK, sin regresiones, 22 endpoints, 18 ec*" **sin probar
+   ninguno de los ec***.
+4. **El operador probó el portal** pero probablemente hizo click en
+   "Consultar" sin completar el flujo (los 3 campos) o probó otra cosa.
+5. **El reporte del propietario 504** del 26-Sept fue el primer uso real
+   completo del endpoint `ecConsultar` con credenciales válidas.
+
+**Fix (específico de este bug):**
+Agregar 6 líneas en `doPost` **inmediatamente después** de
+`const action = String(payload.action || '').trim();` (Codigo.gs línea 153):
+
+```javascript
+// --- ESTADO DE CUENTA (spec-estado-cuenta.md §6.2) ---
+if (action === 'ecConsultar')        return jsonOut(ecConsultar(payload));
+if (action === 'ecDescargarFactura') return jsonOut(ecDescargarFactura(payload));
+if (action === 'ecPazYSalvo')        return jsonOut(ecPazYSalvo(payload));
+if (action === 'ecIniciarCarga')     return jsonOut(ecIniciarCarga(payload));
+if (action === 'ecSubirFacturas')    return jsonOut(ecSubirFacturas(payload));
+if (action === 'ecFinalizarCarga')   return jsonOut(ecFinalizarCarga(payload));
+```
+
+El módulo `modulo-estado-cuenta.gs` (21.082 bytes, md5 `c2634d884e5862aa5cc36fff06713526`)
+ya está pegado en Apps Script editor (verificado durante el deploy V12).
+Solo faltaban estas 6 líneas de enrutamiento.
+
+**Por qué importa el orden:** las 6 líneas deben ir ANTES del routing
+existente (antes de `reservarMudanza`). Si van al final (después del
+comportamiento por defecto), nunca se ejecutan porque `submitRecord`
+siempre corre primero. Esto es exactamente lo que advierte la spec
+`docs/spec-estado-cuenta.md` §6.2:
+
+> "⚠️ **Por qué importa el nombre exacto:** en `doPost`, cualquier
+> `action` no reconocida cae en `submitRecord(payload)` (compatibilidad).
+> Un nombre mal escrito NO devuelve 'Acción no reconocida', sino que
+> intenta crear un registro."
+
+**Archivos afectados:**
+- `apps-script/Código.gs` (MOD, +7 líneas: comentario + 6 if)
+
+**Despliegue:** V18 (operador debe hacer deploy manual después de descargar
+el archivo V18 de Drive — `Codigo_V18_EC_ROUTING_DO_POST_FIX-20260926.gs`,
+ID `1Qu4IQbUHY8lM6WDdRQSoIuQ_6eZAmDaw`, MD5 `691a6f3adc3224fc38170fcc72200e71`).
+
+**Lección aprendida #9:**
+**Nunca declarar "OK sin regresiones" o "TODO funcional" sin haber
+probado cada endpoint público con credenciales reales desde un navegador
+real (browser_console.expression con fetch), no solo con curl.**
+Apps Script Web App **bloquea requests sin User-Agent de navegador**
+(responde HTTP 403 con HTML "Datei kann derzeit nicht geöffnet werden"
+en alemán) — esto hace que las pruebas con curl/fetch desde el sandbox
+sean **falsos negativos**: parecen caídas del backend cuando en realidad
+Apps Script está protegiéndose contra bots.
+
+El protocolo de testing para futuros deploys del módulo estado de cuenta
+(que se agrega a `docs/TESTING-PROTOCOL.md`) es:
+
+```
+# Estado de cuenta (6 endpoints nuevos)
+1. ecConsultar            → CA-0055 + apto 105 + CC 11786889 → estado completo
+2. ecDescargarFactura     → mismo → descarga PDF de 1 página
+3. ecPazYSalvo            → mismo → descarga PDF paz y salvo (PYS-00001)
+4. ecIniciarCarga         → admin password + cartera agosto → {ok, idCarga}
+5. ecSubirFacturas        → mismo + 10 PDFs → {ok, creados}
+6. ecFinalizarCarga       → mismo → pestaña Agosto 2026 ACTIVO
+```
+
+Y los 6 endpoints DEBEN probarse **antes** de declarar el deploy exitoso.
+
+---
+
+Última actualización: 26-Sept-2026
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)

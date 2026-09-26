@@ -2,10 +2,34 @@
 
 > **Propósito:** Estandarizar las pruebas antes de cada deploy para evitar
 > bugs que pasen desapercibidos (como BUGFIX-001/002 donde el endpoint
-> "lookup" no se probó con datos reales durante 18 días).
+> "lookup" no se probó con datos reales durante 18 días, y BUGFIX-009
+> donde los 6 endpoints ec* no se probaron durante 30 horas).
 >
 > **Audiencia:** Cualquier persona que vaya a hacer deploy de Apps Script
 > o push de frontend a producción.
+
+---
+
+## ⚠️ REGLA CRÍTICA SOBRE TESTING DESDE SANDBOX
+
+**NUNCA** uses `curl` o `fetch` desde el sandbox para probar el Apps Script
+Web App. Google Apps Script **bloquea requests sin User-Agent de navegador**
+y devuelve HTTP 403 con HTML "Datei kann derzeit nicht geöffnet werden"
+(en alemán). Esto produce **falsos negativos** — parece que el backend está
+caído cuando en realidad Apps Script está protegiéndose contra bots.
+
+**Cómo testear correctamente desde sandbox:**
+
+```bash
+# Opción 1: desde el navegador real (browser_navigate + browser_console)
+#   El browser tiene User-Agent real y Apps Script responde JSON
+# Opción 2: simular User-Agent de navegador con curl
+curl -A "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/..." \
+     "$URL?action=nextId"
+```
+
+En `browser_console.expression`, usa fetch normal — el navegador inyecta
+el User-Agent correcto automáticamente.
 
 ---
 
@@ -769,5 +793,162 @@ curl -sL "...?action=verificarPropietario&numForm=CA-0055&apto=105&ccProp=117868
 
 ---
 
-Última actualización: 25-Sept-2026
+## Test 5: Estado de cuenta (módulo contable, BUGFIX-009)
+
+> ⚠️ **CRÍTICO:** Estos 6 endpoints NO estaban en TESTING-PROTOCOL.md
+> antes del 26-Sept-2026. BUGFIX-009 ocurrió porque los deploys V12-V17
+> nunca probaron estos endpoints. **SIEMPRE** ejecutar antes de declarar
+> un deploy del módulo contable como listo.
+
+### Setup común
+- Probar desde `browser_console.expression` (NO curl)
+- CA-XXXX de prueba: **CA-0055** (apto 105, CC 11786889, propietario)
+- URL: `https://script.google.com/macros/s/AKfycbxp...Zp/exec`
+
+### T-EC-1: ecConsultar — propietario con saldo 0 (caso feliz)
+
+```javascript
+fetch(URL, {
+  method: 'POST',
+  headers: {'Content-Type':'text/plain;charset=UTF-8'},
+  body: JSON.stringify({
+    action: 'ecConsultar',
+    numForm: 'CA-0055',
+    apto: '105',
+    ccProp: '11786889'
+  })
+}).then(r => r.json()).then(j => console.log(JSON.stringify(j, null, 2)));
+```
+
+**Esperado:**
+```json
+{
+  "ok": true,
+  "periodo": "2026-08",
+  "pestana": "Agosto 2026",
+  "fechaCorte": "2026-08-31",
+  "apto": "105",
+  "nombrePropietario": "...",
+  "cartera": { "apto": "105", "totalCartera": 0, "mesesProm": 0, ... },
+  "factura": { "numCuentaCobro": "...", ... },
+  "pagos": [...],
+  "pazYSalvoHabilitado": true,
+  "linkPago": "..."
+}
+```
+
+**❌ Si retorna:** `{"ok":false,"error":"Diligencia como debe ser..."}`
+→ **BUGFIX-009 regresivo**: el routing ec* se perdió en este deploy.
+
+### T-EC-2: ecDescargarFactura — devuelve PDF en base64
+
+```javascript
+fetch(URL, {
+  method: 'POST',
+  headers: {'Content-Type':'text/plain;charset=UTF-8'},
+  body: JSON.stringify({
+    action: 'ecDescargarFactura',
+    numForm: 'CA-0055', apto: '105', ccProp: '11786889'
+  })
+}).then(r => r.json()).then(j => {
+  if (!j.ok) { console.log('ERROR:', j.error); return; }
+  console.log('nombreArchivo:', j.nombreArchivo, 'base64 length:', j.base64.length);
+});
+```
+
+**Esperado:** `nombreArchivo: "Factura_105_2026-08.pdf"`, base64 con ~80KB
+(1 página de PDF).
+
+### T-EC-3: ecPazYSalvo — genera PDF paz y salvo
+
+```javascript
+fetch(URL, {
+  method: 'POST',
+  headers: {'Content-Type':'text/plain;charset=UTF-8'},
+  body: JSON.stringify({
+    action: 'ecPazYSalvo',
+    numForm: 'CA-0055', apto: '105', ccProp: '11786889'
+  })
+}).then(r => r.json()).then(j => {
+  if (!j.ok) { console.log('ERROR:', j.error); return; }
+  console.log('consecutivo:', j.consecutivo, 'nombreArchivo:', j.nombreArchivo);
+});
+```
+
+**Esperado:** `consecutivo: "PYS-00001"`, `nombreArchivo: "PazYSalvo_105_2026-08.pdf"`.
+
+### T-EC-4: ecIniciarCarga — admin password correcta
+
+```javascript
+fetch(URL, {
+  method: 'POST',
+  headers: {'Content-Type':'text/plain;charset=UTF-8'},
+  body: JSON.stringify({
+    action: 'ecIniciarCarga',
+    password: 'cerroazul2026',
+    periodo: '2026-08',
+    nombrePestana: 'Agosto 2026',
+    fechaCorte: '2026-08-31',
+    filas: [['101','APTO 101','Apartamento','NOMBRE',0,0,0,0,0,205800,0,0]],
+    pagos: [{apto:'101', numCuentaCobro:'1', fechaEmision:'2026.09.01',
+            pagueseHasta:'2026.09.30', totalAPagar:205800, ...}],
+    reemplazar: false
+  })
+}).then(r => r.json()).then(j => console.log(j));
+```
+
+**Esperado:** `{ok:true, idCarga:"..."}` o `{ok:false, codigo:"PESTANA_EXISTE"}` si ya existe.
+
+### T-EC-5: ecSubirFacturas — sube lote de PDFs
+
+```javascript
+// Después de T-EC-4, usar el idCarga retornado
+fetch(URL, {
+  method: 'POST',
+  headers: {'Content-Type':'text/plain;charset=UTF-8'},
+  body: JSON.stringify({
+    action: 'ecSubirFacturas',
+    password: 'cerroazul2026',
+    idCarga: '<idCarga de T-EC-4>',
+    archivos: [{apto:'101', base64: '<PDF de 1 página en base64>'}]
+  })
+}).then(r => r.json()).then(j => console.log(j));
+```
+
+**Esperado:** `{ok:true, creados:1}`.
+
+### T-EC-6: ecFinalizarCarga — activa la pestaña
+
+```javascript
+fetch(URL, {
+  method: 'POST',
+  headers: {'Content-Type':'text/plain;charset=UTF-8'},
+  body: JSON.stringify({
+    action: 'ecFinalizarCarga',
+    password: 'cerroazul2026',
+    idCarga: '<idCarga de T-EC-4>'
+  })
+}).then(r => r.json()).then(j => console.log(j));
+```
+
+**Esperado:** `{ok:true, periodo:"2026-08", pestana:"Agosto 2026", facturas:1}`.
+
+### Resumen de tests del Estado de Cuenta
+
+| Test | Endpoint | Resultado verificado |
+|---|---|---|
+| T-EC-1 | ecConsultar | ✅ verificado 26-Sept-2026 post-V18 |
+| T-EC-2 | ecDescargarFactura | ⏳ pendiente verificar post-V18 |
+| T-EC-3 | ecPazYSalvo | ⏳ pendiente |
+| T-EC-4 | ecIniciarCarga | ⏳ pendiente |
+| T-EC-5 | ecSubirFacturas | ⏳ pendiente |
+| T-EC-6 | ecFinalizarCarga | ⏳ pendiente |
+
+**Todos estos tests DEBEN ejecutarse después de CADA deploy del módulo
+contable. Si T-EC-1 falla con "Diligencia como debe ser...", es BUGFIX-009
+regresivo.**
+
+---
+
+Última actualización: 26-Sept-2026
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)

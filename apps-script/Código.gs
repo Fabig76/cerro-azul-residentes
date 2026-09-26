@@ -151,6 +151,13 @@ function doPost(e) {
     }
     // Enrutar por action (agregado 22-Sep-2026 feature/mudanzas)
     const action = String(payload.action || '').trim();
+    // --- ESTADO DE CUENTA (spec-estado-cuenta.md §6.2) ---
+    if (action === 'ecConsultar')        return jsonOut(ecConsultar(payload));
+    if (action === 'ecDescargarFactura') return jsonOut(ecDescargarFactura(payload));
+    if (action === 'ecPazYSalvo')        return jsonOut(ecPazYSalvo(payload));
+    if (action === 'ecIniciarCarga')     return jsonOut(ecIniciarCarga(payload));
+    if (action === 'ecSubirFacturas')    return jsonOut(ecSubirFacturas(payload));
+    if (action === 'ecFinalizarCarga')   return jsonOut(ecFinalizarCarga(payload));
     if (action === 'reservarMudanza') {
       return jsonOut(reservarMudanza(payload));
     }
