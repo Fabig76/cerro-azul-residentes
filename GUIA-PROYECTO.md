@@ -1822,3 +1822,121 @@ Q: MODIFICADO POR
 | F7 — Manual HTML público | ✅ + descargable en Drive |
 | F8 — Deploy Apps Script V14 | ✅ Verificado |
 | F9 — Docs finales | ✅ (este commit) |
+
+---
+
+## 24. BUGFIX-009 — Routing ec* del módulo de estado de cuenta (26-Sept-2026)
+
+**Severidad:** ALTA — bloqueaba completamente el portal de estado de cuenta
+y el cargador de cartera para el administrador.
+
+**Detectado por:** Operador (Fabio Lesmes) cuando un propietario del apto
+504 intentó consultar su estado de cuenta y vio el mensaje:
+```
+"Diligencia como debe ser Propietario, Arrendatario o Tenedor / Otro."
+```
+
+### 24.1 Causa raíz
+
+`apps-script/Código.gs` `doPost(e)` (líneas 144-185) tenía routing por
+`action` para los módulos residentes, mudanzas, admin, vigilancia y salón
+social, pero **NO tenía routing para los 6 endpoints del módulo de estado
+de cuenta** (`ecConsultar`, `ecDescargarFactura`, `ecPazYSalvo`,
+`ecIniciarCarga`, `ecSubirFacturas`, `ecFinalizarCarga`).
+
+Cuando el frontend `estado-cuenta.js` o `cartera-admin.js` hacía POST con
+`action: 'ecConsultar'`, caía al default `submitRecord(payload)` que
+valida `diligencia`. Como ese campo no venía, retornaba el mensaje literal.
+
+### 24.2 Cronología del bug
+
+```
+25-Sept 17:07  Sesión "mejoras" declara: "V12 OK, 22 endpoints, 18 ec*"
+                (ASUNCIÓN INCORRECTA — no probó ningún ec*)
+25-Sept 19:35  Deploy V17 (auditoría salón). Pruebas: solo salón + V13
+                (NINGÚN test ec*)
+25-Sept noche   Sesión cerrada: "Sin regresiones" (INCORRECTO)
+26-Sept HOY    Propietario 504 → "Diligencia como debe ser..."
+26-Sept        BUGFIX-009 detectado, diagnosticado, fix aplicado
+26-Sept 12:15  V18 desplegado por el operador
+26-Sept        Validación E2E: 13/13 tests OK
+```
+
+**El bug SIEMPRE estuvo ahí desde V12.** Los 6 endpoints ec* existían en
+el módulo descargado pero NUNCA fueron enrutados al `doPost` del Codigo.gs
+desplegado, desde V12 hasta V17.
+
+### 24.3 Apps Script V18 desplegado (26-Sept-2026 12:15)
+
+- **Versión:** V18 (148.747 bytes, 95 funciones)
+- **URL preservada:** https://script.google.com/macros/s/AKfycbxp...Zp/exec
+- **Archivo V18 en Drive:** `Codigo_V18_EC_ROUTING_DO_POST_FIX-20260926.gs`
+  - ID: `1Qu4IQbUHY8lM6WDdRQSoIuQ_6eZAmDaw`
+  - MD5: `691a6f3adc3224fc38170fcc72200e71`
+
+### 24.4 Estructura de V18
+
+`Codigo.gs` (70 funciones) + `modulo-estado-cuenta.gs` (25 funciones `ec*`)
+= 95 funciones totales en el Apps Script desplegado.
+
+**Funciones `ec*` (25):**
+- **Helpers (19):** ecConfig, ecConfigRequerida, ecSS, ecHoja, ecTexto,
+  ecNum, ecFechaLargaDesdeISO, ecHoyLarga, ecSetup, ecTolerancia,
+  ecAdminOk, ecIndicesCartera, ecBuscarAptoEnFilas, ecLeerControl,
+  ecPeriodoActivo, ecVerificarAcceso, ecContexto, ecPagosApto,
+  ecArchivoFactura
+- **Endpoints públicos (6):** ecConsultar, ecDescargarFactura, ecPazYSalvo,
+  ecIniciarCarga, ecSubirFacturas, ecFinalizarCarga
+
+### 24.5 Fix aplicado (commit b40cd13)
+
+7 líneas nuevas en `doPost` después de la línea 153:
+
+```javascript
+// --- ESTADO DE CUENTA (spec-estado-cuenta.md §6.2) ---
+if (action === 'ecConsultar')        return jsonOut(ecConsultar(payload));
+if (action === 'ecDescargarFactura') return jsonOut(ecDescargarFactura(payload));
+if (action === 'ecPazYSalvo')        return jsonOut(ecPazYSalvo(payload));
+if (action === 'ecIniciarCarga')     return jsonOut(ecIniciarCarga(payload));
+if (action === 'ecSubirFacturas')    return jsonOut(ecSubirFacturas(payload));
+if (action === 'ecFinalizarCarga')   return jsonOut(ecFinalizarCarga(payload));
+```
+
+### 24.6 Validación E2E post-deploy (13/13 tests OK)
+
+**Test 5: Estado de cuenta (6 endpoints):**
+| Test | Endpoint | Resultado |
+|------|----------|-----------|
+| T-EC-1 | ecConsultar (CA-0055 apto105) | ✓ Estado completo |
+| T-EC-2 | ecDescargarFactura | ✓ PDF 157KB |
+| T-EC-3 | ecPazYSalvo | ✓ PYS-00012 |
+| T-EC-4 | ecConsultar (CA-0070 apto503) | ✓ Deuda $426.300 |
+| T-EC-5 | ecPazYSalvo (CA-0062 Arrendatario) | ✓ Rechazado P2 |
+| T-EC-6 | ecConsultar (mismo) | ✓ Rechazado P2 |
+
+**Regresión (9 endpoints existentes):** salón, residente, admin, vigilantes,
+mudanzas, lookup, nextId — todos OK.
+
+### 24.7 Lecciones aprendidas (regla #9 de CHANGELOG-BUGFIXES)
+
+- ❌ NUNCA declarar "OK sin regresiones" sin probar TODOS los endpoints
+  públicos con credenciales reales desde navegador real
+- ❌ NUNCA confiar en memorias/resúmenes previos sin validar con E2E
+- ✓ Apps Script bloquea requests sin User-Agent de navegador con HTTP 403
+  + HTML "Datei kann derzeit nicht geöffnet werden" en alemán
+- ✓ Las pruebas E2E deben hacerse con `browser_console.expression` desde
+  una página real del proyecto
+- ✓ Cada deploy nuevo debe tener tests específicos para CADA módulo
+  (no solo feature nuevo + regresiones superficiales)
+
+### 24.8 Documentación actualizada
+
+- `docs/CHANGELOG-BUGFIXES.md` — BUGFIX-009 con causa raíz, fix, lección #9
+- `docs/TESTING-PROTOCOL.md` — §5 con tests T-EC-1..6 + advertencia sandbox
+- `docs/proyecto-estado-cuenta.md` — estado V18 + sección 13 BUGFIX-009
+- `docs/sesion-bugfix-009.md` (NUEVO) — cronología completa de esta sesión
+
+---
+
+Última actualización: 26-Sept-2026 12:30
+Mantenedor: Hermes Agent + Fabio Lesmes (operador)

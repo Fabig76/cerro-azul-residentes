@@ -48,7 +48,7 @@ impreso en PDF.
   · Pestaña especial "🚗 Buscar por placa" para incidentes vehiculares
     (búsqueda parcial, case-insensitive, devuelve apto+propietario)
 
-## Portal de estado de cuenta (sept 2026)
+## Portal de estado de cuenta (sept 2026, V18 desplegado 26-Sept-2026)
 
   · **URL propietario:** https://fabig76.github.io/cerro-azul-residentes/estado-cuenta.html
   · **URL cargador admin:** https://fabig76.github.io/cerro-azul-residentes/cartera-admin.html
@@ -59,6 +59,13 @@ impreso en PDF.
     y SOLO para diligencia "Propietario"
   · El cargador admin sube el Excel de cartera + PDF unificado (625
     facturas) que entrega el contador; el sistema los divide por REF.PAGO
+  · **V18 Apps Script desplegado 26-Sept-2026 12:15** (95 funciones:
+    70 Codigo.gs + 25 ec* del módulo). URL /exec preservada.
+  · **BUGFIX-009 resuelto:** 6 endpoints `ec*` ahora enrutados en
+    `doPost`. Antes de V18, el portal mostraba
+    "Diligencia como debe ser Propietario, Arrendatario o Tenedor / Otro."
+    porque `ecConsultar` caía al default `submitRecord()`. Ver
+    `docs/CHANGELOG-BUGFIXES.md` y `docs/sesion-bugfix-009.md`.
   · Ver `docs/spec-estado-cuenta.md` y `docs/proyecto-estado-cuenta.md`
 
 ## Stack

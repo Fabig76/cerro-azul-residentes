@@ -4,6 +4,25 @@ Este es el código del backend que conecta el formulario público
 (`https://fabig76.github.io/cerro-azul-residentes/`) con el Google Sheet
 (`https://docs.google.com/spreadsheets/d/16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc`).
 
+## Versión desplegada: V18 (26-Sept-2026 12:15)
+
+**148.747 bytes, 95 funciones** = 70 funciones en `Codigo.gs` + 25 funciones
+`ec*` del módulo de estado de cuenta (pegado al final).
+
+URL del Web App (preservada entre versiones):
+`https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec`
+
+Historial: V12 (25-Sept, estado de cuenta) → V13 (residente) → V14 (salón)
+→ V15-V16 (admin mudanzas) → V17 (auditoría salón) → **V18 (26-Sept, BUGFIX-009:
+routing ec* en doPost)**.
+
+BUGFIX-009: desde V12 hasta V17, los 6 endpoints `ec*` existían en el módulo
+pero NO estaban enrutados en `doPost`. El fix V18 agrega 7 líneas en `doPost`
+(justo después de `const action = String(payload.action || '').trim();`)
+para enrutar `ecConsultar`, `ecDescargarFactura`, `ecPazYSalvo`, `ecIniciarCarga`,
+`ecSubirFacturas`, `ecFinalizarCarga`. Ver `docs/CHANGELOG-BUGFIXES.md`
+BUGFIX-009 y `docs/sesion-bugfix-009.md` para detalles.
+
 ## ¿Qué hace?
 
   · Recibe los datos enviados desde la página web (`POST`)

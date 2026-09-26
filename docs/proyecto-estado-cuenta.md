@@ -3,10 +3,12 @@
 > Documento vivo del módulo contable. Para el detalle técnico ver
 > `docs/spec-estado-cuenta.md` y `apps-script/modulo-estado-cuenta.gs`.
 
-> **Estado al 25-Sept-2026:** ✅ **IMPLEMENTADO Y DESPLEGADO** (V12).
-> Fases 1-5+7 completas. Falta F6 (cambio de mes: cargar cartera septiembre).
+> **Estado al 26-Sept-2026 12:15:** ✅ **V18 DESPLEGADO Y VALIDADO** (13/13 tests OK).
+> BUGFIX-009 resuelto (routing ec* en doPost + módulo pegado).
+> Pendiente: Fase 6 (cargar cartera septiembre cuando llegue del contador).
 > Pestaña en `index.html` mode-switcher. Manual HTML público con
 > sección completa. Ver GUIA-PROYECTO.md §20 para el detalle completo.
+> Cronología detallada de la sesión BUGFIX-009: `docs/sesion-bugfix-009.md`.
 
 ---
 
@@ -26,7 +28,8 @@ busca el PDF en su computador → lo reenvía".
 
   · Frontend: HTML/CSS/JS vanilla en GitHub Pages
   · Backend:  Apps Script Web App (mismo proyecto Apps Script del formulario
-               de residentes — V12 ya desplegado el 25-Sept-2026)
+               de residentes — V18 desplegado el 26-Sept-2026 12:15,
+               incluye módulo de estado de cuenta pegado + routing ec*)
   · BD:        Google Sheets (Sheet nuevo "Cartera", no reemplaza "Base
                datos Cerro azul formato")
   · Drive:     nueva carpeta operativa `Portal Estado de Cuenta` con
@@ -37,7 +40,7 @@ de runtime (libs CDN solo en cartera-admin, no en el portal del propietario).
 
 ---
 
-## 3. Estructura de archivos (al 25-Sept-2026)
+## 3. Estructura de archivos (al 26-Sept-2026)
 
 ```
 cerro-azul-residentes/
@@ -52,16 +55,19 @@ cerro-azul-residentes/
 │   ├── cartera-procesador.js           ← NUEVO: extractor Excel+PDF (Fase 2)
 │   └── cartera-admin.js                ← NUEVO: lógica del cargador (Fase 3)
 ├── apps-script/
-│   ├── Codigo.gs                       ← 42 funciones (en repo público)
+│   ├── Codigo.gs                       ← 70 funciones + 7 líneas routing ec* (commit b40cd13)
 │   └── modulo-estado-cuenta.gs         ← NO en repo (privado, en Drive)
 └── docs/
-    ├── spec-estado-cuenta.md           ← NUEVO: spec del analista
-    ├── proyecto-estado-cuenta.md       ← NUEVO: este archivo
+    ├── spec-estado-cuenta.md           ← spec del analista
+    ├── proyecto-estado-cuenta.md       ← este archivo
+    ├── sesion-bugfix-009.md            ← NUEVO: cronología BUGFIX-009 (esta sesión)
     └── (otros docs existentes sin cambios)
 ```
 
-`Codigo.gs` en el repo sigue siendo V10 (sin módulo ec*). El Apps Script
-desplegado tiene V12 (V10 + modulo-estado-cuenta.gs pegado al final).
+`Codigo.gs` en el repo (commit b40cd13) ahora tiene las 6 líneas de routing
+para los endpoints ec* (líneas 155-160). El Apps Script desplegado tiene V18
+(Codigo.gs del repo + modulo-estado-cuenta.gs pegado al final = 95 funciones,
+148.747 bytes).
 `Codigo.gs` NO se commitea al repo público por seguridad (miembros del
 repo podrían ver el código). El módulo completo se guarda en Drive y
 lo baja el operador manualmente para pegarlo en el editor de Apps Script.
@@ -95,7 +101,7 @@ Sheet principal (formulario de residentes, sin cambios estructurales):
 
 Apps Script (mismo proyecto que formulario de residentes):
   · ID:               `17nuyzVYK2yN_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy`
-  · Versión actual:   V12 (25-Sept-2026, 93KB, 67 funciones)
+  · Versión actual:   V18 (26-Sept-2026 12:15, 148.747 bytes, 95 funciones)
   · URL Web App:      `https://script.google.com/macros/s/AKfycbxp...Zp/exec`
 
 ---
@@ -106,7 +112,7 @@ Apps Script (mismo proyecto que formulario de residentes):
 
 `apps-script/modulo-estado-cuenta.gs` se pega **al final** de Codigo.gs
 después de `vigilanteBuscarPorPlaca`. NO modifica funciones existentes.
-Agrega 22 funciones `ec*` (helpers + 6 endpoints públicos).
+Agrega 25 funciones `ec*` (helpers + 6 endpoints públicos).
 
 ### 5.2 Único cambio en código existente (6 líneas en doPost)
 
@@ -284,24 +290,27 @@ if (ctx.verif.diligencia !== 'Propietario') {
 
 ---
 
-## 10. Estado al cierre de Fase 5 (25-Sept-2026)
+## 10. Estado al cierre de BUGFIX-009 (26-Sept-2026 12:15)
 
-| Componente                              | Estado                        |
-|-----------------------------------------|-------------------------------|
-| Apps Script V12 desplegado               | ✓                             |
-| Config con 5 claves nuevas              | ✓ (operador las agregó)       |
-| Sheet Cartera con _Control/Pagos/PazYSalvos | ✓ (ecSetup las creó)      |
-| Procesador validado Fase 2              | ✓ (13/13 checks)              |
-| cartera-admin.html pusheado             | ✓ (con cache-busting ?v=5)    |
-| js/cartera-procesador.js pusheado       | ✓                             |
-| Carga agosto 2026 publicada             | ✓ (625 facturas en Drive)     |
-| estado-cuenta.html pusheado             | ✓ (portal del propietario)    |
-| js/estado-cuenta.js pusheado            | ✓ (con fixes de descarga)     |
-| index.html con link al pie              | ✓                             |
-| Paz y salvo generado                    | ✓ (PYS-00001..00005)          |
-| Plantilla paz y salvo a 1 página        | ✓ (eliminados 9 párrafos vacíos)|
-| Descarga de factura y paz y salvo       | ✓ (validado por el operador)  |
-| Validación 3 escenarios (saldo 0/deuda/arrendatario) | ✓            |
+|| Componente                              | Estado                        |
+||-----------------------------------------|-------------------------------|
+|| Apps Script V18 desplegado              | ✓ (operador, 26-Sept 12:15)   |
+|| Módulo estado de cuenta pegado          | ✓ (25 funciones ec*)          |
+|| Routing ec* en doPost                   | ✓ (commit b40cd13)            |
+|| Config con 5 claves nuevas              | ✓ (operador las agregó)       |
+|| Sheet Cartera con _Control/Pagos/PazYSalvos | ✓ (ecSetup las creó)      |
+|| Procesador validado Fase 2              | ✓ (13/13 checks)              |
+|| cartera-admin.html pusheado             | ✓ (con cache-busting ?v=5)    |
+|| js/cartera-procesador.js pusheado       | ✓                             |
+|| Carga agosto 2026 publicada             | ✓ (625 facturas en Drive)     |
+|| estado-cuenta.html pusheado             | ✓ (portal del propietario)    |
+|| js/estado-cuenta.js pusheado            | ✓ (con fixes de descarga)     |
+|| index.html con link al pie              | ✓                             |
+|| Paz y salvo generado                    | ✓ (PYS-00001..00012 al 26-Sept) |
+|| Plantilla paz y salvo a 1 página        | ✓ (eliminados 9 párrafos vacíos)|
+|| Descarga de factura y paz y salvo       | ✓ (validado por el operador)  |
+|| Validación 6 escenarios T-EC-1..T-EC-6 | ✓ (13/13 tests OK post-V18)   |
+|| Regresión 9 endpoints existentes        | ✓ (salón, residente, admin, vigilantes, mudanzas, lookup, nextId) |
 
 Datos de prueba (3 escenarios):
   · Paz y salvo (saldo 0):    CA-0055 | apto 105 | CC 11786889
@@ -346,3 +355,105 @@ Datos de prueba (3 escenarios):
   · El cache del navegador del operador es muy agresivo — usar
     `?v=N` en los `src` de los scripts para forzar recarga después de
     un push que arregla bugs.
+
+---
+
+## 13. BUGFIX-009 (26-Sept-2026) — el bug que NUNCA se detectó
+
+**Severidad:** ALTA — bloqueaba el portal de estado de cuenta para todos
+los propietarios, pero especialmente el bug nunca apareció en pruebas porque
+nadie completó el flujo end-to-end con credenciales reales.
+
+**Detectado por:** Operador (Fabio Lesmes) cuando un propietario del apto
+504 intentó consultar su estado de cuenta y vio:
+```
+"Diligencia como debe ser Propietario, Arrendatario o Tenedor / Otro."
+```
+
+**Causa raíz:**
+`apps-script/Código.gs` `doPost(e)` (líneas 144-185) tenía routing por
+`action` para los módulos residentes, mudanzas, admin, vigilancia y salón
+social, pero **NO tenía routing para los 6 endpoints del módulo de estado
+de cuenta** (`ecConsultar`, `ecDescargarFactura`, `ecPazYSalvo`,
+`ecIniciarCarga`, `ecSubirFacturas`, `ecFinalizarCarga`).
+
+Cuando el frontend `estado-cuenta.js` o `cartera-admin.js` hacían POST con
+`action: 'ecConsultar'`, caía al default `submitRecord(payload)` que valida
+`diligencia` y como ese campo no venía, retornaba el mensaje literal.
+
+**Cronología del bug:**
+
+```
+25-Sept-2026 17:07  Sesión "mejoras" declaró: V12 OK, 22 endpoints, 18 ec*
+                     (ASUNCIÓN INCORRECTA — no probó ningún ec*)
+25-Sept-2026 19:35  Deploy V17 (auditoría salón). Pruebas: solo salón + V13
+                     (NINGÚN test ec*)
+25-Sept-2026 noche   Sesión cerrada: "Sin regresiones" (INCORRECTO)
+26-Sept-2026 HOY    Propietario 504 → "Diligencia como debe ser..."
+26-Sept-2026        BUGFIX-009 detectado, diagnosticado, fix aplicado
+26-Sept-2026 12:15  V18 desplegado por el operador
+26-Sept-2026        Validación E2E: 13/13 tests OK
+```
+
+**El bug NUNCA funcionó.** Los 6 endpoints ec* existían en el módulo
+descargado pero NUNCA fueron enrutados en `doPost` del Codigo.gs
+desplegado, desde V12 hasta V17.
+
+**Fix (commit b40cd13):**
+
+7 líneas nuevas en `doPost` justo después de la línea 153
+(`const action = String(payload.action || '').trim();`):
+
+```javascript
+// --- ESTADO DE CUENTA (spec-estado-cuenta.md §6.2) ---
+if (action === 'ecConsultar')        return jsonOut(ecConsultar(payload));
+if (action === 'ecDescargarFactura') return jsonOut(ecDescargarFactura(payload));
+if (action === 'ecPazYSalvo')        return jsonOut(ecPazYSalvo(payload));
+if (action === 'ecIniciarCarga')     return jsonOut(ecIniciarCarga(payload));
+if (action === 'ecSubirFacturas')    return jsonOut(ecSubirFacturas(payload));
+if (action === 'ecFinalizarCarga')   return jsonOut(ecFinalizarCarga(payload));
+```
+
+V18 generado en Drive: `Codigo_V18_EC_ROUTING_DO_POST_FIX-20260926.gs`
+- ID: `1Qu4IQbUHY8lM6WDdRQSoIuQ_6eZAmDaw`
+- MD5: `691a6f3adc3224fc38170fcc72200e71`
+- Size: 148.747 bytes
+- 95 funciones (70 Codigo.gs + 25 ec*)
+
+**Validación E2E post-deploy (13/13 OK):**
+
+```
+T-EC-1: ecConsultar (CA-0055 apto 105, Luis Oswaldo Becerra, saldo $0)
+  → estado completo: pagos=1, pazYSalvo=true, linkPago=true
+T-EC-2: ecDescargarFactura → Factura_105_2026-08.pdf (157KB base64)
+T-EC-3: ecPazYSalvo → PYS-00012 PazYSalvo_105_2026-08.pdf (145KB)
+T-EC-4: ecConsultar (CA-0070 apto 503, Alejandro Quiroz, deuda $426.300)
+  → pazYSalvo=false correctamente
+T-EC-5: ecPazYSalvo (CA-0062 apto 1527, Arrendatario) → rechazado por P2
+T-EC-6: ecConsultar (mismo) → rechazado por P2
++ 9 regresiones (salón, residente, admin, vigilantes, mudanzas, lookup, nextId)
+```
+
+**Lecciones aprendidas (#9 de CHANGELOG-BUGFIXES.md):**
+
+- ❌ **Nunca** declarar "OK sin regresiones" sin probar TODOS los endpoints
+  públicos con credenciales reales desde navegador real
+- ❌ **Nunca** confiar en memorias/resúmenes que dicen "X está funcionando"
+  sin validar con pruebas E2E en el momento
+- ✓ Las pruebas con `curl` desde sandbox son **falsos negativos** porque
+  Apps Script bloquea requests sin User-Agent de navegador
+- ✓ Las pruebas E2E deben hacerse con `browser_console.expression` desde
+  una página real del proyecto
+- ✓ Cada deploy nuevo debe tener tests específicos para CADA módulo
+  (no solo para el feature nuevo + regresiones superficiales)
+
+**Protocolo mejorado:** `docs/TESTING-PROTOCOL.md` §5 ahora tiene los
+6 tests del estado de cuenta (T-EC-1 al T-EC-6) como sección obligatoria
+en futuros deploys del módulo contable.
+
+**Cronología detallada:** `docs/sesion-bugfix-009.md`.
+
+---
+
+Última actualización: 26-Sept-2026 12:30
+Mantenedor: Hermes Agent + Fabio Lesmes (operador)
