@@ -674,8 +674,28 @@ herramientas de desarrollador puede ver el JSON completo. La verdadera
 protección de datos sensibles es **no enviarlos nunca por la red** si
 no son necesarios para la funcionalidad del usuario que los pide.
 
-**Deploy:** V19 (operador debe hacer deploy manual; ver archivo V19 que
-se subirá a Drive tras aprobación del operador)
+**Estado del fix al 26-Sept-2026 12:37 (post-deploy V19):**
+
+V19 desplegado por el operador (urb.cerroazul@gmail.com). Mismo
+deployment ID, nueva versión 19 de la library.
+
+**Validación E2E post-deploy (12/12 OK):**
+
+- T-VIG-3 (SEG-001 regresión): backend vigilanteVerResidentes
+  NO devuelve numForm/ccProp/firmaNom/firmaCC/residentes[].cc
+  → todos los campos sensibles correctamente filtrados
+- T-VIG-4 (funcionalidad vigilante): SÍ devuelve apto/nombreProp/
+  ccEncargado/rowNumber/residentes[].nombre/vehiculos/mascotas
+  → vigilante sigue funcionando con todos los datos que necesita
+- dispSalon, verificarAccesoSalon (V14 salón) → OK
+- getEstadoResidente (V13 residente) → OK
+- adminLogin (V8 admin) → OK
+- nextId, lookup (V8 formulario) → OK
+- vigilanteVerReservasSalon, vigilanteVerMudanzas (V14/V9 vigilantes) → OK
+- verificarPropietario (V8 mudanzas) → OK
+- ecConsultar (V18 estado de cuenta) → OK
+
+Confirmado: el fix SEG-001 está activo y NO rompe ningún otro servicio.
 
 ---
 
