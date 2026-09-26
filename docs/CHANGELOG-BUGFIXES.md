@@ -809,6 +809,31 @@ pueda ver lo mismo que el vigilante, con más datos (cc, correo, placa)
 pero los mismos filtros. Si el vigilante tiene una lógica útil, replicarla
 en admin antes que el operador lo pida explícitamente.
 
+**Estado del fix al 26-Sept-2026 13:10 (post-deploy V20):**
+
+V20 desplegado por el operador (urb.cerroazul@gmail.com). Library v20,
+URL preservada.
+
+**Validación E2E post-deploy (Test 2.5.0 — BUGFIX-011):**
+
+- A) Sin proxDias (comportamiento original) → ✓ OK (2 reservas Confirmadas)
+- B) proxDias=8 con estado=Confirmada → ✓ OK (1 reserva entre hoy y hoy+8)
+- C) proxDias=30 con estado=Confirmada → ✓ OK (1 reserva en próximos 30 días)
+- D) estado=Todas + proxDias=8 → ✓ OK (4 reservas de cualquier estado en próximos 8 días)
+
+**Validación de rango de fechas:**
+- Hoy: 2026-09-26
+- Hoy + 8: 2026-10-04
+- Reservas recibidas con proxDias=8: TODAS están dentro del rango [hoy, hoy+8]
+- Sin reservas fuera del rango ✓
+
+**Regresión parcial confirmada:**
+- dispSalon (V14 salón) → ✓ OK
+- adminLogin (V8 admin) → ✓ OK
+- lookup (V8 formulario) → ✓ OK
+
+**Total confirmado:** BUGFIX-011 funcional, ningún servicio roto.
+
 ---
 
 Última actualización: 26-Sept-2026 13:30
