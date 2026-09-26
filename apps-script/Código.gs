@@ -124,7 +124,13 @@ function doGet(e) {
       return jsonOut(vigilanteVerReservasSalon(e.parameter.fecha));
     }
     if (action === 'adminListarReservasMudanzas') {
-      return jsonOut(adminListarReservasMudanzas(e.parameter.estado, e.parameter.torre, e.parameter.fechaDesde));
+      return jsonOut(adminListarReservasMudanzas(
+        e.parameter.estado,
+        e.parameter.torre,
+        e.parameter.fechaDesde,
+        e.parameter.fechaHasta,
+        e.parameter.proxDias
+      ));
     }
     if (action === 'adminListarReservasSalon') {
       return jsonOut(adminListarReservasSalon(e.parameter.estado, e.parameter.fechaDesde));
@@ -857,7 +863,7 @@ function findReservasEnRango(torre, ascensor, desde, hasta) {
 // Lista todas las reservas de mudanzas para el administrador
 // Soporta filtros: estado (Confirmada/Cancelada/Todas), torre, fechaDesde
 // ---------------------------------------------------------------------
-function adminListarReservasMudanzas(estado, torre, fechaDesde) {
+function adminListarReservasMudanzas(estado, torre, fechaDesde, fechaHasta, proxDias) {
   const sheet = getMudanzasSheet();
   if (!sheet) return { ok: false, error: 'Pestaña Mudanzas no existe.' };
   const last = sheet.getLastRow();
@@ -865,6 +871,20 @@ function adminListarReservasMudanzas(estado, torre, fechaDesde) {
     return { ok: true, reservas: [], total: 0 };
   }
   const data = sheet.getRange(MUDANZAS_HEADER_ROW + 1, 1, last - MUDANZAS_HEADER_ROW, MUDANZAS_NUM_COLS).getValues();
+  // BUGFIX-011: si proxDias está definido, calcular rango desde hoy hasta hoy+N
+  let fechaLimiteInf = fechaDesde || '';
+  let fechaLimiteSup = fechaHasta || '';
+  if (proxDias !== undefined && proxDias !== null && proxDias !== '') {
+    const n = parseInt(proxDias, 10);
+    if (!isNaN(n) && n > 0) {
+      const hoy = new Date();
+      const futuro = new Date(hoy);
+      futuro.setDate(futuro.getDate() + n);
+      const fmt = (d) => Utilities.formatDate(d, 'America/Bogota', 'yyyy-MM-dd');
+      if (!fechaLimiteInf) fechaLimiteInf = fmt(hoy);
+      fechaLimiteSup = fmt(futuro);
+    }
+  }
   const reservas = [];
   for (let i = 0; i < data.length; i++) {
     const row = data[i];
@@ -872,7 +892,8 @@ function adminListarReservasMudanzas(estado, torre, fechaDesde) {
     if (estado && estado !== 'Todas' && estadoRow !== estado) continue;
     if (torre && String(row[COL_MUD_TORRE]).trim() !== String(torre)) continue;
     const fechaRow = formatDateOnly(row[COL_MUD_FECHA]);
-    if (fechaDesde && (!fechaRow || fechaRow < fechaDesde)) continue;
+    if (fechaLimiteInf && (!fechaRow || fechaRow < fechaLimiteInf)) continue;
+    if (fechaLimiteSup && (!fechaRow || fechaRow > fechaLimiteSup)) continue;
 
     reservas.push({
       id: String(row[COL_MUD_ID] || ''),

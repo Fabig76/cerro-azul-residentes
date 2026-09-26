@@ -699,5 +699,117 @@ Confirmado: el fix SEG-001 está activo y NO rompe ningún otro servicio.
 
 ---
 
-Última actualización: 26-Sept-2026 13:00
+## BUGFIX-011 · Admin puede ver mudanzas de los próximos N días
+
+**Fecha:** 26-Sept-2026 (esta sesión)
+**Severidad:** MEDIA — funcionalidad faltante
+**Solicitado por:** Operador (Fabio Lesmes) para tener paridad con el portal de vigilancia
+
+**Síntoma:**
+El portal admin (admin.html → pestaña "Mudanzas") NO tenía forma rápida
+de ver las mudanzas de los próximos días. Solo podía filtrar por estado,
+torre y fechaDesde (≥), pero NO tenía un filtro equivalente al del
+vigilante ("Confirmadas futuras + Canceladas recientes").
+
+**Causa raíz:**
+- El vigilante llama a `vigilanteVerMudanzas(fecha)` que filtra por
+  Confirmadas futuras + Canceladas últimos 30 días.
+- El admin llamaba a `adminListarReservasMudanzas(estado, torre, fechaDesde)`
+  sin filtro temporal automático.
+- El operador quería ver las mudanzas de los próximos 8 días sin tener
+  que seleccionar manualmente la fecha.
+
+**Fix (backend + frontend):**
+
+Backend (`apps-script/Código.gs`):
+
+```javascript
+function adminListarReservasMudanzas(estado, torre, fechaDesde, fechaHasta, proxDias) {
+  // ... filtra por estado, torre ...
+  // BUGFIX-011: si proxDias está definido, calcular rango desde hoy hasta hoy+N
+  let fechaLimiteInf = fechaDesde || '';
+  let fechaLimiteSup = fechaHasta || '';
+  if (proxDias !== undefined && proxDias !== null && proxDias !== '') {
+    const n = parseInt(proxDias, 10);
+    if (!isNaN(n) && n > 0) {
+      const hoy = new Date();
+      const futuro = new Date(hoy);
+      futuro.setDate(futuro.getDate() + n);
+      const fmt = (d) => Utilities.formatDate(d, 'America/Bogota', 'yyyy-MM-dd');
+      if (!fechaLimiteInf) fechaLimiteInf = fmt(hoy);
+      fechaLimiteSup = fmt(futuro);
+    }
+  }
+  // ... filtra por fechaLimiteInf y fechaLimiteSup ...
+}
+```
+
+Routing en `doGet`:
+```javascript
+if (action === 'adminListarReservasMudanzas') {
+  return jsonOut(adminListarReservasMudanzas(
+    e.parameter.estado, e.parameter.torre,
+    e.parameter.fechaDesde, e.parameter.fechaHasta, e.parameter.proxDias
+  ));
+}
+```
+
+Frontend (`admin.html`):
+```html
+<label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+  <input type="checkbox" id="mudanzasProximosDiasCheck" checked>
+  <span>Solo próximos <input type="number" id="mudanzasProximosDiasInput"
+   value="8" min="1" max="60" style="width:50px; padding:2px 6px;"> días</span>
+</label>
+```
+
+Frontend (`js/admin.js`):
+```javascript
+if (proxCheck && proxCheck.checked) {
+  const dias = parseInt(proxInput.value, 10);
+  if (!isNaN(dias) && dias > 0) params.proxDias = dias;
+}
+```
+
+**Cómo se usa (operador):**
+
+1. Abre el portal admin → pestaña 📦 Mudanzas
+2. Por defecto: checkbox "Solo próximos 8 días" está marcado (valor 8)
+3. Estado: Confirmada (default)
+4. Torre: Todas (default)
+5. Click "🔄 Actualizar lista" → muestra solo mudanzas Confirmadas en los próximos 8 días
+6. Para ver más/menos días: cambia el número en el input
+7. Para ver TODO: desmarca el checkbox
+
+**Archivos afectados:**
+- `apps-script/Código.gs` (MOD, +18 líneas backend + 6 routing)
+- `admin.html` (MOD, +4 líneas UI)
+- `js/admin.js` (MOD, +7 líneas lógica)
+
+**Verificación de no-regresión:**
+- `node --check Código.gs` → ✓ OK
+- `node --check V20 (con módulo pegado)` → ✓ OK
+- 95 funciones (70 Codigo.gs + 25 ec*) — sin cambios
+- Endpoint `adminListarReservasMudanzas` mantiene compatibilidad:
+  - Sin `proxDias`: comportamiento idéntico al anterior
+  - Con `proxDias=N`: filtra por [hoy, hoy+N]
+
+**Test E2E nuevo (T-MUD-3):**
+Ver `docs/TESTING-PROTOCOL.md` — al llamar
+`adminListarReservasMudanzas&estado=Confirmada&proxDias=8`, el JSON debe
+contener SOLO reservas con fecha entre hoy y hoy+8.
+
+**Deploy:** V20 (operador debe hacer deploy manual; archivo en Drive
+`Codigo_V20_BUGFIX011_MUDANZAS_PROX_DIAS-20260926.gs`, MD5
+`70ca1033084c9dc27fdf0aefa562f2c9`, 149.880 bytes).
+
+**Lección aprendida #11:**
+**Mantener paridad entre portales admin y vigilancia** para que el admin
+pueda ver lo mismo que el vigilante, con más datos (cc, correo, placa)
+pero los mismos filtros. Si el vigilante tiene una lógica útil, replicarla
+en admin antes que el operador lo pida explícitamente.
+
+---
+
+Última actualización: 26-Sept-2026 13:30
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)

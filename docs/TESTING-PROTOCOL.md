@@ -212,6 +212,25 @@ Si el paso 5 falla (view-create oculto), es BUGFIX-002 regresivo. NO hacer push.
 
 Ejecutar ANTES de cada deploy que afecte admin.html, Código.gs endpoints admin, o js/admin.js.
 
+### 2.5.0 Mudanzas admin: filtro "Próximos N días" (BUGFIX-011)
+
+```bash
+# Sin filtro proxDias: comportamiento original (todas las reservas futuras)
+curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=adminListarReservasMudanzas&estado=Confirmada"
+
+# Con proxDias=8: solo reservas entre hoy y hoy+8
+curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=adminListarReservasMudanzas&estado=Confirmada&proxDias=8"
+
+# Con proxDias=30: solo reservas entre hoy y hoy+30
+curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=adminListarReservasMudanzas&estado=Confirmada&proxDias=30"
+
+# Con proxDias=8 + Todas: cualquier estado en próximos 8 días
+curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=adminListarReservasMudanzas&estado=Todas&proxDias=8"
+```
+
+**Esperado:** Todas las reservas en la respuesta tienen `fecha` entre hoy
+y hoy+N. Si hay reservas con fecha < hoy o > hoy+N, **BUGFIX-011 regresivo**.
+
 ### 2.5.1 Login admin
 ```
 1. Abrir https://fabig76.github.io/cerro-azul-residentes/admin.html

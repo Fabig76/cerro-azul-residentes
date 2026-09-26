@@ -571,12 +571,19 @@ const A = {
   async cargarMudanzasList() {
     const estado = document.getElementById('mudanzasEstadoFilter').value;
     const torre = document.getElementById('mudanzasTorreFilter').value;
+    const proxCheck = document.getElementById('mudanzasProximosDiasCheck');
+    const proxInput = document.getElementById('mudanzasProximosDiasInput');
     const container = document.getElementById('mudanzasList');
     container.innerHTML = '<p style="text-align:center; color:var(--gris-med); padding:20px;">Cargando...</p>';
 
     try {
       const params = { action: 'adminListarReservasMudanzas', estado: estado };
       if (torre) params.torre = torre;
+      // BUGFIX-011: filtro de próximos N días (default 8, igual que vigilante)
+      if (proxCheck && proxCheck.checked) {
+        const dias = parseInt(proxInput.value, 10);
+        if (!isNaN(dias) && dias > 0) params.proxDias = dias;
+      }
       const r = await A.apiGet(params);
 
       if (!r.ok) {
