@@ -4,24 +4,39 @@ Este es el código del backend que conecta el formulario público
 (`https://fabig76.github.io/cerro-azul-residentes/`) con el Google Sheet
 (`https://docs.google.com/spreadsheets/d/16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc`).
 
-## Versión desplegada: V18 (26-Sept-2026 12:15)
+## Versión desplegada: V20 (26-Sept-2026 13:10)
 
-**148.747 bytes, 95 funciones** = 70 funciones en `Codigo.gs` + 25 funciones
+**149.880 bytes, 95 funciones** = 70 funciones en `Codigo.gs` + 25 funciones
 `ec*` del módulo de estado de cuenta (pegado al final).
 
 URL del Web App (preservada entre versiones):
 `https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec`
 
-Historial: V12 (25-Sept, estado de cuenta) → V13 (residente) → V14 (salón)
-→ V15-V16 (admin mudanzas) → V17 (auditoría salón) → **V18 (26-Sept, BUGFIX-009:
-routing ec* en doPost)**.
+Historial de deploys (sesión 26-Sept):
 
-BUGFIX-009: desde V12 hasta V17, los 6 endpoints `ec*` existían en el módulo
-pero NO estaban enrutados en `doPost`. El fix V18 agrega 7 líneas en `doPost`
-(justo después de `const action = String(payload.action || '').trim();`)
+| Versión | Hora | MD5 | Descripción |
+|---------|------|-----|-------------|
+| **V20** | 13:10 | `70ca1033084c9dc27fdf0aefa562f2c9` | BUGFIX-011: admin mudanzas filtro "Próximos N días" |
+| V19 | 12:37 | `40e224f2d0071388fc46aff72e6910f4` | BUGFIX-010 / SEG-001: backend vigilante sin credenciales |
+| V18 | 12:15 | `691a6f3adc3224fc38170fcc72200e71` | BUGFIX-009: routing 6 endpoints `ec*` |
+| V17 | 25-Sept | — | Salón social: auditoría W1 + B3 |
+| V14 | 25-Sept | — | Salón social: deploy inicial |
+| V13 | 25-Sept | — | Portal del residente (auto-registro) |
+| V12 | 25-Sept | — | Módulo de estado de cuenta (deploy inicial) |
+
+BUGFIX-009 (V18): desde V12 hasta V17, los 6 endpoints `ec*` existían en el
+módulo pero NO estaban enrutados en `doPost`. El fix V18 agrega 7 líneas en
+`doPost` (justo después de `const action = String(payload.action || '').trim();`)
 para enrutar `ecConsultar`, `ecDescargarFactura`, `ecPazYSalvo`, `ecIniciarCarga`,
 `ecSubirFacturas`, `ecFinalizarCarga`. Ver `docs/CHANGELOG-BUGFIXES.md`
 BUGFIX-009 y `docs/sesion-bugfix-009.md` para detalles.
+
+BUGFIX-010 (V19) — SEG-001: el backend `vigilanteVerResidentes` ya NO envía
+`numForm`, `ccProp`, `firmaNom`, `firmaCC` ni `residentes[].cc` (protección
+de datos Ley 1581/2012). Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-010.
+
+BUGFIX-011 (V20): admin mudanzas con filtro "Próximos N días" (paridad
+con vigilante). Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-011.
 
 ## ¿Qué hace?
 
