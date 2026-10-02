@@ -437,7 +437,164 @@ async function flujoCancelarReserva() {
   }
 }
 
-// ============ FLUJO 7: VOLVER AL INICIO ============
+// ============ FLUJO 7: MIS RESERVAS [V22 BUGFIX-015] ============
+// Lista las reservas del solicitante y permite retomar/cancelar
+// cada una sin necesidad de haber conservado el state.reservaIdActual.
+async function cargarMisReservas() {
+  const list = document.getElementById('misReservasList');
+  list.innerHTML = '<p style="text-align:center; padding:20px;">Cargando...</p>';
+  hideAlert('mis-reservas');
+
+  try {
+    const r = await apiGet({
+      action: 'listarReservasPorApto',
+      apto: state.apto,
+      cc: state.cc
+    });
+
+    if (!r.ok) {
+      list.innerHTML = '<p style="text-align:center; color:var(--err); padding:20px;">'
+        + (r.error || 'Error al cargar las reservas') + '</p>';
+      return;
+    }
+
+    // Actualizar info del header (puede haber cambiado)
+    document.getElementById('userNombre4').textContent = r.nombre || state.nombre;
+    document.getElementById('userApto4').textContent = state.apto;
+
+    // Mostrar link de pago global si existe
+    if (r.linkPago && state.linkPago !== r.linkPago) {
+      state.linkPago = r.linkPago;
+    }
+    if (r.linkPago) {
+      document.getElementById('linkPagoMisReservas').href = r.linkPago;
+      document.getElementById('linkPagoBoxMisReservas').style.display = 'block';
+    }
+
+    const reservas = r.reservas || [];
+    if (reservas.length === 0) {
+      list.innerHTML = '<p style="text-align:center; color:var(--gris-med); padding:20px;">'
+        + 'No tienes reservas todavía. Usa el calendario para crear la primera.'
+        + '</p>';
+      return;
+    }
+
+    list.innerHTML = '';
+    reservas.forEach(function (res) {
+      const li = document.createElement('li');
+      li.className = 'reserva-item ' + claseEstado(res.estado);
+      li.dataset.reservaId = res.id;
+
+      const fecha = formatDate(res.fechaReserva);
+      const slotTxt = res.slot === 'Mañana' ? '☀️ Mañana' : '🌆 Tarde';
+      const estadoTxt = etiquetaEstado(res.estado);
+      const tiempoLimite = (res.estado === 'PendientePago' && res.fechaLimitePago)
+        ? '<br><small style="color:var(--err);">⏰ Límite de pago: ' + res.fechaLimitePago + '</small>'
+        : '';
+
+      // Botones según estado
+      let acciones = '';
+      if (res.estado === 'PendientePago') {
+        acciones += '<button class="btn btn-primary btn-sm" data-accion="retomar" data-id="' + res.id + '">'
+          + '📤 Subir comprobante</button> ';
+        acciones += '<button class="btn btn-secondary btn-sm" data-accion="cancelar" data-id="' + res.id + '">'
+          + '❌ Cancelar</button>';
+      } else if (res.estado === 'Pagado') {
+        acciones += '<span style="color:var(--ok); font-weight:600;">✅ ' + (res.tieneComprobante ? 'Comprobante verificado' : 'Pagado') + '</span>';
+      } else {
+        acciones += '<span style="color:var(--gris-med);">' + estadoTxt + '</span>';
+      }
+
+      li.innerHTML =
+        '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">'
+        + '<div>'
+        + '<strong style="font-family:monospace;">' + res.id + '</strong> · '
+        + fecha + ' · ' + slotTxt
+        + '<br><span style="font-size:0.85em;">' + estadoTxt + '</span>'
+        + tiempoLimite
+        + '</div>'
+        + '<div style="display:flex; gap:6px; flex-wrap:wrap;">' + acciones + '</div>'
+        + '</div>';
+
+      list.appendChild(li);
+    });
+
+    // Event delegation: un solo listener para todos los botones
+    list.addEventListener('click', function (e) {
+      const btn = e.target.closest('button[data-accion]');
+      if (!btn) return;
+      const accion = btn.dataset.accion;
+      const id = btn.dataset.id;
+      const reserva = reservas.find(function (x) { return x.id === id; });
+      if (!reserva) return;
+
+      if (accion === 'retomar') {
+        abrirReservaExistente(reserva);
+      } else if (accion === 'cancelar') {
+        state.reservaIdActual = id;
+        state.fechaSeleccionada = reserva.fechaReserva;
+        state.slotSeleccionado = reserva.slot;
+        flujoCancelarReserva();
+      }
+    });
+
+  } catch (e) {
+    list.innerHTML = '<p style="text-align:center; color:var(--err); padding:20px;">'
+      + 'Error de red: ' + e.message + '</p>';
+  }
+}
+
+function claseEstado(estado) {
+  switch (estado) {
+    case 'PendientePago': return 'pendiente';
+    case 'Pagado': return 'pagado';
+    case 'Cancelado':
+    case 'Expirado':
+    case 'CanceladoPorAdmin': return 'cancelado';
+    default: return '';
+  }
+}
+
+function etiquetaEstado(estado) {
+  switch (estado) {
+    case 'PendientePago': return '⏳ Pendiente de pago';
+    case 'Pagado': return '✅ Pagado';
+    case 'Cancelado': return '❌ Cancelada';
+    case 'Expirado': return '⌛ Expirada';
+    case 'CanceladoPorAdmin': return '🚫 Cancelada por administrador';
+    default: return estado;
+  }
+}
+
+// Abre la vista de pago pre-cargando una reserva existente.
+// Reutiliza view-pago existente sin modificar nada de su lógica.
+function abrirReservaExistente(reserva) {
+  state.reservaIdActual = reserva.id;
+  state.fechaSeleccionada = reserva.fechaReserva;
+  state.slotSeleccionado = reserva.slot;
+
+  document.getElementById('userNombre3').textContent = state.nombre;
+  document.getElementById('userApto3').textContent = state.apto;
+  document.getElementById('pagoFecha').textContent = formatDate(reserva.fechaReserva);
+  document.getElementById('pagoSlot').textContent = formatSlot(reserva.slot);
+
+  const linkPago = state.linkPago || '#';
+  document.getElementById('linkPago').href = linkPago;
+  document.getElementById('linkPagoUrl').textContent = linkPago;
+
+  // Limpiar upload previo
+  document.getElementById('comprobanteInput').value = '';
+  document.getElementById('fileName').textContent = '';
+  document.getElementById('btnSubirComprobante').disabled = true;
+  state.comprobanteBase64 = null;
+  state.comprobanteNombre = null;
+  state.comprobanteMime = null;
+
+  hideAlert('pago');
+  showView('pago');
+}
+
+// ============ FLUJO 8: VOLVER AL INICIO ============
 function flujoVolverInicio() {
   // Limpiar estado
   state.apto = null;
@@ -538,6 +695,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btnSubirComprobante').addEventListener('click', flujoSubirComprobante);
   document.getElementById('btnCancelarReserva').addEventListener('click', flujoCancelarReserva);
+
+  // BUGFIX-015 [V22]: Mis reservas
+  document.getElementById('btnMisReservas').addEventListener('click', async () => {
+    await cargarMisReservas();
+    showView('mis-reservas');
+  });
 
   // Éxito
   document.getElementById('btnVolverInicio').addEventListener('click', flujoVolverInicio);

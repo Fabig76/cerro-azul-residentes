@@ -16,6 +16,7 @@ Historial de deploys (sesión 26-Sept):
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
+| **V22** | 02-Oct-2026 | `300ab4d7dfa1e06599f022f5329ae353` | BUGFIX-015: listarReservasPorApto + vista "Mis reservas" en salon-social.html |
 | **V21.1** | 02-Oct-2026 18:55 | `c180a1e330eb61ac2d13c1ca1a9e2df4` | BUGFIX-013: parentesco del residente se pierde (mismatch `parentesco`/`parent`) |
 | **V21** | 02-Oct-2026 18:30 | `e4aa773022db26b8bd339960c56dca52` | BUGFIX-012: registrarResidente cae al branch de CREACIÓN de submitRecord |
 | **V20** | 13:10 | `70ca1033084c9dc27fdf0aefa562f2c9` | BUGFIX-011: admin mudanzas filtro "Próximos N días" |
@@ -27,6 +28,8 @@ Historial de deploys (sesión 26-Sept):
 | V12 | 25-Sept | — | Módulo de estado de cuenta (deploy inicial) |
 
 BUGFIX-013 (V21.1): bug de V13 — `residente.js` envía el campo `parentesco` pero `buildRowFromPayload` (Código.gs línea 336) lee `r.parent` → col 33 (parentesco del residente) quedaba VACÍA en el Sheet. Fix: 14 líneas en `registrarResidente` que normalizan `parentesco || parent` antes de pasar al payload. El normalizador acepta ambos nombres (compatibilidad con `index.html` que usa `parent`). Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-013.
+
+BUGFIX-015 (V22) — listarReservasPorApto: nuevo endpoint SAL-12 que devuelve todas las reservas del apto del solicitante autenticado. Materializa el fix del BUG #1 del análisis del portal salón-social: la vista `view-mis-reservas` quedó como placeholder HTML desde F4 (26-Sept-2026) sin handler JS ni endpoint backend. Cuando un residente recargaba la página o navegaba atrás desde view-pago, perdía acceso a sus reservas pendientes. Incidente detonante: Elkin Santa (apto 504, CC 8061369) hizo una reserva el 02-Oct-2026 06:01 y no pudo subir comprobante ni cancelarla al refrescar. Fix: 73 líneas en backend (listarReservasPorApto en Código.gs) + botón "📋 Mis reservas" en vista-calendario (HTML) + flujo cargarMisReservas() en JS (165 líneas) con event delegation que permite retomar/cancelar cada reserva. NO modifica funciones existentes. Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-015 y `docs/sesion-2026-10-02.md`.
 
 BUGFIX-012 (V21): `registrarResidente` construía un payload SIN `editMode: true` al reusar `submitRecord()`. `submitRecord` entraba al branch de CREACIÓN, encontraba CA-XXXX por apto y retornaba `'Ya existe un registro... Usa la opción "EDITAR MI REGISTRO" para modificarlo.'` — un error del formulario principal siendo mostrado en el portal residente. Fix: agregar `editMode: true` al payload + preservar `autDatos` original del propietario + copiar `dispositivos` originales del propietario (FIX REAL para evitar que `setValues` borre los slots 95-109) + sanitizar mensaje de error para que NUNCA llegue al residente la referencia al formulario principal. Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-012.
 

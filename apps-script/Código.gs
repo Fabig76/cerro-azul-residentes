@@ -123,6 +123,10 @@ function doGet(e) {
     if (action === 'vigilanteVerReservasSalon') {
       return jsonOut(vigilanteVerReservasSalon(e.parameter.fecha));
     }
+    // BUGFIX-015 [V22]: listar reservas del solicitante autenticado
+    if (action === 'listarReservasPorApto') {
+      return jsonOut(listarReservasPorApto(e.parameter.apto, e.parameter.cc));
+    }
     if (action === 'adminListarReservasMudanzas') {
       return jsonOut(adminListarReservasMudanzas(
         e.parameter.estado,
@@ -3205,4 +3209,78 @@ function expirarReservasSalon() {
       'El trigger automático canceló ' + count + ' reservas PendientePago que superaron las 48 horas sin subir comprobante.\n\nLos slots han sido liberados.'
     );
   }
+}
+
+// ---------------------------------------------------------------------
+// Endpoint SAL-12: listarReservasPorApto (GET) [V22 BUGFIX-015]
+// Devuelve TODAS las reservas del apto del solicitante autenticado,
+// usando numForm como filtro (mismo criterio que el portal admin usa).
+// Permite al residente recuperar reservas previas (BUG #1: vista
+// mis-reservas huérfana del F4 salón social 26-Sept-2026).
+// ---------------------------------------------------------------------
+function listarReservasPorApto(apto, cc) {
+  apto = String(apto || '').trim();
+  cc = String(cc || '').trim();
+  if (!apto || !cc) return { ok: false, error: 'Falta N° de apartamento o cédula' };
+
+  // 1. Re-validar acceso (mismo helper que verificarAccesoSalon)
+  const acceso = verificarAccesoResidenteOPropietario(apto, cc);
+  if (!acceso) {
+    return {
+      ok: false,
+      error: 'Cédula no corresponde al propietario ni a un residente registrado en este apartamento.'
+    };
+  }
+
+  // 2. Listar reservas del mismo numForm (todas las del apto)
+  const sheet = ensureSalonSocialSheet();
+  const data = sheet.getDataRange().getValues();
+  const reservas = [];
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const aptoRow = String(row[2] || '').trim();
+    const numFormRow = String(row[1] || '').trim();
+
+    // Solo reservas del mismo apto Y mismo numForm
+    if (aptoRow !== apto) continue;
+    if (numFormRow !== acceso.numForm) continue;
+
+    reservas.push({
+      id: String(row[0] || ''),
+      numForm: numFormRow,
+      apto: aptoRow,
+      ccSolicitante: String(row[3] || ''),
+      tipo: String(row[4] || ''),
+      nombre: String(row[5] || ''),
+      correo: String(row[6] || ''),
+      celular: String(row[7] || ''),
+      fechaReserva: row[8] ? Utilities.formatDate(new Date(row[8]), 'America/Bogota', 'yyyy-MM-dd') : '',
+      slot: String(row[9] || ''),
+      estado: String(row[10] || ''),
+      fechaCreacion: row[11] ? Utilities.formatDate(new Date(row[11]), 'America/Bogota', "yyyy-MM-dd'T'HH:mm:ss") : '',
+      fechaLimitePago: row[12] ? Utilities.formatDate(new Date(row[12]), 'America/Bogota', "yyyy-MM-dd'T'HH:mm:ss") : '',
+      fechaPago: row[13] ? Utilities.formatDate(new Date(row[13]), 'America/Bogota', "yyyy-MM-dd'T'HH:mm:ss") : '',
+      comprobanteId: String(row[14] || ''),
+      tieneComprobante: !!String(row[14] || '').trim()
+    });
+  }
+
+  // Ordenar por fechaCreacion descendente (más recientes primero)
+  reservas.sort(function (a, b) {
+    return (b.fechaCreacion || '').localeCompare(a.fechaCreacion || '');
+  });
+
+  Logger.log('[listarReservasPorApto] apto ' + apto + ' CC ' + cc + ' → ' + reservas.length + ' reservas');
+
+  return {
+    ok: true,
+    apto: apto,
+    cc: cc,
+    numForm: acceso.numForm,
+    nombre: acceso.nombre,
+    tipo: acceso.tipo,
+    reservas: reservas,
+    total: reservas.length,
+    linkPago: getConfigValue('link_pago') || 'https://web-conjuntos.jelpit.com/pagar-mi-administracion#/'
+  };
 }

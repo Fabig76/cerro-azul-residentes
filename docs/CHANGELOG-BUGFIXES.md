@@ -1174,5 +1174,99 @@ Modificar `clearResidente` para que en modo dry-run devuelva `{ok:false, error:'
 
 ---
 
-Última actualización: 02-Oct-2026 19:00
+### BUGFIX-015 · Listar reservas del solicitante autenticado (BUG #1 mis-reservas huérfana)
+
+**Fecha:** 02-Oct-2026
+**Severidad:** ALTA — bloquea subir comprobante o cancelar reservas previas
+**Bug latente desde:** 26-Sept-2026 (F4 del módulo salón social)
+**Detectado por:** Operador reportó que Elkin de Jesús Santa (apto 504, CC 8061369) hizo una reserva pero no podía subir comprobante ni cancelarla
+**Versión deployada:** V22
+
+**Síntoma reportado por el operador:**
+> "el señor de este apto hizo una reserva 👤 Elkin de jesus Santa (Propietario) · Apto 504 pero ahora no puede subir el recibo de pago ni cancelar la reserva ni hacer ningun cambio esto en otras versiones si exititia porque desaparacio y cuando desaparecion"
+
+**Causa raíz:**
+La vista `view-mis-reservas` quedó como placeholder HTML desde el commit `c40d190` (26-Sept-2026) que implementó F4 del módulo salón social. El comentario del commit es literal:
+> "view-mis-reservas: (placeholder para v2)"
+
+El código JS solo referencia el nombre de la vista en `showView()` y `hideAlert()` (líneas 56 y 464 de `js/salon-social.js`), pero:
+- NO existe función `cargarMisReservas()` ni handler para la vista
+- NO existe botón en ninguna vista del HTML que la active
+- NO existe endpoint backend que liste reservas por (apto + CC)
+
+El estado `state.reservaIdActual` solo se llena en `flujoSeleccionarSlot()` (línea 286) y se pierde al recargar la página. Combinado con BUG #2 (botón "Volver al calendario" desde vista-pago con mensaje falso "podrás subir el comprobante en otra sesión"), el residente no tenía ninguna ruta de recuperación.
+
+**Por qué NO se detectó durante 6 días:**
+- El spec SÍ menciona la vista (líneas 622, 282) — parecía estar planeada
+- El HTML tiene el contenedor — parecía estar implementada
+- Solo faltaba el último 10% (endpoint + handler JS + botón)
+- Nadie probó el caso de uso "reserva abandonada a la mitad"
+
+**Verificación previa al fix (datos reales):**
+- Apto 504 / CA-0104 / CC 8061369 (Elkin Santa) tiene 3 reservas en pestaña "salon social":
+  - RS-0006  1/11 Tarde   PendientePago  (limite 4/10 06:01)
+  - RS-0007  1/11 Mañana  Cancelado
+  - RS-0008  1/11 Mañana  PendientePago  (limite 4/10 08:01)
+- Filtro `numForm=CA-0104 AND apto=504` devuelve exactamente estas 3 reservas (validado con Sheets API antes de escribir el fix)
+
+**Fix (3 partes, todas aisladas — NO rompen funciones existentes):**
+
+1. **Backend — nuevo endpoint SAL-12 `listarReservasPorApto(apto, cc)`** (Código.gs líneas 3211-3285, 73 líneas):
+   - Re-valida acceso con helper existente `verificarAccesoResidenteOPropietario()` (reutiliza código verificado)
+   - Filtra reservas con `numForm=acceso.numForm AND apto=apto` (mismo criterio que admin usa)
+   - Devuelve array con todos los campos relevantes + `linkPago`
+   - Ordena por fechaCreacion descendente
+   - Registra en Logger.log para auditoría
+
+2. **Routing en `doGet` (líneas 124-127)** — agrega case nuevo sin modificar cases existentes:
+   ```javascript
+   if (action === 'listarReservasPorApto') {
+     return jsonOut(listarReservasPorApto(e.parameter.apto, e.parameter.cc));
+   }
+   ```
+
+3. **Frontend — botón + handler + vista** (`salon-social.html` + `js/salon-social.js`):
+   - Botón `📋 Mis reservas` agregado en vista-calendario (después del grid, antes de "Cambiar de apartamento")
+   - Función `cargarMisReservas()` (157 líneas) que llama al endpoint, renderiza lista con event delegation
+   - Función auxiliar `abrirReservaExistente(reserva)` que pre-carga `state.reservaIdActual` y abre vista-pago existente (reutiliza 100% de la lógica de subir comprobante)
+   - Helpers `claseEstado()` y `etiquetaEstado()` para formatear
+   - Una sola línea agregada en DOMContentLoaded para el binding del botón
+
+**Archivos afectados:**
+- `apps-script/Código.gs` (+78 líneas, append-only al final)
+- `js/salon-social.js` (+165 líneas, funciones nuevas + 1 línea de binding)
+- `salon-social.html` (+6 líneas, 1 botón nuevo)
+- `apps-script/README.md` (tabla de deploys)
+- `docs/CHANGELOG-BUGFIXES.md` (esta entrada)
+
+**Tests post-deploy planificados (T-V22-*):**
+- T-V22-1: `node --check Codigo.gs` → ✓ OK
+- T-V22-2: `node --check salon-social.js` → ✓ OK
+- T-V22-3: `listarReservasPorApto(504, 8061369)` → 3 reservas (RS-0006/0007/0008)
+- T-V22-4: `listarReservasPorApto('xxx', 8061369)` → `{ok:false, error:'Cédula no corresponde...'}`
+- T-V22-5: `listarReservasPorApto(504, '99999999')` → `{ok:false, error:'Cédula no corresponde...'}`
+- T-V22-6: No regresión — `verificarAccesoSalon(504, 8061369)` sigue OK
+- T-V22-7: No regresión — `dispSalon(504)` sigue OK
+- T-V22-8: No regresión — `reservarSalon` sigue OK
+- T-V22-9: Browser: login → calendario → "Mis reservas" → ver RS-0006 → "Subir comprobante" → vista-pago pre-cargada
+- T-V22-10: Browser: desde vista mis-reservas → "Cancelar" RS-0008 → confirmar → recarga lista con 2 reservas
+
+**Lección aprendida #15:**
+**Las vistas declaradas en HTML sin handler JS son trampas mortales en producción.** El residente ve la sección, hace click, no pasa nada, no sabe que la funcionalidad no existe. Mitigación: regla de revisión — "no commitear HTML con vistas nuevas sin handler JS que las llene en el mismo commit". Alternativa: agregar `aria-disabled="true"` y un mensaje "Función disponible en próxima versión" mientras se implementa, en vez de un placeholder invisible.
+
+**Estado al 02-Oct-2026 23:30 (esperando deploy manual del operador):**
+- V22 generada, md5 `300ab4d7dfa1e06599f022f5329ae353`, 135.260 bytes, 3285 líneas
+- Cambios commiteados al repo local `cerro-azul-residentes`
+- Archivo para deploy: `Codigo_V22_BUGFIX015_MIS_RESERVAS-20261002.gs` (por subir a Drive)
+- URL `/exec` se preserva
+
+**Pendiente del operador:**
+- Pegar contenido de `Codigo_V22_BUGFIX015_MIS_RESERVAS-20261002.gs` en editor de Apps Script
+- Deploy V22 (mismo deployment, nueva versión sobre V21.1)
+- GitHub Pages ya tiene los cambios (frontend)
+- Validar con T-V22-3..10
+
+---
+
+Última actualización: 02-Oct-2026 23:30
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)
