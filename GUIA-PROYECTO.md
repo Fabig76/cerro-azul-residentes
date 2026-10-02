@@ -2021,6 +2021,7 @@ vigilancia. Si el vigilante tiene una lógica útil, replicarla en admin.
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
+| V21 | 02-Oct-2026 18:30 | `e4aa7730...` | BUGFIX-012: registrarResidente cae al branch de CREACIÓN de submitRecord |
 | V20 | 13:10 | `70ca1033...` | BUGFIX-011: admin mudanzas filtro "Próximos N días" |
 | V19 | 12:37 | `40e224f2...` | BUGFIX-010: SEG-001 backend vigilante |
 | V18 | 12:15 | `691a6f3a...` | BUGFIX-009: routing 6 endpoints `ec*` en `doPost` |
@@ -2032,8 +2033,9 @@ vigilancia. Si el vigilante tiene una lógica útil, replicarla en admin.
 - V18: 13/13 tests OK (Test 5 estado cuenta)
 - V19: 12/12 tests OK (Test 4 vigilantes + regresión)
 - V20: 4/4 tests OK (Test 2.5.0 admin mudanzas + validacion rango)
+- V21: pendiente deploy manual del operador (urb.cerroazul@gmail.com) — md5 `e4aa773022db26b8bd339960c56dca52`, Drive `1UbZY-RNcXEs1uVtcnqbSk6zd5iOmcXxX`
 
 ---
 
-Última actualización: 26-Sept-2026 13:30
+Última actualización: 02-Oct-2026 18:30
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)
