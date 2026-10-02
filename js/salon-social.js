@@ -697,9 +697,22 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnCancelarReserva').addEventListener('click', flujoCancelarReserva);
 
   // BUGFIX-015 [V22]: Mis reservas
+  // BUGFIX-015c [V22.1]: showView se llama ANTES del await para dar feedback
+  // inmediato al usuario (cold start de Apps Script puede tardar 30-60s).
   document.getElementById('btnMisReservas').addEventListener('click', async () => {
-    await cargarMisReservas();
     showView('mis-reservas');
+    await cargarMisReservas();
+  });
+
+  // BUGFIX-015b [V22.1]: Volver al calendario desde Mis reservas
+  // El botón btnVolverCalDesdeMis en view-mis-reservas no tenía handler.
+  // Al hacer click, se restaura el header del calendario y se recarga la grilla.
+  document.getElementById('btnVolverCalDesdeMis').addEventListener('click', async () => {
+    document.getElementById('userNombre').textContent = state.nombre;
+    document.getElementById('userTipo').textContent = state.tipo;
+    document.getElementById('userApto').textContent = state.apto;
+    await cargarCalendario();
+    showView('calendario');
   });
 
   // Éxito
