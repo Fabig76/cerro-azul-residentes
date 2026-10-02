@@ -1268,5 +1268,64 @@ Resultados de las pruebas ejecutadas con Apps Script en producción + GitHub Pag
 
 ---
 
-Última actualización: 03-Oct-2026 (post-verificación V22)
+Última actualización: 03-Oct-2026 (post-verificación V22.1)
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)
+
+---
+
+### BUGFIX-015b · Botón "Volver al calendario" desde Mis reservas no funciona
+
+**Fecha:** 03-Oct-2026
+**Severidad:** MEDIA — no impide el flujo pero frustra al usuario (botón que no hace nada)
+**Bug latente desde:** 02-Oct-2026 (BUGFIX-015 / V22)
+**Detectado por:** Operador reportó "el boton volver al calendario no funciona"
+**Versión corregida:** V22.1 (frontend only, NO requiere re-deploy Apps Script)
+
+**Síntoma:**
+Tras la implementación de BUGFIX-015 (V22), el botón "↩️ Volver al calendario" dentro de la vista `view-mis-reservas` (`id="btnVolverCalDesdeMis"`) no tenía handler JS. Al hacer click, no pasaba nada — el usuario quedaba atrapado en la lista de reservas.
+
+**Causa raíz:**
+En el patch de BUGFIX-015 agregué el botón HTML pero olvidé agregar el binding JS correspondiente en el `DOMContentLoaded`. El handler de `btnVolverCalendario` (que sí funciona) está en el botón de la vista `view-reservar`, no en este.
+
+**Fix (frontend only):**
+```javascript
+// BUGFIX-015b [V22.1]: Volver al calendario desde Mis reservas
+document.getElementById('btnVolverCalDesdeMis').addEventListener('click', async () => {
+  document.getElementById('userNombre').textContent = state.nombre;
+  document.getElementById('userTipo').textContent = state.tipo;
+  document.getElementById('userApto').textContent = state.apto;
+  await cargarCalendario();
+  showView('calendario');
+});
+```
+
+**Lecciones:**
+- Cada vez que se agrega un botón nuevo en el HTML, agregar el handler en el mismo commit
+- Antes de cerrar un bugfix, hacer E2E: login → click nuevo botón → ver vista cambia → click "volver" → ver vista original vuelve
+
+---
+
+### BUGFIX-015c · Cold start UX: vista cambia solo DESPUÉS de cargar datos
+
+**Fecha:** 03-Oct-2026
+**Severidad:** BAJA — UX subóptima (usuario cree que la app está rota)
+**Bug latente desde:** 02-Oct-2026 (BUGFIX-015 / V22)
+**Versión corregida:** V22.1 (frontend only)
+
+**Síntoma:**
+El handler de `btnMisReservas` esperaba `await cargarMisReservas()` ANTES de llamar `showView('mis-reservas')`. Durante el cold start de Apps Script (30-60s), el usuario veía el calendario sin ningún feedback — parecía que nada pasaba.
+
+**Fix:**
+```javascript
+// BUGFIX-015c: showView ANTES del await para dar feedback inmediato
+document.getElementById('btnMisReservas').addEventListener('click', async () => {
+  showView('mis-reservas');           // feedback inmediato
+  await cargarMisReservas();          // carga la lista (puede tardar en cold start)
+});
+```
+
+El usuario ve inmediatamente la vista Mis reservas con "Cargando..." y la lista se actualiza cuando llega la respuesta.
+
+**Lección:**
+Para cualquier `await` antes de un cambio de vista, llamar `showView` primero y dejar el contenido cargándose en background. Patrón "optimistic UI".
+
