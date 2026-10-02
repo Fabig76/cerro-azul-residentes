@@ -2021,6 +2021,7 @@ vigilancia. Si el vigilante tiene una lógica útil, replicarla en admin.
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
+| V21.1 | 02-Oct-2026 18:55 | `c180a1e3...` | BUGFIX-013: parentesco del residente se pierde (mismatch `parentesco`/`parent`) |
 | V21 | 02-Oct-2026 18:30 | `e4aa7730...` | BUGFIX-012: registrarResidente cae al branch de CREACIÓN de submitRecord |
 | V20 | 13:10 | `70ca1033...` | BUGFIX-011: admin mudanzas filtro "Próximos N días" |
 | V19 | 12:37 | `40e224f2...` | BUGFIX-010: SEG-001 backend vigilante |
@@ -2033,9 +2034,10 @@ vigilancia. Si el vigilante tiene una lógica útil, replicarla en admin.
 - V18: 13/13 tests OK (Test 5 estado cuenta)
 - V19: 12/12 tests OK (Test 4 vigilantes + regresión)
 - V20: 4/4 tests OK (Test 2.5.0 admin mudanzas + validacion rango)
-- V21: pendiente deploy manual del operador (urb.cerroazul@gmail.com) — md5 `e4aa773022db26b8bd339960c56dca52`, Drive `1UbZY-RNcXEs1uVtcnqbSk6zd5iOmcXxX`
+- V21: 6/6 tests críticos OK (T-V21-3 + regresión lookup, propietario preservado)
+- V21.1: pendiente deploy manual del operador (urb.cerroazul@gmail.com) — md5 `c180a1e330eb61ac2d13c1ca1a9e2df4`, Drive `1f-gBHE4Zqv69qLm1c5-1iBkKAHjhbq2H`
 
 ---
 
-Última actualización: 02-Oct-2026 18:30
+Última actualización: 02-Oct-2026 18:55
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)
