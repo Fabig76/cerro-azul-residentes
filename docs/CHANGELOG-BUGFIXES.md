@@ -999,9 +999,125 @@ Esta es la red de seguridad: incluso si `submitRecord` rechaza por alguna razón
 
 V21 listo para deploy manual por el operador. Archivo en Drive `1UbZY-RNcXEs1uVtcnqbSk6zd5iOmcXxX` (md5 `d63f74fd91629b9dc27ad481c4676634`). Codigo.gs canónico en repo local actualizado. URL `/exec` se preserva.
 
-**Pendiente del operador:** Pegar el contenido de `Codigo_V21_BUGFIX012_RESIDENTE_AUTO_REGISTRO-20261002.gs` en el editor de Apps Script, hacer deploy V21 (NO nueva implementación, solo nueva versión), validar T-V21-1..12.
+**Pendiente del operador:** Pegar el contenido de `Codigo_V21.1_BUGFIX013_PARENTESCO_FIX-20261002.gs` en el editor de Apps Script, hacer deploy V21.1 (NO nueva implementación, solo nueva versión sobre el mismo deployment), validar T-V21.1-1..12.
 
 ---
 
-Última actualización: 02-Oct-2026 18:30
+## BUGFIX-013 · parentesco del residente se pierde (mismatch `parentesco`/`parent`)
+
+**Fecha:** 02-Oct-2026
+**Severidad:** ALTA — el portal residente grababa el parentesco VACÍO en el Sheet
+**Bug latente desde:** 25-Sept-2026 (deploy V13 — bug preexistente, NO introducido por V21)
+**Detectado por:** Test E2E T-V21-4b durante la auditoría de V21. Verifiqué con `verificarResidente` que el residente de prueba "TEST BUGFIX012" quedó guardado en el Sheet con `parentesco: ''`.
+
+**Síntoma observado en T-V21-4b (post-deploy V21):**
+```json
+{"slot":1,"datos":{"nombre":"TEST BUGFIX012","cc":"99999991","parentesco":"","cel":"3000000001","correo":"test-bugfix012@test.co"}}
+```
+El residente envió `parentesco: "Tenedor / Otro"` desde `residente.js` pero el Sheet guardó col 33 vacía.
+
+**Causa raíz:**
+Desajuste de nombres entre el frontend y el backend:
+
+- `js/residente.js` línea 466 (frontend del portal residente):
+  ```javascript
+  residentes.push({
+    nombre: nombre,
+    cc: cc,
+    parentesco: parent,    // ← envía "parentesco"
+    cel: cel,
+    correo: correo
+  });
+  ```
+
+- `apps-script/Código.gs` línea 336 (`buildRowFromPayload`):
+  ```javascript
+  v[29 + i*5 + 4] = String(r.parent || '').trim();    // ← lee "parent"
+  ```
+
+El formulario principal (`index.html` → `js/app.js`) usa `r.parent` (consistente con `buildRowFromPayload`). El portal residente (`residente.html` → `js/residente.js`) usa `r.parentesco` (inconsistente). Como `buildRowFromPayload` busca `r.parent` y recibe `undefined`, escribe string vacío en col 33.
+
+**Por qué NO se detectó durante los tests de V13:**
+- Los tests T-RES-3, T-RES-4, T-RES-7, T-RES-8, T-RES-9 verificaban match/no-match de CC pero no inspeccionaban los 5 campos de cada slot de residente.
+- El test T-RES-5 (registrarResidente) NUNCA se ejecutó en el Sheet real (estaba marcado "no ejecutado — sandbox" desde 25-Sept-2026).
+- Cuando BUGFIX-009 (V18) bloqueó el endpoint entero, no se pudo detectar este side effect.
+- V20/V21 fueron cambios pequeños que no tocaban la lógica de residentes.
+
+**Fix (BUGFIX-013, 14 líneas en `apps-script/Código.gs`):**
+
+En la función `registrarResidente`, **antes de validar la cantidad y pasar al payload**, normalizar el array `residentes` para que `parentesco` se mapee a `parent`:
+
+```javascript
+// BUGFIX-013: buildRowFromPayload (Código.gs línea 336) lee `r.parent` para
+// escribir v[33] (parentesco del residente), pero residente.js línea 466
+// envía el campo como `r.parentesco`. Sin esta normalización, col 33
+// queda VACÍA y el conjunto no sabe si el residente es arrendatario/hijo/etc.
+// (bug preexistente de V13 descubierto durante testing de V21).
+const residentesCrudos = Array.isArray(data.residentes) ? data.residentes : [];
+const residentes = residentesCrudos.map(function (r) {
+  return {
+    nombre: r.nombre || '',
+    cc: r.cc || '',
+    correo: r.correo || '',
+    cel: r.cel || '',
+    parent: r.parentesco || r.parent || ''
+  };
+});
+```
+
+El normalizador acepta tanto `r.parentesco` (portal residente) como `r.parent` (compatibilidad con cualquier caller que ya mande `parent`). Esto NO rompe el formulario principal (`index.html` envía `parent` — la normalización es un no-op para él).
+
+**Análisis de side effects (V21.1)**
+
+| # | Test | Resultado esperado |
+|---|------|---|
+| A | `node --check Codigo.gs` | ✓ sintaxis OK |
+| B | `submitRecord` sin LockService propio (línea 234) | ✓ Sin deadlock |
+| C | Hash dedupe col 142 | ✓ Sin cambio (mismo apto+ccProp+firmaCC) |
+| D | `Fecha Registro` (col B) | ✓ Preservada (no tocamos submitRecord) |
+| E | `Fecha Última Edición` (col C) | ✓ Actualizada (no tocamos submitRecord) |
+| F | `lookup` modo edición `index.html` | ✓ Sin regresión (acepta `parent` directo) |
+| G | `verificarResidente` + `actualizarResidente` (CASO B) | ✓ Sin regresión (no tocamos) |
+| H | Sentinel CA-0083 / apto 9999 / CC 94501666 | ✓ Intacto |
+| `vigilanteVerResidentes` | ✓ Sin regresión |
+| Otras pestañas (Mudanzas, Salón, Cartera) | ✓ Independientes |
+
+**Archivos afectados:**
+- `apps-script/Código.gs` (MOD, +14 líneas)
+- `docs/CHANGELOG-BUGFIXES.md` (esta entrada)
+
+**Deploy V21.1:**
+- Apps Script: V21.1 (nueva versión sobre el MISMO deployment ID, URL `/exec` preservada)
+- Drive: `Codigo_V21_1_BUGFIX013_PARENTESCO_FIX-20261002.gs`
+- ID Drive: `1f-gBHE4Zqv69qLm1c5-1iBkKAHjhbq2H`
+- MD5: `c180a1e330eb61ac2d13c1ca1a9e2df4`
+- Tamaño: 132.080 bytes
+
+**Tests E2E post-deploy (T-V21.1-1..10 obligatorios):**
+
+| # | Test | Resultado esperado |
+|---|------|---|
+| T-V21.1-1 | `node --check Codigo.gs` | ✓ OK |
+| T-V21.1-2 | Backup del Sheet pre-deploy | md5 guardado |
+| T-V21.1-3 | `clearResidente(CA-0083, 9999, 94501666)` para limpiar sentinel | ✓ 90 celdasLimpiadas |
+| T-V21.1-4 | `getEstadoResidente(9999)` | ✓ `hayResidentes:false` |
+| T-V21.1-5 | `registrarResidente(9999, [{nombre:'TEST BUGFIX013', cc:'99999992', parentesco:'Arrendatario', cel:'3000000002', correo:'test13@t.co'}])` | ✓ `{ok:true, numForm:'CA-0083', slotAsignado:1}` |
+| T-V21.1-6 | `verificarResidente(9999, 99999992)` | ✓ `slot:1, datos.parentesco='Arrendatario'` (NO VACÍO) |
+| T-V21.1-7 | `getEstadoResidente(9999)` | ✓ nombresResidentes: ['TEST BUGFIX013'] |
+| T-V21.1-8 | Sentinel CA-0083 limpio después de test | ✓ (clearResidente) |
+| T-V21.1-9 | Regresión `actualizarResidente` en apto 1108 con CC Angela | ✓ Sin regresión |
+| T-V21.1-10 | Regresión `index.html` lookup CA-0133 + 1108 | ✓ Trae datos completos |
+
+**Lección aprendida #13:**
+**Cuando dos módulos diferentes (frontend y backend) tienen convenciones de nombres distintas para el mismo campo, el primero que falle (sin coincidir) va a perder datos silenciosamente.** El bug estuvo 7 días latente porque `buildRowFromPayload` no valida que los campos requeridos existan — solo lee lo que viene. Mitigación: agregar validación opcional en `buildRowFromPayload` que avise (warning log, no error) si campos críticos vienen undefined. Esto es un fix adicional que se puede agregar en V21.2+.
+
+**Estado del fix al 02-Oct-2026 18:55:**
+
+V21.1 listo para deploy manual por el operador. Archivo en Drive `1f-gBHE4Zqv69qLm1c5-1iBkKAHjhbq2H` (md5 `c180a1e330eb61ac2d13c1ca1a9e2df4`). Codigo.gs canónico en repo local actualizado. URL `/exec` se preserva.
+
+**Pendiente del operador:** Pegar el contenido de `Codigo_V21_1_BUGFIX013_PARENTESCO_FIX-20261002.gs` en el editor de Apps Script, hacer deploy V21.1 (mismo deployment, nueva versión sobre V21), ejecutar T-V21.1-1..10.
+
+---
+
+Última actualización: 02-Oct-2026 18:55
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)

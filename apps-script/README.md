@@ -16,6 +16,7 @@ Historial de deploys (sesión 26-Sept):
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
+| **V21.1** | 02-Oct-2026 18:55 | `c180a1e330eb61ac2d13c1ca1a9e2df4` | BUGFIX-013: parentesco del residente se pierde (mismatch `parentesco`/`parent`) |
 | **V21** | 02-Oct-2026 18:30 | `e4aa773022db26b8bd339960c56dca52` | BUGFIX-012: registrarResidente cae al branch de CREACIÓN de submitRecord |
 | **V20** | 13:10 | `70ca1033084c9dc27fdf0aefa562f2c9` | BUGFIX-011: admin mudanzas filtro "Próximos N días" |
 | V19 | 12:37 | `40e224f2d0071388fc46aff72e6910f4` | BUGFIX-010 / SEG-001: backend vigilante sin credenciales |
@@ -24,6 +25,8 @@ Historial de deploys (sesión 26-Sept):
 | V14 | 25-Sept | — | Salón social: deploy inicial |
 | V13 | 25-Sept | — | Portal del residente (auto-registro) |
 | V12 | 25-Sept | — | Módulo de estado de cuenta (deploy inicial) |
+
+BUGFIX-013 (V21.1): bug de V13 — `residente.js` envía el campo `parentesco` pero `buildRowFromPayload` (Código.gs línea 336) lee `r.parent` → col 33 (parentesco del residente) quedaba VACÍA en el Sheet. Fix: 14 líneas en `registrarResidente` que normalizan `parentesco || parent` antes de pasar al payload. El normalizador acepta ambos nombres (compatibilidad con `index.html` que usa `parent`). Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-013.
 
 BUGFIX-012 (V21): `registrarResidente` construía un payload SIN `editMode: true` al reusar `submitRecord()`. `submitRecord` entraba al branch de CREACIÓN, encontraba CA-XXXX por apto y retornaba `'Ya existe un registro... Usa la opción "EDITAR MI REGISTRO" para modificarlo.'` — un error del formulario principal siendo mostrado en el portal residente. Fix: agregar `editMode: true` al payload + preservar `autDatos` original del propietario + copiar `dispositivos` originales del propietario (FIX REAL para evitar que `setValues` borre los slots 95-109) + sanitizar mensaje de error para que NUNCA llegue al residente la referencia al formulario principal. Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-012.
 

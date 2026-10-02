@@ -2012,7 +2012,21 @@ function registrarResidente(data) {
       if (slotAsignado === -1) slotAsignado = i + 1;
     }
 
-    const residentes = Array.isArray(data.residentes) ? data.residentes : [];
+    // BUGFIX-013: buildRowFromPayload (Código.gs línea 336) lee `r.parent` para
+    // escribir v[33] (parentesco del residente), pero residente.js línea 466
+    // envía el campo como `r.parentesco`. Sin esta normalización, col 33
+    // queda VACÍA y el conjunto no sabe si el residente es arrendatario/hijo/etc.
+    // (bug preexistente de V13 descubierto durante testing de V21).
+    const residentesCrudos = Array.isArray(data.residentes) ? data.residentes : [];
+    const residentes = residentesCrudos.map(function (r) {
+      return {
+        nombre: r.nombre || '',
+        cc: r.cc || '',
+        correo: r.correo || '',
+        cel: r.cel || '',
+        parent: r.parentesco || r.parent || ''
+      };
+    });
     if (residentes.length === 0) {
       return { ok: false, error: 'Debe registrar al menos un residente.' };
     }
