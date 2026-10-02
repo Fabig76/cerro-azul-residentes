@@ -410,3 +410,52 @@ el código debe funcionar automáticamente sin tocar la lógica de switch.---
 
 *Archivo generado automáticamente al final de la sesión del 25-Sept-2026.
 Próxima sesión: continuar con F2 backend después de F0 + F3.*
+
+---
+
+## Extensión 03-Oct-2026 — V22.1 BUGFIX-015b/c
+
+Operador reportó "el boton volver al calendario no funciona" tras deploy V22.
+
+**Diagnóstico:**
+- BUGFIX-015b: el botón `btnVolverCalDesdeMis` en `view-mis-reservas` existía en
+  el HTML pero no tenía handler JS. En BUGFIX-015 agregué el botón y la función
+  `cargarMisReservas()`, pero olvidé agregar el binding en `DOMContentLoaded`.
+- BUGFIX-015c (detectado durante el fix): `showView('mis-reservas')` se llamaba
+  DESPUÉS del `await cargarMisReservas()`. Durante el cold start de Apps Script
+  (30-60s), el usuario miraba el calendario sin feedback.
+
+**Fixes (V22.1, frontend only, commit `3f08c2e`):**
+
+```javascript
+// BUGFIX-015b: handler que faltaba
+document.getElementById('btnVolverCalDesdeMis').addEventListener('click', async () => {
+  document.getElementById('userNombre').textContent = state.nombre;
+  document.getElementById('userTipo').textContent = state.tipo;
+  document.getElementById('userApto').textContent = state.apto;
+  await cargarCalendario();
+  showView('calendario');
+});
+
+// BUGFIX-015c: optimistic UI
+document.getElementById('btnMisReservas').addEventListener('click', async () => {
+  showView('mis-reservas');          // feedback inmediato
+  await cargarMisReservas();         // carga en background
+});
+```
+
+**Verificado en navegador (E2E con Elkin, apto 504, CC 8061369):**
+- T-V22.1-A: login OK ✓
+- T-V22.1-B: click "Mis reservas" → vista cambia en <1s ✓
+- T-V22.1-C: 3 reservas listadas (RS-0006/0007/0008) ✓
+- T-V22.1-D: click "Volver al calendario" → vista vuelve al calendario ✓
+- T-V22.1-E: header "Elkin de jesus Santa · Propietario · Apto 504" ✓
+- T-V22.1-F: grilla del calendario recargada ✓
+
+**Lecciones aprendidas:**
+- Cada botón nuevo en HTML debe tener su handler en el mismo commit
+- Patrón "optimistic UI" para awaits > 5s: mostrar UI inmediatamente,
+  actualizar cuando llegue la respuesta
+- Hacer E2E completo antes de cerrar un bugfix, no solo el happy path
+
+Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-015b, BUGFIX-015c.

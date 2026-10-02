@@ -923,3 +923,33 @@ Y enlace en footer (junto a los otros portales).
   (o usa `configurarTriggerExpiracion()`)
 - [ ] Operador crea la pestaña "salon social" en Sheet Registros
   (o autoriza a Hermes a hacerlo)
+
+---
+
+## §15. Estado post-deploy (V22 + V22.1, 02-03-Oct-2026)
+
+### V22 (02-Oct-2026 17:14 COL, deploy operador)
+**Cambios:**
+- Backend (Código.gs +73 líneas): endpoint SAL-12 `listarReservasPorApto(apto, cc)`
+- Frontend (salon-social.html +6 líneas): botón "📋 Mis reservas"
+- Frontend (js/salon-social.js +165 líneas): `cargarMisReservas()` con event delegation
+
+**md5 Codigo.gs:** `300ab4d7dfa1e06599f022f5329ae353` (3.285 líneas, 135.260 bytes)
+
+**Decisiones tomadas:**
+- **D24**: vista `view-mis-reservas` se considera FIX MATERIALIZADO. No es un placeholder
+  huérfano. Materializa el fix del BUG #1 del análisis.
+- **D25**: event delegation con `data-accion` y `data-id` para los botones contextuales
+  de cada reserva (Subir comprobante / Cancelar). Permite N reservas con un solo listener.
+
+### V22.1 (03-Oct-2026, frontend only)
+**Cambios (NO requieren re-deploy Apps Script):**
+- BUGFIX-015b: handler faltante para `btnVolverCalDesdeMis`
+- BUGFIX-015c: `showView` antes del `await` (optimistic UI)
+
+**md5 js/salon-social.js:** `d7aea73812e06d2f6bef99fd17511e56`
+**commit:** `3f08c2e` pusheado a main
+
+### Estado
+F0-F9 completas. V14-V22.1 sin regresiones. Ver `docs/CHANGELOG-BUGFIXES.md` para
+detalle de los 14+ bugfixes aplicados.

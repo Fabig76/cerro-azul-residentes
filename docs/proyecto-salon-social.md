@@ -210,3 +210,23 @@ carpeta `1YxXTIvezRpu-0R0fOCNOoVF_iTARTOCN` el 26-Sept-2026.
 
 Última actualización: 26-Sept-2026 13:30
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)
+
+---
+
+## Extensión 03-Oct-2026 — V22 BUGFIX-015 + V22.1 BUGFIX-015b/c
+
+**V22 (02-Oct-2026 17:14 COL, deploy del operador):**
+- Backend: nuevo endpoint SAL-12 `listarReservasPorApto(apto, cc)` (Código.gs +73 líneas)
+- Frontend HTML: botón "📋 Mis reservas" en vista-calendario
+- Frontend JS: función `cargarMisReservas()` con event delegation (165 líneas)
+- md5 Codigo.gs: `300ab4d7dfa1e06599f022f5329ae353` (3.285 líneas, 135.260 bytes)
+
+**V22.1 (03-Oct-2026, frontend only, NO requiere re-deploy Apps Script):**
+- BUGFIX-015b: handler faltante para `btnVolverCalDesdeMis` (Volver al calendario desde Mis reservas). Sin este handler, el botón no hacía nada.
+- BUGFIX-015c: `showView('mis-reservas')` ahora se llama ANTES del `await cargarMisReservas()` para dar feedback inmediato al usuario (cold start de Apps Script puede tardar 30-60s).
+- md5 js/salon-social.js: `d7aea73812e06d2f6bef99fd17511e56`
+- commit: `3f08c2e` pusheado a main
+
+**Pendiente:** Ninguno. F0-F9 completas, V14-V22.1 sin regresiones.
+
+Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-015, BUGFIX-015b, BUGFIX-015c.

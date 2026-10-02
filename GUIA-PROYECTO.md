@@ -2021,6 +2021,8 @@ vigilancia. Si el vigilante tiene una lógica útil, replicarla en admin.
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
+| V22.1 (frontend) | 03-Oct-2026 | `d7aea73812e06d2f6bef99fd17511e56` (js) | BUGFIX-015b/c: handler "Volver al calendario" + optimistic UI (frontend only, NO requiere re-deploy Apps Script) |
+| V22 | 02-Oct-2026 17:14 | `300ab4d7dfa1e06599f022f5329ae353` | BUGFIX-015: listarReservasPorApto + vista "Mis reservas" |
 | V21.1 | 02-Oct-2026 18:55 | `c180a1e3...` | BUGFIX-013: parentesco del residente se pierde (mismatch `parentesco`/`parent`) |
 | V21 | 02-Oct-2026 18:30 | `e4aa7730...` | BUGFIX-012: registrarResidente cae al branch de CREACIÓN de submitRecord |
 | V20 | 13:10 | `70ca1033...` | BUGFIX-011: admin mudanzas filtro "Próximos N días" |
@@ -2035,9 +2037,10 @@ vigilancia. Si el vigilante tiene una lógica útil, replicarla en admin.
 - V19: 12/12 tests OK (Test 4 vigilantes + regresión)
 - V20: 4/4 tests OK (Test 2.5.0 admin mudanzas + validacion rango)
 - V21: 6/6 tests críticos OK (T-V21-3 + regresión lookup, propietario preservado)
-- V21.1: pendiente deploy manual del operador (urb.cerroazul@gmail.com) — md5 `c180a1e330eb61ac2d13c1ca1a9e2df4`, Drive `1f-gBHE4Zqv69qLm1c5-1iBkKAHjhbq2H`
+- V22: 8/8 tests E2E OK (T-V22-3 API, T-V22-4/5 casos negativos, T-V22-6/7/8 navegador, ver CHANGELOG-BUGFIXES.md)
+- V21.1: 6/6 tests críticos OK (T-V21.1-3..9)
 
 ---
 
-Última actualización: 02-Oct-2026 18:55
+Última actualización: 03-Oct-2026 (V22.1 frontend)
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)

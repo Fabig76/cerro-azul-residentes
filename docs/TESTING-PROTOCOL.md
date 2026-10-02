@@ -1219,5 +1219,38 @@ regresivo.**
 
 ---
 
-Última actualización: 02-Oct-2026
+### Resumen de tests del Salón Social (V22 + V22.1, 02-03-Oct-2026)
+
+| Test | Qué verifica | Resultado |
+|---|---|---|
+| T-V22-1 | Sintaxis `Codigo.gs` con `node --check` | ✅ 3.285 líneas OK |
+| T-V22-2 | Sintaxis `js/salon-social.js` con `node --check` | ✅ 709 líneas OK |
+| T-V22-3 | `listarReservasPorApto(504, 8061369)` retorna 3 reservas | ✅ 03-Oct-2026 |
+| T-V22-4 | Caso negativo: CC incorrecta → error "Cédula no corresponde..." | ✅ |
+| T-V22-5 | Caso negativo: apto inexistente → mismo error | ✅ |
+| T-V22-6 | Login con 504/8061369 → calendario carga | ✅ |
+| T-V22-7 | Click "📋 Mis reservas" → 3 .reserva-item renderizados | ✅ |
+| T-V22-8 | Consola JS sin errores tras navegación | ✅ |
+| T-V22.1-A | Login OK tras V22.1 | ✅ 03-Oct-2026 |
+| T-V22.1-B | Click "Mis reservas" → vista cambia en <1s (optimistic UI) | ✅ |
+| T-V22.1-C | Lista de reservas renderizada correctamente | ✅ |
+| T-V22.1-D | Click "Volver al calendario" → vista vuelve (BUGFIX-015b) | ✅ |
+| T-V22.1-E | Header del calendario restaurado (Elkin · Propietario · 504) | ✅ |
+| T-V22.1-F | Grilla del calendario recargada con `cargarCalendario()` | ✅ |
+
+**Todos estos tests DEBEN ejecutarse después de CADA deploy del módulo
+salón social. Si T-V22.1-D falla (botón "Volver al calendario" no hace nada),
+es BUGFIX-015b regresivo.**
+
+**Procedimiento post-deploy salón social:**
+1. Abrir https://fabig76.github.io/cerro-azul-residentes/salon-social.html?v=<deploy-id>
+2. Login con apto 504, CC 8061369 (sentinel Elkin)
+3. Click "📋 Mis reservas" → verificar que carga en <2s (no debe quedarse en blanco)
+4. Verificar que las 3 reservas aparecen con sus estados y botones
+5. Click "↩️ Volver al calendario" → verificar que la vista vuelve al calendario
+6. Verificar que el header del calendario está correcto
+
+---
+
+Última actualización: 03-Oct-2026 (V22.1 frontend)
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)
