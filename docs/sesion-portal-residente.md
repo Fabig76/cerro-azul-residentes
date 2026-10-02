@@ -499,10 +499,30 @@ con CCs ficticias prefijo 59/58.
 - [ ] Implementar F3 (botón borrar en index.html)
 - [ ] Implementar F4 (residente.html + js/residente.js)
 - [ ] Actualizar manual HTML (F6)
-- [ ] Actualizar GUIA-PROYECTO.md §22
-- [ ] Agregar 8 tests E2E al TESTING-PROTOCOL.md
-- [ ] Actualizar CHANGELOG-BUGFIXES.md si hay bugfix
+- [x] Actualizar GUIA-PROYECTO.md §22 → hecho en V13/V14
+- [x] Agregar 8 tests E2E al TESTING-PROTOCOL.md → hecho en V13
+- [x] Actualizar CHANGELOG-BUGFIXES.md si hay bugfix → BUGFIX-012, BUGFIX-013 agregados 02-Oct-2026
 - [ ] Considerar generar_qr_residente.py (F8, opcional)
+
+---
+
+## Actualización 02-Oct-2026
+
+Esta sesión fue continuada el 02-Oct-2026 con 2 deploys de bugfixing:
+
+- **V21** (02-Oct 11:32): BUGFIX-012 — `registrarResidente` sin `editMode:true` → submitRecord rechazaba con mensaje del formulario principal. Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-012.
+- **V21.1** (02-Oct 11:54): BUGFIX-013 — `registrarResidente` perdía `parentesco` por mismatch con `buildRowFromPayload`. Ver BUGFIX-013.
+
+Cronología completa en `docs/sesion-2026-10-02.md`. Tests post-deploy
+documentados en `docs/TESTING-PROTOCOL.md` secciones "Tests de BUGFIX-012" y
+"Tests de BUGFIX-013".
+
+**Datos del portal residente verificados post-V21.1:**
+- apto 1108 / CA-0133: Angela María Zapata Ochoa intacto (parentesco 'Arrendataria')
+- apto 9999 / CA-0083 (sentinel): limpio, propietario Fabio Lesmes + parqueaderos + firma + hash intactos
+
+*Lección operativa 02-Oct:* Después de esta fecha, todo `clearResidente` debe ir con
+confirmación previa del operador. Ver BUGFIX-014 (CHANGELOG-BUGFIXES.md).
 
 ---
 

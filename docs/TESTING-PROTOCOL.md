@@ -549,25 +549,162 @@ curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=vigilante
 
 ### Resumen de tests del Portal del Residente
 
-| Test | Endpoint | Resultado |
-|---|---|---|
-| T-RES-1 | getEstadoResidente apto existente | ✅ |
-| T-RES-2 | getEstadoResidente apto no existe | ✅ |
-| T-RES-3 | verificarResidente match | ✅ |
-| T-RES-4 | verificarResidente no match | ✅ |
-| T-RES-5 | registrarResidente apto vacío | (no ejecutado — sandbox) |
-| T-RES-6 | actualizarResidente editar | (no ejecutado — preserva datos) |
-| T-RES-7 | clearResidente CC incorrecta | ✅ |
-| T-RES-8 | clearResidente CC correcta (destructivo) | ✅ |
-| T-RES-9 | Regresión V12 | ✅ |
+|| Test | Endpoint | Resultado |
+|---|---|---|---|
+|| T-RES-1 | getEstadoResidente apto existente | ✅ |
+|| T-RES-2 | getEstadoResidente apto no existe | ✅ |
+|| T-RES-3 | verificarResidente match | ✅ |
+|| T-RES-4 | verificarResidente no match | ✅ |
+|| T-RES-5 | registrarResidente apto vacío | ✅ (post-BUGFIX-012 V21) |
+|| T-RES-6 | actualizarResidente editar | (no ejecutado — preserva datos) |
+|| T-RES-7 | clearResidente CC incorrecta | ✅ |
+|| T-RES-8 | clearResidente CC correcta (destructivo) | ✅ |
+|| T-RES-9 | Regresión V12 | ✅ |
 
-**Total: 7/9 ejecutados, 7 OK, 2 preservados (T-RES-5 y T-RES-6)**
+**Total: 7/9 ejecutados, 7 OK, 2 preservados (T-RES-5 y T-RES-6) — actualizado 02-Oct-2026 con T-V21-* y T-V21.1-*. T-RES-5 finalmente ejecutado el 02-Oct-2026 (V21) y validó que BUGFIX-012 arregla el auto-registro.**
 
 ---
 
-## Tests del Portal de Reservas del Salón Social (25-Sept-2026)
+## Tests de BUGFIX-012 — V21 (02-Oct-2026)
 
-Deploy Apps Script **V14**. 11 endpoints nuevos + 1 trigger time-based.
+Deploy Apps Script **V21** que arregla `registrarResidente` sin `editMode:true`. Pendiente BUGFIX-013 descubierto durante testing. Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-012.
+
+**Sentinel nuevo: CA-0083 / apto 9999 / CC 94501666.** Antes de `clearResidente`, **siempre** verificar con `getEstadoResidente(9999)` que `hayResidentes:false` o que los residentes son explícitamente de prueba. Ver BUGFIX-014.
+
+### T-V21-SMOKE-1: smoke test post-deploy
+```javascript
+// browser_console.expression en residente.html
+fetch(APPS_SCRIPT_URL + '?action=nextId').then(r => r.json())
+```
+**Esperado:** `{ok:true, nextId:'CA-XXXX'}` (cualquier número válido)
+**Resultado verificado 02-Oct-2026:** ✅ `CA-0194`
+
+### T-V21-3 (CRÍTICO): registrarResidente en apto recién creado por propietario
+```javascript
+// browser_console.expression
+fetch(APPS_SCRIPT_URL, {
+  method: 'POST',
+  headers: {'Content-Type': 'text/plain;charset=UTF-8'},
+  body: JSON.stringify({
+    action: 'registrarResidente',
+    apto: '9999',
+    residentes: [{
+      nombre: 'TEST BUGFIX012', cc: '99999991',
+      parentesco: 'Tenedor / Otro',
+      cel: '3000000001', correo: 'test-bugfix012@test.co'
+    }],
+    menores: [], vehiculos: [], motos: [], bicis: [],
+    mascotas: [], contactos: []
+  })
+}).then(r => r.json())
+```
+**Esperado:** `{ok:true, numForm:'CA-0083', slotAsignado:1, message:'Registro exitoso.'}`
+**Resultado verificado 02-Oct-2026:** ✅ OK
+
+### T-V21-4: getEstadoResidente post-registro
+```javascript
+fetch(APPS_SCRIPT_URL + '?action=getEstadoResidente&apto=9999').then(r => r.json())
+```
+**Esperado:** `nombresResidentes: ['TEST BUGFIX012'], numResidentes:1, propietario:'Fabio Lesmes'` (preservado)
+**Resultado verificado 02-Oct-2026:** ✅ OK
+
+### T-V21-4b: verificarResidente con CC del TEST (descubrió BUGFIX-013)
+```javascript
+fetch(APPS_SCRIPT_URL + '?action=verificarResidente&apto=9999&cc=99999991').then(r => r.json())
+```
+**Esperado (V21):** `datos.parentesco` VACÍO (bug preexistente, no parte de V21)
+**Resultado verificado 02-Oct-2026:** ⚠️ **BUGFIX-013 detectado** — `parentesco: ''`
+
+### T-V21-6: lookup regresión (formulario principal)
+```javascript
+fetch(APPS_SCRIPT_URL + '?action=lookup&numForm=CA-0083&apto=9999').then(r => r.json())
+```
+**Esperado:** `nombreProp:'Fabio Lesmes'` (PRESERVADO), `diligencia:'Propietario'` (PRESERVADO)
+**Resultado verificado 02-Oct-2026:** ✅ OK
+
+### T-V21-11: Sentinel 9999/CA-0083/94501666 intacto post-test
+**Procedimiento:** ejecutar `clearResidente` después de T-V21-3..4b, verificar con `getEstadoResidente` que vuelve al estado limpio.
+**Resultado verificado 02-Oct-2026:** ✅ 90 celdasLimpiadas, `hayResidentes:false`, propietario intacto
+
+---
+
+## Tests de BUGFIX-013 — V21.1 (02-Oct-2026)
+
+Deploy Apps Script **V21.1** que arregla el mismatch `parentesco`/`parent` entre `residente.js` (envía `parentesco`) y `buildRowFromPayload` (lee `r.parent`). Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-013.
+
+### T-V21.1-3: clearResidente pre-test
+```javascript
+fetch(APPS_SCRIPT_URL, {
+  method: 'POST',
+  headers: {'Content-Type': 'text/plain;charset=UTF-8'},
+  body: JSON.stringify({
+    action: 'clearResidente', numForm: 'CA-0083',
+    apto: '9999', ccPropConfirm: '94501666'
+  })
+}).then(r => r.json())
+```
+**Esperado:** `{ok:true, celdasLimpiadas:90, message:'Datos del residente anterior borrados correctamente.'}`
+**Resultado verificado 02-Oct-2026:** ✅ OK
+
+### T-V21.1-4: getEstadoResidente post-cleanup
+**Esperado:** `hayResidentes:false, numResidentes:0, propietario:'Fabio Lesmes'`
+**Resultado verificado 02-Oct-2026:** ✅ OK
+
+### T-V21.1-5 (CRÍTICO): registrarResidente con parentesco
+```javascript
+fetch(APPS_SCRIPT_URL, {
+  method: 'POST',
+  headers: {'Content-Type': 'text/plain;charset=UTF-8'},
+  body: JSON.stringify({
+    action: 'registrarResidente',
+    apto: '9999',
+    residentes: [{
+      nombre: 'TEST BUGFIX013', cc: '99999992',
+      parentesco: 'Arrendatario',     // ← el campo crítico
+      cel: '3000000002', correo: 'test-bugfix013@t.co'
+    }],
+    menores: [], vehiculos: [], motos: [], bicis: [],
+    mascotas: [], contactos: []
+  })
+}).then(r => r.json())
+```
+**Esperado:** `{ok:true, numForm:'CA-0083', slotAsignado:1, message:'Registro exitoso.'}`
+**Resultado verificado 02-Oct-2026:** ✅ OK
+
+### T-V21.1-6 (CRÍTICO): parentesco se guarda correctamente
+```javascript
+fetch(APPS_SCRIPT_URL + '?action=verificarResidente&apto=9999&cc=99999992').then(r => r.json())
+```
+**Esperado:** `datos.parentesco: 'Arrendatario'` (NO VACÍO)
+**Resultado verificado 02-Oct-2026:** ✅ **BUGFIX-013 CERRADO** — `parentesco:'Arrendatario'`
+
+### T-V21.1-7: getEstadoResidente post-registro V21.1
+**Esperado:** `nombresResidentes: ['TEST BUGFIX013']`
+**Resultado verificado 02-Oct-2026:** ✅ OK
+
+### T-V21.1-8: Cleanup + estado final del sentinel
+**Procedimiento:** ejecutar `clearResidente(CA-0083, 9999, 94501666)` después de T-V21.1-5..7, verificar con `getEstadoResidente` que vuelve al estado limpio.
+**Resultado verificado 02-Oct-2026:** ✅ 90 celdasLimpiadas, sentinel restaurado
+
+### T-V21.1-9: Regresión Caso B (Angela en apto 1108)
+```javascript
+fetch(APPS_SCRIPT_URL + '?action=verificarResidente&apto=1108&cc=1020403585').then(r => r.json())
+```
+**Esperado:** `slot:1, datos.nombre:'Angela María Zapata Ochoa', datos.parentesco:'Arrendataria'`
+**Resultado verificado 02-Oct-2026:** ✅ OK — Caso B intacto, datos de Angela preservados
+
+### T-V21.1-10: Regresión lookup (formulario principal)
+```javascript
+fetch(APPS_SCRIPT_URL + '?action=lookup&numForm=CA-0133&apto=1108').then(r => r.json())
+```
+**Esperado:** datos completos de CA-0133 + Angela en slot 1
+**Resultado verificado 02-Oct-2026:** ✅ OK
+
+---
+
+## Tests del Portal de Vigilantes (25-Sept-2026)
+
+Deploy Apps Script **V9**. 6 endpoints nuevos + 1 trigger time-based.
 Problemas resueltos durante implementación:
 - BUGFIX-007: `apiGet/apiPost` faltantes en admin.js y vigilantes.js (25-Sept)
 - BUGFIX-008: `switchTab()` no toggleaba `tab-salon` en vigilantes.html (25-Sept)
@@ -1082,5 +1219,5 @@ regresivo.**
 
 ---
 
-Última actualización: 26-Sept-2026
+Última actualización: 02-Oct-2026
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)

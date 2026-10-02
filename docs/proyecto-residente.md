@@ -218,13 +218,39 @@ solo modificaron:
 - **V20 (BUGFIX-011):** filtro "Próximos N días" en la pestaña de mudanzas
   del portal admin. Este portal no muestra mudanzas.
 
-**Verificación post-deploy (regresión):** El portal del residente sigue
+**Verificación post-deploy:** El portal del residente sigue
 funcionando con todos sus flujos (auto-registro, edición, etc.).
 
 **Manual HTML:** `docs/manual-residente.html` (47KB) subido a Drive
 carpeta `1YxXTIvezRpu-0R0fOCNOoVF_iTARTOCN` el 26-Sept-2026.
 
-**Pendiente:** Ninguno (todas las fases completas).
+**Pendiente:** F8 (script `generar_qr_residente.py`) — sin cambios de código Apps Script necesarios.
 
-Última actualización: 26-Sept-2026 13:30
+**Actualización 02-Oct-2026:** sesión de bugfixing en `apps-script/Código.gs`
+función `registrarResidente`. Ver `docs/sesion-2026-10-02.md` para la cronología completa.
+
+- **V21 (02-Oct 11:32):** BUGFIX-012 — `registrarResidente` reusa `submitRecord()`
+  con `editMode:true` correctamente. Antes el endpoint caía al branch de
+  CREACIÓN de `submitRecord` y rechazaba con mensaje del formulario principal.
+  Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-012.
+- **V21.1 (02-Oct 11:54):** BUGFIX-013 — `registrarResidente` normaliza
+  `parentesco || parent` antes de pasar al payload. Bug latente desde V13
+  descubierto durante testing de V21. Ver BUGFIX-013.
+
+**Verificación post-deploy V21+V21.1 (02-Oct-2026):** 7/7 tests críticos OK.
+- T-V21-3 (CRÍTICO): `registrarResidente(9999, [TEST])` → `{ok:true, numForm:'CA-0083', slotAsignado:1}`
+- T-V21.1-6 (CRÍTICO): `verificarResidente(9999, 99999992)` → `parentesco:'Arrendatario'` (NO VACÍO)
+
+**Datos verificados:** apto 1108 / CA-0133 — Angela María Zapata Ochoa
+(intacto, parentesco 'Arrendataria', CC 1020403585, slot 1). Apto 9999 /
+CA-0083 (sentinel) — limpio después de tests, propietario Fabio Lesmes
++ parqueaderos + firma + hash intactos.
+
+**Lección #14:** Antes de `clearResidente` en sentinel o fila de pruebas,
+siempre verificar con `getEstadoResidente` (o equivalente) que no hay
+datos reales del operador, y comunicarlo ANTES del borrado. El 02-Oct-2026
+se borró accidentalmente un registro de prueba del operador que estaba
+en el sentinel; restaurar comunicando al operador. Ver BUGFIX-014.
+
+Última actualización: 02-Oct-2026 18:55
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)

@@ -1119,5 +1119,60 @@ V21.1 listo para deploy manual por el operador. Archivo en Drive `1f-gBHE4Zqv69q
 
 ---
 
-Última actualización: 02-Oct-2026 18:55
+## BUGFIX-014 · Procedimiento: `clearResidente` requiere verificación previa con el operador
+
+**Fecha:** 02-Oct-2026
+**Severidad:** BAJA (no es bug de código, es bug de proceso)
+**Tipo:** Protocolo de testing
+**Detectado por:** Operador preguntó "¿qué pasó con mi residente de 9999?" después de que Hermes ejecutó `clearResidente` como paso previo a T-V21.1-5 sin avisar.
+
+**Síntoma:**
+Operador había registrado "fabio lesmes" como residente de apto 9999 durante pruebas manuales del portal. Hermes ejecutó `clearResidente(CA-0083, 9999, 94501666)` durante la preparación de T-V21.1-5, borrando el registro del operador (90 celdasLimpiadas). Cuando el operador volvió a `residente.html`, vio `hayResidentes:false` y preguntó qué pasó.
+
+**Causa raíz:**
+Hermes ejecutó `clearResidente` sin:
+1. Confirmar con el operador que no había datos reales en el sentinel
+2. Hacer backup del Sheet pre-clear
+3. Comunicar ANTES del borrado (solo después cuando el operador preguntó)
+
+**No es un código bug** — `clearResidente` funciona como esperado (toma el apto y limpia los slots). El bug está en el protocolo de testing.
+
+**Fix (procedimiento, no código):**
+
+1. **Antes de `clearResidente` en sentinel (apto 9999, CA-0083):**
+   ```javascript
+   fetch(APPS_SCRIPT_URL + '?action=getEstadoResidente&apto=9999')
+     .then(r => r.json())
+     .then(s => {
+       if (s.hayResidentes) {
+         // ⚠️ Hay residentes — pedir OK al operador antes de clear
+         confirm('Hay ' + s.numResidentes + ' residente(s) en 9999. ¿Borrar?');
+       } else {
+         // ✓ Limpio, procede
+         fetch(APPS_SCRIPT_URL, {method:'POST', ... clearResidente ...});
+       }
+     });
+   ```
+
+2. **Antes de `clearResidente` en cualquier fila NO sentinel:** pedir OK explícito al operador.
+
+3. **Siempre hacer backup pre-clear** del Sheet completo (export a XLSX, subir a Drive carpeta del proyecto).
+
+4. **Documentar en CHANGELOG-BUGFIXES.md o `sesion-YYYY-MM-DD.md`** cualquier `clearResidente` ejecutado, con: fecha, numForm, apto, número de celdas, y razón.
+
+**Mitigación técnica opcional (V21.2+):**
+Modificar `clearResidente` para que en modo dry-run devuelva `{ok:false, error:'dry-run mode'}` por defecto, requiriendo el parámetro `confirm=true` para ejecutarlo. Esto previene borrados accidentales desde `curl` o `browser_console.expression`.
+
+**Estado de los datos al 02-Oct-2026:**
+- Sentinel 9999/CA-0083: LIMPIO (90 celdaslimpiadas por Hermes). Propietario Fabio Lesmes + parqueaderos + firma + hash **INTACTOS**.
+- Apto 1108/CA-0133: INTACTO. Angela María Zapata Ochoa sigue en slot 1 con parentesco 'Arrendataria'.
+
+**Lección aprendida #14:**
+**Toda operación destructiva sobre datos reales (no synthetic test data) requiere verificación con el operador ANTES de ejecutar.** El sentinel 9999/CA-0083 NO es puramente synthetic — el operador tiene sus datos reales ahí (parqueaderos, firma, CC, hash). Tratarlo como "datos reales del operador" hasta demostrar lo contrario.
+
+**Aplicabilidad futura:** Cualquier `clearResidente`, `submitRecord` con `editMode:false` accidental, `adminGuardar` con datos de override, etc. Aplicar la regla: **backup + OK operador + log en CHANGELOG.**
+
+---
+
+Última actualización: 02-Oct-2026 19:00
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)

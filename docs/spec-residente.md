@@ -1294,8 +1294,33 @@ QRs.
 
 ## §21. Pendiente de aprobación
 
-- [ ] Operador (Fabio) aprueba el spec completo
-- [ ] Operador aprueba el wireframe de `residente.html` (F1)
-- [ ] Operador aprueba el wireframe del botón "Borrado de datos residente" (F1)
+- [x] Operador (Fabio) aprueba el spec completo (25-Sept-2026, deploy V13)
+- [x] Operador aprueba el wireframe de `residente.html` (F1) — 25-Sept-2026
+- [x] Operador aprueba el wireframe del botón "Borrado de datos residente" (F1) — 25-Sept-2026
 
 Una vez aprobado, se arranca F2 (backend) en la próxima sesión.
+
+---
+
+## Estado post-deploy
+
+**Implementado y desplegado:**
+
+- **V13** (25-Sept-2026): deploy inicial del portal residente + 5 endpoints (`getEstadoResidente`, `verificarResidente`, `registrarResidente`, `actualizarResidente`, `clearResidente`) + `residente.html` + `js/residente.js` + `assets/residente.css`
+- **V21** (02-Oct-2026): BUGFIX-012 — `registrarResidente` ahora reusa `submitRecord()` con `editMode:true` correctamente. Antes caía al branch de CREACIÓN y rechazaba con mensaje del formulario principal.
+- **V21.1** (02-Oct-2026): BUGFIX-013 — `registrarResidente` ahora normaliza `parentesco || parent` antes de pasar al payload. Antes el `parentesco` enviado por `residente.js` se perdía en `buildRowFromPayload` que lee `r.parent`.
+
+**Pendientes (futuras versiones):**
+
+- **V21.2 (opcional)**: arreglar 4 side effects preexistentes adicionales descubiertos durante auditoría de V21:
+ - v[93] y v[94] (`llaverosAut` y `tagsAut`) — sobrescritos con '' cuando residente se auto-registra
+    - v[137] y v[138] (`autMenores` y `autCom`) — sobrescritos con 'No'
+- **F8**: script `generar_qr_residente.py` para generar 1 PDF con QRs de todos los apartamentos del conjunto (distribución masiva). Sin cambios de código Apps Script necesarios.
+- **Backend F9**: que `actualizarResidente` también pueda editar vehículos/mascotas/contactos del slot del residente (no solo datos personales). Requiere ampliación del payload y de la lógica de slots compartidos en `actualizarResidente`.
+
+**Tests post-deploy documentados en `docs/TESTING-PROTOCOL.md`:**
+
+- T-V21-SMOKE-1 a T-V21-11 (BUGFIX-012)
+- T-V21.1-1 a T-V21.1-10 (BUGFIX-013 + regresiones)
+
+**Sesión de deploy documentada en `docs/sesion-2026-10-02.md`.**
