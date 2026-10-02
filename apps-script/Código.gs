@@ -2004,7 +2004,10 @@ function registrarResidente(data) {
       const base = 29 + i * 5;
       const nombreActual = String(row.values[base] || '').trim();
       if (nombreActual) {
-        return { ok: false, error: 'El apartamento ya tiene residentes registrados. Use el botón "Editar mi registro" del propietario o coloque su cédula para editar.' };
+        // BUGFIX-012: mensaje sin referencias al formulario principal (index.html)
+        // El residente solo conoce residente.html; aquí se le guía a usar su cédula
+        // o pedir al propietario que lo agregue.
+        return { ok: false, error: 'Este apartamento ya tiene ' + (i + 1) + ' residente(s) registrado(s). Si eres uno de ellos, vuelve a este portal e ingresa tu número de cédula. Si no apareces en la lista, pide al propietario que te agregue.' };
       }
       if (slotAsignado === -1) slotAsignado = i + 1;
     }
@@ -2019,7 +2022,39 @@ function registrarResidente(data) {
 
     // Construir payload compatible con submitRecord (modo edición)
     // Mantiene los datos del propietario intactos
+    //
+    // BUGFIX-012: registrarResidente reutiliza submitRecord() para escribir,
+    // pero submitRecord sin editMode:true entra al branch de CREACIÓN y falla
+    // con "Ya existe un registro..." porque el apto YA fue creado por el propietario.
+    // Solución: marcar editMode:true para que submitRecord haga UPDATE sobre la
+    // fila existente y preserve numForm + Fecha Registro originales.
+    // Riesgo: lock — submitRecord NO pide su propio LockService (verificado en línea 234),
+    // por lo que el lock de registrarResidente (línea 1990) cubre toda la operación.
+    // Riesgo: hash dedupe — el payload pasa ccProp y firmaCC del registro original,
+    // por lo que el hash sha256[:16] queda idéntico (sin colisión).
+    //
+    // BUGFIX-012 (FIX REAL): copiar dispositivos originales del propietario
+    // porque setValues([row]) escribe las 143 columnas completas y un array
+    // vacío los borraría. El residente NO puede autorizar dispositivos en el
+    // portal — solo el propietario lo hace desde la Sección 8 del formulario
+    // principal o desde el portal admin.
+    const _dispOrig = [];
+    for (let _i = 0; _i < 3; _i++) {
+      const _base = 95 + _i * 5;
+      _dispOrig.push({
+        tipo: String(row.values[_base + 0] || '').trim(),
+        codigo: String(row.values[_base + 1] || '').trim(),
+        placa: String(row.values[_base + 2] || '').trim(),
+        fecha: String(row.values[_base + 3] || '').trim(),
+        recibe: String(row.values[_base + 4] || '').trim()
+      });
+    }
+    const _dispConDatos = _dispOrig.filter(function (d) { return d.tipo || d.codigo; });
+    const _dispResidente = Array.isArray(data.dispositivos) ? data.dispositivos : [];
+    const dispositivosFinal = _dispResidente.length > 0 ? _dispResidente : _dispConDatos;
+
     const payload = {
+      editMode: true,                                       // BUGFIX-012: clave del fix
       apto: apto,
       numForm: String(row.values[COL_NUM_FORM] || ''),
       diligencia: String(row.values[4] || ''),
@@ -2052,11 +2087,13 @@ function registrarResidente(data) {
       vehiculos: Array.isArray(data.vehiculos) ? data.vehiculos : [],
       motos: Array.isArray(data.motos) ? data.motos : [],
       bicis: Array.isArray(data.bicis) ? data.bicis : [],
-      dispositivos: [],
+      dispositivos: dispositivosFinal,                       // BUGFIX-012: preserva del propietario
       mascotas: Array.isArray(data.mascotas) ? data.mascotas : [],
       contactos: Array.isArray(data.contactos) ? data.contactos : [],
       autorAcesso: String(row.values[136] || '') === 'Sí',
-      autDatos: true,
+      // BUGFIX-012: preservar la autorización de datos original del propietario
+      // (antes había `autDatos: true` que la sobrescribía siempre)
+      autDatos: String(row.values[136] || '') === 'Sí',
       autImagenes: false,
       firmaNom: String(row.values[139] || ''),
       firmaCC: String(row.values[140] || ''),
@@ -2072,7 +2109,16 @@ function registrarResidente(data) {
         message: 'Registro exitoso.'
       };
     }
-    return result;
+
+    // BUGFIX-012: sanitizar mensaje de error de submitRecord.
+    // Si por alguna razón submitRecord rechaza con un mensaje del formulario
+    // principal (p.ej. "Usa la opción EDITAR MI REGISTRO"), reescribirlo para
+    // que el residente NUNCA vea una referencia al index.html (solo conoce residente.html).
+    let errMsg = (result.error || '').toString();
+    if (/EDITAR MI REGISTRO/.test(errMsg)) {
+      errMsg = 'No se pudo registrar tu información. Si el problema persiste, contacta a la administración de Cerro Azul (urb.cerroazul@gmail.com).';
+    }
+    return { ok: false, error: errMsg };
   } finally {
     lock.releaseLock();
   }

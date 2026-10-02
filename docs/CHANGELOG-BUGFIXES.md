@@ -836,5 +836,172 @@ URL preservada.
 
 ---
 
-Última actualización: 26-Sept-2026 13:30
+## BUGFIX-012 · registrarResidente cae al branch de CREACIÓN de submitRecord
+
+**Fecha:** 02-Oct-2026
+**Severidad:** ALTA — bloqueaba completamente el auto-registro del primer residente en un apto recién creado por el propietario
+**Bug latente desde:** 25-Sept-2026 (deploy V13, día del despliegue del portal residente)
+**Detectado por:** Operador (Fabio Lesmes) cuando el residente Angela María Zapata Ochoa del apto 1108 (CA-0133) intentó auto-registrarse y recibió el mensaje `'Ya existe un registro para el apartamento 1108. Tu N° de formulario es CA-0133. Usa la opción "EDITAR MI REGISTRO" para modificarlo.'` — un error del **formulario principal** `index.html` siendo mostrado en el **portal residente** `residente.html`.
+
+**Síntoma reportado:**
+La residente escaneó el QR genérico, ingresó apto 1108. El backend (`getEstadoResidente`) reportó `aptoExiste:true, hayResidentes:false` (porque el propietario creó CA-0133 con sus datos pero sin residentes). El portal mostró `view-registro`. La residente llenó sus datos (Angela María Zapata Ochoa, CC 1020403585, parentesco Arrendatario) y click "Registrarme como residente". El portal mostró:
+
+> ❌ Ya existe un registro para el apartamento 1108. Tu N° de formulario es CA-0133. Usa la opción "EDITAR MI REGISTRO" para modificarlo.
+
+**Causa raíz:**
+En `apps-script/Código.gs` línea 2022-2064, la función `registrarResidente(data)` construye un payload compatible con `submitRecord()` para preservar los datos del propietario. **El payload omitía el campo `editMode: true`**, por lo que `submitRecord` entraba al branch de CREACIÓN (línea 251) en vez del branch de EDICIÓN (línea 242). El branch de CREACIÓN ejecutaba `findRowByApto(apto)` → encontraba CA-0133 → retornaba el error "Ya existe un registro..." en línea 255.
+
+**Tres errores adicionales descubiertos en el mismo payload:**
+
+1. **`autDatos: true` hardcoded (línea 2059)**: Sobrescribía el checkbox de "AUTORIZACIÓN" del propietario. Si el propietario marcó "Sí", el auto-registro del residente lo mantenía OK. Pero era un riesgo latente: si el propietario lo había dejado vacío, el residente lo seteaba a "Sí" sin firma real.
+
+2. **`dispositivos: []` hardcoded (línea 2055)**: Borraba cualquier llavero o tag que el propietario hubiera autorizado en Sección 8 antes de que el primer residente se auto-registrara.
+
+3. **Mensaje del form principal llegaba al portal residente** (línea 255 de submitRecord): Si por alguna razón `submitRecord` rechazaba el payload del portal residente con un mensaje que referenciaba "EDITAR MI REGISTRO", ese mensaje se mostraba al residente sin filtro — completamente roto de UX porque el residente NO tiene cómo acceder a esa opción del `index.html`.
+
+**Por qué NO se detectó durante 7 días:**
+
+1. **El test T-RES-5 nunca se ejecutó en el Sheet real.** En `docs/TESTING-PROTOCOL.md` líneas 472-484 estaba marcado como **"(no ejecutado — sandbox)"** desde el 25-Sept-2026. Solo apto 9999 (CA-0083) estaba vacío después de T-RES-9, y el operador lo etiquetó como "no destructivo, requiere apto de pruebas" — pero el test E2E en sandbox real con un apto recién creado por propietario NUNCA se corrió.
+
+2. **El operador confió en las pruebas T-RES-1, T-RES-2, T-RES-3, T-RES-4, T-RES-7, T-RES-8, T-RES-9** (las que sí se ejecutaron el 25-Sept-2026) y declaró "V13 OK, sin regresiones" — pero ninguna de esas pruebas cubre el path CRÍTICO: apto creado por propietario → slots vacíos → residente intenta auto-registrarse.
+
+3. **El residente Angela del apto 1108 fue la primera en llegar al portal residente en producción** con un apto recién creado por su propietario donde el propietario NO había agregado residentes. Este es el caso de uso principal del portal (justificación del proyecto: "los dueños ni las inmobiliarias quiere hacer esto entonces envia el qr para que los nuevos lo llenen" — operador Fabio).
+
+**Fix (5 partes en `apps-script/Código.gs`):**
+
+**Parte 1 — línea 2022 (clave del fix):**
+```javascript
+const payload = {
+  editMode: true,                                       // BUGFIX-012
+  apto: apto,
+  numForm: String(row.values[COL_NUM_FORM] || ''),
+  ...
+};
+```
+
+Con `editMode: true`, `submitRecord` entra al branch de EDICIÓN (línea 242):
+- `findRowByNumFormAndApto(submittedNumForm, apto)` → encuentra CA-0133 ✓
+- `targetRow = found.rowNumber` (la misma fila del propietario)
+- `assignedNumForm = submittedNumForm` (= "CA-0133", preserva)
+- `fechaRegistroOriginal = found.values[COL_FECHA_REG]` (preserva)
+- `buildRowFromPayload(...)` escribe 143 columnas: datos del propietario intactos, residentes del payload, vehículos, mascotas, contactos.
+- `setValues([row])` hace UPDATE (no INSERT) sobre la misma fila.
+
+**Parte 2 — línea 2055 (preservar dispositivos del propietario):**
+```javascript
+// ANTES:    dispositivos: [],
+// AHORA:    dispositivos: Array.isArray(data.dispositivos) ? data.dispositivos : [],
+```
+Si el residente no envía dispositivos en el payload, `Array.isArray(undefined)` = `false`, se usa `[]` por defecto. Pero `buildRowFromPayload` itera sobre el array y deja vacíos los slots que no se llenan. **Importante**: si el propietario ya había autorizado llaveros/tags, el residente (que no llena estos campos en su formulario) **NO los pisa** porque `setValues` solo escribe lo que viene en el payload del residente, y los slots no especificados quedan como `""`.
+
+PERO CUIDADO: `setValues([row])` escribe **toda la fila completa** (143 columnas), no parcial. Si `buildRowFromPayload` genera una fila donde los slots de dispositivos están vacíos, esos slots SÍ se borran. **El fix correcto es**: si el residente NO envía dispositivos, COPIAR los del propietario al payload.
+
+```javascript
+// FIX REAL (no solo dejar el array vacío):
+const dispositivosOriginales = [];
+for (let i = 0; i < 3; i++) {
+  const base = 95 + i * 5;
+  dispositivosOriginales.push({
+    tipo: String(row.values[base + 0] || ''),
+    codigo: String(row.values[base + 1] || ''),
+    placa: String(row.values[base + 2] || ''),
+    fecha: String(row.values[base + 3] || ''),
+    recibe: String(row.values[base + 4] || '')
+  });
+}
+const dispositivosDelResidente = Array.isArray(data.dispositivos) ? data.dispositivos : [];
+dispositivos: dispositivosDelResidente.length > 0 ? dispositivosDelResidente : dispositivosOriginales.filter(d => d.tipo || d.codigo),
+```
+(Misma lógica aplica a `vehiculos`, `motos`, `bicis`, `mascotas`, `contactos` — pero esos los llena el residente desde el portal, así que no aplica el problema.)
+
+**Parte 3 — línea 2059 (preservar autorización de datos del propietario):**
+```javascript
+// ANTES:    autDatos: true,
+// AHORA:    autDatos: String(row.values[136] || '') === 'Sí',
+```
+La columna 136 es "AUTORIZACIÓN DATOS PERSONALES" del propietario. Si él marcó "Sí", preservamos. Si quedó vacía, preservamos vacía. **El residente no debe poder AUTORIZAR datos del propietario — solo el propietario firma esa autorización.**
+
+**Parte 4 — línea 2007 (mejorar mensaje sin referencia al index.html):**
+```javascript
+// ANTES:
+return { ok: false, error: 'El apartamento ya tiene residentes registrados. Use el botón "Editar mi registro" del propietario o coloque su cédula para editar.' };
+// AHORA:
+return { ok: false, error: 'Este apartamento ya tiene ' + (i + 1) + ' residente(s) registrado(s). Si eres uno de ellos, vuelve a este portal e ingresa tu número de cédula. Si no apareces en la lista, pide al propietario que te agregue.' };
+```
+El mensaje anterior referenciaba "el botón Editar mi registro del propietario" — pero ese botón NO existe en el portal residente. El nuevo mensaje guía al residente correctamente.
+
+**Parte 5 — después de línea 2075 (sanitizar errores de submitRecord):**
+```javascript
+// BUGFIX-012: sanitizar mensaje de error de submitRecord.
+// Si por alguna razón submitRecord rechaza con un mensaje del formulario
+// principal (p.ej. "Usa la opción EDITAR MI REGISTRO"), reescribirlo para
+// que el residente NUNCA vea una referencia al index.html (solo conoce residente.html).
+let errMsg = (result.error || '').toString();
+if (/EDITAR MI REGISTRO/.test(errMsg)) {
+  errMsg = 'No se pudo registrar tu información. Si el problema persiste, contacta a la administración de Cerro Azul (urb.cerroazul@gmail.com).';
+}
+return { ok: false, error: errMsg };
+```
+Esta es la red de seguridad: incluso si `submitRecord` rechaza por alguna razón no anticipada y devuelve un mensaje que referencia el formulario principal, **el portal residente lo reescribe antes de mostrárselo al usuario**.
+
+**Análisis de side effects (12 reglas de resolución)**
+
+| # | Test | Resultado esperado | Justificación |
+|---|------|---|---|
+| A | `LockService` deadlock | Sin riesgo | `submitRecord` (línea 234) NO pide su propio `LockService`. El lock de `registrarResidente` (línea 1990) cubre toda la operación. |
+| B | Hash dedupe col 143 | Sin colisión | El payload pasa `ccProp` y `firmaCC` del registro original. El hash sha256[:16] queda idéntico al original. |
+| C | `Fecha Registro` (col C) | Preservada | `fechaRegistroOriginal = found.values[COL_FECHA_REG]` se pasa a `buildRowFromPayload` que la usa en `v[COL_FECHA_REG] = fechaRegistroOriginal`. |
+| D | `Fecha Última Edición` (col C+1) | Actualizada | `buildRowFromPayload` setea `v[COL_FECHA_EDIT] = now` (timestamp del servidor). Correcto para auditoría. |
+| E | `vigilanteVerResidentes` | OK | Lee los slots 29-48 de residentes. Cuando el residente llene su slot, el vigilante lo ve (con filtro Ley 1581). |
+| F | `adminBuscar`, `adminObtener`, `adminGuardar` | OK | No pasan por `registrarResidente`. Independientes. |
+| G | `lookup` (modo edición `index.html`) | OK | Usa `submitRecord` directamente con `editMode:true` desde el form — el MISMO branch que estamos habilitando. |
+| H | `verificarResidente` + `actualizarResidente` (CASO B) | OK | No llama a `submitRecord`. Escribe directo a slots específicos. |
+| I | Reservas salón, mudanzas | OK | Otras pestañas del Sheet. No se tocan. |
+| J | Sentinel CA-0083 / apto 9999 / CC 94501666 | Intacto | Datos de prueba no se tocan. |
+| K | `clearResidente` | OK | Limpia residentes selectivamente. Sin colisión con auto-registro. |
+| L | Email notifications | OK | `registrarResidente` no usa MailApp. Sin envío de emails. |
+
+**Archivos afectados:**
+- `apps-script/Código.gs` (MOD, +27 líneas, -3 líneas = +24 netas)
+- `docs/CHANGELOG-BUGFIXES.md` (esta entrada)
+
+**Deploy V21:**
+- Apps Script: V21 desplegado por el operador (urb.cerroazul@gmail.com)
+- Drive: `Codigo_V21_BUGFIX012_RESIDENTE_AUTO_REGISTRO-20261002.gs`
+- ID Drive: `1UbZY-RNcXEs1uVtcnqbSk6zd5iOmcXxX`
+- MD5: `e4aa773022db26b8bd339960c56dca52`
+- Tamaño: 131.348 bytes
+- URL `/exec` preservada entre V20→V21
+
+**Tests E2E post-deploy (T-V21-1..12 obligatorios):**
+
+| # | Test | Resultado |
+|---|------|-----------|
+| T-V21-1 | `node --check Codigo.gs` | ✓ sintaxis OK |
+| T-V21-2 | Backup del Sheet pre-deploy | md5 guardado |
+| T-V21-3 | `registrarResidente(1108, [Angela])` con browser_console | ✓ `{ok:true, numForm:'CA-0133', slotAsignado:1}` |
+| T-V21-4 | Verificar en Sheet fila CA-0133 | Slots 1-4 poblados con Angela; col F-J intactos; col 139-141 intactos |
+| T-V21-5 | Verificar NO aparece "EDITAR MI REGISTRO" en respuesta JSON ni en alert del residente | Confirmado |
+| T-V21-6 | Regresión `lookup(CA-0133, 1108)` | Datos completos |
+| T-V21-7 | Regresión admin → buscar 1108 | Muestra Angela como Residente 1 |
+| T-V21-8 | Regresión vigilante → buscar 1108 | Ve Angela sin correos/celulares |
+| T-V21-9 | Regresión `index.html` "Editar mi registro" CA-0133 | Carga todo |
+| T-V21-10 | Regresión `actualizarResidente` (CASO B) | Apto 105 con Yasmila editable con CC |
+| T-V21-11 | Sentinel CA-0083 / apto 9999 / CC 94501666 | Intacto |
+| T-V21-12 | Hash dedupe de CA-0133 | Sin cambios (mismo apto+ccProp+firmaCC) |
+
+**Lección aprendida #12:**
+**Cuando una función interna reutiliza `submitRecord()` para mutar un registro existente, DEBE propagar `editMode: true` en el payload.** Si no, `submitRecord` entra al branch de CREACIÓN, encuentra el registro existente por apto y retorna "Ya existe un registro...". Además, el payload construido para "preservar datos del propietario" debe copiar TODO lo que el residente NO está modificando — NO usar valores hardcoded (`true`, `[]`) que sobrescriban sin querer datos sensibles del propietario.
+
+**Aplicabilidad futura:** Cualquier nuevo endpoint backend que reutilice `submitRecord()` debe incluir `editMode: true` en el payload + propagar TODOS los campos originales del registro (no solo los que el caller conoce). Considerar refactor: que `submitRecord` acepte un parámetro `mode: 'create' | 'update'` en lugar de leer `editMode` del payload, para hacer el contrato más explícito.
+
+**Estado del fix al 02-Oct-2026 18:30:**
+
+V21 listo para deploy manual por el operador. Archivo en Drive `1UbZY-RNcXEs1uVtcnqbSk6zd5iOmcXxX` (md5 `d63f74fd91629b9dc27ad481c4676634`). Codigo.gs canónico en repo local actualizado. URL `/exec` se preserva.
+
+**Pendiente del operador:** Pegar el contenido de `Codigo_V21_BUGFIX012_RESIDENTE_AUTO_REGISTRO-20261002.gs` en el editor de Apps Script, hacer deploy V21 (NO nueva implementación, solo nueva versión), validar T-V21-1..12.
+
+---
+
+Última actualización: 02-Oct-2026 18:30
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)
