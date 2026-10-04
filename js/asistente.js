@@ -175,15 +175,42 @@
   };
 
   // -----------------------------------------------------------------------
-  // Mensajes (render)
+  // Mensajes (render) con conversión segura de markdown → HTML
   // -----------------------------------------------------------------------
+  // El bot devuelve respuestas con markdown (**, saltos de línea). Para
+  // mostrarlas bonitas (negrita real, no asteriscos literales) usamos
+  // innerHTML, pero con escape HTML previo para evitar XSS. El usuario
+  // también puede escribir algo con `<script>`, así que escapamos TODO.
+  AsistenteCerroAzul.prototype.escapeHtml = function (s) {
+    return String(s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+
+  // Markdown MINIMAL del Cerro Azul Apoyo:
+  //   **texto**  → <b>texto</b>
+  //   \n         → <br>
+  // NO soporta más markdown (no listas, no headings, no links) — el
+  // manual oficial ya viene formateado con numeración "1.", "2.", etc.
+  AsistenteCerroAzul.prototype.mdToHtml = function (md) {
+    var html = this.escapeHtml(md);
+    // **bold** (no anidado, solo simple)
+    html = html.replace(/\*\*([^*\n]+?)\*\*/g, '<b>$1</b>');
+    // Saltos de línea del manual → <br>
+    html = html.replace(/\n/g, '<br>');
+    return html;
+  };
+
   AsistenteCerroAzul.prototype.agregarMensaje = function (texto, tipo, opciones) {
     opciones = opciones || {};
     var div = document.createElement('div');
     div.className = 'ca-msg ca-msg-' + (tipo === 'user' ? 'user' : 'bot');
     if (opciones.fuera) div.classList.add('ca-fuera');
     if (opciones.error) div.classList.add('ca-error');
-    div.textContent = texto;
+    div.innerHTML = this.mdToHtml(texto);
     document.getElementById('ca-msgs').appendChild(div);
     this.scrollAbajo();
   };
