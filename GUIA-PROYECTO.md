@@ -2021,7 +2021,7 @@ vigilancia. Si el vigilante tiene una lógica útil, replicarla en admin.
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
-| **V23.1** | 04-Oct-2026 (READY) | `adf63c56c2659c9c000c567ca44f6d78` | **BUGFIX-016: chatAsistente usaba OpenAI-compat en vez de Anthropic Messages + banner tapaba header** |
+| **V25** | 04-Oct-2026 (READY) | `6e3ad522a37cffc3c7c39ba546e208dc` | **FEAT-007 v2: RAG sobre Google Doc oficial — el manual del agente es la ÚNICA fuente de respuestas (ScriptCache 6h)** |
 | **V23** | 04-Oct-2026 (DESCARTADO) | `4e80d81fd666b2645f376451e929b500` | FEAT-007 primera versión (formato auth incorrecto - NO DESPLEGAR) |
 | V22.1 (frontend) | 03-Oct-2026 | `d7aea73812e06d2f6bef99fd17511e56` (js) | BUGFIX-015b/c: handler "Volver al calendario" + optimistic UI (frontend only, NO requiere re-deploy Apps Script) |
 | V22 | 02-Oct-2026 17:14 | `300ab4d7dfa1e06599f022f5329ae353` | BUGFIX-015: listarReservasPorApto + vista "Mis reservas" |
@@ -2044,5 +2044,5 @@ vigilancia. Si el vigilante tiene una lógica útil, replicarla en admin.
 
 ---
 
-Última actualización: 04-Oct-2026 (V23.1 BUGFIX-016 LISTO PARA DEPLOY)
+Última actualización: 04-Oct-2026 (V25 FEAT-007 v2 LISTO PARA DEPLOY - RAG Google Doc)
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)

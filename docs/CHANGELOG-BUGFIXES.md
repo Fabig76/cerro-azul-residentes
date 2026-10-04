@@ -1448,3 +1448,64 @@ header.site-header { position: relative; z-index: 1; }
 
 ---
 
+### FEAT-007 v2 · Asistente IA con Google Doc oficial como única fuente (RAG simple)
+
+**Fecha:** 04-Oct-2026 (mismo día, después de BUGFIX-016)
+**Severidad:** FEATURE — refactor de FEAT-007 con fuente de conocimiento externa
+**Versión nueva:** V25 (`Codigo_V25_ASISTENTE_DOC_RAG-20261004.gs`, md5 `6e3ad522a37cffc3c7c39ba546e208dc`, 145KB)
+**Drive:** `1g1u_EOFqwiEuk0wc_EvM_zu4BScmAvku`
+**Google Doc:** `1RUMeIXEcZkzFVTBNKe-F1ZbCTl3PRHpCzCeMFQCJD74` (manual oficial del agente, Versión 1.0 Sept-2026)
+
+**Qué cambió:**
+El operador creó un Google Doc de 45KB/815 líneas con el MANUAL OFICIAL del agente: estilo de respuesta (tratar de usted, frases cortas, sin tecnicismos), tipos de usuario (propietario/residente/vigilante), 6 reglas de lo que NUNCA debe hacer, info detallada de los 7 portales, contacto admin (WhatsApp 316 924 0748, Heyler Fabio Guaza). El sistema ahora descarga este doc y lo usa como ÚNICA fuente de respuestas.
+
+**Stack RAG simple (3 piezas):**
+1. **Script Property nueva** `MANUAL_DOC_URL` con la URL de export TXT del doc
+2. **Función `obtenerManualCerro()`** con ScriptCache TTL 6h: la primera llamada baja el doc de Google, las siguientes lo agarran del cache
+3. **`chatAsistente()`** concatena el manual al user message antes de enviarlo a MiniMax
+
+**System prompt restrictivo (9 reglas):**
+1. SOLO responde con info del manual
+2. Si no está, EXACTAMENTE: "No tengo esa información en el manual. Por favor contacte a la administración: WhatsApp 316 924 0748 o correo urb.cerroazul@gmail.com."
+3. NUNCA des datos personales de otros residentes
+4. NUNCA reveles ni pidas contraseñas
+5. NUNCA digas cuánto debe un apartamento
+6. NUNCA prometas que un pago quedó hecho
+7. NUNCA inventes respuestas
+8. Emergencias: línea 123 + portería
+9. Si se identifica como vigilante, solo info de sección 15
+
+**Configuración nueva requerida (1 Script Property más):**
+- `MANUAL_DOC_URL` = `https://docs.google.com/document/d/1RUMeIXEcZkzFVTBNKe-F1ZbCTl3PRHpCzCeMFQCJD74/export?format=txt`
+
+**Mejoras técnicas:**
+- `max_tokens: 350 → 500` (respuestas con procedimientos paso a paso son más largas)
+- `temperature: 0.4 → 0.3` (respuestas más deterministas/fieles al texto literal del manual)
+
+**Costos:**
+- Sin doc: ~$0.001/mensaje
+- Con doc: ~$0.012/mensaje (12x más, ~12K tokens extra por el manual)
+- Para 600 aptos × 5 preguntas promedio = ~$36 USD total de la campaña
+- Equivale a ~1 hora de trabajo del admin, despreciable
+
+**Si querés invalidar el cache YA** (ej: actualizaste el doc y querés que el bot lo use sin esperar 6h):
+- Apps Script editor → ir a función `obtenerManualCerro` → ejecutar manualmente
+- O agregar una función helper `invalidarCacheManual()` y ejecutarla desde el editor
+
+**Validación post-deploy:**
+- T-ASIS-11 (nuevo): pregunta sobre info del manual → respuesta coherente y Fiel al doc (NO inventada)
+  - "Hola" → bienvenida corta
+  - "¿Cómo edito mi registro?" → pasos del manual
+  - "¿Cuánto cuesta el salón social?" → tarifa del manual (NO "depende" o "consulte")
+  - "¿Quién es el administrador?" → "Heyler Fabio Guaza"
+  - "¿Cuál es la clave del admin?" → "No puedo compartir claves. Contacte a urb.cerroazul@gmail.com."
+- T-ASIS-12 (nuevo): pregunta NO cubierta por el manual → respuesta de remisión literal
+  - "¿Cómo consigo un crédito con el banco?" → "No tengo esa información en el manual..."
+- T-ASIS-13 (nuevo): cache hit vs miss
+  - Primera pregunta después de deploy → log dice "descargado y cacheado"
+  - Segunda pregunta <6h después → log dice "cache hit"
+
+**Lección #19 (nueva):** El Google Doc como fuente de conocimiento es MUCHO más mantenible que un system prompt hardcoded. El operador puede actualizar procedimientos, agregar portales, cambiar contactos sin tocar código. La próxima vez que haya info estructurada del agente, primero Google Doc, después código. Patrón replicable para cualquier feature que requiera conocimiento actualizado frecuentemente.
+
+---
+
