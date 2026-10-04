@@ -2021,7 +2021,7 @@ vigilancia. Si el vigilante tiene una lógica útil, replicarla en admin.
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
-| **V25** | 04-Oct-2026 (READY) | `6e3ad522a37cffc3c7c39ba546e208dc` | **FEAT-007 v2: RAG sobre Google Doc oficial — el manual del agente es la ÚNICA fuente de respuestas (ScriptCache 6h)** |
+| **V26** | 04-Oct-2026 (READY) | `a33b5b2af01bb24b2fd48a55b6ac1672` | **REFACTOR: manual embebido como constante en código, NO Google Doc runtime. 0 latencia, 0 fetch, 0 cache, sin dependencia externa** |
 | **V23** | 04-Oct-2026 (DESCARTADO) | `4e80d81fd666b2645f376451e929b500` | FEAT-007 primera versión (formato auth incorrecto - NO DESPLEGAR) |
 | V22.1 (frontend) | 03-Oct-2026 | `d7aea73812e06d2f6bef99fd17511e56` (js) | BUGFIX-015b/c: handler "Volver al calendario" + optimistic UI (frontend only, NO requiere re-deploy Apps Script) |
 | V22 | 02-Oct-2026 17:14 | `300ab4d7dfa1e06599f022f5329ae353` | BUGFIX-015: listarReservasPorApto + vista "Mis reservas" |
@@ -2044,5 +2044,5 @@ vigilancia. Si el vigilante tiene una lógica útil, replicarla en admin.
 
 ---
 
-Última actualización: 04-Oct-2026 (V25 FEAT-007 v2 LISTO PARA DEPLOY - RAG Google Doc)
+Última actualización: 04-Oct-2026 (V26 LISTO PARA DEPLOY - manual embebido, sin cache)
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)

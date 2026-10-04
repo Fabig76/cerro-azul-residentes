@@ -1509,3 +1509,43 @@ El operador creó un Google Doc de 45KB/815 líneas con el MANUAL OFICIAL del ag
 
 ---
 
+### REFACTOR-V26 · Manual embebido en código, eliminado cache + fetch + Script Property
+
+**Fecha:** 04-Oct-2026 (mismo día, después de V25)
+**Severidad:** REFACTOR — simplificación solicitada por el operador
+**Versión nueva:** V26 (`Codigo_V26_ASISTENTE_MANUAL_EMBEBIDO-20261004.gs`, md5 `a33b5b2af01bb24b2fd48a55b6ac1672`, 193KB)
+**Drive:** `1w20DY2fZ1VivfAOiXiY_uE-nqV2L9Xyh`
+
+**Contexto del refactor:**
+El operador dijo: *"yo nunca voy actualizar el documento cuando lo vaya hacer entonces lo traigo aqui y que hermes los actualice"*. Eso significa:
+- El manual NUNCA cambia en runtime (solo cuando el operador decide actualizar)
+- Cuando actualiza, viene acá y yo (Hermes) lo embebo en V_N+1
+- No hay flujo de "el operador edita el doc y el bot lo refleja"
+
+**Cambios:**
+- **Eliminada** función `obtenerManualCerro()` completa (40 líneas con cache 6h + UrlFetchApp)
+- **Eliminada** Script Property `MANUAL_DOC_URL` (ya no se necesita)
+- **Agregada** constante `MANUAL_CERRO` (44KB / 816 líneas del manual oficial)
+- `chatAsistente()` usa `MANUAL_CERRO` directo, sin fetch
+
+**Resultado:**
+- 0 latencia de fetch (vs +2-3s de V25)
+- Código más simple (sin lógica de cache, sin TTL, sin try/catch de URL)
+- 0 dependencia de Google Docs en runtime
+- Costo de tokens IGUAL (12K tokens por mensaje, mismo que V25)
+- Tamaño del Codigo.gs: ~149KB → ~193KB (+44KB de la constante)
+
+**Migración de V25 a V26:**
+- Reemplazar todo el Codigo.gs (como siempre)
+- NO requiere agregar Script Property nueva
+- Las 3 Script Properties de V24 (MINIMAX_API_KEY, MINIMAX_BASE_URL, MINIMAX_GROUP_ID) siguen igual
+
+**Validación post-deploy:**
+- T-ASIS-11: preguntas del manual → respuestas fieles al manual embebido
+- T-ASIS-14 (nuevo): verificar en Apps Script Ejecuciones que NO aparece "[obtenerManualCerro] cache hit" (esa función ya no existe)
+- Latencia debe ser MENOR que V25 (sin descarga de doc)
+
+**Lección #20 (nueva):** Preguntar SIEMPRE al operador CÓMO va a mantener la fuente de conocimiento antes de elegir cache. Si me dice "actualizo el código cuando quiero cambiar", embebir constante es la opción correcta (simple, 0 latencia, 0 fetch). Si me dice "edito el doc y listo", entonces sí o sí fetch externo + cache. Patrón replicable para futuras fuentes de conocimiento.
+
+---
+
