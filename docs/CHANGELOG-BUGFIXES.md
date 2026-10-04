@@ -1597,3 +1597,74 @@ El operador dijo: *"yo nunca voy actualizar el documento cuando lo vaya hacer en
 
 ---
 
+### FEAT-007 v3.1 · Renderizar markdown del LLM a HTML (frontend only, V28)
+
+**Fecha:** 04-Oct-2026 (mismo día)
+**Severidad:** UX/cosmético
+**Versión nueva:** V28 — `js/asistente.js` frontend only (NO requiere deploy Apps Script)
+**md5:** `1cce2cdcd5136e2254ec402a14ed971b` (333 líneas, +27 vs V26)
+
+**Problema reportado por el operador:**
+"no me gusta que las respuestas nos las da ordenadas es decir llenas de asteriscos y no bien desplegadas esteticamente"
+
+El bot devolvía respuestas con markdown (`**negrita**`, saltos de línea) que el frontend mostraba LITERALMENTE porque usaba `div.textContent = texto` — no renderizaba markdown.
+
+Ejemplo del problema (capturado en browser_console):
+```
+ultimo: Para reservar el salón social:\n\n1. Entre al portal principal: **fabig76.github.io/cerro-azul-residentes**.\n2. Busque la opción **"Salón social"**...
+```
+
+**Fix (2 funciones nuevas en `AsistenteCerroAzul`):**
+
+```javascript
+AsistenteCerroAzul.prototype.escapeHtml = function (s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
+
+AsistenteCerroAzul.prototype.mdToHtml = function (md) {
+  var html = this.escapeHtml(md);
+  html = html.replace(/\*\*([^*\n]+?)\*\*/g, '<b>$1</b>');
+  html = html.replace(/\n/g, '<br>');
+  return html;
+};
+```
+
+**Cambio en `agregarMensaje()`:**
+- Antes: `div.textContent = texto;` (mostraba `**` literal)
+- Ahora: `div.innerHTML = this.mdToHtml(texto);` (renderiza `<b>` real)
+
+**Después del fix (browser_console):**
+```
+ultimo: Para reservar el salón social:<br><br>1. Entre al portal principal: <b>fabig76.github.io/cerro-azul-residentes</b>.<br>...
+| asteriscos_visibles: 0
+```
+
+**Seguridad:**
+- Escape HTML antes de innerHTML (previene XSS si alguien escribe `<script>alert(1)</script>`)
+- Aplica a TODOS los mensajes: bienvenida, usuario, bot, error, fuera de alcance
+- MiniMax-M3 ya no devuelve más que bold + linebreaks (no listas, no headings, no links)
+- El manual oficial sigue siendo la fuente; solo cambia el renderizado
+
+**Sin cambios en:**
+- Backend Apps Script (sigue siendo V27)
+- System prompt restrictivo (9 reglas)
+- Manual del agente
+- Lógica de `chatAsistente()`
+- Comportamiento del rate limit / sessionStorage
+- Persistencia (NO guarda conversaciones — confirmado por el operador)
+
+**Validación:**
+- `node --check`: PASS
+- Browser E2E: respuesta del bot renderiza con `<b>` y `<br>` correctos
+- `asteriscos_visibles: 0` después del fix
+- 0 regresiones en: bienvenida, errores, fuera de alcance, rate limit
+
+**Lección #22 (nueva):** Cuando un LLM devuelve markdown pero el frontend usa `textContent` puro, el usuario ve los asteriscos y caracteres literales. **Patrón replicable:** mini-parser markdown en el frontend (escape HTML + bold + br) sin librerías externas. ~15 líneas. Suficiente para respuestas de LLM en general. NO requiere full markdown parser (no listas, no headings, no links) — el manual los maneja con numeración "1.", "2.".
+
+---
+
