@@ -42,6 +42,10 @@
       '  display: flex; align-items: center; gap: 10px;',
       '  box-shadow: 0 2px 6px rgba(0,0,0,.15);',
       '}',
+      // Empujar todo el contenido debajo del banner para que el header
+      // del portal no quede oculto detrás del banner fijo.
+      'body { padding-top: 46px !important; }',
+      'header.site-header { position: relative; z-index: 1; }',
       '#ca-banner .ca-icon { font-size: 18px; }',
       '#ca-banner .ca-text { flex: 1; }',
       '#ca-banner .ca-toggle {',
