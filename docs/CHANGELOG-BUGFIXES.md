@@ -1378,3 +1378,73 @@ Todos los demás endpoints del proyecto permanecen intactos: `ecConsulting`, `ec
 
 ---
 
+### BUGFIX-016 · Asistente IA MiniMax usaba OpenAI-compat en vez de Anthropic Messages
+
+**Fecha:** 04-Oct-2026 (mismo día del FEAT-007, descubierto por auditoría del operador)
+**Severidad:** CRÍTICO — FEAT-007 habría dado 404 en cuanto se desplegara
+**Versión corregida:** V23.1 (`Codigo_V23_1_ASISTENTE_IA_FIX-20261004.gs`, md5 `adf63c56c2659c9c000c567ca44f6d78`, 141KB)
+**Drive:** `12CRVfDtDuVgyQ1VEqGFbMCnkVWMDRqqu`
+
+**Bug 1 — Backend MiniMax formato equivocado:**
+El FEAT-007 inicial asumió que MiniMax usa el formato OpenAI-compatible `/v1/chat/completions` con `{model, messages[], max_tokens, temperature}` y respuesta `{choices[0].message.content}`. FALSO. Verificado en `hermes_cli/auth.py:294` y `azure_detect.py:247-294`, MiniMax usa el protocolo **Anthropic Messages**:
+- URL: `{base_url}/v1/messages` (NO `/v1/chat/completions`)
+- Headers: `x-api-key` + `anthropic-version: 2023-06-01` (NO solo `Authorization: Bearer`)
+- Body: `{model, max_tokens, system, messages[]}` (system es campo top-level, NO dentro de messages)
+- Respuesta: `{content:[{type:"text", text:"..."}]}` (NO `choices[0].message.content`)
+
+Si el operador hubiera deployado V23 sin este fix, el POST a `/chat/completions` habría dado 404 silencioso en cuanto intentara usarlo, y el usuario vería el mensaje "El servicio de IA respondió con error (404)". No detectado en V22.1 porque esa prueba no se ejecutó pre-deploy.
+
+**Bug 2 — Banner fijo tapaba el header del portal:**
+El `body { padding-top: 0 }` original del portal + el `position: fixed; z-index: 9998` del banner causaba que el banner azul apareciera ENCIMA del logo "Urbanización Cerro Azul" y el NIT. El usuario veía solo el banner, no el branding del portal.
+
+**Fix Bug 1 — Backend Anthropic Messages:**
+```javascript
+// Antes (OpenAI - MAL):
+const respHttp = UrlFetchApp.fetch(baseUrl + '/chat/completions', {
+  headers: { 'Authorization': 'Bearer ' + apiKey },
+  payload: JSON.stringify({ messages: [{role:'system',content:...}, {role:'user',...}], ...})
+});
+// Después (Anthropic - BIEN):
+const respHttp = UrlFetchApp.fetch(baseUrl + '/v1/messages', {
+  headers: {
+    'x-api-key': apiKey,
+    'Authorization': 'Bearer ' + apiKey,  // compat
+    'anthropic-version': '2023-06-01'
+  },
+  payload: JSON.stringify({
+    model: 'MiniMax-M3', max_tokens: 350,
+    system: systemPrompt,  // top-level, NO dentro de messages
+    messages: [{role:'user', content: mensaje}]
+  })
+});
+// Response: json.content[0].text (NO json.choices[0].message.content)
+```
+
+**Fix Bug 2 — Header visible:**
+```css
+body { padding-top: 46px !important; }
+header.site-header { position: relative; z-index: 1; }
+```
+
+**Configuración actualizada (3 Script Properties en Apps Script):**
+- `MINIMAX_API_KEY` = `<subscription-key-de-MiniMax>` (REQUERIDO)
+- `MINIMAX_BASE_URL` = `https://api.minimax.io/anthropic` (default, opcional cambiar)
+- `MINIMAX_GROUP_ID` = `523700352705306633` (opcional, para facturación Subscription Token Plan)
+
+**Validación post-deploy (TESTING-PROTOCOL.md §6 actualizado):**
+- T-ASIS-9 (CRÍTICO, nuevo): backend responde a POST con Anthropic format
+  - `curl -X POST 'https://script.google.com/.../exec' -H 'Content-Type: text/plain' -d '{"action":"chatAsistente","mensaje":"hola"}'`
+  - Esperado: `{ok:true, respuesta:"..."}` con respuesta coherente en ≤5s
+  - Si retorna 404 → BUGFIX-016 regresivo
+  - Si retorna 500 → MINIMAX_BASE_URL mal configurada
+  - Si retorna `{ok:false, error:"El servicio de IA respondió con error (404)"}` → bug del formato (debería ser Anthropic)
+- T-ASIS-10 (CRÍTICO, nuevo): banner no tapa el header
+  - Cargar `?v=23` en cualquier portal
+  - Verificar visualmente: banner arriba + logo "Urbanización Cerro Azul" debajo
+
+**Lección #17 (nueva):** NUNCA asumir formato OpenAI-compatible para un provider. Verificar el código fuente del cliente oficial (en este caso `hermes_cli/auth.py` y `azure_detect.py`) antes de implementar. MiniMax, Anthropic, Cohere y otros providers usan formatos DIFERENTES — siempre leer cómo se autentica y qué body shape requiere. Patrón replicable para futuros providers.
+
+**Lección #18 (nueva):** Cuando un elemento es `position: fixed; top: 0`, agregar SIEMPRE padding-top compensatorio al body, o el banner/header tapará el contenido inicial del sitio. Verificar con browser_navigate + browser_vision ANTES de declarar listo.
+
+---
+
