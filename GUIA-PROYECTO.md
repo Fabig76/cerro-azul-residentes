@@ -2022,6 +2022,7 @@ vigilancia. Si el vigilante tiene una lógica útil, replicarla en admin.
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
+| **V27** | 04-Oct-2026 (READY) | `599ffb5cb71182915e576a6e903bf7e2` | **Manual actualizado por el operador (nueva REGLA FUNDAMENTAL: solo propietario/inmobiliaria/encargado crea registro; arrendatario NUNCA)** |
 | **V26** | 04-Oct-2026 (READY) | `a33b5b2af01bb24b2fd48a55b6ac1672` | **REFACTOR: manual embebido como constante en código, NO Google Doc runtime. 0 latencia, 0 fetch, 0 cache, sin dependencia externa** |
 | **V23** | 04-Oct-2026 (DESCARTADO) | `4e80d81fd666b2645f376451e929b500` | FEAT-007 primera versión (formato auth incorrecto - NO DESPLEGAR) |
 | V22.1 (frontend) | 03-Oct-2026 | `d7aea73812e06d2f6bef99fd17511e56` (js) | BUGFIX-015b/c: handler "Volver al calendario" + optimistic UI (frontend only, NO requiere re-deploy Apps Script) |
@@ -2113,5 +2114,5 @@ Flujo:
 
 ---
 
-Última actualización: 04-Oct-2026 (V26 deployado "Versión 25" - manual embebido, sin cache)
+Última actualización: 04-Oct-2026 (V27 READY - manual actualizado por operador con REGLA FUNDAMENTAL nueva)
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)
