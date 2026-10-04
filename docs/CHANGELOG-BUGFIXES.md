@@ -1329,3 +1329,52 @@ El usuario ve inmediatamente la vista Mis reservas con "Cargando..." y la lista 
 **Lección:**
 Para cualquier `await` antes de un cambio de vista, llamar `showView` primero y dejar el contenido cargándose en background. Patrón "optimistic UI".
 
+---
+
+### FEAT-007 · Asistente IA MiniMax-M3 flotante en los 7 portales
+
+**Fecha:** 04-Oct-2026
+**Severidad:** FEATURE (no es bugfix) — chat de soporte basado en MiniMax-M3
+**Versión nueva:** V23 (`Codigo_V23_ASISTENTE_IA-20261004.gs`, md5 `4e80d81fd666b2645f376451e929b500`, 140KB)
+**Drive:** `1jv2hTHeVrfj3eMeFDjVJ0DXDsN3CFtTb`
+
+**Qué es:**
+Banner permanente en la parte de arriba de los 7 portales ("🤖 Ayudante con IA para llenar el formulario. Click para abrir el chat.") + ventana de chat abajo-derecha. El usuario hace preguntas sobre cómo llenar el formulario Cerro Azul y un modelo de IA (MiniMax-M3) le responde.
+
+**Stack:**
+- Frontend: `js/asistente.js` (302 líneas, autocontenido: inyecta su propio CSS + HTML al cargar)
+- 1 línea nueva en cada HTML (1 `<script>` antes de `</body>`)
+- 1 endpoint nuevo en backend: `chatAsistente(payload)` en `Codigo.gs` líneas 3306+
+- Routing en `doPost`: `if (action === 'chatAsistente') return jsonOut(chatAsistente(payload));` (línea 197)
+- System prompt restrictivo (~600 caracteres) en el backend: SOLO responde sobre el formulario Cerro Azul, cualquier otra pregunta devuelve la frase literal "Solo puedo ayudarte con preguntas sobre el formulario de la Urbanización Cerro Azul."
+- Frontend valida esa frase y muestra badge naranja "fuera de alcance"
+- Sin memoria: cada mensaje es independiente (más simple/barato)
+- Rate limit: 10 mensajes / 10 minutos en sessionStorage
+- Max 500 caracteres por mensaje
+- Timeout 60s en frontend, 50s en backend
+
+**Configuración requerida (una sola vez, manual):**
+1. En Apps Script editor del Cerro Azul: Proyecto → Configuración del proyecto → Propiedades de script
+2. Agregar propiedad: `MINIMAX_API_KEY` = `<api-key-de-MiniMax>`
+3. Opcional: `MINIMAX_BASE_URL` = `https://api.minimax.io/v1` (si no, usa ese default)
+
+**Costo estimado:**
+~$0.001 por mensaje (~$1 USD cada 1000 mensajes). Para 600 aptos × 5 preguntas promedio = ~$3 USD total de la campaña. Despreciable.
+
+**Endpoints NO tocados (regresión segura):**
+Todos los demás endpoints del proyecto permanecen intactos: `ecConsulting`, `ecDescargarFactura`, `ecPazYSalvo`, `ecIniciarCarga`, `ecSubirFacturas`, `ecFinalizarCarga`, `reservarMudanza`, `cancelarMudanza`, `adminGuardar`, `vigilanteCheckMudanza`, `registrarResidente`, `actualizarResidente`, `clearResidente`, `reservarSalon`, `subirComprobanteSalon`, `cancelarReservaSalon`, `editarReservaSalon`, `adminCancelarReservaSalon`, `configurarTriggerExpiracion`, `adminLogin`, `adminBuscar`, `adminObtener`, `vigilanteLogin`, `vigilanteVerResidentes`, `vigilanteVerMudanzas`, `vigilanteBuscarPorPlaca`, `getEstadoResidente`, `verificarResidente`, `verificarAccesoSalon`, `dispSalon`, `dispMudanzas`, `vigilanteVerReservasSalon`, `listarReservasPorApto`, `adminListarReservasMudanzas`, `adminListarReservasSalon`, `adminVerComprobanteSalon`, `nextId`, `lookup`, `lookupMatApto`, `lookupMatParq`, `verificarPropietario`.
+
+**Validación post-deploy (TESTING-PROTOCOL.md §6 nuevo):**
+- T-ASIS-1: `chatAsistente({mensaje:"¿qué es diligencia?"})` → `{ok:true, respuesta: "<explicación>"}`
+- T-ASIS-2: `chatAsistente({mensaje:"¿quién ganó el mundial?"})` → `{ok:true, respuesta: "Solo puedo ayudarte con preguntas sobre el formulario..."}`
+- T-ASIS-3: `chatAsistente({mensaje:""})` → `{ok:false, error:"Mensaje vacío."}`
+- T-ASIS-4: `chatAsistente({mensaje:"<501 chars>"})` → `{ok:false, error:"Mensaje demasiado largo..."}`
+- T-ASIS-5: Sin `MINIMAX_API_KEY` en Script Properties → `{ok:false, error:"Asistente no configurado (falta MINIMAX_API_KEY en Script Properties)."}`
+- T-ASIS-6 (browser): Cargar `?v=23` en cualquier portal → aparece banner arriba + ventana abajo-derecha → escribir "¿cómo edito mi registro?" → ver respuesta coherente en ≤5s
+- T-ASIS-7 (browser): Después de 11 mensajes en 10 min → ver mensaje "Has alcanzado el límite"
+- T-ASIS-8 (browser): Click en [─] → ventana se oculta → click en "Abrir chat" del banner → ventana reaparece
+
+**Lección:** Validar el flujo end-to-end en navegador real (browser_navigate + browser_console), NO curl. Apps Script puede devolver HTML en cold start que parece respuesta JSON rota. El timeout de 60s en el frontend es clave para UX.
+
+---
+

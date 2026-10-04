@@ -2021,6 +2021,7 @@ vigilancia. Si el vigilante tiene una lógica útil, replicarla en admin.
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
+| **V23** | 04-Oct-2026 (READY) | `4e80d81fd666b2645f376451e929b500` | **FEAT-007: Asistente IA MiniMax-M3 flotante en los 7 portales (`chatAsistente` endpoint + `js/asistente.js`)** |
 | V22.1 (frontend) | 03-Oct-2026 | `d7aea73812e06d2f6bef99fd17511e56` (js) | BUGFIX-015b/c: handler "Volver al calendario" + optimistic UI (frontend only, NO requiere re-deploy Apps Script) |
 | V22 | 02-Oct-2026 17:14 | `300ab4d7dfa1e06599f022f5329ae353` | BUGFIX-015: listarReservasPorApto + vista "Mis reservas" |
 | V21.1 | 02-Oct-2026 18:55 | `c180a1e3...` | BUGFIX-013: parentesco del residente se pierde (mismatch `parentesco`/`parent`) |
@@ -2042,5 +2043,5 @@ vigilancia. Si el vigilante tiene una lógica útil, replicarla en admin.
 
 ---
 
-Última actualización: 03-Oct-2026 (V22.1 frontend)
+Última actualización: 04-Oct-2026 (V23 FEAT-007 Asistente IA LISTO PARA DEPLOY)
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)
