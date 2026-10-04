@@ -23,6 +23,7 @@
   13. [Checklist de mantenimiento](#13-checklist-de-mantenimiento)
   14. [Respaldos](#14-respaldos)
   15. [Manuales de uso para residentes](#15-manuales-de-uso-para-residentes)
+  16. [Agente IA — Asistente conversacional](#16-agente-ia--asistente-conversacional)
 
 ---
 
@@ -2041,8 +2042,76 @@ vigilancia. Si el vigilante tiene una lógica útil, replicarla en admin.
 - V21: 6/6 tests críticos OK (T-V21-3 + regresión lookup, propietario preservado)
 - V22: 8/8 tests E2E OK (T-V22-3 API, T-V22-4/5 casos negativos, T-V22-6/7/8 navegador, ver CHANGELOG-BUGFIXES.md)
 - V21.1: 6/6 tests críticos OK (T-V21.1-3..9)
+- V26 (deploy "Versión 25"): 4/4 tests E2E OK (administrador, fuera de alcance, precio salón, procedimiento salón) — ver `docs/spec-asistente-ia.md` §9
 
 ---
 
-Última actualización: 04-Oct-2026 (V26 LISTO PARA DEPLOY - manual embebido, sin cache)
+## 16. Agente IA — Asistente conversacional
+
+**Status:** DESPLEGADO EN PRODUCCIÓN (Apps Script "Versión 25" = V26 con constante embebida)
+
+### 16.1 Qué es
+
+Un agente de ayuda conversacional basado en MiniMax-M3 que aparece como **banner fijo + ventana de chat flotante** en los 7 portales Cerro Azul. Responde preguntas sobre cómo llenar los formularios y portales del conjunto, usando como ÚNICA fuente de conocimiento el **Manual Oficial del Agente** (Google Doc mantenido por la administración, embebido como constante en el código).
+
+### 16.2 Archivos
+
+| Archivo | Líneas | Rol |
+|---------|--------|-----|
+| `js/asistente.js` | 306 | Frontend autocontenido (CSS+HTML inyectados, fetch, rate limit) |
+| `apps-script/Código.gs` | 4264 | Backend chatAsistente (línea 4149) + constante MANUAL_CERRO (línea 3330, 44KB) |
+| `docs/spec-asistente-ia.md` | (spec) | Spec completo del agente |
+| `docs/proyecto-asistente-ia.md` | (resumen) | Resumen ejecutivo |
+| `docs/manual-asistente-ia.md` | (manual) | Manual de uso para usuarios finales |
+| `docs/sesion-asistente-2026-10-04.md` | (bitácora) | Cronología completa de la sesión de implementación |
+| `docs/CHANGELOG-BUGFIXES.md` | (historial) | FEAT-007 + FEAT-007 v2 + BUGFIX-016 + REFACTOR-V26 |
+
+### 16.3 Versiones generadas
+
+| Versión archivo | Deploy Apps Script | Status | MD5 |
+|------------------|-------------------|--------|-----|
+| V23 | (no deployado) | DESCARTADO — OpenAI-compat assumed |
+| V23.1 | "Versión 24" (no deployado) | Fix BUGFIX-016 (formato Anthropic + banner) |
+| V24 prompt | (no deployado) | System prompt enriquecido |
+| V25 cache | (no deployado) | DESCARTADO — operador prefirió constante embebida |
+| **V26 constante** | **"Versión 25" (deployado)** | **Manual embebido como MANUAL_CERRO, sin cache, sin fetch** |
+
+**Nota sobre numeración:** Apps Script asigna automáticamente el número de versión. Mi numeración interna (V23, V24, ...) no coincide con el número de deploy. **El archivo `Codigo_V26_ASISTENTE_MANUAL_EMBEBIDO-20261004.gs` que subí a Drive es lo que Apps Script desplegó como "Versión 25".**
+
+### 16.4 Configuración (Script Properties Apps Script)
+
+| Propiedad | Requerido | Default |
+|-----------|-----------|---------|
+| `MINIMAX_API_KEY` | SÍ | — |
+| `MINIMAX_BASE_URL` | NO | `https://api.minimax.io/anthropic` |
+| `MINIMAX_GROUP_ID` | NO | (vacío) |
+
+### 16.5 Cómo actualizar el manual del agente
+
+El operador dijo: *"cuando lo vaya a actualizar lo traigo aquí y que Hermes lo actualice"*
+
+Flujo:
+1. Operador edita el Google Doc `1RUMeIXEcZkzFVTBNKe-F1ZbCTl3PRHpCzCeMFQCJD74` (en privado)
+2. Operador avisa a Hermes: "voy a actualizar el manual"
+3. Hermes descarga el doc, regenera la constante `MANUAL_CERRO`, genera V_N+1
+4. Hermes sube a Drive `gdrive:/Cerro Azul/proyecto formulario residentes/`
+5. Operador hace deploy manual (pegar + nueva implementación)
+6. Listo
+
+### 16.6 Costos
+
+- ~$0.012 USD por mensaje (~$36 USD total de la campaña con 600 aptos × 5 preguntas)
+- Equivalente a ~$150K COP o ~10 horas de trabajo del admin — despreciable
+
+### 16.7 Limitaciones
+
+- NO tiene acceso al Sheet Registros (no puede leer datos específicos)
+- NO puede hacer cambios (solo responder preguntas)
+- Si el manual NO tiene la respuesta, remite a la administración
+- Solo español de Colombia
+- MiniMax-M3 no soporta imágenes
+
+---
+
+Última actualización: 04-Oct-2026 (V26 deployado "Versión 25" - manual embebido, sin cache)
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)

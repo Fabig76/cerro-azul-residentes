@@ -4,20 +4,31 @@ Este es el código del backend que conecta el formulario público
 (`https://fabig76.github.io/cerro-azul-residentes/`) con el Google Sheet
 (`https://docs.google.com/spreadsheets/d/16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc`).
 
-## Versión desplegada: V20 (26-Sept-2026 13:10)
+## Versión desplegada: V26 (04-Oct-2026 19:30) — Apps Script "Versión 25"
 
-**149.880 bytes, 95 funciones** = 70 funciones en `Codigo.gs` + 25 funciones
-`ec*` del módulo de estado de cuenta (pegado al final).
+**192.892 bytes (193KB), 73 funciones** = incluye la constante `MANUAL_CERRO`
+(44KB / 815 líneas del manual oficial del agente) embebida directamente en
+el código. Sin cache ni fetch de Google Docs en runtime.
 
 URL del Web App (preservada entre versiones):
 `https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec`
 
-Historial de deploys (sesión 26-Sept):
+Historial de deploys (sesión 04-Oct-2026 — Agente IA):
+
+| Versión | Hora | MD5 | Descripción |
+|---------|------|-----|-------------|
+| **V26** | 04-Oct-2026 (Deploy "25") | `a33b5b2af01bb24b2fd48a55b6ac1672` | **Manual embebido como MANUAL_CERRO (sin cache, sin fetch, sin Google Docs runtime)** |
+| **V25** | DESCARTADO | (no subido) | RAG simple con fetch Google Doc + cache 6h — operador prefirió traer el doc a Hermes |
+| **V24** | 04-Oct-2026 11:30 | `3cda634` | System prompt enriquecido con info factual del Cerro Azul |
+| **V23.1** | 04-Oct-2026 | `adf63c56c2659c9c000c567ca44f6d78` | BUGFIX-016: formato Anthropic Messages + fix banner tapaba header |
+| **V23** | DESCARTADO | (no subido) | OpenAI-compat assumed (habría dado 404) |
+
+Historial de deploys anteriores (sesión 26-Sept):
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
 | **V22.1** | 03-Oct-2026 | `d7aea73812e06d2f6bef99fd17511e56` (js) | BUGFIX-015b/c V22.1: handler "Volver al calendario" + optimistic UI (frontend only) |
-| **V22** | 02-Oct-2026 | `300ab4d7dfa1e06599f022f5329ae353` | BUGFIX-015: listarReservasPorApto + vista "Mis reservas" en salon-social.html |
+| **V22** | 02-Oct-2026 17:14 | `300ab4d7dfa1e06599f022f5329ae353` | BUGFIX-015: listarReservasPorApto + vista "Mis reservas" en salon-social.html |
 | **V21.1** | 02-Oct-2026 18:55 | `c180a1e330eb61ac2d13c1ca1a9e2df4` | BUGFIX-013: parentesco del residente se pierde (mismatch `parentesco`/`parent`) |
 | **V21** | 02-Oct-2026 18:30 | `e4aa773022db26b8bd339960c56dca52` | BUGFIX-012: registrarResidente cae al branch de CREACIÓN de submitRecord |
 | **V20** | 13:10 | `70ca1033084c9dc27fdf0aefa562f2c9` | BUGFIX-011: admin mudanzas filtro "Próximos N días" |
@@ -248,3 +259,59 @@ Si necesitas cambiar el código del backend:
   · Implementar → Administrar implementaciones → ícono de lápiz → "Versión: Nueva versión"
   · Clic en Implementar
   · La URL NO cambia (los deployments activos se conservan)
+
+---
+
+## Agente IA — chatAsistente (FEAT-007 v2 / V26)
+
+Endpoint para responder preguntas de residentes/propietarios sobre los
+portales usando MiniMax-M3 como LLM y el manual oficial como única fuente.
+
+### Endpoint
+
+- **URL:** `/exec` (mismo Web App que el resto)
+- **Método:** `POST`
+- **Action:** `chatAsistente`
+- **Payload:** `{ action: 'chatAsistente', mensaje: 'texto' }`
+- **Response:** `{ ok: true, respuesta: '...' }` o `{ ok: false, error: '...' }`
+
+### Configuración (Script Properties)
+
+| Propiedad | Requerido | Default | Descripción |
+|-----------|-----------|---------|-------------|
+| `MINIMAX_API_KEY` | SÍ | — | Subscription key de MiniMax |
+| `MINIMAX_BASE_URL` | NO | `https://api.minimax.io/anthropic` | Endpoint base del API |
+| `MINIMAX_GROUP_ID` | NO | (vacío) | ID de grupo de facturación Subscription Plan |
+
+### Manual embebido (`MANUAL_CERRO` constante)
+
+- **Tamaño:** 44KB / 815 líneas
+- **Fuente:** Google Doc `1RUMeIXEcZkzFVTBNKe-F1ZbCTl3PRHpCzCeMFQCJD74` (mantenido por el operador)
+- **Ubicación:** línea 3330 de `Codigo.gs`
+- **Actualización:** cuando el operador lo cambie, Hermes regenera V_N+1 con la constante actualizada
+
+### Frontend
+
+- **Archivo:** `js/asistente.js` (306 líneas, autocontenido)
+- **Cargado en:** los 7 HTML antes de `</body>` (`<script src="js/asistente.js?v=1">`)
+- **Cache-buster:** usar `?v=N` en URL de GitHub Pages para invalidar caché del navegador
+
+### Validación
+
+- `mensaje` vacío → `{ok:false, error:'Mensaje vacío.'}`
+- `mensaje` >500 chars → `{ok:false, error:'Mensaje demasiado largo...'}`
+- Sin `MINIMAX_API_KEY` → `{ok:false, error:'Asistente no configurado...'}`
+- HTTP error de MiniMax → `{ok:false, error:'El servicio de IA respondió con error (N)...'}`
+- JSON parse error → `{ok:false, error:'Respuesta inválida del servicio de IA.'}`
+- Respuesta vacía → `{ok:false, error:'El servicio de IA devolvió una respuesta vacía.'}`
+
+### Tests E2E
+
+Ver `docs/spec-asistente-ia.md` §9 y `docs/CHANGELOG-BUGFIXES.md` (sección FEAT-007 v2).
+
+### Documentación adicional
+
+- `docs/spec-asistente-ia.md` — spec completo
+- `docs/proyecto-asistente-ia.md` — resumen ejecutivo
+- `docs/manual-asistente-ia.md` — manual para usuarios finales
+- `docs/sesion-asistente-2026-10-04.md` — bitácora de la sesión
