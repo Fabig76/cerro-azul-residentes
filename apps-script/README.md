@@ -4,11 +4,11 @@ Este es el código del backend que conecta el formulario público
 (`https://fabig76.github.io/cerro-azul-residentes/`) con el Google Sheet
 (`https://docs.google.com/spreadsheets/d/16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc`).
 
-## Versión desplegada: V27 (04-Oct-2026) — Apps Script "Versión 26" (pendiente deploy)
+## Versión desplegada: V28 frontend + V27 backend (04-Oct-2026) — Apps Script "Versión 26" (V27) + V28 js/asistente.js (no deploy)
 
-**196.688 bytes (197KB), 73 funciones** = incluye la constante `MANUAL_CERRO`
-(49KB / 845 líneas del manual oficial actualizado del agente) embebida
-directamente en el código. Sin cache ni fetch de Google Docs en runtime.
+**Backend Apps Script:** V27 (196.688 bytes, 197KB, 73 funciones) = incluye la constante `MANUAL_CERRO` (49KB / 845 líneas del manual oficial actualizado del agente) embebida directamente en el código. Sin cache ni fetch de Google Docs en runtime.
+
+**Frontend GitHub Pages:** V28 (333 líneas, +27 vs V26) = `js/asistente.js` con mini-parser markdown para renderizar respuestas del LLM con negrita real y saltos de línea visibles.
 
 URL del Web App (preservada entre versiones):
 `https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec`
@@ -17,6 +17,7 @@ Historial de deploys (sesión 04-Oct-2026 — Agente IA):
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
+| **V28** | 04-Oct-2026 (frontend) | `1cce2cdcd5136e2254ec402a14ed971b` (js) | **Renderizar markdown del LLM a HTML (frontend only, NO requiere deploy Apps Script)** |
 | **V27** | 04-Oct-2026 (Deploy "26") | `599ffb5cb71182915e576a6e903bf7e2` | **Manual actualizado por el operador (nueva REGLA FUNDAMENTAL: solo propietario/inmobiliaria/encargado crea registro; arrendatario NUNCA)** |
 | **V26** | 04-Oct-2026 (Deploy "25") | `a33b5b2af01bb24b2fd48a55b6ac1672` | **Manual embebido como MANUAL_CERRO (sin cache, sin fetch, sin Google Docs runtime)** |
 | **V25** | DESCARTADO | (no subido) | RAG simple con fetch Google Doc + cache 6h — operador prefirió traer el doc a Hermes |

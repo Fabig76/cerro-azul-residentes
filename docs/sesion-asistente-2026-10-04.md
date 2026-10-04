@@ -264,6 +264,82 @@ En esta sesión se generaron/actualizarán:
 
 ---
 
+## Actualizaciones posteriores (mismo día, 04-Oct-2026)
+
+### 19:50 — Operador actualiza el manual del agente
+
+Operador publicó nueva versión del manual: `1NeN1y09tr4Sc2PVuf0ATBDxjSHWqchHkYbzs0HJhiBg` (sustituye al anterior `1RUMeIXEcZkzFVTBNKe-F1ZbCTl3PRHpCzCeMFQCJD74`)
+
+Cambios principales:
+- Nueva **REGLA FUNDAMENTAL** al inicio: solo propietario/inmobiliaria/encargado puede crear el registro. Arrendatario NUNCA.
+- Nueva regla #7: "Nunca indicar a un arrendatario que cree el registro del apartamento o llene el formulario principal"
+- 3 preguntas nuevas en FAQ sobre arrendatarios
+- 2 secciones nuevas (§12 Normas de convivencia, §16 Plantillas de respuesta)
+- Manual creció 45KB → 49KB
+
+Resultado: V27 (`Codigo_V27_MANUAL_ACTUALIZADO-20261004.gs`, md5 `599ffb5cb71182915e576a6e903bf7e2`, 197KB). Apps Script "Versión 26" cuando se despliega.
+
+Pruebas E2E (T-ASIS-V27-1 al V27-5):
+- ✅ V27-2 (pregunta directa "Soy arrendatario...") → niega correctamente
+- ✅ V27-3 ("El propietario no ha registrado...") → niega + pasos numerados
+- ✅ V27-4 (regresión admin) → "Heyler Fabio Guaza"
+- ✅ V27-5 (regresión salón) → pasos numerados
+- ⚠️ V27-1 (pregunta genérica "¿Quién puede...?") → respuesta ambigua (quirk del modelo, no bug)
+
+### 20:10 — Operador reporta problema de formato
+
+Operador: "no me gusta que las respuesta nos las da ordenadas es decir llenas de asteriscos y no bien desplegadas esteticamente"
+
+Causa: el bot devolvía markdown (`**negrita**`, `\n`) que el frontend mostraba literal porque usaba `div.textContent = texto`.
+
+Fix: 2 funciones nuevas en `AsistenteCerroAzul`:
+- `escapeHtml()` — escapa `& < > " '` para prevenir XSS
+- `mdToHtml()` — convierte `**texto** → <b>texto</b>` y `\n → <br>`
+
+Cambio en `agregarMensaje()`:
+- Antes: `div.textContent = texto;`
+- Ahora: `div.innerHTML = this.mdToHtml(texto);`
+
+Resultado: V28 (`js/asistente.js` md5 `1cce2cdcd5136e2254ec402a14ed971b`, 333 líneas, +27 vs V26). **Frontend only, NO requiere deploy Apps Script.**
+
+Pruebas E2E:
+- ✅ Browser: `asteriscos_visibles: 0` después del fix
+- ✅ Renderiza `<b>` y `<br>` correctamente
+- ✅ Sin regresiones
+
+### 20:20 — Operador confirma privacidad
+
+Operador preguntó: "cuando la página se actualiza o se deja de escribir no debe guardar conversaciones verdad?"
+
+Confirmado: el chat usa `sessionStorage` SOLO para rate limit. NO usa `localStorage`, ni cookies, ni Sheets para guardar mensajes. Al recargar/actualizar/cerrar pestaña → mensajes se pierden. Es el comportamiento correcto para privacidad.
+
+### 20:25 — Operador pide documentación final
+
+Operador: "actuliza todos los archivos .md"
+
+En esta sesión se actualizaron:
+- `GUIA-PROYECTO.md` — tabla de versiones (V26, V27, V28)
+- `apps-script/README.md` — versión desplegada (V28 frontend + V27 backend) + tabla de versiones
+- `docs/spec-asistente-ia.md` — status actualizado a V28 frontend + V27 backend + nota sobre no persistencia
+- `docs/proyecto-asistente-ia.md` — status actualizado
+- `docs/CHANGELOG-BUGFIXES.md` — V27 + V28 documentados (hecho antes)
+- `docs/sesion-asistente-2026-10-04.md` — esta sección
+
+---
+
+## Métricas totales de la sesión completa
+
+| Métrica | Valor |
+|---------|-------|
+| Commits | 11 (497f27d, e33b718, 21c19c5, 9bf633c, 3cda634, d7708fd, d4f1272, 370030d, e94e959, 5437f69, 9830eac, 2468824, 7d64bef, 2d17d34, 3b01c06) |
+| Versiones Apps Script desplegadas | 3 (V23.1 → V24 → V25 → V26 → V27, Apps Script autonumeró 24 → 26) |
+| Versiones frontend | 2 (V26 → V28) |
+| Archivos del proyecto modificados | 9 (1 nuevo js/asistente.js + 1 backend Codigo.gs + 7 HTML) |
+| Archivos .md | 22 en el repo (4 nuevos del agente + 3 actualizados) |
+| Lecciones aprendidas | 22 (#15-#22) |
+| Bugs pre-deploy detectados | 2 (formato OpenAI, banner tapaba header) |
+| Bugs UX post-deploy | 2 (respuestas vagas, asteriscos literales) |
+
 ## Métricas de la sesión
 
 | Métrica | Valor |

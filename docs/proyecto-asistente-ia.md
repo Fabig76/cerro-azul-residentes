@@ -1,8 +1,8 @@
 # Proyecto Asistente IA · Cerro Azul
 
 **Fecha:** 04-Oct-2026
-**Status:** DESPLEGADO EN PRODUCCIÓN (Versión 25 en Apps Script)
-**Tiempo invertido:** ~1 sesión (3 horas)
+**Status:** DESPLEGADO EN PRODUCCIÓN (Apps Script "Versión 26" = V27 backend, V28 frontend live en GitHub Pages)
+**Tiempo invertido:** ~1 sesión (3 horas) + 2 iteraciones menores (manual actualizado, markdown parser)
 **Costo por mensaje:** ~$0.012 USD (~$36 USD total campaña con 600 aptos)
 
 ---

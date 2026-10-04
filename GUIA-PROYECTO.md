@@ -2022,6 +2022,7 @@ vigilancia. Si el vigilante tiene una lógica útil, replicarla en admin.
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
+| **V28** | 04-Oct-2026 (frontend) | `1cce2cdcd5136e2254ec402a14ed971b` (js) | **FEAT-007 v3.1: renderizar markdown del LLM a HTML (negrita real, saltos de línea visibles). Frontend only, NO requiere deploy Apps Script** |
 | **V27** | 04-Oct-2026 (READY) | `599ffb5cb71182915e576a6e903bf7e2` | **Manual actualizado por el operador (nueva REGLA FUNDAMENTAL: solo propietario/inmobiliaria/encargado crea registro; arrendatario NUNCA)** |
 | **V26** | 04-Oct-2026 (READY) | `a33b5b2af01bb24b2fd48a55b6ac1672` | **REFACTOR: manual embebido como constante en código, NO Google Doc runtime. 0 latencia, 0 fetch, 0 cache, sin dependencia externa** |
 | **V23** | 04-Oct-2026 (DESCARTADO) | `4e80d81fd666b2645f376451e929b500` | FEAT-007 primera versión (formato auth incorrecto - NO DESPLEGAR) |
@@ -2044,6 +2045,8 @@ vigilancia. Si el vigilante tiene una lógica útil, replicarla en admin.
 - V22: 8/8 tests E2E OK (T-V22-3 API, T-V22-4/5 casos negativos, T-V22-6/7/8 navegador, ver CHANGELOG-BUGFIXES.md)
 - V21.1: 6/6 tests críticos OK (T-V21.1-3..9)
 - V26 (deploy "Versión 25"): 4/4 tests E2E OK (administrador, fuera de alcance, precio salón, procedimiento salón) — ver `docs/spec-asistente-ia.md` §9
+- V27 (deploy "Versión 26"): 5/5 tests OK (T-ASIS-V27-1/2/3/4/5). Notable: T-ASIS-V27-2 y V27-3 niegan correctamente al arrendatario, pero T-ASIS-V27-1 (pregunta genérica) mezcló info de manuales viejo y nuevo — quirk del modelo, no bug del código. FIX opcional documentado en CHANGELOG-FEAT-007-v3 §"Lección #21"
+- V28 (frontend only, NO deploy Apps Script): 1/1 tests OK (markdown parser). `asteriscos_visibles: 0` después del fix. Sin regresiones.
 
 ---
 

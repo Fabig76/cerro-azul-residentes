@@ -1,7 +1,7 @@
 # Spec · Asistente IA Cerro Azul (FEAT-007 v2 / V26)
 
 **Fecha de creación:** 04-Oct-2026
-**Status:** DESPLEGADO EN PRODUCCIÓN (Versión 25 en Apps Script)
+**Status:** DESPLEGADO EN PRODUCCIÓN (Apps Script "Versión 26" = V27 backend, V28 frontend live en GitHub Pages)
 **Owner:** Fabio Lesmes (operador) + Hermes Agent
 **Tipo:** Feature (no es bugfix)
 
@@ -42,6 +42,9 @@ Agente de ayuda conversacional basado en MiniMax-M3 que aparece como **banner fi
 - Calcular deudas
 - Procesar pagos
 - Cualquier acción de escritura sobre el Sheet
+- **Guardar conversaciones** (NO se persiste nada entre recargas — el chat es
+  100% en vivo, sin localStorage, sin cookies, sin Sheets). Solo `sessionStorage`
+  para el rate limit (10 msg/10min). Operador confirmó este comportamiento.
 
 ---
 
@@ -49,7 +52,7 @@ Agente de ayuda conversacional basado en MiniMax-M3 que aparece como **banner fi
 
 ### 4.1 Frontend
 
-- **Archivo:** `js/asistente.js` (306 líneas, autocontenido)
+- **Archivo:** `js/asistente.js` (V28, 333 líneas, autocontenido + mini-parser markdown)
 - **CSS:** inyectado inline (no requiere archivo .css separado)
 - **HTML:** inyectado inline (banner + ventana de chat al cargar)
 - **Carga:** `<script src="js/asistente.js?v=1"></script>` antes de `</body>`
@@ -321,9 +324,9 @@ No requiere cambios en frontend (mismo js/asistente.js).
 ---
 
 ## 13. Archivos relacionados
-
-- `apps-script/Código.gs` — implementación backend (chatAsistente + MANUAL_CERRO)
-- `js/asistente.js` — frontend (banner + ventana + lógica de fetch)
+- `apps-script/Código.gs` — implementación backend V27 (chatAsistente + MANUAL_CERRO actualizado por el operador)
+- `js/asistente.js` — V28 frontend (banner + ventana + fetch + parser markdown)
+- `docs/spec-asistente-ia.md` — spec completo
 - `docs/proyecto-asistente-ia.md` — resumen ejecutivo
 - `docs/manual-asistente-ia.md` — manual de uso
 - `docs/sesion-asistente-2026-10-04.md` — bitácora de la sesión
