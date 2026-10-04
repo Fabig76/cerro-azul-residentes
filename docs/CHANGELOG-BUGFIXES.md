@@ -1549,3 +1549,51 @@ El operador dijo: *"yo nunca voy actualizar el documento cuando lo vaya hacer en
 
 ---
 
+### FEAT-007 v3 · Manual del agente actualizado por el operador
+
+**Fecha:** 04-Oct-2026 (mismo día, 4ª iteración del FEAT-007)
+**Severidad:** FEATURE — actualización de la fuente de conocimiento
+**Versión nueva:** V27 (`Codigo_V27_MANUAL_ACTUALIZADO-20261004.gs`, md5 `599ffb5cb71182915e576a6e903bf7e2`, 197KB)
+**Drive:** `1lgRv_lGbsF_HvYTSibX6M8GaeSuVoqbD`
+**Google Doc nuevo:** `1NeN1y09tr4Sc2PVuf0ATBDxjSHWqchHkYbzs0HJhiBg` (sustituye al anterior `1RUMeIXEcZkzFVTBNKe-F1ZbCTl3PRHpCzCeMFQCJD74`)
+
+**Cambios del manual nuevo:**
+- Nueva **REGLA FUNDAMENTAL** al inicio: solo propietario/inmobiliaria/encargado puede crear el registro del apartamento. Arrendatario NUNCA puede.
+- Definición "Propietario" ampliada a "Propietario, inmobiliaria o encargado"
+- Nueva regla #7: "Nunca indicar a un arrendatario que cree el registro del apartamento o llene el formulario principal"
+- Sección 3 (Formulario de registro) refuerza restricción a quien crea
+- Sección 4 (Editar) restringe a quien creó el registro
+- Sección 6 (Mudanzas) - requisitos más claros
+- Sección 7 (Portal del residente) - énfasis en arrendatario NUNCA llena principal
+- Sección 14 (FAQ): 3 preguntas nuevas sobre arrendatarios
+- Nuevas secciones: 12 (Normas de convivencia), 16 (Plantillas de respuesta)
+- Manual creció 45662 → 49308 bytes (+8%, 845 líneas vs 815)
+
+**Cambios en el código:**
+- Bloque `MANUAL_CERRO` regenerado con concatenación multilinea (1940 comillas balanceadas, 0 escapes problemáticos)
+- Sin cambios en el system prompt restrictivo (las nuevas reglas ya están DENTRO del manual, el bot las respeta automáticamente)
+- Sin cambios en el frontend (`js/asistente.js`)
+- Sin cambios en la lógica de `chatAsistente()` (solo cambia el contenido del MANUAL_CERRO)
+
+**Validación:**
+- `node --check`: PASS (sintaxis JS válida)
+- Comillas balanceadas: 1940 (par)
+- Escapes problemáticos: 0
+- Tamaño del bloque MANUAL_CERRO: 52814 chars vs 49053 de V26 (+7.7%)
+- Tamaño del Codigo.gs: 196688 bytes vs 192892 de V26 (+1.9%)
+
+**Lección #21 (nueva):** Cuando el operador actualice el manual, el flujo es:
+1. Operador edita el Google Doc
+2. Operador avisa a Hermes + pega el nuevo URL
+3. Hermes descarga el doc nuevo (`curl export?format=txt`)
+4. Hermes genera el bloque JS con concatenación segura (1940 comillas, 0 escapes)
+5. Hermes patchea Codigo.gs (reemplaza el bloque MANUAL_CERRO completo)
+6. Hermes valida con `node --check` + verifica balance de comillas
+7. Hermes genera V_N+1 (`Codigo_V{N+1}_MANUAL_ACTUALIZADO-YYYYMMDD.gs`)
+8. Hermes sube a Drive + commit + push
+9. Operador hace deploy manual
+
+**Tiempo total:** ~15 minutos del operador + ~5 minutos de Hermes. Sin cambios en frontend, sin cambios en system prompt. El system prompt restrictivo (9 reglas) sigue siendo el mismo desde V26 — las nuevas reglas del manual ya están dentro del MANUAL_CERRO.
+
+---
+
