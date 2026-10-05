@@ -2022,6 +2022,7 @@ vigilancia. Si el vigilante tiene una lógica útil, replicarla en admin.
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
+| **V33** | 05-Oct-2026 (LISTO, sin deploy) | `3607f5efaa9c015fe6bfd0e0c4d44de3` | **BUGFIX-020: cédula del propietario en "Editar mi registro" (lectura+escritura)** |
 | **V32** | 05-Oct-2026 (deploy "Versión 30" ✓ verificado) | `10527ca94356f53f54d4e6d95765a251` | **BUGFIX-019 v2: token con PropertiesService — flujo login→búsqueda E2E verificado** |
 | **V31** | 05-Oct-2026 (deploy "Versión 29", bug cache) | `6778474b1e244f91ce3084c1a7882da5` | **BUGFIX-019: token en endpoints admin/vigilante — reemplazada por V32** |
 | **V30** | 05-Oct-2026 (deploy "Versión 28" ✓) | `a14aa86c100ae82a5988206b4ce28c20` | **BUGFIX-018: getEstadoResidente ya no filtra numForm/nombres/propietario** |
@@ -2121,5 +2122,5 @@ Flujo:
 
 ---
 
-Última actualización: 05-Oct-2026 (V32 BUGFIX-019 desplegado "Versión 30" y verificado E2E)
+Última actualización: 05-Oct-2026 (V33 READY — BUGFIX-020 cédula en edición; V32 desplegado "Versión 30")
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)

@@ -541,15 +541,19 @@
   <div id="view-edit" class="hidden">
     <div class="lookup-box">
       <h3>✏️ Editar mi registro</h3>
-      <p>Ingresa tu <strong>N° de formulario</strong> (recibido al crear tu registro) y tu <strong>N° de apartamento</strong> para cargar tus datos y modificarlos.</p>
+      <p>Ingresa tu <strong>N° de formulario</strong> (recibido al crear tu registro), tu <strong>N° de apartamento</strong> y la <strong>cédula del propietario</strong> para cargar tus datos y modificarlos.</p>
       <div id="alert-edit" class="alert hidden"></div>
       <div class="field" style="margin-bottom:12px;">
         <label>N° de formulario <span class="req">*</span></label>
         <input type="text" id="lookupNumForm" placeholder="Ej: CA-0042">
       </div>
-      <div class="field" style="margin-bottom:18px;">
+      <div class="field" style="margin-bottom:12px;">
         <label>N° de apartamento <span class="req">*</span></label>
         <input type="text" id="lookupApto" placeholder="Ej: 101, 202B">
+      </div>
+      <div class="field" style="margin-bottom:18px;">
+        <label>Cédula del propietario <span class="req">*</span></label>
+        <input type="text" id="lookupCcProp" inputmode="numeric" placeholder="Solo números, sin puntos ni guiones" autocomplete="off">
       </div>
       <button type="button" class="btn btn-primary btn-block" id="btnBuscar">
         🔍 Buscar mi registro

@@ -1768,3 +1768,23 @@ El login del admin/vigilante protegía SOLO la interfaz (sessionStorage en el na
 
 ---
 
+### BUGFIX-020 · Verificación de cédula del propietario en "Editar mi registro"
+
+**Fecha:** 05-Oct-2026
+**Severidad:** ALTA (seguridad — numForm+apto era credencial débil con acceso total)
+**Versión corregida:** V33 (`Codigo_V33_BUGFIX020_EDITAR_CEDULA-20261005.gs`, md5 `3607f5efaa9c015fe6bfd0e0c4d44de3`, 200612 bytes)
+**Spec:** `docs/spec-edicion-cedula.md`
+
+**Problema:**
+"Editar mi registro" pedía SOLO numForm + apto. El `lookup` devolvía los 143 campos y el `submitRecord` editMode sobrescribía la fila sin verificar identidad. numForm+apto es credencial débil con acceso total (cierre del pendiente recomendado anotado en BUGFIX-017).
+
+**Fix:**
+- `doGet action=lookup`: ahora exige `ccProp` y valida contra el registro (col 6, cédula del titular) antes de devolver el row. Sin cédula o cédula incorrecta → error, no entrega datos.
+- `submitRecord` en modo edición: valida `ccProp` antes de escribir (defensa en profundidad; un atacante no puede saltar el lookup y hacer el POST directo).
+- Frontend: campo "Cédula del propietario" en `index.html` + `js/app.js` la lee, valida (solo dígitos) y la envía en el lookup.
+- Usa `normalizarCC()` (solo dígitos), la misma que `verificarPropietario` (mudanzas).
+
+**Lección #26:** Un identificador (numForm) NO es autenticación. Para operaciones que leen o escriben datos personales, exigir un factor que SOLO el titular conoce (su cédula), no solo un código que puede filtrarse por otra vía. Replicable a cualquier flujo de "editar mis datos".
+
+---
+

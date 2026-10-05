@@ -4,11 +4,11 @@ Este es el código del backend que conecta el formulario público
 (`https://fabig76.github.io/cerro-azul-residentes/`) con el Google Sheet
 (`https://docs.google.com/spreadsheets/d/16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc`).
 
-## Versión LISTA PARA DEPLOY: V32 backend (05-Oct-2026) — BUGFIX-019 v2. En producción: V31 (Apps Script "Versión 29", con bug de cache).
+## Versión LISTA PARA DEPLOY: V33 backend (05-Oct-2026) — BUGFIX-020. En producción: V32 backend (Apps Script "Versión 30", verificado).
 
-**Backend V32 (LISTO PARA DEPLOY):** BUGFIX-019 v2 — token de sesión con `PropertiesService` (V31 usó CacheService y el token no se propagaba entre instancias). md5 `10527ca94356f53f54d4e6d95765a251` (199926 bytes). Al desplegar, Apps Script le asignará "Versión 30". Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-019.
+**Backend V33 (LISTO PARA DEPLOY):** BUGFIX-020 — "Editar mi registro" ahora exige cédula del propietario (lectura + escritura). md5 `3607f5efaa9c015fe6bfd0e0c4d44de3` (200612 bytes). Al desplegar, Apps Script le asignará "Versión 31". Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-020 y `docs/spec-edicion-cedula.md`.
 
-**Frontend:** `js/admin.js` + `js/vigilantes.js` ya inyectan el token (sin cambios desde V31). Desplegar PRIMERO el frontend (ya está en GitHub Pages), LUEGO el backend V32.
+**Frontend:** `index.html` (campo "Cédula del propietario") + `js/app.js` (envía cédula en el lookup). Se despliega vía GitHub Pages. Desplegar PRIMERO el frontend (push), LUEGO el backend V33.
 
 **Frontend GitHub Pages:** V28 (333 líneas, +27 vs V26) = `js/asistente.js` con mini-parser markdown para renderizar respuestas del LLM con negrita real y saltos de línea visibles.
 
@@ -19,6 +19,7 @@ Historial de deploys (sesión 04-Oct-2026 — Agente IA):
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
+| **V33** | 05-Oct-2026 (LISTO, sin deploy) | `3607f5efaa9c015fe6bfd0e0c4d44de3` | **BUGFIX-020: cédula del propietario en "Editar mi registro"** |
 | **V32** | 05-Oct-2026 (deploy "30" ✓ verificado) | `10527ca94356f53f54d4e6d95765a251` | **BUGFIX-019 v2: token PropertiesService — E2E verificado** |
 | **V31** | 05-Oct-2026 (deploy "29", bug cache) | `6778474b1e244f91ce3084c1a7882da5` | **BUGFIX-019: token admin/vigilante — reemplazada por V32** |
 | **V30** | 05-Oct-2026 (deploy "28" ✓) | `a14aa86c100ae82a5988206b4ce28c20` | **BUGFIX-018: getEstadoResidente sin numForm/nombres/propietario (fuga de datos)** |

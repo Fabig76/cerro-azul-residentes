@@ -113,9 +113,15 @@ function doGet(e) {
     if (action === 'lookup') {
       const numForm = String(e.parameter.numForm || '').trim();
       const apto = String(e.parameter.apto || '').trim();
+      const ccProp = normalizarCC(e.parameter.ccProp);
+      // BUGFIX-020: exigir cédula del propietario para leer el registro
+      if (!ccProp) return jsonOut({ ok: false, error: 'Falta cédula del propietario.' });
       const row = findRowByNumFormAndApto(numForm, apto);
       if (!row) {
         return jsonOut({ ok: false, error: 'No se encontró ningún registro con ese N° de formulario y N° de apartamento. Verifica los datos e inténtalo de nuevo.' });
+      }
+      if (normalizarCC(row.values[6]) !== ccProp) {
+        return jsonOut({ ok: false, error: 'La cédula no coincide con el propietario registrado. Verifique o contacte a la administración.' });
       }
       return jsonOut({ ok: true, row: rowToObject(row.values) });  // FIX 23-Sept: antes decia 'row' (objeto), debia ser 'row.values' (array)
     }
@@ -325,6 +331,10 @@ function submitRecord(data) {
     const found = findRowByNumFormAndApto(submittedNumForm, apto);
     if (!found) {
       return { ok: false, error: 'N° de formulario o N° de apartamento no coinciden con un registro existente. No se puede editar.' };
+    }
+    // BUGFIX-020: verificar cédula del propietario antes de escribir
+    if (normalizarCC(data.ccProp) !== normalizarCC(found.values[6])) {
+      return { ok: false, error: 'La cédula no coincide con el propietario registrado. No se puede editar.' };
     }
     targetRow = found.rowNumber;
     assignedNumForm = submittedNumForm;

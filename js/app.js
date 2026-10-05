@@ -98,8 +98,10 @@ async function buscarRegistro() {
   hideAlert('alert-edit');
   const numForm = val('#lookupNumForm');
   const apto    = val('#lookupApto');
+  const ccProp  = (val('#lookupCcProp') || '').replace(/[^0-9]/g, '');
   if (!numForm) { showAlert('alert-edit', 'Ingresa tu N° de formulario.', 'err'); return; }
   if (!apto)    { showAlert('alert-edit', 'Ingresa el N° de apartamento.', 'err'); return; }
+  if (!ccProp)  { showAlert('alert-edit', 'Ingresa la cédula del propietario.', 'err'); return; }
   if (!APPS_SCRIPT_URL) {
     showAlert('alert-edit', 'El formulario aún no está conectado al servidor (falta URL del Apps Script). Avisa a la administración.', 'err');
     return;
@@ -109,7 +111,7 @@ async function buscarRegistro() {
   $('#btnBuscar').textContent = 'Buscando...';
 
   try {
-    const url = APPS_SCRIPT_URL + '?action=lookup&numForm=' + encodeURIComponent(numForm) + '&apto=' + encodeURIComponent(apto);
+    const url = APPS_SCRIPT_URL + '?action=lookup&numForm=' + encodeURIComponent(numForm) + '&apto=' + encodeURIComponent(apto) + '&ccProp=' + encodeURIComponent(ccProp);
     const resp = await fetch(url, { method: 'GET', redirect: 'follow' });
     const data = await resp.json();
     if (!data.ok) {
