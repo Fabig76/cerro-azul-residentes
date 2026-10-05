@@ -2022,7 +2022,7 @@ vigilancia. Si el vigilante tiene una lógica útil, replicarla en admin.
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
-| **V32** | 05-Oct-2026 (LISTO, sin deploy) | `10527ca94356f53f54d4e6d95765a251` | **BUGFIX-019 v2: token con PropertiesService (V31 CacheService no propagaba)** |
+| **V32** | 05-Oct-2026 (deploy "Versión 30" ✓ verificado) | `10527ca94356f53f54d4e6d95765a251` | **BUGFIX-019 v2: token con PropertiesService — flujo login→búsqueda E2E verificado** |
 | **V31** | 05-Oct-2026 (deploy "Versión 29", bug cache) | `6778474b1e244f91ce3084c1a7882da5` | **BUGFIX-019: token en endpoints admin/vigilante — reemplazada por V32** |
 | **V30** | 05-Oct-2026 (deploy "Versión 28" ✓) | `a14aa86c100ae82a5988206b4ce28c20` | **BUGFIX-018: getEstadoResidente ya no filtra numForm/nombres/propietario** |
 | **V29** | 05-Oct-2026 (deploy "Versión 27" ✓) | `6186f0586e63b52e185f5f8135072be7` | **BUGFIX-017: quitar CA-XXXX del error de duplicado (fuga de credencial de edición). Ver CHANGELOG-BUGFIXES.md** |
@@ -2121,5 +2121,5 @@ Flujo:
 
 ---
 
-Última actualización: 05-Oct-2026 (V32 READY — BUGFIX-019 v2 PropertiesService; V31 tuvo bug de cache)
+Última actualización: 05-Oct-2026 (V32 BUGFIX-019 desplegado "Versión 30" y verificado E2E)
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)

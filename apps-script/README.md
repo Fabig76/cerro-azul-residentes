@@ -19,7 +19,7 @@ Historial de deploys (sesión 04-Oct-2026 — Agente IA):
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
-| **V32** | 05-Oct-2026 (LISTO, sin deploy) | `10527ca94356f53f54d4e6d95765a251` | **BUGFIX-019 v2: token con PropertiesService (V31 CacheService no propagaba)** |
+| **V32** | 05-Oct-2026 (deploy "30" ✓ verificado) | `10527ca94356f53f54d4e6d95765a251` | **BUGFIX-019 v2: token PropertiesService — E2E verificado** |
 | **V31** | 05-Oct-2026 (deploy "29", bug cache) | `6778474b1e244f91ce3084c1a7882da5` | **BUGFIX-019: token admin/vigilante — reemplazada por V32** |
 | **V30** | 05-Oct-2026 (deploy "28" ✓) | `a14aa86c100ae82a5988206b4ce28c20` | **BUGFIX-018: getEstadoResidente sin numForm/nombres/propietario (fuga de datos)** |
 | **V29** | 05-Oct-2026 (deploy "27" ✓) | `6186f0586e63b52e185f5f8135072be7` | **BUGFIX-017: quitar CA-XXXX del error de duplicado (fuga de credencial)** |
