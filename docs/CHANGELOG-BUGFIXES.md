@@ -1788,3 +1788,80 @@ El login del admin/vigilante protegía SOLO la interfaz (sessionStorage en el na
 
 ---
 
+## BUGFIX-021 · `adminVerComprobanteSalon` no devuelve `tieneComprobante: true` en éxito
+
+**Fecha:** 05-Oct-2026
+**Severidad:** MEDIA (UX roto — el admin no puede ver los comprobantes de las reservas Pagado, aunque SÍ existen y SÍ están en Drive)
+**Versión corregida:** V34 (`Codigo_V34_BUGFIX-021_2026-10-05.gs`, md5 `73bf233649f51be937e90be2a83628ba`, 200718 bytes)
+**Rama:** `feature/bugfix-comprobante-salon`
+**Detectado por:** Operador reportó "en el portal administrativo en salon social cuando revisamos las agendas de las reservas las que dicen pagados no podemos descargar el comprobante que subió la persona".
+
+**Síntoma reportado por el usuario:**
+> "en el portal administrativo en salon social cuando vamos a revisar las agendas de las reservas las que dicen pagados no podemos descargar el comprovante que subio la persona o no sabemos si no lo subio suponemos que si porque dice pagado verifica que ocurre y me informas"
+
+**Reproducción (verificada en vivo 05-Oct-2026):**
+1. Login admin en `https://fabig76.github.io/cerro-azul-residentes/admin.html`
+2. Click "🏛️ Salón Social" → filtro "Pagado" → "🔄 Actualizar lista"
+3. La tabla muestra correctamente las reservas Pagado con botón "📎 Ver" (porque `adminListarReservasSalon` SÍ devuelve `tieneComprobante: true` y `comprobanteId` lleno)
+4. Click en "📎 Ver" de RS-0004 → alert "Esta reserva no tiene comprobante subido."
+
+**Causa raíz (encontrada con captura fina de red):**
+`adminVerComprobanteSalon` (Código.gs línea 3160-3172) tiene un **campos asimétrico**:
+- Cuando NO hay comprobante (línea 3161): `return { ok: true, ..., tieneComprobante: false, ... }` ✓ SÍ incluye el campo
+- Cuando SÍ hay comprobante (línea 3165-3172): `return { ok: true, ..., comprobanteId, comprobanteUrl, nombreArchivo, ... }` ✗ NO incluye `tieneComprobante: true`
+
+El frontend (`js/admin.js` línea 721-723) verifica:
+```javascript
+if (!r.tieneComprobante) {
+  A.showAlert('Esta reserva no tiene comprobante subido.', 'err');
+  return;
+}
+```
+
+Como `r.tieneComprobante` es `undefined` (no false ni true), `!undefined === true` → entra al if y muestra el alert incorrecto. El comprobante SÍ está, el backend SÍ lo encuentra en Drive, SÍ devuelve la URL correcta, pero el frontend no lo sabe porque falta el flag.
+
+**Evidencia de la respuesta correcta (capturada en el navegador):**
+```json
+{
+  "ok": true,
+  "reservaId": "RS-0004",
+  "comprobanteId": "1B3wBrbfNYVjAoapZgmGie2bTm2dewu5S",
+  "comprobanteUrl": "https://drive.google.com/file/d/1B3wBrbfNYVjAoapZgmGie2bTm2dewu5S/view?usp=drivesdk",
+  "nombreArchivo": "RS-0004_IMG-20260929-WA0013.jpg",
+  "estado": "Pagado"
+  // ↑ NO contiene "tieneComprobante": true  ← BUG
+}
+```
+
+**Fix (1 línea, apps-script/Código.gs línea 3168):**
+```javascript
+return {
+  ok: true,
+  reservaId: reservaId,
+  tieneComprobante: true,                                       // BUGFIX-021: faltaba este campo
+  comprobanteId: comprobanteId,
+  comprobanteUrl: file.getUrl(),
+  nombreArchivo: file.getName(),
+  estado: String(data[i][10])
+};
+```
+
+**Verificación:**
+- `node --check` sobre el archivo convertido a `.js` → SINTAXIS OK
+- No se modificó ningún otro endpoint (regresión cero)
+- 1 línea agregada, 0 líneas eliminadas
+
+**Lección #27:** **Asimetría de campos en respuestas JSON.** Cuando un endpoint tiene dos ramas de retorno (éxito con dato / éxito sin dato), TODAS las ramas deben incluir el MISMO conjunto de campos para que el frontend pueda hacer discriminaciones simples (`if (!r.campo)`). Si una rama lo incluye y la otra no, el frontend se comporta de forma impredecible (en este caso, el alert "no tiene" aparecía cuando SÍ tenía). **Regla:** en cualquier endpoint, todos los `return { ok: true, ... }` deben llevar el mismo set de campos, con valor apropiado.
+
+**Regla replicable:** Antes de hacer `return { ok: true, ... }` en un endpoint, listar mentalmente los campos que el frontend espera (revisar el `.js` correspondiente) y confirmar que están TODOS, no solo los obvios.
+
+**Acción del operador:**
+1. Abrir Apps Script Cerro Azul en `script.google.com`
+2. Crear nuevo archivo `Codigo_V34_BUGFIX-021_2026-10-05.gs`
+3. Pegar el contenido de `apps-script/Codigo_V34_BUGFIX-021_2026-10-05.gs`
+4. Deploy → "Nueva versión" → descripción "BUGFIX-021 adminVerComprobanteSalon devuelve tieneComprobante: true" → Deploy
+5. Apps Script le asignará "Versión 32" (siguiente autonumerada)
+6. Verificar E2E en navegador: login admin → Salón Social → Pagado → click "📎 Ver" → debe ABRIR EL COMPROBANTE en nueva pestaña
+
+---
+

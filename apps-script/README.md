@@ -4,11 +4,11 @@ Este es el código del backend que conecta el formulario público
 (`https://fabig76.github.io/cerro-azul-residentes/`) con el Google Sheet
 (`https://docs.google.com/spreadsheets/d/16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc`).
 
-## Versión LISTA PARA DEPLOY: V33 backend (05-Oct-2026) — BUGFIX-020. En producción: V32 backend (Apps Script "Versión 30", verificado).
+## Versión LISTA PARA DEPLOY: V34 backend (05-Oct-2026) — BUGFIX-021. En producción: V33 backend (Apps Script "Versión 31", verificado).
 
-**Backend V33 (LISTO PARA DEPLOY):** BUGFIX-020 — "Editar mi registro" ahora exige cédula del propietario (lectura + escritura). md5 `3607f5efaa9c015fe6bfd0e0c4d44de3` (200612 bytes). Al desplegar, Apps Script le asignará "Versión 31". Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-020 y `docs/spec-edicion-cedula.md`.
+**Backend V34 (LISTO PARA DEPLOY):** BUGFIX-021 — `adminVerComprobanteSalon` ahora devuelve `tieneComprobante: true` en la rama de éxito (antes solo lo devolvía `false` en la rama de "no hay comprobante"). Sin este fix, el admin no podía ver/descargar los comprobantes de las reservas Pagado aunque SÍ existieran. md5 `73bf233649f51be937e90be2a83628ba` (200718 bytes). Al desplegar, Apps Script le asignará "Versión 32". Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-021.
 
-**Frontend:** `index.html` (campo "Cédula del propietario") + `js/app.js` (envía cédula en el lookup). Se despliega vía GitHub Pages. Desplegar PRIMERO el frontend (push), LUEGO el backend V33.
+**Frontend:** SIN CAMBIOS — el frontend (`js/admin.js` línea 721) ya esperaba `r.tieneComprobante`, solo faltaba el flag en la respuesta del backend. No requiere push a GitHub Pages.
 
 **Frontend GitHub Pages:** V28 (333 líneas, +27 vs V26) = `js/asistente.js` con mini-parser markdown para renderizar respuestas del LLM con negrita real y saltos de línea visibles.
 
@@ -19,6 +19,7 @@ Historial de deploys (sesión 04-Oct-2026 — Agente IA):
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
+| **V34** | 05-Oct-2026 (LISTO PARA DEPLOY) | `73bf233649f51be937e90be2a83628ba` | **BUGFIX-021: adminVerComprobanteSalon devuelve `tieneComprobante: true` en éxito (1 línea, 0 regresiones)** |
 | **V33** | 05-Oct-2026 (deploy "31" ✓ verificado) | `3607f5efaa9c015fe6bfd0e0c4d44de3` | **BUGFIX-020: cédula del propietario en "Editar mi registro"** |
 | **V32** | 05-Oct-2026 (deploy "30" ✓ verificado) | `10527ca94356f53f54d4e6d95765a251` | **BUGFIX-019 v2: token PropertiesService — E2E verificado** |
 | **V31** | 05-Oct-2026 (deploy "29", bug cache) | `6778474b1e244f91ce3084c1a7882da5` | **BUGFIX-019: token admin/vigilante — reemplazada por V32** |
