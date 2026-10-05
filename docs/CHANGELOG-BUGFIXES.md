@@ -1863,5 +1863,20 @@ return {
 5. Apps Script le asignará "Versión 32" (siguiente autonumerada)
 6. Verificar E2E en navegador: login admin → Salón Social → Pagado → click "📎 Ver" → debe ABRIR EL COMPROBANTE en nueva pestaña
 
+**VERIFICADO EN PRODUCCIÓN (05-Oct-2026):** deploy confirmado por operador. Pruebas E2E vía navegador real + fetch directo al backend:
+
+| Test | Endpoint | Reserva | Resultado |
+|---|---|---|---|
+| T-1 | adminVerComprobanteSalon | RS-0004 (Pagado) | `tieneComprobante: true` + comprobanteUrl + nombreArchivo ✓ abre JPG en nueva pestaña |
+| T-2 | adminVerComprobanteSalon | RS-0006 (Pagado) | `tieneComprobante: true` + comprobanteUrl ✓ |
+| T-3 | adminVerComprobanteSalon | RS-0008 (Pagado) | `tieneComprobante: true` + comprobanteUrl ✓ |
+| T-4 | adminVerComprobanteSalon | RS-0001 (Expirado, sin comp) | `tieneComprobante: false` ✓ |
+| T-5 | adminListarReservasSalon&Pagado | (regresión) | 3 reservas, primera con `tieneComprobante: true` ✓ |
+| T-6 | adminListarReservasMudanzas | (regresión cruzada) | 10 reservas Confirmadas ✓ |
+| T-7 | adminBuscar&q=Mateo | (regresión cruzada) | 1 resultado (Mateo Velasquez) ✓ |
+| T-8 | 7 portales cargan | (regresión visual) | index/admin/vigilantes/salon-social/residente/estado-cuenta/cartera-admin todos OK ✓ |
+
+**Comprobante real descargado:** RS-0004_IMG-20260929-WA0013.jpg — transferencia bancaria de $126,000 a "Cerro Azul Conjunto Residencial Ph", Comprobante N° 000079300, 16-Ago-2026. Imagen legible y válida.
+
 ---
 
