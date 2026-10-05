@@ -4,7 +4,7 @@ Este es el código del backend que conecta el formulario público
 (`https://fabig76.github.io/cerro-azul-residentes/`) con el Google Sheet
 (`https://docs.google.com/spreadsheets/d/16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc`).
 
-## Versión LISTA PARA DEPLOY: V35 backend (05-Oct-2026) — BUGFIX-022. En producción: V34 backend (Apps Script "Versión 32", verificado BUGFIX-021).
+## Versión LISTA PARA DEPLOY: V35 backend (05-Oct-2026) — BUGFIX-022. En producción: V35 backend (Apps Script "Versión 33" ✓ verificado).
 
 **Backend V35 (LISTO PARA DEPLOY):** BUGFIX-022 — Restaura el módulo de Estado de Cuenta (478 líneas) que se había perdido del .gs desplegado. Las 6 funciones públicas (`ecConsultar`, `ecDescargarFactura`, `ecPazYSalvo`, `ecIniciarCarga`, `ecSubirFacturas`, `ecFinalizarCarga`) + 14 helpers + 3 constantes de hojas se restauran desde backup `hermes-varios/cerro-azul/cerro-azul-residentes-main/modulo-estado-cuenta.gs`. md5 `3af70d3f8298f900c4407470131cbb45` (222214 bytes). Al desplegar, Apps Script le asignará "Versión 33". IMPORTANTE: ejecutar `ecSetup` UNA VEZ antes del deploy para autorizar DriveApp/DocumentApp.
 
@@ -23,7 +23,7 @@ Historial de deploys (sesión 04-Oct-2026 — Agente IA):
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
-| **V35** | 05-Oct-2026 (LISTO PARA DEPLOY) | `3af70d3f8298f900c4407470131cbb45` | **BUGFIX-022: restaurar módulo de Estado de Cuenta (478 líneas, 6 funciones públicas ec* + 14 helpers)** |
+| **V35** | 05-Oct-2026 (deploy "33" ✓ verificado) | `3af70d3f8298f900c4407470131cbb45` | **BUGFIX-022: restaurar módulo de Estado de Cuenta (478 líneas, 6 funciones públicas ec* + 14 helpers)** |
 | **V34** | 05-Oct-2026 (deploy "32" ✓ verificado) | `73bf233649f51be937e90be2a83628ba` | **BUGFIX-021: adminVerComprobanteSalon devuelve `tieneComprobante: true` en éxito (1 línea, 0 regresiones)** |
 | **V33** | 05-Oct-2026 (deploy "31" ✓ verificado) | `3607f5efaa9c015fe6bfd0e0c4d44de3` | **BUGFIX-020: cédula del propietario en "Editar mi registro"** |
 | **V32** | 05-Oct-2026 (deploy "30" ✓ verificado) | `10527ca94356f53f54d4e6d95765a251` | **BUGFIX-019 v2: token PropertiesService — E2E verificado** |

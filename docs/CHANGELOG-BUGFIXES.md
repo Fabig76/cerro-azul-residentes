@@ -1929,5 +1929,19 @@ El módulo se implementó como archivo separado `modulo-estado-cuenta.gs` (478 l
 7. Esperar 3 min cold start
 8. Validar E2E: estado-cuenta.html con datos del residente de la imagen (CA-0218 / apto 9904 / CC 1044120074) DEBE mostrar el estado de cuenta
 
+**VERIFICADO EN PRODUCCIÓN (05-Oct-2026):** deploy confirmado por operador como "Versión 33". Pruebas E2E vía navegador real + fetch directo al backend:
+
+| Test | Endpoint | Datos | Resultado |
+|---|---|---|---|
+| T-1 | ecConsultar | CA-0218 / apto 9904 / CC 1044120074 (datos del screenshot) | `ok:false error:"No se encontró ningún registro con ese N° de formulario y N° de apartamento."` ✓ YA NO es "ecConsultar is not defined" |
+| T-2 | ecConsultar | CA-0002 / apto 218 / CC 1017166544 (Faber Andrés Tapias) | `ok:true` con JSON completo: periodo 2026-08, cartera $205.752, factura N° 1287, valor admon $205.800, total a pagar $416.054, link de pago Jelpit ✓ |
+| T-3 | navegador E2E | Faber Andrés Tapias, apto 218, CC 1017166544 | Pantalla muestra: "Apto 218 - Faber Andrés Tapias Tobón", Saldo pendiente $205.752 al 31-Agosto-2026, Cuota admon $205.800, N° cuenta cobro 1287, Total a pagar $416.054, botones Descargar/Pagar/Salir ✓ |
+| T-4 | adminVerComprobanteSalon (regresión V34) | RS-0004 | `tieneComprobante: true` + URL del comprobante ✓ |
+| T-5 | adminListarReservasSalon (regresión V34) | estado=Pagado | 3 reservas, todas con `tieneComprobante: true` ✓ |
+| T-6 | adminLogin (regresión) | password cerroazul2026 | Login correcto, token devuelto ✓ |
+| T-7 | nextId (regresión) | n/a | CA-0219 ✓ |
+
+**Observación:** los datos del residente de la imagen (CA-0218 / apto 9904 / CC 1044120074) NO existen en el Sheet Registros. La respuesta correcta es "No se encontró ningún registro" — lo que confirma que el endpoint SÍ valida contra el Sheet, y la fuga de "no debería haber datos" no existe.
+
 ---
 
