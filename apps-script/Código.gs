@@ -62,12 +62,32 @@ function generarToken() {
 }
 
 function guardarToken(rol, token) {
-  CacheService.getScriptCache().put(rol + '_' + token, '1', TTL_SESION_SEG);
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty('tok_' + rol + '_' + token, String(Date.now()));
+  limpiarTokensExpirados(rol);
 }
 
 function validarToken(rol, token) {
   if (!token) return false;
-  return CacheService.getScriptCache().get(rol + '_' + token) !== null;
+  const props = PropertiesService.getScriptProperties();
+  const ts = props.getProperty('tok_' + rol + '_' + token);
+  if (!ts) return false;
+  if (Date.now() - parseInt(ts, 10) > TTL_SESION_SEG * 1000) {
+    props.deleteProperty('tok_' + rol + '_' + token);
+    return false;
+  }
+  return true;
+}
+
+function limpiarTokensExpirados(rol) {
+  const props = PropertiesService.getScriptProperties();
+  const prefijo = 'tok_' + rol + '_';
+  const ahora = Date.now();
+  Object.keys(props.getProperties()).forEach(function (k) {
+    if (k.indexOf(prefijo) === 0 && ahora - parseInt(props.getProperty(k), 10) > TTL_SESION_SEG * 1000) {
+      props.deleteProperty(k);
+    }
+  });
 }
 
 // ---------------------------------------------------------------------

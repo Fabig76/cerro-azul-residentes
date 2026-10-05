@@ -1743,7 +1743,8 @@ Eliminados `numForm`, `nombresResidentes`, `propietario` (y la línea `const obj
 
 **Fecha:** 05-Oct-2026
 **Severidad:** CRÍTICA (seguridad — lectura masiva + escritura de datos sin contraseña, Ley 1581/2012)
-**Versión corregida:** V31 (`Codigo_V31_BUGFIX019_AUTENTICACION_TOKEN-20261005.gs`, md5 `6778474b1e244f91ce3084c1a7882da5`, 199248 bytes)
+**Versión corregida:** V32 (`Codigo_V32_BUGFIX019_TOKEN_PROPERTIESSERVICE-20261005.gs`, md5 `10527ca94356f53f54d4e6d95765a251`, 199926 bytes)
+**Nota V31→V32:** V31 usó `CacheService.getScriptCache()` y el token NO se propagaba entre instancias del web app (la búsqueda devolvía "Sesión no válida" con token recién emitido). V32 corrige usando `PropertiesService.getScriptProperties()`.
 **Detectado por:** Hermes durante la auditoría de V30 (al verificar que el login del admin/vigilante era solo de pantalla)
 
 **Problema:**
@@ -1754,7 +1755,7 @@ El login del admin/vigilante protegía SOLO la interfaz (sessionStorage en el na
 - `vigilante*` → nombre + cédula + vehículos sin auth.
 
 **Fix (backend):**
-1. Nuevas funciones `generarToken()`, `guardarToken(rol, token)`, `validarToken(rol, token)` usando `CacheService.getScriptCache()` con TTL de 12 h (`TTL_SESION_SEG = 43200`).
+1. Nuevas funciones `generarToken()`, `guardarToken(rol, token)`, `validarToken(rol, token)` usando `PropertiesService.getScriptProperties()` con expiración manual por timestamp (`TTL_SESION_SEG = 43200` = 12 h) + `limpiarTokensExpirados(rol)`.
 2. `adminLogin` y `vigilanteLogin` ahora devuelven un `token` al validar la contraseña.
 3. Validación centralizada en `doGet` y `doPost`: si la acción está en `ACTIONS_ADMIN` (8) o `ACTIONS_VIGILANTE` (5), se exige el token correspondiente; sin token válido → `{ok:false, error:"Sesión no válida o expirada..."}`.
 

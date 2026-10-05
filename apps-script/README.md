@@ -4,13 +4,11 @@ Este es el código del backend que conecta el formulario público
 (`https://fabig76.github.io/cerro-azul-residentes/`) con el Google Sheet
 (`https://docs.google.com/spreadsheets/d/16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc`).
 
-## Versión LISTA PARA DEPLOY: V31 backend (05-Oct-2026) — BUGFIX-019. En producción: V30 backend (Apps Script "Versión 28") + V28 frontend.
+## Versión LISTA PARA DEPLOY: V32 backend (05-Oct-2026) — BUGFIX-019 v2. En producción: V31 (Apps Script "Versión 29", con bug de cache).
 
-**Backend V31 (LISTO PARA DEPLOY):** BUGFIX-019 — autenticación por token de sesión en endpoints admin/vigilante (antes solo login de pantalla). md5 `6778474b1e244f91ce3084c1a7882da5` (199248 bytes). Al desplegar, Apps Script le asignará "Versión 29". Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-019.
+**Backend V32 (LISTO PARA DEPLOY):** BUGFIX-019 v2 — token de sesión con `PropertiesService` (V31 usó CacheService y el token no se propagaba entre instancias). md5 `10527ca94356f53f54d4e6d95765a251` (199926 bytes). Al desplegar, Apps Script le asignará "Versión 30". Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-019.
 
-**Backend V30 (desplegado "Versión 28" ✓ verificado):** BUGFIX-018 — `getEstadoResidente` sin numForm/nombres/propietario. md5 `a14aa86c100ae82a5988206b4ce28c20`.
-
-**Frontend (este release):** `js/admin.js` + `js/vigilantes.js` — inyectan token de sesión en cada request. Se despliega vía GitHub Pages. **IMPORTANTE: desplegar PRIMERO el frontend (push), LUEGO el backend V31** (así nunca queda roto).
+**Frontend:** `js/admin.js` + `js/vigilantes.js` ya inyectan el token (sin cambios desde V31). Desplegar PRIMERO el frontend (ya está en GitHub Pages), LUEGO el backend V32.
 
 **Frontend GitHub Pages:** V28 (333 líneas, +27 vs V26) = `js/asistente.js` con mini-parser markdown para renderizar respuestas del LLM con negrita real y saltos de línea visibles.
 
@@ -21,7 +19,8 @@ Historial de deploys (sesión 04-Oct-2026 — Agente IA):
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
-| **V31** | 05-Oct-2026 (LISTO, sin deploy) | `6778474b1e244f91ce3084c1a7882da5` | **BUGFIX-019: token de sesión en endpoints admin/vigilante (lectura+escritura)** |
+| **V32** | 05-Oct-2026 (LISTO, sin deploy) | `10527ca94356f53f54d4e6d95765a251` | **BUGFIX-019 v2: token con PropertiesService (V31 CacheService no propagaba)** |
+| **V31** | 05-Oct-2026 (deploy "29", bug cache) | `6778474b1e244f91ce3084c1a7882da5` | **BUGFIX-019: token admin/vigilante — reemplazada por V32** |
 | **V30** | 05-Oct-2026 (deploy "28" ✓) | `a14aa86c100ae82a5988206b4ce28c20` | **BUGFIX-018: getEstadoResidente sin numForm/nombres/propietario (fuga de datos)** |
 | **V29** | 05-Oct-2026 (deploy "27" ✓) | `6186f0586e63b52e185f5f8135072be7` | **BUGFIX-017: quitar CA-XXXX del error de duplicado (fuga de credencial)** |
 | **V28** | 04-Oct-2026 (frontend) | `1cce2cdcd5136e2254ec402a14ed971b` (js) | **Renderizar markdown del LLM a HTML (frontend only, NO requiere deploy Apps Script)** |
