@@ -5,6 +5,30 @@
 
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec';
 
+// BUGFIX-019: inyectar el token de sesión en TODAS las llamadas al backend.
+// Si hay token guardado (tras login), se añade a la URL (GET) o al body (POST).
+// El login (adminLogin) no envía token porque aún no hay sesión.
+(function () {
+  const _fetch = window.fetch;
+  window.fetch = function (url, opts) {
+    const token = sessionStorage.getItem('adminToken');
+    if (token) {
+      opts = opts || {};
+      if (typeof url === 'string') {
+        url += (url.indexOf('?') !== -1 ? '&' : '?') + 'token=' + encodeURIComponent(token);
+      }
+      if (opts.body) {
+        try {
+          const b = JSON.parse(opts.body);
+          b.token = token;
+          opts = Object.assign({}, opts, { body: JSON.stringify(b) });
+        } catch (e) {}
+      }
+    }
+    return _fetch(url, opts);
+  };
+})();
+
 const A = {
   // Helpers para fetch (agregados en F5 del módulo salón social)
   async apiGet(params) {
@@ -71,6 +95,7 @@ const A = {
       if (!r.ok) { A.showAlert(r.error || 'Error de autenticación.', 'err'); return; }
       A.state.loggedIn = true;
       sessionStorage.setItem('adminLoggedIn', 'true');
+      if (r.token) sessionStorage.setItem('adminToken', r.token);
       document.getElementById('sessionBadge').style.display = '';
       document.getElementById('loginPassword').value = '';
       A.showVista('panel');
@@ -83,6 +108,7 @@ const A = {
   logout() {
     A.state.loggedIn = false;
     sessionStorage.removeItem('adminLoggedIn');
+    sessionStorage.removeItem('adminToken');
     document.getElementById('sessionBadge').style.display = 'none';
     A.showVista('login');
     document.getElementById('resultsContainer').innerHTML = '';

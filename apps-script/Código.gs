@@ -38,11 +38,55 @@ const COL_APTO = 3;
 // Col 142 (última) = Hash Dedupe
 
 // ---------------------------------------------------------------------
+// BUGFIX-019: Autenticación por token de sesión para endpoints admin/vigilante.
+// El login devuelve un token que se guarda en CacheService (TTL). Cada consulta
+// admin/vigilante debe enviar ese token; si no es válido, NO se entregan datos.
+// ---------------------------------------------------------------------
+const TTL_SESION_SEG = 43200; // 12 horas
+
+const ACTIONS_ADMIN = [
+  'adminBuscar', 'adminObtener', 'adminGuardar',
+  'adminListarReservasMudanzas', 'adminListarReservasSalon',
+  'adminVerComprobanteSalon', 'adminCancelarReservaSalon',
+  'configurarTriggerExpiracion'
+];
+
+const ACTIONS_VIGILANTE = [
+  'vigilanteVerResidentes', 'vigilanteVerMudanzas',
+  'vigilanteBuscarPorPlaca', 'vigilanteVerReservasSalon',
+  'vigilanteCheckMudanza'
+];
+
+function generarToken() {
+  return Utilities.getUuid();
+}
+
+function guardarToken(rol, token) {
+  CacheService.getScriptCache().put(rol + '_' + token, '1', TTL_SESION_SEG);
+}
+
+function validarToken(rol, token) {
+  if (!token) return false;
+  return CacheService.getScriptCache().get(rol + '_' + token) !== null;
+}
+
+// ---------------------------------------------------------------------
 // doGet: lookup / nextId / lookupMatApto / lookupMatParq
 // ---------------------------------------------------------------------
 function doGet(e) {
   try {
     const action = (e && e.parameter && e.parameter.action) || '';
+    // BUGFIX-019: validar token para acciones protegidas (admin/vigilante)
+    if (ACTIONS_ADMIN.indexOf(action) !== -1) {
+      if (!validarToken('admin', e.parameter.token)) {
+        return jsonOut({ ok: false, error: 'Sesión no válida o expirada. Ingrese de nuevo.' });
+      }
+    }
+    if (ACTIONS_VIGILANTE.indexOf(action) !== -1) {
+      if (!validarToken('vigilante', e.parameter.token)) {
+        return jsonOut({ ok: false, error: 'Sesión no válida o expirada. Ingrese de nuevo.' });
+      }
+    }
     if (action === 'nextId') {
       return jsonOut({ ok: true, nextId: getNextFormId() });
     }
@@ -161,6 +205,17 @@ function doPost(e) {
     }
     // Enrutar por action (agregado 22-Sep-2026 feature/mudanzas)
     const action = String(payload.action || '').trim();
+    // BUGFIX-019: validar token para acciones protegidas (admin/vigilante)
+    if (ACTIONS_ADMIN.indexOf(action) !== -1) {
+      if (!validarToken('admin', payload.token)) {
+        return jsonOut({ ok: false, error: 'Sesión no válida o expirada. Ingrese de nuevo.' });
+      }
+    }
+    if (ACTIONS_VIGILANTE.indexOf(action) !== -1) {
+      if (!validarToken('vigilante', payload.token)) {
+        return jsonOut({ ok: false, error: 'Sesión no válida o expirada. Ingrese de nuevo.' });
+      }
+    }
     // --- ESTADO DE CUENTA (spec-estado-cuenta.md §6.2) ---
     if (action === 'ecConsultar')        return jsonOut(ecConsultar(payload));
     if (action === 'ecDescargarFactura') return jsonOut(ecDescargarFactura(payload));
@@ -1271,7 +1326,9 @@ function adminLogin(password) {
     return { ok: false, error: 'No se encontro la contrasena de administrador en la pestana Config del Sheet. Contacte al administrador del sistema.' };
   }
   if (password === stored) {
-    return { ok: true, message: 'Login correcto' };
+    const token = generarToken();
+    guardarToken('admin', token);
+    return { ok: true, message: 'Login correcto', token: token };
   }
   return { ok: false, error: 'Contrasena incorrecta' };
 }
@@ -1560,7 +1617,9 @@ function vigilanteLogin(password) {
     return { ok: false, error: 'No se encontro la contrasena de vigilancia en Config!B2.' };
   }
   if (password === stored) {
-    return { ok: true, message: 'Login correcto' };
+    const token = generarToken();
+    guardarToken('vigilante', token);
+    return { ok: true, message: 'Login correcto', token: token };
   }
   return { ok: false, error: 'Contrasena incorrecta' };
 }

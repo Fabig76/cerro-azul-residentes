@@ -2022,7 +2022,8 @@ vigilancia. Si el vigilante tiene una lógica útil, replicarla en admin.
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
-| **V30** | 05-Oct-2026 (LISTO, sin deploy) | `a14aa86c100ae82a5988206b4ce28c20` | **BUGFIX-018: getEstadoResidente ya no filtra numForm/nombres/propietario** |
+| **V31** | 05-Oct-2026 (LISTO, sin deploy) | `6778474b1e244f91ce3084c1a7882da5` | **BUGFIX-019: autenticación por token en endpoints admin/vigilante (lectura+escritura)** |
+| **V30** | 05-Oct-2026 (deploy "Versión 28" ✓) | `a14aa86c100ae82a5988206b4ce28c20` | **BUGFIX-018: getEstadoResidente ya no filtra numForm/nombres/propietario** |
 | **V29** | 05-Oct-2026 (deploy "Versión 27" ✓) | `6186f0586e63b52e185f5f8135072be7` | **BUGFIX-017: quitar CA-XXXX del error de duplicado (fuga de credencial de edición). Ver CHANGELOG-BUGFIXES.md** |
 | **V28** | 04-Oct-2026 (frontend) | `1cce2cdcd5136e2254ec402a14ed971b` (js) | **FEAT-007 v3.1: renderizar markdown del LLM a HTML (negrita real, saltos de línea visibles). Frontend only, NO requiere deploy Apps Script** |
 | **V27** | 04-Oct-2026 (READY) | `599ffb5cb71182915e576a6e903bf7e2` | **Manual actualizado por el operador (nueva REGLA FUNDAMENTAL: solo propietario/inmobiliaria/encargado crea registro; arrendatario NUNCA)** |
@@ -2119,5 +2120,5 @@ Flujo:
 
 ---
 
-Última actualización: 05-Oct-2026 (V30 READY — BUGFIX-018; V29 desplegado "Versión 27" y verificado)
+Última actualización: 05-Oct-2026 (V31 READY — BUGFIX-019 token; V30 desplegado "Versión 28" y verificado)
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)

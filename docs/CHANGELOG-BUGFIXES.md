@@ -1739,3 +1739,31 @@ Eliminados `numForm`, `nombresResidentes`, `propietario` (y la línea `const obj
 
 ---
 
+### BUGFIX-019 · Autenticación por token de sesión en endpoints admin/vigilante
+
+**Fecha:** 05-Oct-2026
+**Severidad:** CRÍTICA (seguridad — lectura masiva + escritura de datos sin contraseña, Ley 1581/2012)
+**Versión corregida:** V31 (`Codigo_V31_BUGFIX019_AUTENTICACION_TOKEN-20261005.gs`, md5 `6778474b1e244f91ce3084c1a7882da5`, 199248 bytes)
+**Detectado por:** Hermes durante la auditoría de V30 (al verificar que el login del admin/vigilante era solo de pantalla)
+
+**Problema:**
+El login del admin/vigilante protegía SOLO la interfaz (sessionStorage en el navegador), pero el backend NO validaba nada. Los endpoints `adminBuscar`, `adminObtener`, `adminGuardar`, `vigilanteVerResidentes`, `vigilanteBuscarPorPlaca`, etc. se podían llamar directamente vía URL sin contraseña:
+- `adminBuscar` → numForm + cédula + correo + celular (masivo, 100 por consulta).
+- `adminObtener` → los 143 campos completos de un registro con solo su numForm.
+- `adminGuardar` (POST) → EDITA el registro completo sin auth.
+- `vigilante*` → nombre + cédula + vehículos sin auth.
+
+**Fix (backend):**
+1. Nuevas funciones `generarToken()`, `guardarToken(rol, token)`, `validarToken(rol, token)` usando `CacheService.getScriptCache()` con TTL de 12 h (`TTL_SESION_SEG = 43200`).
+2. `adminLogin` y `vigilanteLogin` ahora devuelven un `token` al validar la contraseña.
+3. Validación centralizada en `doGet` y `doPost`: si la acción está en `ACTIONS_ADMIN` (8) o `ACTIONS_VIGILANTE` (5), se exige el token correspondiente; sin token válido → `{ok:false, error:"Sesión no válida o expirada..."}`.
+
+**Fix (frontend):**
+- `js/admin.js` y `js/vigilantes.js`: al iniciar sesión guardan el token en sessionStorage (`adminToken`/`vigilanteToken`), y un wrapper de `fetch` inyecta el token en toda llamada (GET: `&token=`; POST: campo `token` en el body). El logout limpia el token.
+
+**Sin cambio funcional para el usuario:** el admin/vigilante sigue poniendo la misma contraseña; tras el login, el token viaja automáticamente. Solo requiere re-login una vez tras el deploy (la sesión vieja no tenía token).
+
+**Lección #25:** El login de "pantalla" no es autenticación. Un `sessionStorage.setItem('loggedIn','true')` solo oculta la UI; el backend debe validar cada operación sensible por separado. **Regla replicable:** toda consulta/escritura que exponga o modifique datos personales debe exigir una credencial POR REQUEST (token o password), no confiar en el flag del navegador.
+
+---
+

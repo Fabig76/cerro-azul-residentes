@@ -8,6 +8,28 @@
 
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec';
 
+// BUGFIX-019: inyectar el token de sesión en TODAS las llamadas al backend.
+(function () {
+  const _fetch = window.fetch;
+  window.fetch = function (url, opts) {
+    const token = sessionStorage.getItem('vigilanteToken');
+    if (token) {
+      opts = opts || {};
+      if (typeof url === 'string') {
+        url += (url.indexOf('?') !== -1 ? '&' : '?') + 'token=' + encodeURIComponent(token);
+      }
+      if (opts.body) {
+        try {
+          const b = JSON.parse(opts.body);
+          b.token = token;
+          opts = Object.assign({}, opts, { body: JSON.stringify(b) });
+        } catch (e) {}
+      }
+    }
+    return _fetch(url, opts);
+  };
+})();
+
 const V = {
   // Helper para fetch (agregado en F5 del módulo salón social)
   async apiGet(params) {
@@ -74,6 +96,7 @@ const V = {
       if (!r.ok) { V.showAlert(r.error || 'Error de autenticación.', 'err'); return; }
       V.state.loggedIn = true;
       sessionStorage.setItem('vigilanteLoggedIn', 'true');
+      if (r.token) sessionStorage.setItem('vigilanteToken', r.token);
       document.getElementById('sessionBadge').style.display = '';
       document.getElementById('loginPassword').value = '';
       V.showVista('panel');
@@ -86,6 +109,7 @@ const V = {
   logout() {
     V.state.loggedIn = false;
     sessionStorage.removeItem('vigilanteLoggedIn');
+    sessionStorage.removeItem('vigilanteToken');
     document.getElementById('sessionBadge').style.display = 'none';
     V.showVista('login');
     document.getElementById('resultsContainer').innerHTML = '';
