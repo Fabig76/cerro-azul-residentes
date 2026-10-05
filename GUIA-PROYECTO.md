@@ -2022,6 +2022,8 @@ vigilancia. Si el vigilante tiene una lógica útil, replicarla en admin.
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
+| **V35** | 05-Oct-2026 (deploy "Versión 33" ✓ verificado) | `3af70d3f8298f900c4407470131cbb45` | **BUGFIX-022: restaurar módulo de Estado de Cuenta (478 líneas) — 6 funciones públicas ec* + 14 helpers. El módulo se había perdido del .gs desplegado en algún deploy entre V20 y V21** |
+| **V34** | 05-Oct-2026 (deploy "Versión 32" ✓ verificado) | `73bf233649f51be937e90be2a83628ba` | **BUGFIX-021: adminVerComprobanteSalon devuelve `tieneComprobante: true` en éxito (1 línea). Frontend ya esperaba el campo, solo faltaba en la respuesta del backend** |
 | **V33** | 05-Oct-2026 (deploy "Versión 31" ✓ verificado) | `3607f5efaa9c015fe6bfd0e0c4d44de3` | **BUGFIX-020: cédula del propietario en "Editar mi registro" (lectura+escritura)** |
 | **V32** | 05-Oct-2026 (deploy "Versión 30" ✓ verificado) | `10527ca94356f53f54d4e6d95765a251` | **BUGFIX-019 v2: token con PropertiesService — flujo login→búsqueda E2E verificado** |
 | **V31** | 05-Oct-2026 (deploy "Versión 29", bug cache) | `6778474b1e244f91ce3084c1a7882da5` | **BUGFIX-019: token en endpoints admin/vigilante — reemplazada por V32** |
@@ -2122,5 +2124,5 @@ Flujo:
 
 ---
 
-Última actualización: 05-Oct-2026 (V33 BUGFIX-020 desplegado "Versión 31" y verificado)
+Última actualización: 05-Oct-2026 (V35 BUGFIX-022 desplegado "Versión 33" y verificado)
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)

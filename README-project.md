@@ -99,12 +99,14 @@ impreso en PDF.
 
 - **Apps Script ID:** `17nuyzVYK2yN_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy`
 - **URL preservada:** `https://script.google.com/macros/s/AKfycbxp...Zp/exec`
-- **Última versión: V33 (05-Oct-2026)** — BUGFIX-020: cédula del propietario en "Editar mi registro"
+- **Última versión: V35 (05-Oct-2026)** — BUGFIX-022: restaurar módulo de Estado de Cuenta (6 funciones ec* + 14 helpers, 478 líneas)
 
 ### Historial reciente (sesiones 04-Oct a 05-Oct-2026)
 
 | Versión | BUGFIX | Descripción |
 |---------|--------|-------------|
+| V35 | BUGFIX-022 | Restaurar módulo de Estado de Cuenta (478 líneas, 6 funciones ec* + 14 helpers) |
+| V34 | BUGFIX-021 | adminVerComprobanteSalon devuelve `tieneComprobante: true` en éxito |
 | V33 | BUGFIX-020 | Cédula del propietario en "Editar mi registro" (lectura+escritura) |
 | V32 | BUGFIX-019 | Token de sesión en endpoints admin/vigilante (PropertiesService) |
 | V30 | BUGFIX-018 | getEstadoResidente sin numForm/nombres/propietario |
