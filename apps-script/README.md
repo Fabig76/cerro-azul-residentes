@@ -19,7 +19,7 @@ Historial de deploys (sesión 04-Oct-2026 — Agente IA):
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
-| **V33** | 05-Oct-2026 (LISTO, sin deploy) | `3607f5efaa9c015fe6bfd0e0c4d44de3` | **BUGFIX-020: cédula del propietario en "Editar mi registro"** |
+| **V33** | 05-Oct-2026 (deploy "31" ✓ verificado) | `3607f5efaa9c015fe6bfd0e0c4d44de3` | **BUGFIX-020: cédula del propietario en "Editar mi registro"** |
 | **V32** | 05-Oct-2026 (deploy "30" ✓ verificado) | `10527ca94356f53f54d4e6d95765a251` | **BUGFIX-019 v2: token PropertiesService — E2E verificado** |
 | **V31** | 05-Oct-2026 (deploy "29", bug cache) | `6778474b1e244f91ce3084c1a7882da5` | **BUGFIX-019: token admin/vigilante — reemplazada por V32** |
 | **V30** | 05-Oct-2026 (deploy "28" ✓) | `a14aa86c100ae82a5988206b4ce28c20` | **BUGFIX-018: getEstadoResidente sin numForm/nombres/propietario (fuga de datos)** |
