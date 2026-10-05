@@ -1709,3 +1709,33 @@ Por lo tanto, el CA-XXXX ES la credencial de edición. Filtrarlo en un mensaje d
 
 ---
 
+### BUGFIX-018 · getEstadoResidente filtraba numForm + nombres de residentes sin autenticación
+
+**Fecha:** 05-Oct-2026
+**Severidad:** ALTA (seguridad — fuga de credencial de edición + datos personales, Ley 1581/2012)
+**Versión corregida:** V30 (`Codigo_V30_BUGFIX018_GETESTADO_SIN_DATOS-20261005.gs`, md5 `a14aa86c100ae82a5988206b4ce28c20`, 196914 bytes)
+**Detectado por:** Hermes durante la validación post-deploy de V29 (BUGFIX-017)
+
+**Problema:**
+El endpoint `getEstadoResidente` (GET, público, sin cédula ni contraseña) devolvía por cada apto:
+```json
+{"ok":true,"apto":"817","aptoExiste":true,"numForm":"CA-0164","hayResidentes":true,"numResidentes":2,"nombresResidentes":["Lilia Millán Cardenas","Diana Avilés Millán"],"propietario":"Olga Avilés Millán"}
+```
+Exponía el `numForm` (credencial de edición) y los `nombresResidentes` + `propietario` (datos personales) a cualquier persona. Iterando aptos se podía armar una base completa de numForm + nombres del conjunto. Con numForm + apto, un tercero edita/lee el registro (mismo vector que BUGFIX-017, por otra puerta).
+
+**Fix (backend):** `getEstadoResidente` ahora devuelve SOLO lo que el portal necesita para decidir el flujo:
+```javascript
+return { ok: true, apto: apto, aptoExiste: true, hayResidentes: <bool>, numResidentes: <n> };
+```
+Eliminados `numForm`, `nombresResidentes`, `propietario` (y la línea `const obj = rowToObject(...)` que quedaba sin uso).
+
+**Fix (frontend):**
+- `residente.html`: eliminada la lista `<ul id="cdListaResidentes">` con nombres. Texto genérico.
+- `residente.js`: eliminada la lógica que llenaba la lista y los campos de estado `numForm`/`numResidentesActuales`/`nombresResidentesActuales`.
+
+**Sin cambio funcional:** el residente sigue verificando con su cédula vía `verificarResidente` (que sí pide cc) y luego edita/registra igual.
+
+**Lección #24:** Un endpoint de "estado" que parecía inofensivo devolvía mucho más de lo necesario. **Regla replicable:** cada endpoint GET público debe devolver el MÍNIMO que el frontend necesita; revisar campo por campo qué se retorna, nunca datos "por si acaso".
+
+---
+

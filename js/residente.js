@@ -11,12 +11,9 @@ const APP_URL = 'https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcP
 // ============ ESTADO GLOBAL ============
 const state = {
   apto: null,
-  numForm: null,
   cc: null,
   slot: null,
   nombre: null,
-  numResidentesActuales: 0,
-  nombresResidentesActuales: [],
   // Para formularios dinámicos
   numResidentesForm: 1,
   numMenoresForm: 0,
@@ -99,8 +96,6 @@ async function flujoInicial() {
       return;
     }
 
-    state.numForm = r.numForm;
-
     if (!r.hayResidentes) {
       // APTO VACÍO → flujo de registro
       document.getElementById('regApto').textContent = apto;
@@ -110,16 +105,9 @@ async function flujoInicial() {
     }
 
     // APTO CON RESIDENTES → pedir CC
-    state.numResidentesActuales = r.numResidentes;
-    state.nombresResidentesActuales = r.nombresResidentes || [];
+    // BUGFIX-018: ya no mostramos la lista de nombres (getEstadoResidente no
+    // los devuelve para proteger datos personales). Solo se pide la cédula.
     document.getElementById('cdApto').textContent = apto;
-    const ul = document.getElementById('cdListaResidentes');
-    ul.innerHTML = '';
-    state.nombresResidentesActuales.forEach(n => {
-      const li = document.createElement('li');
-      li.textContent = '• ' + n;
-      ul.appendChild(li);
-    });
     document.getElementById('ccInput').value = '';
     showView('con-datos');
   } catch (e) {

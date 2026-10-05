@@ -1929,7 +1929,6 @@ function getEstadoResidente(apto) {
   const row = findRowByApto(apto);
   if (!row) return { ok: true, apto: apto, aptoExiste: false };
 
-  const obj = rowToObject(row.values);
   const nombresResidentes = [];
 
   // Slots de residentes: v[29..48] (4 residentes x 5 cols)
@@ -1939,15 +1938,16 @@ function getEstadoResidente(apto) {
     if (nombre) nombresResidentes.push(nombre);
   }
 
+  // BUGFIX-018: NO devolver numForm, nombresResidentes ni propietario.
+  // Son datos sensibles accesibles sin autenticación. numForm es la credencial
+  // de edición; nombres y propietario son datos personales (Ley 1581/2012).
+  // El frontend solo necesita los booleanos para decidir el flujo.
   return {
     ok: true,
     apto: apto,
     aptoExiste: true,
-    numForm: String(obj.numForm || ''),
     hayResidentes: nombresResidentes.length > 0,
-    numResidentes: nombresResidentes.length,
-    nombresResidentes: nombresResidentes,
-    propietario: String(obj.nombreProp || '')
+    numResidentes: nombresResidentes.length
   };
 }
 
