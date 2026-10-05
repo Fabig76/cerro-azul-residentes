@@ -93,22 +93,27 @@ impreso en PDF.
 
 ## Backend Apps Script — última versión desplegada
 
+> ⚠️ **Fuente de verdad de versiones:** este archivo puede quedar desactualizado.
+> Para la versión vigente, consultar `apps-script/README.md` (cabecera + tabla) y
+> `docs/CHANGELOG-BUGFIXES.md`. Resumen a 05-Oct-2026:
+
 - **Apps Script ID:** `17nuyzVYK2yN_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy`
 - **URL preservada:** `https://script.google.com/macros/s/AKfycbxp...Zp/exec`
-- **Última versión: V20 (26-Sept-2026 13:10)**
-  · 149.880 bytes, 95 funciones (70 Codigo.gs + 25 ec* del módulo)
-  · MD5: `70ca1033084c9dc27fdf0aefa562f2c9`
-  · Drive V20: `Codigo_V20_BUGFIX011_MUDANZAS_PROX_DIAS-20260926.gs`
+- **Última versión: V33 (05-Oct-2026)** — BUGFIX-020: cédula del propietario en "Editar mi registro"
 
-### Historial de deploys recientes (sesión 26-Sept)
+### Historial reciente (sesiones 04-Oct a 05-Oct-2026)
 
-| Versión | Hora | BUGFIX | Descripción |
-|---------|------|--------|-------------|
-| V20 | 13:10 | BUGFIX-011 | Admin mudanzas: filtro "Próximos N días" (paridad vigilante) |
-| V19 | 12:37 | BUGFIX-010 | SEG-001: backend vigilante NO envía credenciales de edición |
-| V18 | 12:15 | BUGFIX-009 | Routing 6 endpoints `ec*` en `doPost` (portal estado cuenta) |
+| Versión | BUGFIX | Descripción |
+|---------|--------|-------------|
+| V33 | BUGFIX-020 | Cédula del propietario en "Editar mi registro" (lectura+escritura) |
+| V32 | BUGFIX-019 | Token de sesión en endpoints admin/vigilante (PropertiesService) |
+| V30 | BUGFIX-018 | getEstadoResidente sin numForm/nombres/propietario |
+| V29 | BUGFIX-017 | Quitar CA-XXXX del error de duplicado |
+| V27 | FEAT-007 | Manual del agente actualizado (asistente IA) |
+| V26 | FEAT-007 | Manual embebido como constante (asistente IA) |
+| V20 | BUGFIX-011 | Admin mudanzas: filtro "Próximos N días" |
 
-Ver `docs/CHANGELOG-BUGFIXES.md` para detalle de cada fix.
+Ver `docs/CHANGELOG-BUGFIXES.md` para el detalle completo de cada fix.
 
 ## Documentación
 
