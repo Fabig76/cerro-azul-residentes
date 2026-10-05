@@ -1880,3 +1880,54 @@ return {
 
 ---
 
+## BUGFIX-022 · Módulo de Estado de Cuenta: 6 funciones `ec*` desaparecieron del Código.gs desplegado
+
+**Fecha:** 05-Oct-2026
+**Severidad:** CRÍTICA (UX roto — TODOS los residentes que intentan consultar su estado de cuenta ven "ecConsultar is not defined" en vez de su información. El módulo SÍ funcionó desde V12 el 25-Sept-2026; las funciones se perdieron del .gs desplegado en algún deploy posterior, pero el routing (V18, BUGFIX-009) siguió ahí, lo que produce el error confuso en vez de un 404 limpio)
+**Versión corregida:** V35 (`Codigo_V35_BUGFIX-022_2026-10-05.gs`, md5 `3af70d3f8298f900c4407470131cbb45`, 222214 bytes)
+**Rama:** `feature/bugfix-022-restaurar-estado-cuenta`
+**Detectado por:** Operador reportó screenshot con error "ecConsultar is not defined" al consultar estado de cuenta del residente CA-0218 / apto 9904 / CC 1044120074. Operador explícitamente corrigió mi diagnóstico inicial de "nunca se implementó": el módulo SÍ funcionó varios días antes de que las funciones se perdieran en algún deploy.
+
+**Investigación:**
+- Búsqueda global en el repo: `grep "^function ec" Código.gs` → 0 resultados
+- Búsqueda en drive `Cerro Azul/proyecto formulario residentes/` (V21-V34) → 0 resultados
+- Búsqueda en `Cerro Azul/backups/proyecto-completo-20261005/apps-script/Código.gs` (md5 `3607f5efaa9c015fe6bfd0e0c4d44de3`, equivalente a V33) → 0 resultados
+- Búsqueda en `hermes varios/cerro azul/cerro-azul-residentes-main/modulo-estado-cuenta.gs` → 23 funciones `ec*` incluyendo las 6 públicas (478 líneas, 21082 bytes)
+- CHANGELOG-BUGFIXES.md líneas 478, 542-563, 696: confirma que las funciones SÍ existieron y fueron probadas con T-EC-1 a T-EC-6 (CA-0055 apto 105 CC 11786889)
+
+**Causa raíz (hipótesis más probable):**
+El módulo se implementó como archivo separado `modulo-estado-cuenta.gs` (478 líneas) que se PEGABA al final del Código.gs. En algún deploy entre V20 y V21, el archivo del Código.gs en Apps Script se reemplazó con un .gs que NO incluía el módulo. El routing (`if (action === 'ecConsultar')`) quedó (porque SÍ se actualizó en V18), pero las funciones se referencian sin estar definidas → ReferenceError → `{ok: false, error: 'ecConsultar is not defined'}`. La infraestructura de datos (Sheet Cartera `_Control`, `Agosto 2026`, `Pagos`, folder Drive con facturas) SÍ existe y está bien.
+
+**Fix (478 líneas restauradas al final del Código.gs):**
+- 6 funciones públicas: `ecConsultar`, `ecDescargarFactura`, `ecPazYSalvo`, `ecIniciarCarga`, `ecSubirFacturas`, `ecFinalizarCarga`
+- 14 funciones helper: `ecConfig`, `ecConfigRequerida`, `ecSS`, `ecHoja`, `ecTexto`, `ecNum`, `ecFechaLargaDesdeISO`, `ecHoyLarga`, `ecSetup`, `ecTolerancia`, `ecAdminOk`, `ecIndicesCartera`, `ecBuscarAptoEnFilas`, `ecLeerControl`, `ecPeriodoActivo`, `ecVerificarAcceso`, `ecContexto`, `ecPagosApto`, `ecArchivoFactura`
+- 3 constantes de hojas: `EC_TAB_CONTROL`, `EC_TAB_PAGOS`, `EC_TAB_PYS`
+- 3 arrays de headers: `EC_HDR_CONTROL`, `EC_HDR_PAGOS`, `EC_HDR_PYS`
+- Constantes varias: `EC_COLS_REQUERIDAS`, `EC_MAX_INTENTOS`, `EC_BLOQUEO_SEG`, `EC_MAX_ARCHIVOS_POR_LOTE`, `EC_TZ`, `EC_MESES`
+
+**Verificación:**
+- `node --check` sobre el archivo → SINTAXIS OK
+- Tamaño: V34 (200718 bytes) → V35 (222214 bytes) = +21496 bytes
+- Líneas: V34 (4382) → V35 (4868) = +486 líneas
+- Las 6 funciones están en líneas 4638, 4659, 4671, 4724, 4812, 4837
+- El routing en doPost líneas 246-251 sigue intacto (sin cambios)
+- Dependencias verificadas: `normApto`, `jsonOut`, `SHEET_ID`, `verificarPropietario`, `normCc` → todas existen en Código.gs
+
+**Lección #28:** **Módulos "pegados al final" son frágiles en deploys manuales.** El patrón "tengo un archivo .gs separado que pego al final del principal" hace que sea MUY fácil olvidarlo al hacer copy-paste del archivo completo. **Regla replicable a cualquier proyecto Apps Script:** si un módulo es separable, debe estar en su propio archivo .gs que se deploya como archivo separado en Apps Script (NO concatenado al principal). Apps Script permite tener varios archivos .gs en el mismo proyecto y todos son visibles globalmente. La convención actual "todo en un solo Código.gs" es un anti-patrón.
+
+**Lección #29 (para diagnóstico):** **Un error "X is not defined" en el backend suele ser un módulo pegado que se perdió, NO un módulo nunca implementado.** Antes de declarar "esto nunca se hizo", buscar en backups, drive, otros proyectos, y CHANGELOG. Si hay evidencia de pruebas T-EC-1..6, el bug es de deploy, no de implementación.
+
+**Lección #30 (validación post-deploy):** Después de CUALQUIER deploy, hacer smoke test de los 7 portales. Si el operador (o el agente) hubiera corrido un `curl '?action=ecConsultar'` después de V21, este bug se habría detectado hace 9 días.
+
+**Acción del operador:**
+1. Abrir Apps Script Cerro Azul en `script.google.com`
+2. Crear nuevo archivo `Codigo_V35_BUGFIX-022_2026-10-05.gs`
+3. Pegar el contenido de `apps-script/Codigo_V35_BUGFIX-022_2026-10-05.gs`
+4. **Ejecutar `ecSetup` UNA VEZ** desde el editor (autoriza DriveApp/DocumentApp)
+5. Deploy → "Nueva versión" → descripción "BUGFIX-022 restaurar módulo de estado de cuenta" → Deploy
+6. Apps Script le asignará "Versión 33"
+7. Esperar 3 min cold start
+8. Validar E2E: estado-cuenta.html con datos del residente de la imagen (CA-0218 / apto 9904 / CC 1044120074) DEBE mostrar el estado de cuenta
+
+---
+
