@@ -4,9 +4,11 @@ Este es el código del backend que conecta el formulario público
 (`https://fabig76.github.io/cerro-azul-residentes/`) con el Google Sheet
 (`https://docs.google.com/spreadsheets/d/16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc`).
 
-## Versión desplegada: V28 frontend + V27 backend (04-Oct-2026) — Apps Script "Versión 26" (V27) + V28 js/asistente.js (no deploy)
+## Versión LISTA PARA DEPLOY: V29 backend (05-Oct-2026) — BUGFIX-017. En producción actual: V28 frontend + V27 backend (Apps Script "Versión 26").
 
-**Backend Apps Script:** V27 (196.688 bytes, 197KB, 73 funciones) = incluye la constante `MANUAL_CERRO` (49KB / 845 líneas del manual oficial actualizado del agente) embebida directamente en el código. Sin cache ni fetch de Google Docs en runtime.
+**Backend V29 (LISTO PARA DEPLOY):** BUGFIX-017 — elimina la fuga del N° de formulario (CA-XXXX) en el mensaje de error de duplicado. md5 `6186f0586e63b52e185f5f8135072be7` (196783 bytes). Al desplegar, Apps Script le asignará "Versión 27". Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-017.
+
+**Backend Apps Script (en producción):** V27 (196.688 bytes, 197KB, 73 funciones) = incluye la constante `MANUAL_CERRO` (49KB / 845 líneas del manual oficial actualizado del agente) embebida directamente en el código. Sin cache ni fetch de Google Docs en runtime.
 
 **Frontend GitHub Pages:** V28 (333 líneas, +27 vs V26) = `js/asistente.js` con mini-parser markdown para renderizar respuestas del LLM con negrita real y saltos de línea visibles.
 
@@ -17,6 +19,7 @@ Historial de deploys (sesión 04-Oct-2026 — Agente IA):
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
+| **V29** | 05-Oct-2026 (LISTO, sin deploy) | `6186f0586e63b52e185f5f8135072be7` | **BUGFIX-017: quitar CA-XXXX del error de duplicado (fuga de credencial)** |
 | **V28** | 04-Oct-2026 (frontend) | `1cce2cdcd5136e2254ec402a14ed971b` (js) | **Renderizar markdown del LLM a HTML (frontend only, NO requiere deploy Apps Script)** |
 | **V27** | 04-Oct-2026 (Deploy "26") | `599ffb5cb71182915e576a6e903bf7e2` | **Manual actualizado por el operador (nueva REGLA FUNDAMENTAL: solo propietario/inmobiliaria/encargado crea registro; arrendatario NUNCA)** |
 | **V26** | 04-Oct-2026 (Deploy "25") | `a33b5b2af01bb24b2fd48a55b6ac1672` | **Manual embebido como MANUAL_CERRO (sin cache, sin fetch, sin Google Docs runtime)** |

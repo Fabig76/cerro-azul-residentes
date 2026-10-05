@@ -258,7 +258,7 @@ function submitRecord(data) {
     // Modo creación: validar que NO exista ya un registro con ese N° Apto
     const existing = findRowByApto(apto);
     if (existing) {
-      return { ok: false, error: 'Ya existe un registro para el apartamento ' + apto + '. Tu N° de formulario es ' + existing.values[COL_NUM_FORM] + '. Usa la opción "EDITAR MI REGISTRO" para modificarlo.' };
+      return { ok: false, error: 'Ya existe un registro para el apartamento ' + apto + '. Si eres el propietario o encargado, usa la opción "Editar mi registro" con el N° de formulario que se te entregó al crear el registro. Si no lo tienes, contacta a la administración (urb.cerroazul@gmail.com).' };
     }
     // Buscar siguiente fila vacía
     const last = sheet.getLastRow();

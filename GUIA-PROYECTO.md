@@ -2022,6 +2022,7 @@ vigilancia. Si el vigilante tiene una lógica útil, replicarla en admin.
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
+| **V29** | 05-Oct-2026 (LISTO, sin deploy) | `6186f0586e63b52e185f5f8135072be7` | **BUGFIX-017: quitar CA-XXXX del error de duplicado (fuga de credencial de edición). Ver CHANGELOG-BUGFIXES.md** |
 | **V28** | 04-Oct-2026 (frontend) | `1cce2cdcd5136e2254ec402a14ed971b` (js) | **FEAT-007 v3.1: renderizar markdown del LLM a HTML (negrita real, saltos de línea visibles). Frontend only, NO requiere deploy Apps Script** |
 | **V27** | 04-Oct-2026 (READY) | `599ffb5cb71182915e576a6e903bf7e2` | **Manual actualizado por el operador (nueva REGLA FUNDAMENTAL: solo propietario/inmobiliaria/encargado crea registro; arrendatario NUNCA)** |
 | **V26** | 04-Oct-2026 (READY) | `a33b5b2af01bb24b2fd48a55b6ac1672` | **REFACTOR: manual embebido como constante en código, NO Google Doc runtime. 0 latencia, 0 fetch, 0 cache, sin dependencia externa** |
@@ -2117,5 +2118,5 @@ Flujo:
 
 ---
 
-Última actualización: 04-Oct-2026 (V27 READY - manual actualizado por operador con REGLA FUNDAMENTAL nueva)
+Última actualización: 05-Oct-2026 (V29 READY — BUGFIX-017 elimina fuga del CA-XXXX en error de duplicado)
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)

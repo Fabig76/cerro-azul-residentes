@@ -1668,3 +1668,44 @@ ultimo: Para reservar el salón social:<br><br>1. Entre al portal principal: <b>
 
 ---
 
+### BUGFIX-017 · Fuga del N° de formulario (CA-XXXX) en el mensaje de error de duplicado
+
+**Fecha:** 05-Oct-2026
+**Severidad:** ALTA (seguridad — exposición de credencial de edición + datos personales, Ley 1581/2012)
+**Versión corregida:** V29 (`Codigo_V29_BUGFIX017_NO_EXPONER_NUMFORM-20261005.gs`, md5 `6186f0586e63b52e185f5f8135072be7`, 196783 bytes)
+**Detectado por:** Operador (Fabio Lesmes) al revisar una captura del formulario (apto 817 / CA-0164)
+
+**Problema:**
+El mensaje de error de deduplicación en `submitRecord()` revelaba el N° de formulario (CA-XXXX) a CUALQUIER persona que intentara crear un registro para un apartamento ya existente:
+
+```javascript
+// ANTES (línea 261) — FUGA:
+'Ya existe un registro para el apartamento ' + apto + '. Tu N° de formulario es ' + existing.values[COL_NUM_FORM] + '. Usa la opción "EDITAR MI REGISTRO" para modificarlo.'
+```
+
+**Por qué es crítico:**
+El flujo "Editar mi registro" (`doGet action=lookup` + `submitRecord` en modo edición) SOLO requiere `numForm` + `apto`. NO pide cédula, correo ni contraseña. El `lookup` devuelve los 143 campos completos del propietario (nombre, cédula, correo, celular, vehículos, mascotas, etc.).
+
+Por lo tanto, el CA-XXXX ES la credencial de edición. Filtrarlo en un mensaje de error significa que un tercero podía:
+
+1. Abrir index.html → "Enviar / Crear registro" y escribir cualquier apto (ej. 817).
+2. Recibir el error con "Tu N° de formulario es CA-0164".
+3. Con CA-0164 + 817 ir a "Editar mi registro" → leer y sobrescribir TODOS los datos del propietario.
+
+**Fix (1 línea):**
+```javascript
+// DESPUÉS — sin revelar el número:
+'Ya existe un registro para el apartamento ' + apto + '. Si eres el propietario o encargado, usa la opción "Editar mi registro" con el N° de formulario que se te entregó al crear el registro. Si no lo tienes, contacta a la administración (urb.cerroazul@gmail.com).'
+```
+
+**Alcance del fix:**
+- Solo línea 261 (mensaje de error de dedup). Verificado con `diff`: 1 sola línea cambiada vs V27.
+- Los mensajes de ÉXITO (líneas 280-281) se conservan: muestran el numForm al propietario que acaba de crear/editar SU registro (necesario, no es fuga a terceros).
+- `node --check`: PASS.
+
+**Lección #23 (nueva):** NUNCA exponer credenciales de edición (numForm/CA-XXXX) ni datos que permitan identificar un registro en mensajes de error/respuesta accesibles sin autenticación. Un mensaje de error "amable" que revela un identificador puede convertirse en la llave de acceso al registro completo de otra persona. **Regla replicable:** al escribir mensajes de error, preguntarse "¿este texto le daría a un desconocido algo que no debería tener?".
+
+**Pendiente (recomendado, fuera del alcance de este fix):** reforzar el flujo "Editar mi registro" para que pida algo más que numForm + apto (ej. cédula del propietario), de modo que la credencial no sea suficiente por sí sola.
+
+---
+
