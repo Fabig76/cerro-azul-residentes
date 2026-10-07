@@ -525,7 +525,7 @@ function expirarReservasSalon() {
 {
   "reservaId": "RS-0005",
   "motivo": "Comprobante no corresponde al pago (foto random)",
-  "adminPassword": "cerroazul2026"
+  "adminPassword": "<configurada-en-Sheet>"
 }
 ```
 

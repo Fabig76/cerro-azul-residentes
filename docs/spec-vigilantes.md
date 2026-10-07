@@ -265,8 +265,8 @@ Actualiza en Sheet Mudanzas:
 
 | Celda | Clave | Valor ejemplo | Descripción |
 |---|---|---|---|
-| A1 | admin_password | cerroazul2026 | (ya existe) |
-| B1 | (config_value) | cerroazul2026 | (ya existe) |
+| A1 | admin_password | <configurada-en-Sheet> | (ya existe) |
+| B1 | (config_value) | <configurada-en-Sheet> | (ya existe) |
 | A2 | vigilante_password | vigilancia2026 | NUEVO |
 | B2 | (config_value) | vigilancia2026 | NUEVO |
 
@@ -422,7 +422,7 @@ Actualmente la pestaña Mudanzas tiene 19 columnas (A-S). Voy a agregar:
 
 Sugerencia: `vigilancia2026` (cambiar después desde Sheet → Config!B2)
 
-Si quiere algo más seguro, puede usar `VigCerroAzul2026!` o similar.
+Si quiere algo más seguro, puede usar `<configurada-en-Sheet>!` o similar.
 
 ### 9.2 Dispositivo recomendado
 

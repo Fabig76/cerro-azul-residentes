@@ -1938,7 +1938,7 @@ El módulo se implementó como archivo separado `modulo-estado-cuenta.gs` (478 l
 | T-3 | navegador E2E | Faber Andrés Tapias, apto 218, CC 1017166544 | Pantalla muestra: "Apto 218 - Faber Andrés Tapias Tobón", Saldo pendiente $205.752 al 31-Agosto-2026, Cuota admon $205.800, N° cuenta cobro 1287, Total a pagar $416.054, botones Descargar/Pagar/Salir ✓ |
 | T-4 | adminVerComprobanteSalon (regresión V34) | RS-0004 | `tieneComprobante: true` + URL del comprobante ✓ |
 | T-5 | adminListarReservasSalon (regresión V34) | estado=Pagado | 3 reservas, todas con `tieneComprobante: true` ✓ |
-| T-6 | adminLogin (regresión) | password cerroazul2026 | Login correcto, token devuelto ✓ |
+| T-6 | adminLogin (regresión) | password <admin> | Login correcto, token devuelto ✓ |
 | T-7 | nextId (regresión) | n/a | CA-0219 ✓ |
 
 **Observación:** los datos del residente de la imagen (CA-0218 / apto 9904 / CC 1044120074) NO existen en el Sheet Registros. La respuesta correcta es "No se encontró ningún registro" — lo que confirma que el endpoint SÍ valida contra el Sheet, y la fuga de "no debería haber datos" no existe.

@@ -1108,7 +1108,7 @@ CA-XXXX generado. Solo requiere contraseña (almacenada en el Sheet).
 ### 16.2 URL y credenciales
 
   · URL: https://fabig76.github.io/cerro-azul-residentes/admin.html
-  · Contraseña por defecto: `cerroazul2026`
+  · Contraseña por defecto: [configurada por el administrador en Config!B1]
   · Para cambiar: editar celda `Config!B1` en el Google Sheet
     (cambio inmediato, NO requiere redeploy)
 
@@ -1120,7 +1120,7 @@ configuración del portal:
 | Celda | Valor ejemplo | Descripción |
 |---|---|---|
 | A1 | `admin_password` | Header (clave) |
-| B1 | `cerroazul2026` | Contraseña actual |
+| B1 | [configurada por el administrador en Config!B1] | Contraseña actual |
 
 Para agregar más configs en el futuro, agregar filas con la clave en A
 y el valor en B.
@@ -1169,7 +1169,7 @@ se sobreescribió accidentalmente la fila `admin_password` que estaba
 en Config!A2 (alguien — operador o script — editó mal el Sheet).
 **Diagnóstico:** El Sheet Config tenía solo 2 filas (header + vigilante),
 no 3 (header + admin + vigilante).
-**Fix:** Re-insertar fila admin_password = cerroazul2026 en Config!A2
+**Fix:** Re-insertar fila `admin_password = <valor-configurado-en-Sheet>` en Config!A1
 mediante `insertDimension` + `values.update`.
 **Lección aprendida:**
   · Las contraseñas SÍ están separadas por clave (admin_password vs
@@ -1235,7 +1235,7 @@ y registrar checks sobre mudanzas (Sí/No se realizó).
 ### 18.2 URL y credenciales
 
   · URL: https://fabig76.github.io/cerro-azul-residentes/vigilantes.html
-  · Contraseña por defecto: `VigCerroAzul2026`
+  · Contraseña por defecto: [configurada por el administrador en Config!B2]
   · Para cambiar: editar celda `Config!A2/B2` en el Google Sheet
   · Distinta de la contraseña del admin (`Config!B1`)
 
@@ -1243,10 +1243,10 @@ y registrar checks sobre mudanzas (Sí/No se realizó).
 
 | Celda | Clave | Valor ejemplo |
 |---|---|---|
-| A1 | admin_password | cerroazul2026 |
-| B1 | (config_value) | cerroazul2026 |
-| A2 | vigilante_password | VigCerroAzul2026 |
-| B2 | (config_value) | VigCerroAzul2026 |
+| A1 | admin_password | <configurada por el administrador> |
+| B1 | (config_value) | <configurada por el administrador> |
+| A2 | vigilante_password | <configurada por el administrador> |
+| B2 | (config_value) | <configurada por el administrador> |
 
 ### 18.4 Pestaña "Mudanzas" — columnas nuevas
 

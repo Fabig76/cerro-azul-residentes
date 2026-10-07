@@ -28,7 +28,7 @@ impreso en PDF.
   · Permite al admin buscar, ver y editar TODOS los registros sin
     necesidad del código CA-XXXX generado
   · Solo requiere contraseña (configurada en Sheet → Config!B1,
-    por defecto `cerroazul2026`)
+    valor definido por el administrador; no aparece en esta guía).
   · Busca por apto, nombre, cédula, correo, celular o CA-XXXX
   · Edita los 143 campos del registro (básicos, residentes, vehículos,
     mascotas, emergencias, etc.)
@@ -43,8 +43,8 @@ impreso en PDF.
   · **URL:** https://fabig76.github.io/cerro-azul-residentes/vigilantes.html
   · Para el personal de vigilancia del conjunto
   · Solo consulta datos + marca checks de mudanzas (no edita registros)
-  · Contraseña separada del admin (Sheet → Config!B2, por defecto
-    `VigCerroAzul2026`)
+  · Contraseña separada del admin (Sheet → Config!B2, valor
+    definido por el administrador; no aparece en esta guía).
   · Ve datos SÍ: nombre, CC, vehículos, mascotas, parqueaderos,
     residentes, encargado, inmobiliaria
   · Ve datos NO: correo, celular, teléfono (privacidad)

@@ -539,8 +539,8 @@ Verificar que los endpoints existentes siguen funcionando después del deploy V1
 ```bash
 curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=lookup&numForm=CA-0055&apto=105"
 curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=nextId"
-curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=adminLogin&password=cerroazul2026"
-curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=vigilanteLogin&password=VigCerroAzul2026"
+curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=adminLogin&password=TU_CONTRASEÑA_ADMIN"
+curl -sL "https://script.google.com/macros/s/AKfycbxp...Zp/exec?action=vigilanteLogin&password=TU_CONTRASEÑA_VIG"
 ```
 
 **Esperado:** Todos retornan `{ok:true, ...}`
@@ -896,7 +896,7 @@ curl -sL -X POST ... -d '{"action":"adminCancelarReservaSalon","reservaId":"RS-X
 ### T-SAL-19: adminCancelarReservaSalon — adminPassword correcta
 
 ```bash
-curl -sL -X POST ... -d '{"action":"adminCancelarReservaSalon","reservaId":"RS-XXXX","motivo":"Comprobante falso","adminPassword":"cerroazul2026"}'
+curl -sL -X POST ... -d '{"action":"adminCancelarReservaSalon","reservaId":"RS-XXXX","motivo":"Comprobante falso","adminPassword":"TU_CONTRASEÑA_ADMIN"}'
 ```
 
 **Esperado:** `{ok:true, estado:"CanceladoPorAdmin"}` (si era Pagado) o `Cancelado`
@@ -994,7 +994,7 @@ credenciales necesarias para suplantar al propietario.
 // Desde browser_console en vigilantes.html
 (async () => {
   // 1. Login del vigilante (la contraseña está en Config!B2)
-  const login = await fetch(APPS_SCRIPT_URL + '?action=vigilanteLogin&password=VigCerroAzul2026');
+  const login = await fetch(APPS_SCRIPT_URL + '?action=vigilanteLogin&password=TU_CONTRASEÑA_VIG');
   const lj = await login.json();
   if (!lj.ok) return { error: 'login falló: ' + lj.error };
 
@@ -1154,7 +1154,7 @@ fetch(URL, {
   headers: {'Content-Type':'text/plain;charset=UTF-8'},
   body: JSON.stringify({
     action: 'ecIniciarCarga',
-    password: 'cerroazul2026',
+    password: 'TU_CONTRASEÑA_ADMIN',
     periodo: '2026-08',
     nombrePestana: 'Agosto 2026',
     fechaCorte: '2026-08-31',
@@ -1177,7 +1177,7 @@ fetch(URL, {
   headers: {'Content-Type':'text/plain;charset=UTF-8'},
   body: JSON.stringify({
     action: 'ecSubirFacturas',
-    password: 'cerroazul2026',
+    password: 'TU_CONTRASEÑA_ADMIN',
     idCarga: '<idCarga de T-EC-4>',
     archivos: [{apto:'101', base64: '<PDF de 1 página en base64>'}]
   })
@@ -1194,7 +1194,7 @@ fetch(URL, {
   headers: {'Content-Type':'text/plain;charset=UTF-8'},
   body: JSON.stringify({
     action: 'ecFinalizarCarga',
-    password: 'cerroazul2026',
+    password: 'TU_CONTRASEÑA_ADMIN',
     idCarga: '<idCarga de T-EC-4>'
   })
 }).then(r => r.json()).then(j => console.log(j));
