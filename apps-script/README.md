@@ -4,39 +4,37 @@ Este es el código del backend que conecta el formulario público
 (`https://fabig76.github.io/cerro-azul-residentes/`) con el Google Sheet
 (`https://docs.google.com/spreadsheets/d/16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc`).
 
-## Versión vigente: V38_BORRAR_MUDANZA (09-Oct-2026). Apps Script "Versión" actual: V36_TORRE2 + Encargado (deploy manual del operador).
+## Versión desplegada: V36 backend + V28 frontend (08-Oct-2026) — Apps Script "Versión 34"
 
-**Backend V35 (LISTO PARA DEPLOY):** BUGFIX-022 — Restaura el módulo de Estado de Cuenta (478 líneas) que se había perdido del .gs desplegado. Las 6 funciones públicas (`ecConsultar`, `ecDescargarFactura`, `ecPazYSalvo`, `ecIniciarCarga`, `ecSubirFacturas`, `ecFinalizarCarga`) + 14 helpers + 3 constantes de hojas se restauran desde backup `hermes-varios/cerro-azul/cerro-azul-residentes-main/modulo-estado-cuenta.gs`. md5 `3af70d3f8298f900c4407470131cbb45` (222214 bytes). Al desplegar, Apps Script le asignará "Versión 33". IMPORTANTE: ejecutar `ecSetup` UNA VEZ antes del deploy para autorizar DriveApp/DocumentApp.
+**Backend Apps Script:** V36 (222.410 bytes, 222KB, 4870 líneas) = incluye la constante `MATRICULAS_TORRE_2 = 'Torre 2 - Etapa 4'` (BUGFIX-023). Soporte completo para Torre 2, Torre 1, Torre 3 y Parqueaderos.
 
-**Frontend:** SIN CAMBIOS — `estado-cuenta.html` y `cartera-admin.html` ya esperan estos endpoints.
-
-**Backend V34 (LISTO PARA DEPLOY):** BUGFIX-021 — `adminVerComprobanteSalon` ahora devuelve `tieneComprobante: true` en la rama de éxito (antes solo lo devolvía `false` en la rama de "no hay comprobante"). Sin este fix, el admin no podía ver/descargar los comprobantes de las reservas Pagado aunque SÍ existieran. md5 `73bf233649f51be937e90be2a83628ba` (200718 bytes). Al desplegar, Apps Script le asignará "Versión 32". Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-021.
-
-**Frontend:** SIN CAMBIOS — el frontend (`js/admin.js` línea 721) ya esperaba `r.tieneComprobante`, solo faltaba el flag en la respuesta del backend. No requiere push a GitHub Pages.
-
-**Frontend GitHub Pages:** V28 (333 líneas, +27 vs V26) = `js/asistente.js` con mini-parser markdown para renderizar respuestas del LLM con negrita real y saltos de línea visibles.
+**Frontend GitHub Pages:** V28 (sin cambios desde 04-Oct-2026)
 
 URL del Web App (preservada entre versiones):
 `https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec`
 
-Historial de deploys (sesión 04-Oct-2026 — Agente IA):
+MD5 del V36 desplegado: `e207271873ff91365dd1559fb66ad150`
+Drive: `Codigo_V36_TORRE2-20261008.gs` (ID `1AjvHS090YqBDWK8axznlUnc9MfFYd9lY`)
+
+Historial de deploys recientes (sesión 08-Oct-2026 — BUGFIX-023 Torre 2):
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
-| **V35** | 05-Oct-2026 (deploy "33" ✓ verificado) | `3af70d3f8298f900c4407470131cbb45` | **BUGFIX-022: restaurar módulo de Estado de Cuenta (478 líneas, 6 funciones públicas ec* + 14 helpers)** |
-| **V34** | 05-Oct-2026 (deploy "32" ✓ verificado) | `73bf233649f51be937e90be2a83628ba` | **BUGFIX-021: adminVerComprobanteSalon devuelve `tieneComprobante: true` en éxito (1 línea, 0 regresiones)** |
-| **V33** | 05-Oct-2026 (deploy "31" ✓ verificado) | `3607f5efaa9c015fe6bfd0e0c4d44de3` | **BUGFIX-020: cédula del propietario en "Editar mi registro"** |
-| **V32** | 05-Oct-2026 (deploy "30" ✓ verificado) | `10527ca94356f53f54d4e6d95765a251` | **BUGFIX-019 v2: token PropertiesService — E2E verificado** |
-| **V31** | 05-Oct-2026 (deploy "29", bug cache) | `6778474b1e244f91ce3084c1a7882da5` | **BUGFIX-019: token admin/vigilante — reemplazada por V32** |
-| **V30** | 05-Oct-2026 (deploy "28" ✓) | `a14aa86c100ae82a5988206b4ce28c20` | **BUGFIX-018: getEstadoResidente sin numForm/nombres/propietario (fuga de datos)** |
-| **V29** | 05-Oct-2026 (deploy "27" ✓) | `6186f0586e63b52e185f5f8135072be7` | **BUGFIX-017: quitar CA-XXXX del error de duplicado (fuga de credencial)** |
-| **V28** | 04-Oct-2026 (frontend) | `1cce2cdcd5136e2254ec402a14ed971b` (js) | **Renderizar markdown del LLM a HTML (frontend only, NO requiere deploy Apps Script)** |
-| **V27** | 04-Oct-2026 (Deploy "26") | `599ffb5cb71182915e576a6e903bf7e2` | **Manual actualizado por el operador (nueva REGLA FUNDAMENTAL: solo propietario/inmobiliaria/encargado crea registro; arrendatario NUNCA)** |
-| **V26** | 04-Oct-2026 (Deploy "25") | `a33b5b2af01bb24b2fd48a55b6ac1672` | **Manual embebido como MANUAL_CERRO (sin cache, sin fetch, sin Google Docs runtime)** |
-| **V25** | DESCARTADO | (no subido) | RAG simple con fetch Google Doc + cache 6h — operador prefirió traer el doc a Hermes |
-| **V24** | 04-Oct-2026 11:30 | `3cda634` | System prompt enriquecido con info factual del Cerro Azul |
-| **V23.1** | 04-Oct-2026 | `adf63c56c2659c9c000c567ca44f6d78` | BUGFIX-016: formato Anthropic Messages + fix banner tapaba header |
-| **V23** | DESCARTADO | (no subido) | OpenAI-compat assumed (habría dado 404) |
+| **V36** | 08-Oct-2026 | `e207271873ff91365dd1559fb66ad150` | **BUGFIX-023: agregar MATRICULAS_TORRE_2 al lookup de matrículas (Torre 2 — 185 aptos)** |
+| **V35** | 05-Oct-2026 (Deploy "33") | `3af70d3f8298f900c4407470131cbb45` | BUGFIX-022: restaurar módulo de Estado de Cuenta (478 líneas) |
+| **V34** | 05-Oct-2026 (Deploy "32") | `7e4f7a0a` (estimado) | BUGFIX-021: adminVerComprobanteSalon devuelve tieneComprobante: true |
+| **V33** | 05-Oct-2026 (Deploy "31") | — | BUGFIX-020: cédula del propietario en "Editar mi registro" |
+| **V32** | 05-Oct-2026 (Deploy "30") | — | BUGFIX-019 v2: token con PropertiesService |
+| **V31** | 05-Oct-2026 | — | BUGFIX-019: token de sesión admin/vigilante (CacheService, luego migrado a PropertiesService) |
+| **V30** | 05-Oct-2026 | — | BUGFIX-018: getEstadoResidente sin numForm/nombres/propietario (fuga de datos) |
+| **V29** | 05-Oct-2026 | — | BUGFIX-017: quitar CA-XXXX del error de duplicado (fuga de credencial) |
+
+**Estructura del Sheet público de matrículas** (`1ceGtZDUJHX4yxs5_ydDwLwtrkOcZwYh09WUG0st_b0Y`, 5 pestañas):
+- Resumen de Copropiedad (control + totales — 954/979 = 97,4%)
+- Torre 3 - Etapa 1 (198 aptos, mat 5377499-5377696)
+- Torre 1 - Etapa 2 (234 aptos, mat 5428477-5428710)
+- Parqueaderos - Etapa 3 (337 celdas privadas, mat 5397790-5398117)
+- Torre 2 - Etapa 4 (185 aptos, mat 5461642-5461826) — **NUEVA 08-Oct-2026**
 
 Historial de deploys anteriores (sesión 26-Sept):
 

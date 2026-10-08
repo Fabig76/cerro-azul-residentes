@@ -281,7 +281,7 @@ el lookup automático de matrículas. Total: 138 → 143 columnas.
    · "Torre 3 - Etapa 1" — 198 aptos (121..318), matrículas 5377499-5377696
     · "Torre 1 - Etapa 2" — 234 aptos (9804..10037), matrículas 5428477-5428710
     · "Parqueaderos - Etapa 3" — 337 celdas privadas + 25 comunes (mat 5397790-5398117)
-  · Torre 2 (185 unidades) NO tiene pestaña porque RPH no ha asignado matrículas
+  · Torre 2 (185 unidades) — pestaña "Torre 2 - Etapa 4" creada 08-Oct-2026 (BUGFIX-023). Matrículas 5461642 a 5461826 (consecutivas). Incluye 918, 919, 1713, 1714, 1715 que el Sheet 02 del operador tenía mal asignados.
   · Apps Script lee con `SpreadsheetApp.openById(MATRICULAS_SHEET_ID)`
   · Cache en memoria se reconstruye por request (las tablas son chicas)
   · Para Torre 1, los aptos se escriben sin comas/puntos (ej: "9804", no "9.804").

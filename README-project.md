@@ -99,21 +99,28 @@ impreso en PDF.
 
 - **Apps Script ID:** `17nuyzVYK2yN_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy`
 - **URL preservada:** `https://script.google.com/macros/s/AKfycbxp...Zp/exec`
-- **Última versión: V38_BORRAR_MUDANZA (09-Oct-2026)** — basada en V36_TORRE2, agrega el valor de diligencia "Encargado" (mismos privilegios que Propietario). md5 `0f872b7218b96295ed79986fd6ab9320`. V35 (05-Oct-2026) sigue en producción para referencia.
+- **Última versión: V36 (08-Oct-2026)** — Apps Script "Versión 34"
+  · 222.410 bytes, 4870 líneas
+  · MD5: `e207271873ff91365dd1559fb66ad150`
+  · Drive V36: `Codigo_V36_TORRE2-20261008.gs` (ID `1AjvHS090YqBDWK8axznlUnc9MfFYd9lY`)
+  · Cambio vs V35: +2 líneas (BUGFIX-023: MATRICULAS_TORRE_2)
+  · Cubre Torre 1, Torre 2, Torre 3 y Parqueaderos
 
-### Historial reciente (sesiones 04-Oct a 05-Oct-2026)
+### Historial de deploys recientes
 
-| Versión | BUGFIX | Descripción |
-|---------|--------|-------------|
-| V35 | BUGFIX-022 | Restaurar módulo de Estado de Cuenta (478 líneas, 6 funciones ec* + 14 helpers) |
-| V34 | BUGFIX-021 | adminVerComprobanteSalon devuelve `tieneComprobante: true` en éxito |
-| V33 | BUGFIX-020 | Cédula del propietario en "Editar mi registro" (lectura+escritura) |
-| V32 | BUGFIX-019 | Token de sesión en endpoints admin/vigilante (PropertiesService) |
-| V30 | BUGFIX-018 | getEstadoResidente sin numForm/nombres/propietario |
-| V29 | BUGFIX-017 | Quitar CA-XXXX del error de duplicado |
-| V27 | FEAT-007 | Manual del agente actualizado (asistente IA) |
-| V26 | FEAT-007 | Manual embebido como constante (asistente IA) |
-| V20 | BUGFIX-011 | Admin mudanzas: filtro "Próximos N días" |
+| Versión | Hora | BUGFIX | Descripción |
+|---------|------|--------|-------------|
+| V36 | 08-Oct-2026 | BUGFIX-023 | Torre 2 en lookup de matrículas (185 aptos nuevos) |
+| V35 | 05-Oct-2026 | BUGFIX-022 | Restaurar módulo de Estado de Cuenta (478 líneas) |
+| V34 | 05-Oct-2026 | BUGFIX-021 | adminVerComprobanteSalon devuelve tieneComprobante: true |
+| V33 | 05-Oct-2026 | BUGFIX-020 | Cédula del propietario en "Editar mi registro" |
+| V32 | 05-Oct-2026 | BUGFIX-019 v2 | Token con PropertiesService |
+| V31 | 05-Oct-2026 | BUGFIX-019 | Token de sesión admin/vigilante |
+| V30 | 05-Oct-2026 | BUGFIX-018 | getEstadoResidente sin numForm/nombres/propietario |
+| V29 | 05-Oct-2026 | BUGFIX-017 | Quitar CA-XXXX del error de duplicado |
+| V20 | 26-Sept-2026 13:10 | BUGFIX-011 | Admin mudanzas: filtro "Próximos N días" (paridad vigilante) |
+| V19 | 12:37 | BUGFIX-010 | SEG-001: backend vigilante NO envía credenciales de edición |
+| V18 | 12:15 | BUGFIX-009 | Routing 6 endpoints `ec*` en `doPost` (portal estado cuenta) |
 
 Ver `docs/CHANGELOG-BUGFIXES.md` para el detalle completo de cada fix.
 
