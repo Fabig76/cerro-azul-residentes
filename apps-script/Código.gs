@@ -49,7 +49,6 @@ const ACTIONS_ADMIN = [
   'adminBuscar', 'adminObtener', 'adminGuardar',
   'adminListarReservasMudanzas', 'adminListarReservasSalon',
   'adminVerComprobanteSalon', 'adminCancelarReservaSalon',
-  'adminBorrarReservaMudanza',
   'configurarTriggerExpiracion'
 ];
 
