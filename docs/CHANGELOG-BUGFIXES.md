@@ -2021,3 +2021,73 @@ detectar drift.
 - Huecos BUGFIX-017 a BUGFIX-022 sin documentar en este CHANGELOG
   (están en la skill y en el historial del operador).
 
+
+---
+
+### BUGFIX-023b · 5 matrículas Torre 2 detectadas por análisis secuencial
+
+**Fecha:** 08-Oct-2026 (mismo día que BUGFIX-023)
+**Severidad:** BAJA — 2 aptos no funcionaban, 3 no existían en la base
+**Detectado por:** Operador (Fabio Lesmes) — "buscalos en los archivos nuevos que te di"
+
+**Síntoma original:**
+Tras el BUGFIX-023, el Apto 919 y el Apto 1715 quedaban con
+`encontrado:false` en el lookup porque se habían excluido del Sheet
+público (matrículas múltiples en el Sheet 02 del operador).
+
+**Investigación:**
+Las matrículas de Torre 2 son consecutivas (5461642-5461826). Al
+analizar la distribución en el Sheet 02 del operador, se detectó
+que 2-3 matrículas consecutivas estaban asignadas al mismo apto,
+indicando que la persona que digitó el Sheet omitió crear el apto
+intermedio y le puso el número de apto del siguiente piso.
+
+  Sheet 02 — 919:
+    5461703 → Apto 917   ✓
+    5461704 → Apto 919   ✗ (debería ser 918)
+    5461705 → Apto 919   ✗ (debería ser 919)
+    5461706 → Apto 920   ✓
+    → Faltan aptos 918, 919. Correctas: 918→5461704, 919→5461705.
+
+  Sheet 02 — 1715:
+    5461762 → Apto 1620  ✓
+    5461763 → Apto 1715  ✗ (debería ser 1713)
+    5461764 → Apto 1715  ✗ (debería ser 1714)
+    5461765 → Apto 1715  ✗ (debería ser 1715)
+    5461766 → Apto 1716  ✓
+    → Faltan aptos 1713, 1714, 1715. Correctas:
+       1713→5461763, 1714→5461764, 1715→5461765.
+
+**Fix aplicado:**
+- 5 matrículas agregadas al Sheet público Torre 2 - Etapa 4
+  (ordenadas por matrícula): 918, 919, 1713, 1714, 1715
+- Pestaña "Resumen de Copropiedad" actualizada
+- Sheet Registros: CA-0010 (apto 1715) — matrícula vacía → 5461765
+
+**Causa raíz:**
+El Sheet 02 del operador (externo) es un Google Sheet manual, no
+controlado por el backend. Quien lo digitó asignó múltiples
+matrículas consecutivas al mismo apto sin crear los intermedios.
+El sistema Cerro Azul SÍ valida unicidad de apto en el Sheet
+Registros, pero NO en el Sheet externo del operador.
+
+**Lecciones:**
+- Cualquier Sheet manual externo (no generado por el backend) es
+  propenso a errores de digitación. El Sheet público de matrículas
+  (1ceGtZDU...) es la fuente autoritativa.
+- Para validar datos de un Sheet externo, comparar contra patrones
+  esperados (secuencias, distribuciones, sumas).
+- El Sheet público de matrículas (en el Sheet 1ceGtZDU...) es la
+  fuente autoritativa para TODOS los aptos del conjunto. Quien
+  lo actualice debe seguir el patrón consecutivo.
+
+**Validación E2E post-fix:**
+- lookupMatApto?apto=918 → 5461704 ✓
+- lookupMatApto?apto=919 → 5461705 ✓
+- lookupMatApto?apto=1713 → 5461763 ✓
+- lookupMatApto?apto=1714 → 5461764 ✓
+- lookupMatApto?apto=1715 → 5461765 ✓
+
+**Sin cambios en código backend** — el V36 sigue siendo el mismo.
+Solo se actualizaron los Sheets.
+
