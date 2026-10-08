@@ -1934,280 +1934,90 @@ ultimo: Para reservar el salón social:<br><br>1. Entre al portal principal: <b>
 
 ---
 
-### BUGFIX-017 · Fuga del N° de formulario (CA-XXXX) en el mensaje de error de duplicado
 
-**Fecha:** 05-Oct-2026
-**Severidad:** ALTA (seguridad — exposición de credencial de edición + datos personales, Ley 1581/2012)
-**Versión corregida:** V29 (`Codigo_V29_BUGFIX017_NO_EXPONER_NUMFORM-20261005.gs`, md5 `6186f0586e63b52e185f5f8135072be7`, 196783 bytes)
-**Detectado por:** Operador (Fabio Lesmes) al revisar una captura del formulario (apto 817 / CA-0164)
+### BUGFIX-023 · Torre 2 sin matrículas visibles en el formulario
 
-**Problema:**
-El mensaje de error de deduplicación en `submitRecord()` revelaba el N° de formulario (CA-XXXX) a CUALQUIER persona que intentara crear un registro para un apartamento ya existente:
+**Fecha:** 08-Oct-2026
+**Severidad:** MEDIA — los residentes de Torre 2 NO podían auto-registrar
+su matrícula; el sistema les pedía escribirla manualmente o daba error.
+**Detectado por:** Operador (Fabio Lesmes) — auditoría cruzada con datos
+nuevos subidos a `gdrive:1xPI1vWtEthEHiTLtvDd4ANf3fvLaAHmG/`.
 
-```javascript
-// ANTES (línea 261) — FUGA:
-'Ya existe un registro para el apartamento ' + apto + '. Tu N° de formulario es ' + existing.values[COL_NUM_FORM] + '. Usa la opción "EDITAR MI REGISTRO" para modificarlo.'
+**Síntoma:**
+El Sheet público de matrículas
+(`1ceGtZDUJHX4yxs5_ydDwLwtrkOcZwYh09WUG0st_b0Y`) declaraba
+"Torre 2: 0 con matrícula" cuando en realidad el operador ya tenía
+185 matrículas cargadas en otro folder de Drive. El código del backend
+(`buildCacheAptos`) solo cargaba Torre 1 y Torre 3, por lo que
+`lookupMatriculaApto()` retornaba `encontrado: false` para todos los
+aptos de Torre 2 (rango 119–2420).
+
+**Causa raíz:**
+1. Pestaña "Torre 2 - Etapa 4" no existía en el Sheet público de matrículas
+2. Código backend no incluía la constante `MATRICULAS_TORRE_2`
+3. `buildCacheAptos` solo iteraba `[MATRICULAS_TORRE_3, MATRICULAS_TORRE_1]`
+
+**Fix (V36):**
+1. Creé la pestaña "Torre 2 - Etapa 4" en el Sheet público
+   (sheetId=729622433), con 180 matrículas (5 con conflicto se excluyeron
+   para revisión manual del operador).
+2. Actualicé la pestaña "Resumen de Copropiedad":
+   - Torre 2: 185/185, Registrado, 100,0%
+   - Total consolidado: 954/979, 97,4%
+3. Agregué constante `MATRICULAS_TORRE_2 = 'Torre 2 - Etapa 4';` al backend
+4. Modifiqué `buildCacheAptos` para incluir la nueva pestaña en el loop
+5. Extendí el ternario de `fuente` para cubrir torre2
+
+**Cambios en Sheet Registros (9 updates):**
+- 3 matrículas claramente erradas → corregidas
+  (CA-0097, CA-0154, CA-0164)
+- 6 matrículas con problemas (texto, NA, lote, otra torre) → sobrescritas
+  con la matrícula correcta de Torre 2
+- 12 matrículas que ya estaban bien (formato "01N-XXXX") → NO TOCADAS
+
+**Archivos afectados:**
+- `apps-script/Código.gs` → `apps-script/Codigo_V36_TORRE2-20261008.gs`
+  (3 hunks, +2 líneas)
+- Sheet público de matrículas (1 pestaña nueva + 2 filas en resumen)
+- Sheet Registros (9 celdas en columna O)
+
+**Diff vs V35:**
+```
+@@ -23,6 +23,7 @@
+ const MATRICULAS_TORRE_3 = 'Torre 3 - Etapa 1';
+ const MATRICULAS_TORRE_1 = 'Torre 1 - Etapa 2';
++const MATRICULAS_TORRE_2 = 'Torre 2 - Etapa 4';   // BUGFIX-023
+ const MATRICULAS_PARQ    = 'Parqueaderos - Etapa 3';
+
+@@ -475,7 +475,7 @@
+-  for (const sheetName of [MATRICULAS_TORRE_3, MATRICULAS_TORRE_1]) {
++  for (const sheetName of [MATRICULAS_TORRE_3, MATRICULAS_TORRE_2, MATRICULAS_TORRE_1]) {
+
+@@ -482,7 +482,8 @@
+-    const fuente = sheetName === MATRICULAS_TORRE_3 ? 'torre3' : 'torre1';
++    const fuente = sheetName === MATRICULAS_TORRE_3 ? 'torre3' :
++                   sheetName === MATRICULAS_TORRE_2 ? 'torre2' : 'torre1';
 ```
 
-**Por qué es crítico:**
-El flujo "Editar mi registro" (`doGet action=lookup` + `submitRecord` en modo edición) SOLO requiere `numForm` + `apto`. NO pide cédula, correo ni contraseña. El `lookup` devuelve los 143 campos completos del propietario (nombre, cédula, correo, celular, vehículos, mascotas, etc.).
+**Auditoría 7 frentes (pre-deploy):**
+1. Sintaxis (`node --check`): OK
+2. Referencias huérfanas: ninguna función eliminada
+3. Comillas balanceadas: ✓ (2008 dq, 2674 sq, 8 bt)
+4. Lógica nueva: array de 3 sheets, ternario cubre 3 casos
+5. Regresión: 42 endpoints, mismos en V35 y V36
+6. Frontend: sin cambios (es transparente, `lookupMatApto` no cambia)
+7. Dependencias: pestaña "Torre 2 - Etapa 4" existe en Sheet público
 
-Por lo tanto, el CA-XXXX ES la credencial de edición. Filtrarlo en un mensaje de error significa que un tercero podía:
+**Lección #34 (nueva):** Cuando un Sheet público declara "0 registros"
+en una sección pero hay datos en otro lado, el sistema de cache/lookup
+del backend SÍ puede no enterarse. Receta: cruzar Sheet público con
+fuentes externas (carpetas de Drive, otros Sheets) periódicamente para
+detectar drift.
 
-1. Abrir index.html → "Enviar / Crear registro" y escribir cualquier apto (ej. 817).
-2. Recibir el error con "Tu N° de formulario es CA-0164".
-3. Con CA-0164 + 817 ir a "Editar mi registro" → leer y sobrescribir TODOS los datos del propietario.
-
-**Fix (1 línea):**
-```javascript
-// DESPUÉS — sin revelar el número:
-'Ya existe un registro para el apartamento ' + apto + '. Si eres el propietario o encargado, usa la opción "Editar mi registro" con el N° de formulario que se te entregó al crear el registro. Si no lo tienes, contacta a la administración (urb.cerroazul@gmail.com).'
-```
-
-**Alcance del fix:**
-- Solo línea 261 (mensaje de error de dedup). Verificado con `diff`: 1 sola línea cambiada vs V27.
-- Los mensajes de ÉXITO (líneas 280-281) se conservan: muestran el numForm al propietario que acaba de crear/editar SU registro (necesario, no es fuga a terceros).
-- `node --check`: PASS.
-
-**Lección #23 (nueva):** NUNCA exponer credenciales de edición (numForm/CA-XXXX) ni datos que permitan identificar un registro en mensajes de error/respuesta accesibles sin autenticación. Un mensaje de error "amable" que revela un identificador puede convertirse en la llave de acceso al registro completo de otra persona. **Regla replicable:** al escribir mensajes de error, preguntarse "¿este texto le daría a un desconocido algo que no debería tener?".
-
-**Pendiente (recomendado, fuera del alcance de este fix):** reforzar el flujo "Editar mi registro" para que pida algo más que numForm + apto (ej. cédula del propietario), de modo que la credencial no sea suficiente por sí sola.
-
----
-
-### BUGFIX-018 · getEstadoResidente filtraba numForm + nombres de residentes sin autenticación
-
-**Fecha:** 05-Oct-2026
-**Severidad:** ALTA (seguridad — fuga de credencial de edición + datos personales, Ley 1581/2012)
-**Versión corregida:** V30 (`Codigo_V30_BUGFIX018_GETESTADO_SIN_DATOS-20261005.gs`, md5 `a14aa86c100ae82a5988206b4ce28c20`, 196914 bytes)
-**Detectado por:** Hermes durante la validación post-deploy de V29 (BUGFIX-017)
-
-**Problema:**
-El endpoint `getEstadoResidente` (GET, público, sin cédula ni contraseña) devolvía por cada apto:
-```json
-{"ok":true,"apto":"817","aptoExiste":true,"numForm":"CA-0164","hayResidentes":true,"numResidentes":2,"nombresResidentes":["Lilia Millán Cardenas","Diana Avilés Millán"],"propietario":"Olga Avilés Millán"}
-```
-Exponía el `numForm` (credencial de edición) y los `nombresResidentes` + `propietario` (datos personales) a cualquier persona. Iterando aptos se podía armar una base completa de numForm + nombres del conjunto. Con numForm + apto, un tercero edita/lee el registro (mismo vector que BUGFIX-017, por otra puerta).
-
-**Fix (backend):** `getEstadoResidente` ahora devuelve SOLO lo que el portal necesita para decidir el flujo:
-```javascript
-return { ok: true, apto: apto, aptoExiste: true, hayResidentes: <bool>, numResidentes: <n> };
-```
-Eliminados `numForm`, `nombresResidentes`, `propietario` (y la línea `const obj = rowToObject(...)` que quedaba sin uso).
-
-**Fix (frontend):**
-- `residente.html`: eliminada la lista `<ul id="cdListaResidentes">` con nombres. Texto genérico.
-- `residente.js`: eliminada la lógica que llenaba la lista y los campos de estado `numForm`/`numResidentesActuales`/`nombresResidentesActuales`.
-
-**Sin cambio funcional:** el residente sigue verificando con su cédula vía `verificarResidente` (que sí pide cc) y luego edita/registra igual.
-
-**Lección #24:** Un endpoint de "estado" que parecía inofensivo devolvía mucho más de lo necesario. **Regla replicable:** cada endpoint GET público debe devolver el MÍNIMO que el frontend necesita; revisar campo por campo qué se retorna, nunca datos "por si acaso".
-
----
-
-### BUGFIX-019 · Autenticación por token de sesión en endpoints admin/vigilante
-
-**Fecha:** 05-Oct-2026
-**Severidad:** CRÍTICA (seguridad — lectura masiva + escritura de datos sin contraseña, Ley 1581/2012)
-**Versión corregida:** V32 (`Codigo_V32_BUGFIX019_TOKEN_PROPERTIESSERVICE-20261005.gs`, md5 `10527ca94356f53f54d4e6d95765a251`, 199926 bytes)
-**Nota V31→V32:** V31 usó `CacheService.getScriptCache()` y el token NO se propagaba entre instancias del web app (la búsqueda devolvía "Sesión no válida" con token recién emitido). V32 corrige usando `PropertiesService.getScriptProperties()`.
-**Detectado por:** Hermes durante la auditoría de V30 (al verificar que el login del admin/vigilante era solo de pantalla)
-
-**Problema:**
-El login del admin/vigilante protegía SOLO la interfaz (sessionStorage en el navegador), pero el backend NO validaba nada. Los endpoints `adminBuscar`, `adminObtener`, `adminGuardar`, `vigilanteVerResidentes`, `vigilanteBuscarPorPlaca`, etc. se podían llamar directamente vía URL sin contraseña:
-- `adminBuscar` → numForm + cédula + correo + celular (masivo, 100 por consulta).
-- `adminObtener` → los 143 campos completos de un registro con solo su numForm.
-- `adminGuardar` (POST) → EDITA el registro completo sin auth.
-- `vigilante*` → nombre + cédula + vehículos sin auth.
-
-**Fix (backend):**
-1. Nuevas funciones `generarToken()`, `guardarToken(rol, token)`, `validarToken(rol, token)` usando `PropertiesService.getScriptProperties()` con expiración manual por timestamp (`TTL_SESION_SEG = 43200` = 12 h) + `limpiarTokensExpirados(rol)`.
-2. `adminLogin` y `vigilanteLogin` ahora devuelven un `token` al validar la contraseña.
-3. Validación centralizada en `doGet` y `doPost`: si la acción está en `ACTIONS_ADMIN` (8) o `ACTIONS_VIGILANTE` (5), se exige el token correspondiente; sin token válido → `{ok:false, error:"Sesión no válida o expirada..."}`.
-
-**Fix (frontend):**
-- `js/admin.js` y `js/vigilantes.js`: al iniciar sesión guardan el token en sessionStorage (`adminToken`/`vigilanteToken`), y un wrapper de `fetch` inyecta el token en toda llamada (GET: `&token=`; POST: campo `token` en el body). El logout limpia el token.
-
-**Sin cambio funcional para el usuario:** el admin/vigilante sigue poniendo la misma contraseña; tras el login, el token viaja automáticamente. Solo requiere re-login una vez tras el deploy (la sesión vieja no tenía token).
-
-**Lección #25:** El login de "pantalla" no es autenticación. Un `sessionStorage.setItem('loggedIn','true')` solo oculta la UI; el backend debe validar cada operación sensible por separado. **Regla replicable:** toda consulta/escritura que exponga o modifique datos personales debe exigir una credencial POR REQUEST (token o password), no confiar en el flag del navegador.
-
----
-
-### BUGFIX-020 · Verificación de cédula del propietario en "Editar mi registro"
-
-**Fecha:** 05-Oct-2026
-**Severidad:** ALTA (seguridad — numForm+apto era credencial débil con acceso total)
-**Versión corregida:** V33 (`Codigo_V33_BUGFIX020_EDITAR_CEDULA-20261005.gs`, md5 `3607f5efaa9c015fe6bfd0e0c4d44de3`, 200612 bytes)
-**Spec:** `docs/spec-edicion-cedula.md`
-
-**Problema:**
-"Editar mi registro" pedía SOLO numForm + apto. El `lookup` devolvía los 143 campos y el `submitRecord` editMode sobrescribía la fila sin verificar identidad. numForm+apto es credencial débil con acceso total (cierre del pendiente recomendado anotado en BUGFIX-017).
-
-**Fix:**
-- `doGet action=lookup`: ahora exige `ccProp` y valida contra el registro (col 6, cédula del titular) antes de devolver el row. Sin cédula o cédula incorrecta → error, no entrega datos.
-- `submitRecord` en modo edición: valida `ccProp` antes de escribir (defensa en profundidad; un atacante no puede saltar el lookup y hacer el POST directo).
-- Frontend: campo "Cédula del propietario" en `index.html` + `js/app.js` la lee, valida (solo dígitos) y la envía en el lookup.
-- Usa `normalizarCC()` (solo dígitos), la misma que `verificarPropietario` (mudanzas).
-
-**Lección #26:** Un identificador (numForm) NO es autenticación. Para operaciones que leen o escriben datos personales, exigir un factor que SOLO el titular conoce (su cédula), no solo un código que puede filtrarse por otra vía. Replicable a cualquier flujo de "editar mis datos".
-
----
-
-## BUGFIX-021 · `adminVerComprobanteSalon` no devuelve `tieneComprobante: true` en éxito
-
-**Fecha:** 05-Oct-2026
-**Severidad:** MEDIA (UX roto — el admin no puede ver los comprobantes de las reservas Pagado, aunque SÍ existen y SÍ están en Drive)
-**Versión corregida:** V34 (`Codigo_V34_BUGFIX-021_2026-10-05.gs`, md5 `73bf233649f51be937e90be2a83628ba`, 200718 bytes)
-**Rama:** `feature/bugfix-comprobante-salon`
-**Detectado por:** Operador reportó "en el portal administrativo en salon social cuando revisamos las agendas de las reservas las que dicen pagados no podemos descargar el comprobante que subió la persona".
-
-**Síntoma reportado por el usuario:**
-> "en el portal administrativo en salon social cuando vamos a revisar las agendas de las reservas las que dicen pagados no podemos descargar el comprovante que subio la persona o no sabemos si no lo subio suponemos que si porque dice pagado verifica que ocurre y me informas"
-
-**Reproducción (verificada en vivo 05-Oct-2026):**
-1. Login admin en `https://fabig76.github.io/cerro-azul-residentes/admin.html`
-2. Click "🏛️ Salón Social" → filtro "Pagado" → "🔄 Actualizar lista"
-3. La tabla muestra correctamente las reservas Pagado con botón "📎 Ver" (porque `adminListarReservasSalon` SÍ devuelve `tieneComprobante: true` y `comprobanteId` lleno)
-4. Click en "📎 Ver" de RS-0004 → alert "Esta reserva no tiene comprobante subido."
-
-**Causa raíz (encontrada con captura fina de red):**
-`adminVerComprobanteSalon` (Código.gs línea 3160-3172) tiene un **campos asimétrico**:
-- Cuando NO hay comprobante (línea 3161): `return { ok: true, ..., tieneComprobante: false, ... }` ✓ SÍ incluye el campo
-- Cuando SÍ hay comprobante (línea 3165-3172): `return { ok: true, ..., comprobanteId, comprobanteUrl, nombreArchivo, ... }` ✗ NO incluye `tieneComprobante: true`
-
-El frontend (`js/admin.js` línea 721-723) verifica:
-```javascript
-if (!r.tieneComprobante) {
-  A.showAlert('Esta reserva no tiene comprobante subido.', 'err');
-  return;
-}
-```
-
-Como `r.tieneComprobante` es `undefined` (no false ni true), `!undefined === true` → entra al if y muestra el alert incorrecto. El comprobante SÍ está, el backend SÍ lo encuentra en Drive, SÍ devuelve la URL correcta, pero el frontend no lo sabe porque falta el flag.
-
-**Evidencia de la respuesta correcta (capturada en el navegador):**
-```json
-{
-  "ok": true,
-  "reservaId": "RS-0004",
-  "comprobanteId": "1B3wBrbfNYVjAoapZgmGie2bTm2dewu5S",
-  "comprobanteUrl": "https://drive.google.com/file/d/1B3wBrbfNYVjAoapZgmGie2bTm2dewu5S/view?usp=drivesdk",
-  "nombreArchivo": "RS-0004_IMG-20260929-WA0013.jpg",
-  "estado": "Pagado"
-  // ↑ NO contiene "tieneComprobante": true  ← BUG
-}
-```
-
-**Fix (1 línea, apps-script/Código.gs línea 3168):**
-```javascript
-return {
-  ok: true,
-  reservaId: reservaId,
-  tieneComprobante: true,                                       // BUGFIX-021: faltaba este campo
-  comprobanteId: comprobanteId,
-  comprobanteUrl: file.getUrl(),
-  nombreArchivo: file.getName(),
-  estado: String(data[i][10])
-};
-```
-
-**Verificación:**
-- `node --check` sobre el archivo convertido a `.js` → SINTAXIS OK
-- No se modificó ningún otro endpoint (regresión cero)
-- 1 línea agregada, 0 líneas eliminadas
-
-**Lección #27:** **Asimetría de campos en respuestas JSON.** Cuando un endpoint tiene dos ramas de retorno (éxito con dato / éxito sin dato), TODAS las ramas deben incluir el MISMO conjunto de campos para que el frontend pueda hacer discriminaciones simples (`if (!r.campo)`). Si una rama lo incluye y la otra no, el frontend se comporta de forma impredecible (en este caso, el alert "no tiene" aparecía cuando SÍ tenía). **Regla:** en cualquier endpoint, todos los `return { ok: true, ... }` deben llevar el mismo set de campos, con valor apropiado.
-
-**Regla replicable:** Antes de hacer `return { ok: true, ... }` en un endpoint, listar mentalmente los campos que el frontend espera (revisar el `.js` correspondiente) y confirmar que están TODOS, no solo los obvios.
-
-**Acción del operador:**
-1. Abrir Apps Script Cerro Azul en `script.google.com`
-2. Crear nuevo archivo `Codigo_V34_BUGFIX-021_2026-10-05.gs`
-3. Pegar el contenido de `apps-script/Codigo_V34_BUGFIX-021_2026-10-05.gs`
-4. Deploy → "Nueva versión" → descripción "BUGFIX-021 adminVerComprobanteSalon devuelve tieneComprobante: true" → Deploy
-5. Apps Script le asignará "Versión 32" (siguiente autonumerada)
-6. Verificar E2E en navegador: login admin → Salón Social → Pagado → click "📎 Ver" → debe ABRIR EL COMPROBANTE en nueva pestaña
-
-**VERIFICADO EN PRODUCCIÓN (05-Oct-2026):** deploy confirmado por operador. Pruebas E2E vía navegador real + fetch directo al backend:
-
-| Test | Endpoint | Reserva | Resultado |
-|---|---|---|---|
-| T-1 | adminVerComprobanteSalon | RS-0004 (Pagado) | `tieneComprobante: true` + comprobanteUrl + nombreArchivo ✓ abre JPG en nueva pestaña |
-| T-2 | adminVerComprobanteSalon | RS-0006 (Pagado) | `tieneComprobante: true` + comprobanteUrl ✓ |
-| T-3 | adminVerComprobanteSalon | RS-0008 (Pagado) | `tieneComprobante: true` + comprobanteUrl ✓ |
-| T-4 | adminVerComprobanteSalon | RS-0001 (Expirado, sin comp) | `tieneComprobante: false` ✓ |
-| T-5 | adminListarReservasSalon&Pagado | (regresión) | 3 reservas, primera con `tieneComprobante: true` ✓ |
-| T-6 | adminListarReservasMudanzas | (regresión cruzada) | 10 reservas Confirmadas ✓ |
-| T-7 | adminBuscar&q=Mateo | (regresión cruzada) | 1 resultado (Mateo Velasquez) ✓ |
-| T-8 | 7 portales cargan | (regresión visual) | index/admin/vigilantes/salon-social/residente/estado-cuenta/cartera-admin todos OK ✓ |
-
-**Comprobante real descargado:** RS-0004_IMG-20260929-WA0013.jpg — transferencia bancaria de $126,000 a "Cerro Azul Conjunto Residencial Ph", Comprobante N° 000079300, 16-Ago-2026. Imagen legible y válida.
-
----
-
-## BUGFIX-022 · Módulo de Estado de Cuenta: 6 funciones `ec*` desaparecieron del Código.gs desplegado
-
-**Fecha:** 05-Oct-2026
-**Severidad:** CRÍTICA (UX roto — TODOS los residentes que intentan consultar su estado de cuenta ven "ecConsultar is not defined" en vez de su información. El módulo SÍ funcionó desde V12 el 25-Sept-2026; las funciones se perdieron del .gs desplegado en algún deploy posterior, pero el routing (V18, BUGFIX-009) siguió ahí, lo que produce el error confuso en vez de un 404 limpio)
-**Versión corregida:** V35 (`Codigo_V35_BUGFIX-022_2026-10-05.gs`, md5 `3af70d3f8298f900c4407470131cbb45`, 222214 bytes)
-**Rama:** `feature/bugfix-022-restaurar-estado-cuenta`
-**Detectado por:** Operador reportó screenshot con error "ecConsultar is not defined" al consultar estado de cuenta del residente CA-0218 / apto 9904 / CC 1044120074. Operador explícitamente corrigió mi diagnóstico inicial de "nunca se implementó": el módulo SÍ funcionó varios días antes de que las funciones se perdieran en algún deploy.
-
-**Investigación:**
-- Búsqueda global en el repo: `grep "^function ec" Código.gs` → 0 resultados
-- Búsqueda en drive `Cerro Azul/proyecto formulario residentes/` (V21-V34) → 0 resultados
-- Búsqueda en `Cerro Azul/backups/proyecto-completo-20261005/apps-script/Código.gs` (md5 `3607f5efaa9c015fe6bfd0e0c4d44de3`, equivalente a V33) → 0 resultados
-- Búsqueda en `hermes varios/cerro azul/cerro-azul-residentes-main/modulo-estado-cuenta.gs` → 23 funciones `ec*` incluyendo las 6 públicas (478 líneas, 21082 bytes)
-- CHANGELOG-BUGFIXES.md líneas 478, 542-563, 696: confirma que las funciones SÍ existieron y fueron probadas con T-EC-1 a T-EC-6 (CA-0055 apto 105 CC 11786889)
-
-**Causa raíz (hipótesis más probable):**
-El módulo se implementó como archivo separado `modulo-estado-cuenta.gs` (478 líneas) que se PEGABA al final del Código.gs. En algún deploy entre V20 y V21, el archivo del Código.gs en Apps Script se reemplazó con un .gs que NO incluía el módulo. El routing (`if (action === 'ecConsultar')`) quedó (porque SÍ se actualizó en V18), pero las funciones se referencian sin estar definidas → ReferenceError → `{ok: false, error: 'ecConsultar is not defined'}`. La infraestructura de datos (Sheet Cartera `_Control`, `Agosto 2026`, `Pagos`, folder Drive con facturas) SÍ existe y está bien.
-
-**Fix (478 líneas restauradas al final del Código.gs):**
-- 6 funciones públicas: `ecConsultar`, `ecDescargarFactura`, `ecPazYSalvo`, `ecIniciarCarga`, `ecSubirFacturas`, `ecFinalizarCarga`
-- 14 funciones helper: `ecConfig`, `ecConfigRequerida`, `ecSS`, `ecHoja`, `ecTexto`, `ecNum`, `ecFechaLargaDesdeISO`, `ecHoyLarga`, `ecSetup`, `ecTolerancia`, `ecAdminOk`, `ecIndicesCartera`, `ecBuscarAptoEnFilas`, `ecLeerControl`, `ecPeriodoActivo`, `ecVerificarAcceso`, `ecContexto`, `ecPagosApto`, `ecArchivoFactura`
-- 3 constantes de hojas: `EC_TAB_CONTROL`, `EC_TAB_PAGOS`, `EC_TAB_PYS`
-- 3 arrays de headers: `EC_HDR_CONTROL`, `EC_HDR_PAGOS`, `EC_HDR_PYS`
-- Constantes varias: `EC_COLS_REQUERIDAS`, `EC_MAX_INTENTOS`, `EC_BLOQUEO_SEG`, `EC_MAX_ARCHIVOS_POR_LOTE`, `EC_TZ`, `EC_MESES`
-
-**Verificación:**
-- `node --check` sobre el archivo → SINTAXIS OK
-- Tamaño: V34 (200718 bytes) → V35 (222214 bytes) = +21496 bytes
-- Líneas: V34 (4382) → V35 (4868) = +486 líneas
-- Las 6 funciones están en líneas 4638, 4659, 4671, 4724, 4812, 4837
-- El routing en doPost líneas 246-251 sigue intacto (sin cambios)
-- Dependencias verificadas: `normApto`, `jsonOut`, `SHEET_ID`, `verificarPropietario`, `normCc` → todas existen en Código.gs
-
-**Lección #28:** **Módulos "pegados al final" son frágiles en deploys manuales.** El patrón "tengo un archivo .gs separado que pego al final del principal" hace que sea MUY fácil olvidarlo al hacer copy-paste del archivo completo. **Regla replicable a cualquier proyecto Apps Script:** si un módulo es separable, debe estar en su propio archivo .gs que se deploya como archivo separado en Apps Script (NO concatenado al principal). Apps Script permite tener varios archivos .gs en el mismo proyecto y todos son visibles globalmente. La convención actual "todo en un solo Código.gs" es un anti-patrón.
-
-**Lección #29 (para diagnóstico):** **Un error "X is not defined" en el backend suele ser un módulo pegado que se perdió, NO un módulo nunca implementado.** Antes de declarar "esto nunca se hizo", buscar en backups, drive, otros proyectos, y CHANGELOG. Si hay evidencia de pruebas T-EC-1..6, el bug es de deploy, no de implementación.
-
-**Lección #30 (validación post-deploy):** Después de CUALQUIER deploy, hacer smoke test de los 7 portales. Si el operador (o el agente) hubiera corrido un `curl '?action=ecConsultar'` después de V21, este bug se habría detectado hace 9 días.
-
-**Acción del operador:**
-1. Abrir Apps Script Cerro Azul en `script.google.com`
-2. Crear nuevo archivo `Codigo_V35_BUGFIX-022_2026-10-05.gs`
-3. Pegar el contenido de `apps-script/Codigo_V35_BUGFIX-022_2026-10-05.gs`
-4. **Ejecutar `ecSetup` UNA VEZ** desde el editor (autoriza DriveApp/DocumentApp)
-5. Deploy → "Nueva versión" → descripción "BUGFIX-022 restaurar módulo de estado de cuenta" → Deploy
-6. Apps Script le asignará "Versión 33"
-7. Esperar 3 min cold start
-8. Validar E2E: estado-cuenta.html con datos del residente de la imagen (CA-0218 / apto 9904 / CC 1044120074) DEBE mostrar el estado de cuenta
-
-**VERIFICADO EN PRODUCCIÓN (05-Oct-2026):** deploy confirmado por operador como "Versión 33". Pruebas E2E vía navegador real + fetch directo al backend:
-
-| Test | Endpoint | Datos | Resultado |
-|---|---|---|---|
-| T-1 | ecConsultar | CA-0218 / apto 9904 / CC 1044120074 (datos del screenshot) | `ok:false error:"No se encontró ningún registro con ese N° de formulario y N° de apartamento."` ✓ YA NO es "ecConsultar is not defined" |
-| T-2 | ecConsultar | CA-0002 / apto 218 / CC 1017166544 (Faber Andrés Tapias) | `ok:true` con JSON completo: periodo 2026-08, cartera $205.752, factura N° 1287, valor admon $205.800, total a pagar $416.054, link de pago Jelpit ✓ |
-| T-3 | navegador E2E | Faber Andrés Tapias, apto 218, CC 1017166544 | Pantalla muestra: "Apto 218 - Faber Andrés Tapias Tobón", Saldo pendiente $205.752 al 31-Agosto-2026, Cuota admon $205.800, N° cuenta cobro 1287, Total a pagar $416.054, botones Descargar/Pagar/Salir ✓ |
-| T-4 | adminVerComprobanteSalon (regresión V34) | RS-0004 | `tieneComprobante: true` + URL del comprobante ✓ |
-| T-5 | adminListarReservasSalon (regresión V34) | estado=Pagado | 3 reservas, todas con `tieneComprobante: true` ✓ |
-| T-6 | adminLogin (regresión) | password <admin> | Login correcto, token devuelto ✓ |
-| T-7 | nextId (regresión) | n/a | CA-0219 ✓ |
-
-**Observación:** los datos del residente de la imagen (CA-0218 / apto 9904 / CC 1044120074) NO existen en el Sheet Registros. La respuesta correcta es "No se encontró ningún registro" — lo que confirma que el endpoint SÍ valida contra el Sheet, y la fuga de "no debería haber datos" no existe.
-
----
+**Pendiente decisión operador:**
+- 2 aptos conflictivos (919 con 2 mats, 1715 con 3 mats) requieren
+  revisión manual desde el portal de admin.
+- Lote 1-4 del Sheet 02 NO se incluyeron (decisión confirmada).
+- Huecos BUGFIX-017 a BUGFIX-022 sin documentar en este CHANGELOG
+  (están en la skill y en el historial del operador).
 
