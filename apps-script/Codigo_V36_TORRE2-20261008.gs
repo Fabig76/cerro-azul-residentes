@@ -39,20 +39,90 @@ const COL_APTO = 3;
 // Col 142 (última) = Hash Dedupe
 
 // ---------------------------------------------------------------------
+// BUGFIX-019: Autenticación por token de sesión para endpoints admin/vigilante.
+// El login devuelve un token que se guarda en CacheService (TTL). Cada consulta
+// admin/vigilante debe enviar ese token; si no es válido, NO se entregan datos.
+// ---------------------------------------------------------------------
+const TTL_SESION_SEG = 43200; // 12 horas
+
+const ACTIONS_ADMIN = [
+  'adminBuscar', 'adminObtener', 'adminGuardar',
+  'adminListarReservasMudanzas', 'adminListarReservasSalon',
+  'adminVerComprobanteSalon', 'adminCancelarReservaSalon',
+  'configurarTriggerExpiracion'
+];
+
+const ACTIONS_VIGILANTE = [
+  'vigilanteVerResidentes', 'vigilanteVerMudanzas',
+  'vigilanteBuscarPorPlaca', 'vigilanteVerReservasSalon',
+  'vigilanteCheckMudanza'
+];
+
+function generarToken() {
+  return Utilities.getUuid();
+}
+
+function guardarToken(rol, token) {
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty('tok_' + rol + '_' + token, String(Date.now()));
+  limpiarTokensExpirados(rol);
+}
+
+function validarToken(rol, token) {
+  if (!token) return false;
+  const props = PropertiesService.getScriptProperties();
+  const ts = props.getProperty('tok_' + rol + '_' + token);
+  if (!ts) return false;
+  if (Date.now() - parseInt(ts, 10) > TTL_SESION_SEG * 1000) {
+    props.deleteProperty('tok_' + rol + '_' + token);
+    return false;
+  }
+  return true;
+}
+
+function limpiarTokensExpirados(rol) {
+  const props = PropertiesService.getScriptProperties();
+  const prefijo = 'tok_' + rol + '_';
+  const ahora = Date.now();
+  Object.keys(props.getProperties()).forEach(function (k) {
+    if (k.indexOf(prefijo) === 0 && ahora - parseInt(props.getProperty(k), 10) > TTL_SESION_SEG * 1000) {
+      props.deleteProperty(k);
+    }
+  });
+}
+
+// ---------------------------------------------------------------------
 // doGet: lookup / nextId / lookupMatApto / lookupMatParq
 // ---------------------------------------------------------------------
 function doGet(e) {
   try {
     const action = (e && e.parameter && e.parameter.action) || '';
+    // BUGFIX-019: validar token para acciones protegidas (admin/vigilante)
+    if (ACTIONS_ADMIN.indexOf(action) !== -1) {
+      if (!validarToken('admin', e.parameter.token)) {
+        return jsonOut({ ok: false, error: 'Sesión no válida o expirada. Ingrese de nuevo.' });
+      }
+    }
+    if (ACTIONS_VIGILANTE.indexOf(action) !== -1) {
+      if (!validarToken('vigilante', e.parameter.token)) {
+        return jsonOut({ ok: false, error: 'Sesión no válida o expirada. Ingrese de nuevo.' });
+      }
+    }
     if (action === 'nextId') {
       return jsonOut({ ok: true, nextId: getNextFormId() });
     }
     if (action === 'lookup') {
       const numForm = String(e.parameter.numForm || '').trim();
       const apto = String(e.parameter.apto || '').trim();
+      const ccProp = normalizarCC(e.parameter.ccProp);
+      // BUGFIX-020: exigir cédula del propietario para leer el registro
+      if (!ccProp) return jsonOut({ ok: false, error: 'Falta cédula del propietario.' });
       const row = findRowByNumFormAndApto(numForm, apto);
       if (!row) {
         return jsonOut({ ok: false, error: 'No se encontró ningún registro con ese N° de formulario y N° de apartamento. Verifica los datos e inténtalo de nuevo.' });
+      }
+      if (normalizarCC(row.values[6]) !== ccProp) {
+        return jsonOut({ ok: false, error: 'La cédula no coincide con el propietario registrado. Verifique o contacte a la administración.' });
       }
       return jsonOut({ ok: true, row: rowToObject(row.values) });  // FIX 23-Sept: antes decia 'row' (objeto), debia ser 'row.values' (array)
     }
@@ -162,6 +232,17 @@ function doPost(e) {
     }
     // Enrutar por action (agregado 22-Sep-2026 feature/mudanzas)
     const action = String(payload.action || '').trim();
+    // BUGFIX-019: validar token para acciones protegidas (admin/vigilante)
+    if (ACTIONS_ADMIN.indexOf(action) !== -1) {
+      if (!validarToken('admin', payload.token)) {
+        return jsonOut({ ok: false, error: 'Sesión no válida o expirada. Ingrese de nuevo.' });
+      }
+    }
+    if (ACTIONS_VIGILANTE.indexOf(action) !== -1) {
+      if (!validarToken('vigilante', payload.token)) {
+        return jsonOut({ ok: false, error: 'Sesión no válida o expirada. Ingrese de nuevo.' });
+      }
+    }
     // --- ESTADO DE CUENTA (spec-estado-cuenta.md §6.2) ---
     if (action === 'ecConsultar')        return jsonOut(ecConsultar(payload));
     if (action === 'ecDescargarFactura') return jsonOut(ecDescargarFactura(payload));
@@ -252,6 +333,10 @@ function submitRecord(data) {
     if (!found) {
       return { ok: false, error: 'N° de formulario o N° de apartamento no coinciden con un registro existente. No se puede editar.' };
     }
+    // BUGFIX-020: verificar cédula del propietario antes de escribir
+    if (normalizarCC(data.ccProp) !== normalizarCC(found.values[6])) {
+      return { ok: false, error: 'La cédula no coincide con el propietario registrado. No se puede editar.' };
+    }
     targetRow = found.rowNumber;
     assignedNumForm = submittedNumForm;
     fechaRegistroOriginal = found.values[COL_FECHA_REG];
@@ -259,7 +344,7 @@ function submitRecord(data) {
     // Modo creación: validar que NO exista ya un registro con ese N° Apto
     const existing = findRowByApto(apto);
     if (existing) {
-      return { ok: false, error: 'Ya existe un registro para el apartamento ' + apto + '. Tu N° de formulario es ' + existing.values[COL_NUM_FORM] + '. Usa la opción "EDITAR MI REGISTRO" para modificarlo.' };
+      return { ok: false, error: 'Ya existe un registro para el apartamento ' + apto + '. Si eres el propietario o encargado, usa la opción "Editar mi registro" con el N° de formulario que se te entregó al crear el registro. Si no lo tienes, contacta a la administración (urb.cerroazul@gmail.com).' };
     }
     // Buscar siguiente fila vacía
     const last = sheet.getLastRow();
@@ -1273,7 +1358,9 @@ function adminLogin(password) {
     return { ok: false, error: 'No se encontro la contrasena de administrador en la pestana Config del Sheet. Contacte al administrador del sistema.' };
   }
   if (password === stored) {
-    return { ok: true, message: 'Login correcto' };
+    const token = generarToken();
+    guardarToken('admin', token);
+    return { ok: true, message: 'Login correcto', token: token };
   }
   return { ok: false, error: 'Contrasena incorrecta' };
 }
@@ -1562,7 +1649,9 @@ function vigilanteLogin(password) {
     return { ok: false, error: 'No se encontro la contrasena de vigilancia en Config!B2.' };
   }
   if (password === stored) {
-    return { ok: true, message: 'Login correcto' };
+    const token = generarToken();
+    guardarToken('vigilante', token);
+    return { ok: true, message: 'Login correcto', token: token };
   }
   return { ok: false, error: 'Contrasena incorrecta' };
 }
@@ -1931,7 +2020,6 @@ function getEstadoResidente(apto) {
   const row = findRowByApto(apto);
   if (!row) return { ok: true, apto: apto, aptoExiste: false };
 
-  const obj = rowToObject(row.values);
   const nombresResidentes = [];
 
   // Slots de residentes: v[29..48] (4 residentes x 5 cols)
@@ -1941,15 +2029,16 @@ function getEstadoResidente(apto) {
     if (nombre) nombresResidentes.push(nombre);
   }
 
+  // BUGFIX-018: NO devolver numForm, nombresResidentes ni propietario.
+  // Son datos sensibles accesibles sin autenticación. numForm es la credencial
+  // de edición; nombres y propietario son datos personales (Ley 1581/2012).
+  // El frontend solo necesita los booleanos para decidir el flujo.
   return {
     ok: true,
     apto: apto,
     aptoExiste: true,
-    numForm: String(obj.numForm || ''),
     hayResidentes: nombresResidentes.length > 0,
-    numResidentes: nombresResidentes.length,
-    nombresResidentes: nombresResidentes,
-    propietario: String(obj.nombreProp || '')
+    numResidentes: nombresResidentes.length
   };
 }
 
@@ -3078,6 +3167,7 @@ function adminVerComprobanteSalon(reservaId) {
         return {
           ok: true,
           reservaId: reservaId,
+          tieneComprobante: true,                                       // BUGFIX-021: faltaba este campo
           comprobanteId: comprobanteId,
           comprobanteUrl: file.getUrl(),
           nombreArchivo: file.getName(),
@@ -4290,5 +4380,491 @@ function chatAsistente(payload) {
   } catch (err) {
     Logger.log('[chatAsistente] EXC ' + err);
     return { ok: false, error: 'Error al consultar el asistente: ' + String(err && err.message || err) };
+  }
+}
+
+// =====================================================================
+// BUGFIX-022: Restaurar módulo de Estado de Cuenta (478 líneas)
+// El módulo se implementó en V12 (25-Sept) y se perdió en deploys
+// posteriores (V21+). Se restaura desde backup hermes-varios/cerro-azul/
+// modulo-estado-cuenta.gs (md5 verificado en origen).
+// =====================================================================
+
+// =====================================================================
+// MÓDULO ESTADO DE CUENTA — Portal de propietarios + carga mensual
+// Especificación: docs/spec-estado-cuenta.md
+// Este bloque se PEGA AL FINAL de Código.gs. No modifica funciones
+// existentes; solo agrega rutas en doPost (ver spec §6.2).
+// =====================================================================
+
+const EC_TAB_CONTROL = '_Control';
+const EC_TAB_PAGOS   = 'Pagos';
+const EC_TAB_PYS     = 'PazYSalvos';
+const EC_HDR_CONTROL = ['ID Carga', 'Periodo', 'Pestaña', 'Fecha corte', 'Estado',
+                        'Folder facturas ID', 'Total aptos', 'Fecha inicio', 'Fecha fin'];
+const EC_HDR_PAGOS   = ['Periodo', 'N° Apto', 'N° Cuenta Cobro', 'Fecha Emisión', 'Páguese Hasta',
+                        'Abono Último Mes', 'Total a Pagar', 'Saldo Anterior', 'Anticipos', 'Fecha Carga'];
+const EC_HDR_PYS     = ['Consecutivo', 'Código', 'Fecha Expedición', 'Periodo', 'N° Apto',
+                        'N° Formulario', 'Nombre', 'CC', 'Total Cartera'];
+// Índices (0-based) de _Control
+const EC_C_ID = 0, EC_C_PERIODO = 1, EC_C_PESTANA = 2, EC_C_CORTE = 3, EC_C_ESTADO = 4,
+      EC_C_FOLDER = 5, EC_C_TOTAL = 6, EC_C_INICIO = 7, EC_C_FIN = 8;
+// Índices (0-based) de Pagos
+const EC_P_PERIODO = 0, EC_P_APTO = 1, EC_P_NUMCC = 2, EC_P_EMISION = 3, EC_P_HASTA = 4,
+      EC_P_ABONO = 5, EC_P_TOTAL = 6, EC_P_SALDOANT = 7, EC_P_ANTICIPOS = 8, EC_P_FCARGA = 9;
+
+const EC_COLS_REQUERIDAS = ['numero', 'nombre', 'anticip', 'valor admon', 'total cartera', 'meses prom'];
+const EC_MAX_INTENTOS = 5;          // intentos fallidos por apto
+const EC_BLOQUEO_SEG = 900;         // 15 minutos
+const EC_MAX_ARCHIVOS_POR_LOTE = 10;
+const EC_TZ = 'America/Bogota';
+const EC_MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
+                  'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+// ---------------------------------------------------------------------
+// Configuración (pestaña Config del Sheet de Registros, SHEET_ID)
+// ---------------------------------------------------------------------
+function ecConfig(key) {
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('Config');
+  if (!sheet) return '';
+  const last = Math.max(sheet.getLastRow(), 1);
+  const data = sheet.getRange(1, 1, last, 2).getValues();
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][0]).trim() === key) return String(data[i][1] == null ? '' : data[i][1]).trim();
+  }
+  return '';
+}
+
+function ecConfigRequerida(key) {
+  const v = ecConfig(key);
+  if (!v) throw new Error('Falta la clave "' + key + '" en la pestaña Config. Contacte al administrador del sistema.');
+  return v;
+}
+
+function ecSS() {
+  return SpreadsheetApp.openById(ecConfigRequerida('cartera_sheet_id'));
+}
+
+function ecHoja(nombre, headers) {
+  const ss = ecSS();
+  let sh = ss.getSheetByName(nombre);
+  if (!sh) sh = ss.insertSheet(nombre);
+  if (sh.getLastRow() === 0) {
+    sh.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+// Convierte valor de celda a texto. Si Sheets lo convirtió a Date
+// (BUGFIX-004), lo formatea con el patrón indicado.
+function ecTexto(v, patronFecha) {
+  if (v instanceof Date) return Utilities.formatDate(v, EC_TZ, patronFecha || 'yyyy-MM-dd');
+  return String(v == null ? '' : v).trim();
+}
+
+function ecNum(v) {
+  const n = Number(v);
+  return isNaN(n) ? 0 : n;
+}
+
+// "2026-08-31" -> "31 de agosto de 2026"
+function ecFechaLargaDesdeISO(iso) {
+  const p = String(iso).split('-');
+  return parseInt(p[2], 10) + ' de ' + EC_MESES[parseInt(p[1], 10) - 1] + ' de ' + p[0];
+}
+
+function ecHoyLarga() {
+  return ecFechaLargaDesdeISO(Utilities.formatDate(new Date(), EC_TZ, 'yyyy-MM-dd'));
+}
+
+// Ejecutar UNA VEZ desde el editor (autoriza DriveApp/DocumentApp y crea pestañas)
+function ecSetup() {
+  ecHoja(EC_TAB_CONTROL, EC_HDR_CONTROL);
+  ecHoja(EC_TAB_PAGOS, EC_HDR_PAGOS);
+  ecHoja(EC_TAB_PYS, EC_HDR_PYS);
+  const carpeta = DriveApp.getFolderById(ecConfigRequerida('facturas_folder_id'));
+  const plantilla = DriveApp.getFileById(ecConfigRequerida('plantilla_pys_id'));
+  if (plantilla.getMimeType() !== MimeType.GOOGLE_DOCS) {
+    throw new Error('plantilla_pys_id debe ser un Documento de Google (no .docx). Tipo actual: ' + plantilla.getMimeType());
+  }
+  DocumentApp.openById(plantilla.getId()); // fuerza el permiso de Documentos
+  Logger.log('OK. Carpeta facturas: ' + carpeta.getName() + ' | Plantilla: ' + plantilla.getName() +
+             ' | Tolerancia: ' + ecTolerancia() + ' | Link pago: ' + (ecConfig('link_pago') || '(vacío)'));
+}
+
+function ecTolerancia() {
+  const t = parseFloat(ecConfig('pys_tolerancia'));
+  return isNaN(t) ? 1000 : t;
+}
+
+function ecAdminOk(password) {
+  return adminLogin(password).ok === true;   // reutiliza la función existente
+}
+
+// ---------------------------------------------------------------------
+// Lectura de la pestaña mensual de cartera (función pura: recibe filas)
+// ---------------------------------------------------------------------
+function ecIndicesCartera(filas) {
+  let iHdr = -1;
+  for (let i = 0; i < Math.min(10, filas.length); i++) {
+    if (String(filas[i][0]).trim().toLowerCase() === 'numero') { iHdr = i; break; }
+  }
+  if (iHdr < 0) throw new Error('No se encontró la fila de encabezados (columna A = "numero").');
+  const hdrOriginal = filas[iHdr].map(h => String(h).trim());
+  const hdr = hdrOriginal.map(h => h.toLowerCase());
+  const idx = {};
+  for (const c of EC_COLS_REQUERIDAS) {
+    idx[c] = hdr.indexOf(c);
+    if (idx[c] < 0) throw new Error('Falta la columna "' + c + '" en la cartera.');
+  }
+  const conceptos = [];
+  for (let j = idx['nombre'] + 1; j < idx['anticip']; j++) {
+    if (hdrOriginal[j]) conceptos.push({ col: j, nombre: hdrOriginal[j] });
+  }
+  if (!conceptos.length) throw new Error('No hay columnas de conceptos entre "nombre" y "anticip".');
+  return { filaEncabezado: iHdr, idx: idx, conceptos: conceptos };
+}
+
+function ecBuscarAptoEnFilas(filas, apto) {
+  const info = ecIndicesCartera(filas);
+  const buscado = normApto(apto);
+  for (let i = info.filaEncabezado + 1; i < filas.length; i++) {
+    const r = filas[i];
+    if (normApto(r[info.idx['numero']]) !== buscado) continue;
+    return {
+      apto: buscado,
+      nombre: String(r[info.idx['nombre']]).trim().replace(/^\d+\s+/, ''),
+      conceptos: info.conceptos.map(c => ({ nombre: c.nombre, valor: ecNum(r[c.col]) })),
+      anticipos: ecNum(r[info.idx['anticip']]),
+      valorAdmon: ecNum(r[info.idx['valor admon']]),
+      totalCartera: ecNum(r[info.idx['total cartera']]),
+      mesesProm: ecNum(r[info.idx['meses prom']])
+    };
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------
+// _Control
+// ---------------------------------------------------------------------
+function ecLeerControl() {
+  const sh = ecHoja(EC_TAB_CONTROL, EC_HDR_CONTROL);
+  const last = sh.getLastRow();
+  if (last < 2) return [];
+  const data = sh.getRange(2, 1, last - 1, EC_HDR_CONTROL.length).getValues();
+  return data.map((v, i) => ({
+    rowNumber: i + 2,
+    idCarga: ecTexto(v[EC_C_ID]),
+    periodo: ecTexto(v[EC_C_PERIODO], 'yyyy-MM'),
+    pestana: ecTexto(v[EC_C_PESTANA]),
+    fechaCorte: ecTexto(v[EC_C_CORTE], 'yyyy-MM-dd'),
+    estado: ecTexto(v[EC_C_ESTADO]),
+    folderId: ecTexto(v[EC_C_FOLDER]),
+    totalAptos: ecNum(v[EC_C_TOTAL])
+  }));
+}
+
+function ecPeriodoActivo() {
+  const activos = ecLeerControl().filter(c => c.estado === 'ACTIVO');
+  return activos.length ? activos[activos.length - 1] : null;
+}
+
+// ---------------------------------------------------------------------
+// Acceso del propietario (reutiliza verificarPropietario + límite de intentos)
+// ---------------------------------------------------------------------
+function ecVerificarAcceso(data) {
+  const apto = normApto(data.apto);
+  if (!apto) return { ok: false, error: 'Falta N° de apartamento.' };
+  const cache = CacheService.getScriptCache();
+  const key = 'ec_fail_' + apto;
+  const fallos = parseInt(cache.get(key) || '0', 10);
+  if (fallos >= EC_MAX_INTENTOS) {
+    return { ok: false, error: 'Demasiados intentos fallidos para este apartamento. Intente de nuevo en 15 minutos.' };
+  }
+  const v = verificarPropietario(data.numForm, data.apto, data.ccProp);
+  if (!v.ok) {
+    cache.put(key, String(fallos + 1), EC_BLOQUEO_SEG);
+    return v;
+  }
+  cache.remove(key);
+  return v;
+}
+
+function ecContexto(data) {
+  const v = ecVerificarAcceso(data);
+  if (!v.ok) return v;
+  const activo = ecPeriodoActivo();
+  if (!activo) return { ok: false, error: 'Aún no hay información contable publicada. Intente más tarde.' };
+  const sh = ecSS().getSheetByName(activo.pestana);
+  if (!sh) return { ok: false, error: 'No se encontró la pestaña "' + activo.pestana + '". Contacte a la administración.' };
+  const cartera = ecBuscarAptoEnFilas(sh.getDataRange().getValues(), v.apto);
+  if (!cartera) {
+    return { ok: false, error: 'El apartamento ' + v.apto + ' no aparece en la cartera de ' + activo.pestana + '. Contacte a la administración.' };
+  }
+  return { ok: true, verif: v, activo: activo, cartera: cartera };
+}
+
+function ecPagosApto(apto, activo) {
+  const validos = {};
+  ecLeerControl().forEach(c => { if (c.estado === 'ACTIVO' || c.estado === 'HISTORICO') validos[c.periodo] = true; });
+  const sh = ecHoja(EC_TAB_PAGOS, EC_HDR_PAGOS);
+  const last = sh.getLastRow();
+  if (last < 2) return { pagos: [], factura: null };
+  const buscado = normApto(apto);
+  const filas = sh.getRange(2, 1, last - 1, EC_HDR_PAGOS.length).getValues()
+    .filter(r => normApto(ecTexto(r[EC_P_APTO])) === buscado && validos[ecTexto(r[EC_P_PERIODO], 'yyyy-MM')]);
+  filas.sort((a, b) => ecTexto(b[EC_P_PERIODO], 'yyyy-MM').localeCompare(ecTexto(a[EC_P_PERIODO], 'yyyy-MM')));
+  const pagos = filas.slice(0, 3).map(r => ({
+    periodo: ecTexto(r[EC_P_PERIODO], 'yyyy-MM'),
+    abono: ecNum(r[EC_P_ABONO])
+  }));
+  const fa = filas.find(r => ecTexto(r[EC_P_PERIODO], 'yyyy-MM') === activo.periodo);
+  const factura = fa ? {
+    numCuentaCobro: ecTexto(fa[EC_P_NUMCC]),
+    fechaEmision: ecTexto(fa[EC_P_EMISION]),
+    pagueseHasta: ecTexto(fa[EC_P_HASTA]),
+    totalAPagar: ecNum(fa[EC_P_TOTAL])
+  } : null;
+  return { pagos: pagos, factura: factura };
+}
+
+function ecArchivoFactura(activo, apto) {
+  const it = DriveApp.getFolderById(activo.folderId).getFilesByName(normApto(apto) + '.pdf');
+  return it.hasNext() ? it.next() : null;
+}
+
+// ---------------------------------------------------------------------
+// ENDPOINTS PÚBLICOS (POST)
+// ---------------------------------------------------------------------
+function ecConsultar(data) {
+  const ctx = ecContexto(data);
+  if (!ctx.ok) return ctx;
+  const p = ecPagosApto(ctx.cartera.apto, ctx.activo);
+  const tol = ecTolerancia();
+  return {
+    ok: true,
+    periodo: ctx.activo.periodo,
+    pestana: ctx.activo.pestana,
+    fechaCorte: ctx.activo.fechaCorte,
+    apto: ctx.cartera.apto,
+    nombrePropietario: ctx.verif.nombreProp,
+    cartera: ctx.cartera,
+    factura: p.factura,
+    facturaDisponible: !!ecArchivoFactura(ctx.activo, ctx.cartera.apto),
+    pagos: p.pagos,
+    pazYSalvoHabilitado: ctx.cartera.totalCartera < tol,
+    linkPago: ecConfig('link_pago')
+  };
+}
+
+function ecDescargarFactura(data) {
+  const ctx = ecContexto(data);
+  if (!ctx.ok) return ctx;
+  const f = ecArchivoFactura(ctx.activo, ctx.cartera.apto);
+  if (!f) return { ok: false, error: 'La factura de este mes aún no está disponible.' };
+  return {
+    ok: true,
+    nombreArchivo: 'Factura_' + ctx.cartera.apto + '_' + ctx.activo.periodo + '.pdf',
+    base64: Utilities.base64Encode(f.getBlob().getBytes())
+  };
+}
+
+function ecPazYSalvo(data) {
+  const ctx = ecContexto(data);
+  if (!ctx.ok) return ctx;
+  const tol = ecTolerancia();
+  if (!(ctx.cartera.totalCartera < tol)) {
+    return { ok: false, error: 'El apartamento registra saldo pendiente. No es posible expedir el paz y salvo.' };
+  }
+  const lock = LockService.getScriptLock();   // BUGFIX-003: NO usar getDocumentLock
+  lock.waitLock(30000);
+  let copia = null;
+  try {
+    const shP = ecHoja(EC_TAB_PYS, EC_HDR_PYS);
+    const consecutivo = 'PYS-' + String(shP.getLastRow()).padStart(5, '0'); // fila 1 = encabezado
+    const codigo = Utilities.getUuid().replace(/-/g, '').slice(0, 10).toUpperCase();
+    const reemplazos = {
+      APTO: ctx.cartera.apto,
+      NOMBRE: ctx.verif.nombreProp,
+      FECHA_EXPEDICION: ecHoyLarga(),
+      FECHA_CORTE: ecFechaLargaDesdeISO(ctx.activo.fechaCorte),
+      CONSECUTIVO: consecutivo,
+      CODIGO: codigo
+    };
+    const carpeta = DriveApp.getFolderById(ecConfigRequerida('facturas_folder_id'));
+    copia = DriveApp.getFileById(ecConfigRequerida('plantilla_pys_id'))
+      .makeCopy('tmp_pys_' + ctx.cartera.apto + '_' + codigo, carpeta);
+    const doc = DocumentApp.openById(copia.getId());
+    const zonas = [doc.getBody(), doc.getHeader(), doc.getFooter()].filter(z => z);
+    Object.keys(reemplazos).forEach(k => {
+      zonas.forEach(z => z.replaceText('\\{\\{' + k + '\\}\\}', String(reemplazos[k])));
+    });
+    doc.saveAndClose();
+    const pdf = copia.getAs(MimeType.PDF);
+    const fila = [consecutivo, codigo, new Date(), ctx.activo.periodo, ctx.cartera.apto,
+                  String(data.numForm).trim(), ctx.verif.nombreProp, ctx.verif.ccProp, ctx.cartera.totalCartera];
+    const r = shP.getLastRow() + 1;
+    shP.getRange(r, 1, 1, 2).setNumberFormat('@');
+    shP.getRange(r, 4, 1, 5).setNumberFormat('@');
+    shP.getRange(r, 1, 1, fila.length).setValues([fila]);
+    return {
+      ok: true,
+      consecutivo: consecutivo,
+      nombreArchivo: 'PazYSalvo_' + ctx.cartera.apto + '_' + ctx.activo.periodo + '.pdf',
+      base64: Utilities.base64Encode(pdf.getBytes())
+    };
+  } finally {
+    if (copia) { try { copia.setTrashed(true); } catch (e) {} }
+    lock.releaseLock();
+  }
+}
+
+// ---------------------------------------------------------------------
+// ENDPOINTS DE CARGA MENSUAL (POST, requieren password de admin)
+// ---------------------------------------------------------------------
+function ecIniciarCarga(data) {
+  if (!ecAdminOk(data.password)) return { ok: false, error: 'Contraseña de administrador incorrecta.' };
+  const periodo = String(data.periodo || '');
+  const pestana = String(data.nombrePestana || '');
+  const fechaCorte = String(data.fechaCorte || '');
+  if (!/^\d{4}-\d{2}$/.test(periodo)) return { ok: false, error: 'Periodo inválido.' };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaCorte)) return { ok: false, error: 'Fecha de corte inválida.' };
+  if (!pestana || pestana.charAt(0) === '_' || pestana === EC_TAB_PAGOS || pestana === EC_TAB_PYS) {
+    return { ok: false, error: 'Nombre de pestaña inválido.' };
+  }
+  const filas = data.filas;
+  const pagos = data.pagos;
+  if (!Array.isArray(filas) || !Array.isArray(pagos)) return { ok: false, error: 'Faltan filas o pagos.' };
+
+  // Re-validación en servidor
+  const info = ecIndicesCartera(filas);
+  const aptosCartera = {};
+  for (let i = info.filaEncabezado + 1; i < filas.length; i++) {
+    const a = normApto(filas[i][info.idx['numero']]);
+    if (a) aptosCartera[a] = true;
+  }
+  const nCartera = Object.keys(aptosCartera).length;
+  if (nCartera !== pagos.length) {
+    return { ok: false, error: 'La cartera tiene ' + nCartera + ' aptos y el PDF ' + pagos.length + ' facturas.' };
+  }
+  for (const p of pagos) {
+    if (!aptosCartera[normApto(p.apto)]) return { ok: false, error: 'El apto ' + p.apto + ' del PDF no está en la cartera.' };
+  }
+
+  const activo = ecPeriodoActivo();
+  if (activo && periodo < activo.periodo) {
+    return { ok: false, error: 'El periodo ' + periodo + ' es anterior al publicado (' + activo.periodo + ').' };
+  }
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const ss = ecSS();
+    let sh = ss.getSheetByName(pestana);
+    if (sh && data.reemplazar !== true) {
+      return { ok: false, codigo: 'PESTANA_EXISTE', error: 'La pestaña "' + pestana + '" ya existe.' };
+    }
+    if (!sh) sh = ss.insertSheet(pestana);
+    sh.clear();
+    const ancho = filas.reduce((m, f) => Math.max(m, f.length), 0);
+    const matriz = filas.map(f => {
+      const r = f.slice();
+      while (r.length < ancho) r.push('');
+      r[0] = (r[0] === '' || r[0] == null) ? '' : String(r[0]);
+      return r;
+    });
+    sh.getRange(1, 1, matriz.length, 1).setNumberFormat('@');  // col A texto (BUGFIX-004)
+    sh.getRange(1, 1, matriz.length, ancho).setValues(matriz);
+
+    // Pagos: quitar filas del mismo periodo y agregar las nuevas
+    const shP = ecHoja(EC_TAB_PAGOS, EC_HDR_PAGOS);
+    const lastP = shP.getLastRow();
+    let conservar = [];
+    if (lastP >= 2) {
+      conservar = shP.getRange(2, 1, lastP - 1, EC_HDR_PAGOS.length).getValues()
+        .filter(r => ecTexto(r[EC_P_PERIODO], 'yyyy-MM') !== periodo);
+      shP.getRange(2, 1, lastP - 1, EC_HDR_PAGOS.length).clearContent();
+    }
+    const ahora = new Date();
+    const nuevas = pagos.map(p => [periodo, normApto(p.apto), String(p.numCuentaCobro), String(p.fechaEmision),
+      String(p.pagueseHasta), ecNum(p.abonoUltimoMes), ecNum(p.totalAPagar), ecNum(p.saldoAnterior),
+      ecNum(p.anticipos), ahora]);
+    const todas = conservar.concat(nuevas);
+    if (todas.length) {
+      shP.getRange(2, 1, todas.length, 5).setNumberFormat('@');
+      shP.getRange(2, 1, todas.length, EC_HDR_PAGOS.length).setValues(todas);
+    }
+
+    // Carpeta de facturas de esta carga + fila en _Control
+    const idCarga = Utilities.getUuid();
+    const raiz = DriveApp.getFolderById(ecConfigRequerida('facturas_folder_id'));
+    const carpeta = raiz.createFolder('Facturas ' + periodo + ' (' + idCarga.slice(0, 8) + ')');
+    const shC = ecHoja(EC_TAB_CONTROL, EC_HDR_CONTROL);
+    const r = shC.getLastRow() + 1;
+    shC.getRange(r, 1, 1, 6).setNumberFormat('@');
+    shC.getRange(r, 1, 1, EC_HDR_CONTROL.length).setValues([[idCarga, periodo, pestana, fechaCorte,
+      'CARGANDO', carpeta.getId(), nCartera, ahora, '']]);
+    return { ok: true, idCarga: idCarga, totalAptos: nCartera };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function ecSubirFacturas(data) {
+  if (!ecAdminOk(data.password)) return { ok: false, error: 'Contraseña de administrador incorrecta.' };
+  const carga = ecLeerControl().find(c => c.idCarga === String(data.idCarga || ''));
+  if (!carga) return { ok: false, error: 'Carga no encontrada.' };
+  if (carga.estado !== 'CARGANDO') return { ok: false, error: 'La carga ya no está en estado CARGANDO (' + carga.estado + ').' };
+  const archivos = data.archivos;
+  if (!Array.isArray(archivos) || !archivos.length || archivos.length > EC_MAX_ARCHIVOS_POR_LOTE) {
+    return { ok: false, error: 'Lote inválido (1 a ' + EC_MAX_ARCHIVOS_POR_LOTE + ' archivos).' };
+  }
+  const carpeta = DriveApp.getFolderById(carga.folderId);
+  let creados = 0;
+  for (const a of archivos) {
+    const apto = normApto(a.apto);
+    if (!/^\d+$/.test(apto) || typeof a.base64 !== 'string' || !a.base64) {
+      return { ok: false, error: 'Archivo inválido para apto "' + a.apto + '".', creados: creados };
+    }
+    const nombre = apto + '.pdf';
+    const prev = carpeta.getFilesByName(nombre);
+    while (prev.hasNext()) prev.next().setTrashed(true);  // idempotente ante reintentos
+    carpeta.createFile(Utilities.newBlob(Utilities.base64Decode(a.base64), MimeType.PDF, nombre));
+    creados++;
+  }
+  return { ok: true, creados: creados };
+}
+
+function ecFinalizarCarga(data) {
+  if (!ecAdminOk(data.password)) return { ok: false, error: 'Contraseña de administrador incorrecta.' };
+  const control = ecLeerControl();
+  const carga = control.find(c => c.idCarga === String(data.idCarga || ''));
+  if (!carga) return { ok: false, error: 'Carga no encontrada.' };
+  if (carga.estado !== 'CARGANDO') return { ok: false, error: 'La carga ya no está en estado CARGANDO.' };
+  let n = 0;
+  const it = DriveApp.getFolderById(carga.folderId).getFiles();
+  while (it.hasNext()) { it.next(); n++; }
+  if (n !== carga.totalAptos) {
+    return { ok: false, error: 'Hay ' + n + ' facturas en Drive y se esperaban ' + carga.totalAptos + '. Reintente la subida.' };
+  }
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const shC = ecHoja(EC_TAB_CONTROL, EC_HDR_CONTROL);
+    control.forEach(c => {
+      if (c.idCarga === carga.idCarga) return;
+      let nuevo = null;
+      if (c.estado === 'ACTIVO') nuevo = (c.periodo === carga.periodo) ? 'REEMPLAZADO' : 'HISTORICO';
+      if (c.estado === 'CARGANDO') nuevo = 'ABANDONADO';
+      if (!nuevo) return;
+      shC.getRange(c.rowNumber, EC_C_ESTADO + 1).setValue(nuevo);
+      if (c.folderId) { try { DriveApp.getFolderById(c.folderId).setTrashed(true); } catch (e) {} }
+    });
+    shC.getRange(carga.rowNumber, EC_C_ESTADO + 1).setValue('ACTIVO');
+    shC.getRange(carga.rowNumber, EC_C_FIN + 1).setValue(new Date());
+    return { ok: true, periodo: carga.periodo, pestana: carga.pestana, facturas: n };
+  } finally {
+    lock.releaseLock();
   }
 }
