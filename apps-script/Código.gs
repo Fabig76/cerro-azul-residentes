@@ -1840,8 +1840,8 @@ function vigilanteVerMudanzas(fecha) {
     const torre = String(row[4] || '');
     const ascensor = String(row[5] || '');
     const fechaRes = row[6]; // Date object
-    const horaInicio = String(row[7] || '');
-    const horaFin = String(row[8] || '');
+    const horaInicio = normalizarHora(row[7]);   // V37: antes String() mostraba "Sat Dec 30 1899..."
+    const horaFin = normalizarHora(row[8]);      // V37: fix R-23
     const nombre = String(row[9] || '');
     const estado = String(row[17] || '');
     const realizada = String(row[19] || ''); // T
@@ -1882,6 +1882,7 @@ function vigilanteVerMudanzas(fecha) {
       numForm: numForm,
       apto: apto,
       tipoMudanza: tipo,
+      descripcionElementos: descripcionElementos,
       torre: torre,
       ascensor: ascensor,
       fecha: fechaRes instanceof Date
