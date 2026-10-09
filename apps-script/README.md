@@ -4,23 +4,32 @@ Este es el código del backend que conecta el formulario público
 (`https://fabig76.github.io/cerro-azul-residentes/`) con el Google Sheet
 (`https://docs.google.com/spreadsheets/d/16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc`).
 
-## Versión desplegada: V36 backend + V28 frontend (08-Oct-2026) — Apps Script "Versión 34"
+## Versión desplegada: V40 backend + V28 frontend (09-Oct-2026) — Apps Script "Versión 40"
 
-**Backend Apps Script:** V36 (222.410 bytes, 222KB, 4870 líneas) = incluye la constante `MATRICULAS_TORRE_2 = 'Torre 2 - Etapa 4'` (BUGFIX-023). Soporte completo para Torre 2, Torre 1, Torre 3 y Parqueaderos.
+**Backend Apps Script:** V40 (226.542 bytes, 221KB, 4945 líneas) = V38 (BUGFIX-024 = adminBorrarReservaMudanza) + V37 (MUDANZAS_ELEMENTOS, 4 tipos + descripción) + V36 (BUGFIX-023 Torre 2 + Encargado) + BUGFIX-025 límite 1 mudanza POR TORRE POR DÍA.
+
+> Nota: V39 (primer intento) tuvo un bug de declaración duplicada de
+> `MUDANZAS_EMAIL_ADMIN`. Se re-generó como V40 sin ese bug.
+> Ver CHANGELOG-BUGFIXES.md BUGFIX-025.
 
 **Frontend GitHub Pages:** V28 (sin cambios desde 04-Oct-2026)
 
 URL del Web App (preservada entre versiones):
 `https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec`
 
-MD5 del V36 desplegado: `e207271873ff91365dd1559fb66ad150`
-Drive: `Codigo_V36_TORRE2-20261008.gs` (ID `1AjvHS090YqBDWK8axznlUnc9MfFYd9lY`)
+MD5 del V40 listo para deploy: `57f6d8c069c6423c08c44e79c831f774`
+Drive: `Codigo_V40_TORREDIA-20261009.gs` (ID `191y-m0PScv9rsEoWz3Ek0Jo75_RXHZSr`)
+Link: https://drive.google.com/file/d/191y-m0PScv9rsEoWz3Ek0Jo75_RXHZSr/view
 
-Historial de deploys recientes (sesión 08-Oct-2026 — BUGFIX-023 Torre 2):
+Historial de deploys recientes (sesión 09-Oct-2026 — BUGFIX-024):
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
-| **V36** | 08-Oct-2026 | `e207271873ff91365dd1559fb66ad150` | **BUGFIX-023: agregar MATRICULAS_TORRE_2 al lookup de matrículas (Torre 2 — 185 aptos)** |
+| **V40** | 09-Oct-2026 | `57f6d8c069c6423c08c44e79c831f774` | **BUGFIX-025: límite 1 mudanza POR TORRE POR DÍA (operador tiene 1 vigilante)** |
+| V38 | 09-Oct-2026 20:31 | `f2f0cad52a343bb65c43d1853e473c66` | Endpoint admin `adminBorrarReservaMudanza` (borrar físico de reservas de prueba) |
+| V37 | 09-Oct-2026 20:12 | `0747a256a29b62dfd66b071ecd14c3a2` | MUDANZAS_ELEMENTOS: 4 tipos (Salida/Ingreso + Salida/IngresoElementos) + descripción obligatoria |
+| V36_ENCARGADO | 09-Oct-2026 04:05 | `0f872b7218b96295ed79986fd6ab9320` | Valor "Encargado" como opción válida de diligencia (mismos privilegios que Propietario) |
+| V36 | 08-Oct-2026 | `e207271873ff91365dd1559fb66ad150` | **BUGFIX-023: agregar MATRICULAS_TORRE_2 al lookup de matrículas (Torre 2 — 185 aptos)** |
 | **V35** | 05-Oct-2026 (Deploy "33") | `3af70d3f8298f900c4407470131cbb45` | BUGFIX-022: restaurar módulo de Estado de Cuenta (478 líneas) |
 | **V34** | 05-Oct-2026 (Deploy "32") | `7e4f7a0a` (estimado) | BUGFIX-021: adminVerComprobanteSalon devuelve tieneComprobante: true |
 | **V33** | 05-Oct-2026 (Deploy "31") | — | BUGFIX-020: cédula del propietario en "Editar mi registro" |

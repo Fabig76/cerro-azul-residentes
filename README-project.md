@@ -99,10 +99,13 @@ impreso en PDF.
 
 - **Apps Script ID:** `17nuyzVYK2yN_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy`
 - **URL preservada:** `https://script.google.com/macros/s/AKfycbxp...Zp/exec`
-- **Última versión: V36 (08-Oct-2026)** — Apps Script "Versión 34"
-  · 222.410 bytes, 4870 líneas
-  · MD5: `e207271873ff91365dd1559fb66ad150`
-  · Drive V36: `Codigo_V36_TORRE2-20261008.gs` (ID `1AjvHS090YqBDWK8axznlUnc9MfFYd9lY`)
+- **Última versión: V40 (09-Oct-2026)** — Apps Script "Versión 40"
+  · 226.542 bytes, 4945 líneas
+  · MD5: `57f6d8c069c6423c08c44e79c831f774`
+  · Drive V40: `Codigo_V40_TORREDIA-20261009.gs` (ID `191y-m0PScv9rsEoWz3Ek0Jo75_RXHZSr`)
+  · Link: https://drive.google.com/file/d/191y-m0PScv9rsEoWz3Ek0Jo75_RXHZSr/view
+  · BUGFIX-025: límite 1 mudanza POR TORRE POR DÍA (operador tiene 1 vigilante)
+  · (Nota: V39 primer intento tuvo bug de declaración duplicada, reemplazado por V40)
   · Cambio vs V35: +2 líneas (BUGFIX-023: MATRICULAS_TORRE_2)
   · Cubre Torre 1, Torre 2, Torre 3 y Parqueaderos
 

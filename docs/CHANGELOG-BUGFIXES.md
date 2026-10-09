@@ -2091,3 +2091,65 @@ Registros, pero NO en el Sheet externo del operador.
 **Sin cambios en código backend** — el V36 sigue siendo el mismo.
 Solo se actualizaron los Sheets.
 
+
+
+### BUGFIX-025 · límite 1 mudanza POR TORRE POR DÍA (commit pendiente, archivo `Codigo_V40_TORREDIA-20261009.gs`)
+
+> ⚠️ **Nomenclatura:** el commit `7602698` del remoto se titula "BUGFIX-024" pero
+> trata sobre TIPOS DE MUDANZA (elementos), no sobre el límite torre/día.
+> Esta entrada usa BUGFIX-025 para evitar el choque.
+
+**Fecha:** 09-Oct-2026
+**Severidad:** MEDIA — el límite natural del SPEC (1 por slot) permitía múltiples mudanzas simultáneas en la misma torre, sobrecargando al único vigilante disponible.
+**Bug latente desde:** implementación inicial del módulo de mudanzas (commit `5ad6fbf`, rama `feature/mudanzas` 23-Sep-2026)
+**Detectado por:** Operador (Fabio Lesmes) el 09-Oct-2026 al notar que el SPEC actual dice "sin límite por residente" y que la capacidad operativa (1 vigilante) puede saturarse si en un mismo día se agendan 2 mudanzas en la misma torre en slots distintos.
+
+**Síntoma reportado por el usuario:**
+> "cuantas mudanzas se pueden agendar por dia porque no es posible qie los guardas esten todo el tiempo en esa tarea sin cumplir las otras cual es el limite diario"
+
+**Decisión:** Operador eligió OPCIÓN 2 (entre 5 propuestas por Hermes):
+1. Límite global por día (descartada: pobre balanceo)
+2. **LÍMITE POR TORRE POR DÍA — máximo 1 mudanza por torre por día calendario** ✓
+3. Límite por vigilante por turno (descartada: requiere conocer turnos)
+4. Dejar como está (descartada: problema persiste)
+5. Límite mixto (descartada: compleja de comunicar)
+
+Justificación del operador: "esta creo que es mejor porque solo tengo un solo vigialante para esto".
+
+**Caso real que motivó el cambio:**
+- 07-Oct-2026: 2 mudanzas simultáneas en Torre 2 (MD-0011 13-15 + MD-0013 15-17)
+- 05-Oct-2026: 2 mudanzas simultáneas en Torres 1 y 2 (mismo slot 08-10)
+- 03-Oct-2026: 2 mudanzas simultáneas en Torres 1 y 3 (mismo slot 10-12)
+
+**Fix:**
+1. Nueva constante: `MUDANZAS_MAX_POR_TORRE_DIA = 1` (en sección de constantes).
+2. `dispMudanzas`: cuando ya hay CUALQUIER reserva Confirmada en (torre, fecha), todos los slots del día se marcan `disponible: false` (no solo el slot exacto).
+3. `reservarMudanza`: nueva validación dentro del lock — si `findReservasEnRango(torre, ascensor, fecha, fecha).length >= 1`, rechaza con mensaje específico incluyendo el ID y horario de la reserva que ya existe.
+
+**Mensaje al usuario (específico, no genérico):**
+> "Ya existe una mudanza confirmada para la Torre X el YYYY-MM-DD (ID MD-XXXX, HH:MM-HH:MM). Solo se permite 1 mudanza por torre por día. Por favor seleccione otra fecha u otra torre, o contacte a la administración."
+
+**Archivos afectados:**
+- `apps-script/Codigo_V40_TORREDIA-20261009.gs` (nuevo, base = V38 deployado + 3 hunks BUGFIX-025)
+- `apps-script/README.md` (versión desplegada actualizada)
+- `docs/CHANGELOG-BUGFIXES.md` (esta entrada)
+- `docs/sesion-2026-10-09.md` (nueva sesión)
+
+**Deploy:**
+- Drive ID: `191y-m0PScv9rsEoWz3Ek0Jo75_RXHZSr`
+- Link: https://drive.google.com/file/d/191y-m0PScv9rsEoWz3Ek0Jo75_RXHZSr/view
+- MD5: `57f6d8c069c6423c08c44e79c831f774` (validado round-trip local ↔ Drive)
+- Tamaño: 226.542 bytes (4945 líneas)
+
+> ⚠️ **Nota sobre el bug V39 (corregido):** El primer intento de generar el
+> archivo lo nombré V39 y subí a Drive (md5 `b013a74d5a4a6ff08481ee9a87e58ff3`),
+> pero el operador detectó al pegar en Apps Script:
+> `SyntaxError: Identifier 'MUDANZAS_EMAIL_ADMIN' has already been declared`
+> Mi patch insertó una línea de `const MUDANZAS_EMAIL_ADMIN` que YA EXISTÍA
+> en otro lugar (línea 805, no adyacente a donde patcheé). Re-generé el
+> archivo como V40 desde cero, esta vez verificando con `grep -c` ANTES de
+> patchear que la constante no estuviera duplicada.
+
+**Lección aprendida #14 (BUGFIX-025):** cuando el operador describe una preocupación operativa ("no es posible que los vigilantes estén todo el tiempo"), NO asumir que la pregunta es retórica. Convertir la preocupación en una decisión explícita con 2-5 opciones y pedirle que elija con razones simples (no técnicas). El operador es fuente de verdad sobre la realidad operativa.
+
+**Lección aprendida #15 (BUGFIX-025):** ANTES de hacer patch sobre una constante, verificar TODAS sus ubicaciones con `grep -n`. No asumir que por estar adyacente a un anchor la línea no está ya en otro lado del archivo. Apps Script rechaza declaraciones duplicadas con error fatal de sintaxis.

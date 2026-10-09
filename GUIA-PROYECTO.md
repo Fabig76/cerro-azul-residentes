@@ -1090,7 +1090,26 @@ Agregado en septiembre 2026 (rama `feature/mudanzas`).
 - `assets/styles.css` — estilos calendario + slots
 - `docs/spec-mudanzas.md` — SPEC v1.0.0 (12 secciones, 21 KB)
 
-### 15.5 Ver también
+### 15.5 Límite operativo (BUGFIX-024 — 09-Oct-2026)
+
+Decisión del operador tras revisar capacidad vs realidad operativa
+(único vigilante disponible):
+
+- **Máximo 1 mudanza POR TORRE POR DÍA** (no por slot, no por residente)
+- L-V: máximo 3 mudanzas/día (1 por torre, slots L-V libres)
+- Sábado: máximo 3 mudanzas/día (1 por torre)
+- Domingo/festivo: 0 mudanzas
+
+Implementación:
+- Constante `MUDANZAS_MAX_POR_TORRE_DIA = 1`
+- En `dispMudanzas`: cualquier reserva Confirmada en (torre, fecha) bloquea TODOS los slots del día
+- En `reservarMudanza`: validación dentro del LockService que rechaza si ya hay 1 reserva en (torre, fecha)
+- Mensaje al usuario: "Ya existe una mudanza confirmada para la Torre X el YYYY-MM-DD (ID MD-XXXX, HH:MM-HH:MM). Solo se permite 1 mudanza por torre por día."
+
+Caso real expuesto: 07-Oct-2026 tuvo 2 mudanzas simultáneas en Torre 2
+(MD-0011 13-15 + MD-0013 15-17) que BUGFIX-024 ya no permitirá.
+
+### 15.6 Ver también
 
 - `docs/spec-mudanzas.md` — especificación completa
 - §14 — respaldos del proyecto (incluye backups pre y post del feature)
