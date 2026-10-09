@@ -12,6 +12,101 @@
 
 ---
 
+### REDISENO-FRONTEND · Reemplazo visual de los 7 portales (commit `0f1d6ce`)
+
+**Fecha:** 09-Oct-2026
+**Severidad:** MEJORA — sin cambio funcional
+**Origen:** propuesta del tercero entregada 2026-10-08, validada por Hermes 2026-10-09
+
+**Qué cambió:**
+
+Se reemplazaron los 10 archivos HTML+CSS del frontend con el rediseño visual del tercero. Solo cambia la apariencia; ningún contrato con JavaScript ni con el backend se tocó.
+
+Archivos modificados (10):
+- `index.html`             formulario público
+- `admin.html`             portal administrativo
+- `vigilantes.html`        portal de vigilancia
+- `estado-cuenta.html`     estado de cuenta
+- `salon-social.html`      reservas salón social
+- `residente.html`         portal del residente
+- `cartera-admin.html`     cargador de cartera
+- `assets/styles.css`      hoja compartida
+- `assets/salon-social.css`
+- `assets/residente.css`
+
+NO se modificó: `js/`, backend Apps Script, `assets/logo.jpg`.
+
+**Verificación previa al deploy (13 chequeos):**
+
+1. IDs preservados 100% (123/123 en index, 31/31 admin, etc.)
+2. Views (view-XXX) preservadas (19/19 idénticas)
+3. Formularios preservados (formRegistro, formEditar)
+4. Inputs con name: 0 diferencia
+5. onclick handlers: 3/3 idénticos
+6. Orden de scripts: idéntico
+7. Variables CSS preservadas (--err, --ok, --gris-med, --adv, --texto-med)
+8. Selectores de clase CSS: todos presentes
+9. Clases que el JS manipula: presentes (.mode-tab, .section, .collapsed, .alert, .hidden, .paso, .portal-link, .vig-tab, .reserva-item)
+10. Banner asistente con padding-top compensatorio (Lección #18 del skill)
+11. CSS del asistente: embebido en `asistente.js`, no depende de styles.css
+12. CSS .detail-card y .vig-tab: selectores compuestos presentes
+13. Validación del tercero: 0 errores de JavaScript en Chromium
+
+**Cambios de comportamiento documentados (LEEME.md):**
+
+- `index.html`: los 3 accesos a otros portales dejaron de ser `.mode-tab` y son `.portal-link`. Siguen llevando al mismo sitio.
+- `index.html`: los pasos de «Agendar mudanza» pasaron de `.section` a `.paso`, así `app.js` ya no los colapsa junto con las secciones del formulario.
+- `salon-social.html`: el calendario arranca oculto y aparece al iniciar sesión (antes parpadeaba un instante).
+- `cartera-admin.html`: se corrigió el encabezado; el logo salía a tamaño real.
+- `vigilantes.html`: ahora usa el mismo encabezado con logo que los demás.
+
+**Cache-buster:**
+
+Los HTML cargan `assets/styles.css?v=20261008` para forzar al navegador a usar la versión nueva.
+
+**Reversa:**
+
+Un solo `git revert 0f1d6ce` revierte todos los cambios del rediseño.
+
+**Notas adicionales:**
+
+- Las casillas tipo «chip» usan `:has()` (CSS3); en navegadores pre-2023 se ven como casillas normales pero siguen funcionando.
+- El rediseño NO toca el módulo de estado de cuenta, el módulo de salón, ni el módulo de residente. Es solo cosmético.
+- Backend (V36_TORRE2 desplegado 2026-10-08) y frontend (commit 0f1d6ce desplegado 2026-10-09) son independientes.
+
+---
+
+### REDISENO-OPTIONS · Ajuste de opciones "Diligencia como" en portal principal (commit en este push)
+
+**Fecha:** 09-Oct-2026
+**Severidad:** BAJA — solo cambia UI del formulario público
+
+**Qué cambió:**
+
+En `index.html` (formulario público de diligenciamiento):
+- Se eliminó la opción **"Arrendatario"** del campo "Diligencia como"
+- La opción "Tenedor / Otro" se renombró visualmente a **"Encargado / Admin"** (mismo `value`)
+
+**Por qué:**
+
+- Los arrendatarios NO deben usar este formulario: deben registrarse en el Portal del residente (`residente.html`), que es para residentes/arrendatarios
+- "Encargado / Admin" es más claro que "Tenedor / Otro" para los usuarios que representan al propietario (inmobiliarias, administradores delegados, encargados)
+
+**Lo que NO cambió:**
+
+- El `value` sigue siendo `"Tenedor / Otro"` para mantener compatibilidad con:
+  - Registros existentes en el Sheet (16 con esa diligencia)
+  - Backend (`Codigo.gs` línea 295): sigue aceptando `Propietario`, `Arrendatario`, `Tenedor / Otro`
+  - Lógica de filtros y validación
+  - Visualización en portal admin (`js/admin.js`): sigue mostrando el `value` real
+
+**Archivos modificados (1):**
+
+- `index.html` línea 119-120
+
+---
+
+
 ## Bugs Críticos Documentados
 
 ### BUGFIX-001 · lookup retornaba row vacío (commit `fedf2aa`, deploy V6)

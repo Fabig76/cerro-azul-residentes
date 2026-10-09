@@ -71,7 +71,7 @@ impreso en PDF.
     70 Codigo.gs + 25 ec* del módulo). URL /exec preservada.
   · **BUGFIX-009 resuelto:** 6 endpoints `ec*` ahora enrutados en
     `doPost`. Antes de V18, el portal mostraba
-    "Diligencia como debe ser Propietario, Arrendatario o Tenedor / Otro."
+    "Diligencia como debe ser Propietario, Tenedor / Otro (Encargado/Admin)."
     porque `ecConsultar` caía al default `submitRecord()`. Ver
     `docs/CHANGELOG-BUGFIXES.md` y `docs/sesion-bugfix-009.md`.
   · Ver `docs/spec-estado-cuenta.md` y `docs/proyecto-estado-cuenta.md`

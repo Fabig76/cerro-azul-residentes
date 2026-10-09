@@ -191,7 +191,7 @@
 
   · **"Registros"** (renombrada de "Hoja 1"): 138 columnas
     · Fila 1 congelada con formato azul Cerro Azul (#0066CC), texto blanco, negrita
-    · Validación de "Diligencia como" (Propietario/Arrendatario/Tenedor / Otro)
+    · Validación de "Diligencia como" (Propietario/Tenedor / Otro; UI muestra "Encargado/Admin" para Tenedor / Otro)
   · **"Maestros"** (auxiliar, vacía): Apto | Estado | Notas
     · Pensada para validaciones futuras contra listado de aptos del conjunto
 
@@ -290,7 +290,7 @@ el lookup automático de matrículas. Total: 138 → 143 columnas.
 
 Obligatorios (devuelve error si falta):
   · N° Apto
-  · Diligencia como (debe ser Propietario/Arrendatario/Tenedor / Otro)
+  · Diligencia como (debe ser Propietario/Tenedor / Otro; UI: "Propietario" o "Encargado/Admin")
   · Nombre y cédula del titular
   · Correo del titular (formato válido)
   · Celular del titular
@@ -1834,7 +1834,7 @@ y el cargador de cartera para el administrador.
 **Detectado por:** Operador (Fabio Lesmes) cuando un propietario del apto
 504 intentó consultar su estado de cuenta y vio el mensaje:
 ```
-"Diligencia como debe ser Propietario, Arrendatario o Tenedor / Otro."
+"Diligencia como debe ser Propietario, o Tenedor / Otro (Encargado/Admin)."
 ```
 
 ### 24.1 Causa raíz
@@ -1912,7 +1912,7 @@ if (action === 'ecFinalizarCarga')   return jsonOut(ecFinalizarCarga(payload));
 | T-EC-2 | ecDescargarFactura | ✓ PDF 157KB |
 | T-EC-3 | ecPazYSalvo | ✓ PYS-00012 |
 | T-EC-4 | ecConsultar (CA-0070 apto503) | ✓ Deuda $426.300 |
-| T-EC-5 | ecPazYSalvo (CA-0062 Arrendatario) | ✓ Rechazado P2 |
+| T-EC-5 | ecPazYSalvo (CA-0062 [diligencia: Tenedor/Otro]) | ✓ Rechazado P2 |
 | T-EC-6 | ecConsultar (mismo) | ✓ Rechazado P2 |
 
 **Regresión (9 endpoints existentes):** salón, residente, admin, vigilantes,
