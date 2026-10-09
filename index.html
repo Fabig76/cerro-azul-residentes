@@ -622,8 +622,29 @@
               <input type="radio" name="mudTipo" value="Ingreso" required>
               <strong>Ingreso</strong> del nuevo arrendatario
             </label>
+            <label class="radio-row">
+              <input type="radio" name="mudTipo" value="SalidaElementos" required>
+              <strong>Salida de elementos</strong> (muebles, enseres)
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="mudTipo" value="IngresoElementos" required>
+              <strong>Ingreso de elementos</strong> (muebles, enseres)
+            </label>
           </div>
           <div id="mudTipoMensaje" class="alert hidden"></div>
+        </div>
+      </div>
+
+      <!-- Descripcion de elementos (solo visible si tipo = elementos) -->
+      <div class="paso" id="pasoDescripcion" style="display:none;">
+        <div class="paso-head"><span><span class="section-num">1.5</span>Descripción de elementos</span></div>
+        <div class="paso-body">
+          <div class="field">
+            <label>Describa los elementos que van a salir/ingresar <span class="req">*</span></label>
+            <textarea id="mudDescripcion" rows="4" maxlength="500"
+              placeholder="Ej: 1 sofá, 2 cajas con ropa, 1 cama matrimonial, 1 nevera..."></textarea>
+            <small class="help">Mínimo 10 caracteres. La portería revisará que lo que salga/ingrese coincida con esta descripción.</small>
+          </div>
         </div>
       </div>
 

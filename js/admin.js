@@ -640,7 +640,14 @@ const A = {
         html += '<td>' + hora + '</td>';
         html += '<td>Torre ' + res.torre + '</td>';
         html += '<td>' + res.ascensor + '</td>';
-        html += '<td>' + res.tipoMudanza + '</td>';
+        html += '<td>' + res.tipoMudanza;
+        if (res.descripcionElementos) {
+          const desc = res.descripcionElementos.length > 40
+            ? res.descripcionElementos.substring(0, 40) + '...'
+            : res.descripcionElementos;
+          html += '<br><small style="color:var(--gris-med);">📦 ' + desc + '</small>';
+        }
+        html += '</td>';
         html += '<td>' + res.apto + '</td>';
         html += '<td>' + res.nombreSolicitante + '<br><small style="color:var(--gris-med);">CC ' + res.ccSolicitante + '</small></td>';
         html += '<td>' + res.celular + '</td>';

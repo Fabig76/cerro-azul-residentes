@@ -350,7 +350,12 @@ const V = {
       html += '<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">';
       html += '<div>';
       html += '<strong style="font-size:1.05em;">' + V.escapeHtml(m.idReserva) + '</strong> · ';
-      html += '<span style="color:' + (m.tipoMudanza === 'Ingreso' ? '#2E7D32' : '#C62828') + '; font-weight:600;">';
+      const colorPorTipo = {
+        'Ingreso': '#2E7D32', 'IngresoElementos': '#1565C0',
+        'Salida': '#C62828', 'SalidaElementos': '#E65100'
+      };
+      const color = colorPorTipo[m.tipoMudanza] || '#666';
+      html += '<span style="color:' + color + '; font-weight:600;">';
       html += V.escapeHtml(m.tipoMudanza) + '</span> · ';
       html += V.escapeHtml(m.nombrePropietario) + ' · ';
       html += '<strong>Apto ' + V.escapeHtml(m.apto) + '</strong> · Torre ' + V.escapeHtml(m.torre) + ' Asc ' + V.escapeHtml(m.ascensor);
@@ -358,6 +363,11 @@ const V = {
       html += '<div style="text-align:right; font-size:0.92em; color:var(--gris-med);">';
       html += '<strong>' + V.escapeHtml(m.fecha) + '</strong><br>';
       html += V.escapeHtml(m.horaInicio) + ' - ' + V.escapeHtml(m.horaFin);
+      if (m.descripcionElementos) {
+        html += '<div style="margin-top:6px; padding:6px 8px; background:#FFF8E1; border-left:3px solid #F9A825; font-size:0.86em;">';
+        html += '<strong>📦 Elementos:</strong> ' + V.escapeHtml(m.descripcionElementos);
+        html += '</div>';
+      }
       html += '</div></div>';
       html += '<div style="font-size:0.82em; color:var(--gris-med); margin-top:6px;">';
       html += 'Estado: ' + V.escapeHtml(m.estado);

@@ -889,8 +889,21 @@ const M = {
         } else if (tipo === 'Ingreso') {
           msg.className = 'alert alert-warn';
           msg.innerHTML = '⚠️ <strong>Ingreso del nuevo arrendatario.</strong> Recuerde: el nuevo residente <strong>DEBE haber llenado primero</strong> sus datos en el formulario de residentes. Si aún no se ha registrado, esta solicitud será rechazada por la administración.';
+        } else if (tipo === 'SalidaElementos') {
+          msg.className = 'alert alert-info';
+          msg.innerHTML = '📦 <strong>Salida de elementos.</strong> Describa los muebles o enseres que van a salir del apartamento. La portería revisará que coincida con su declaración.';
+          $('#pasoDescripcion').style.display = 'block';
+          $('#mudDescripcion').setAttribute('required', 'required');
+        } else if (tipo === 'IngresoElementos') {
+          msg.className = 'alert alert-info';
+          msg.innerHTML = '📦 <strong>Ingreso de elementos.</strong> Describa los muebles o enseres que van a ingresar al apartamento. La portería revisará que coincida con su declaración.';
+          $('#pasoDescripcion').style.display = 'block';
+          $('#mudDescripcion').setAttribute('required', 'required');
         } else {
           msg.classList.add('hidden');
+          $('#pasoDescripcion').style.display = 'none';
+          $('#mudDescripcion').removeAttribute('required');
+          $('#mudDescripcion').value = '';
         }
       });
     });
@@ -1132,6 +1145,9 @@ const M = {
         apto: this.state.apto,
         ccProp: this.state.ccProp,
         tipoMudanza: tipo,
+        descripcionElementos: tipo.endsWith('Elementos')
+          ? ($('#mudDescripcion')?.value || '').trim()
+          : '',
         torre: this.state.torre,
         fecha: this.state.fecha,
         horaInicio: this.state.horaInicio,
