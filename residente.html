@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#0066CC">
   <title>Portal del Residente — Cerro Azul</title>
   <link rel="icon" href="assets/logo.jpg">
-  <link rel="stylesheet" href="assets/styles.css">
-  <link rel="stylesheet" href="assets/residente.css">
+  <link rel="stylesheet" href="assets/styles.css?v=20261008">
+  <link rel="stylesheet" href="assets/residente.css?v=20261008">
   <script src="js/residente.js?v=1"></script>
 </head>
 <body>
@@ -17,8 +17,8 @@
       <img src="assets/logo.jpg" alt="Logo Urbanización Cerro Azul" class="logo">
       <div class="header-text">
         <h1>Urbanización Cerro Azul</h1>
-        <p class="nit">NIT 900770444 · Bello / Niquía</p>
         <p class="sub">Portal del Residente</p>
+        <p class="nit">NIT 900770444 · Bello / Niquía</p>
       </div>
     </div>
   </header>
@@ -37,7 +37,7 @@
 
       <div id="alert-inicial" class="alert hidden" role="alert"></div>
 
-      <div class="field" style="margin-bottom:18px;">
+      <div class="field">
         <label>N° de apartamento <span class="req">*</span></label>
         <input type="text" id="aptoInput" placeholder="Ej: 105, 202B" autocomplete="off">
         <small class="help">El mismo número que aparece en su contrato.</small>
@@ -47,7 +47,7 @@
         🔍 Continuar
       </button>
 
-      <p style="margin-top:18px; font-size:12px; color:var(--gris-med);">
+      <p class="nota-pie">
         <strong>¿Primera vez?</strong> El propietario del apartamento debe haber
         registrado el apto previamente en el
         <a href="index.html">formulario principal</a>. Si su apartamento no aparece,
@@ -67,7 +67,7 @@
       <p>Si <strong>usted</strong> es uno de ellos y quiere actualizar sus
          datos (vehículos, mascotas, etc.), coloque su <strong>cédula</strong>:</p>
 
-      <div class="field" style="margin-bottom:18px;">
+      <div class="field">
         <label>Su cédula <span class="req">*</span></label>
         <input type="text" id="ccInput" placeholder="Solo números, sin puntos ni guiones" inputmode="numeric" autocomplete="off">
         <small class="help">Debe coincidir con la registrada por el propietario.</small>
@@ -76,11 +76,11 @@
       <button type="button" class="btn btn-primary btn-block" id="btnVerificar">
         🔍 Editar mis datos
       </button>
-      <button type="button" class="btn btn-secondary btn-block" id="btnVolverConDatos" style="margin-top:8px;">
+      <button type="button" class="btn btn-secondary btn-block" id="btnVolverConDatos">
         ↩️ Volver
       </button>
 
-      <p style="margin-top:18px; font-size:12px; color:var(--gris-med);">
+      <p class="nota-pie">
         <strong>¿Su cédula no es reconocida?</strong> Comuníquese con el propietario
         del apartamento o con la inmobiliaria para que lo agreguen primero.
       </p>
@@ -95,7 +95,7 @@
       <p>El apartamento <strong id="neApto"></strong> no está registrado en el sistema.</p>
       <p>Para usar este portal, primero el propietario del apartamento debe
          llenar el formulario de residentes desde:</p>
-      <p style="text-align:center; margin:20px 0;">
+      <p>
         <a href="index.html" class="btn btn-primary btn-block">📝 Ir al formulario principal</a>
       </p>
       <button type="button" class="btn btn-secondary btn-block" id="btnVolverNe">
@@ -106,7 +106,7 @@
     <!-- ============================================================== -->
     <!-- VISTA REGISTRO: apto vacío → auto-registro completo            -->
     <!-- ============================================================== -->
-    <section id="view-registro" class="lookup-box hidden" style="max-width:640px;">
+    <section id="view-registro" class="lookup-box wide hidden">
       <h3>📝 Registro de residente — Apto <span id="regApto"></span></h3>
       <p>Complete los siguientes datos. Si va a registrar varios
          residentes del apto (pareja, hijos, etc.), puede agregar hasta 4.</p>
@@ -115,39 +115,39 @@
 
       <form id="formRegistro">
 
-        <h4 style="color:var(--azul-osc); margin:20px 0 12px;">Sección 5 — Residentes</h4>
+        <h4>Sección 5 — Residentes</h4>
         <div id="regResidentes"></div>
-        <button type="button" class="btn btn-secondary" id="btnAddResidente" style="margin-bottom:16px;">
+        <button type="button" class="btn btn-secondary" id="btnAddResidente">
           + Agregar otro residente
         </button>
 
-        <h4 style="color:var(--azul-osc); margin:20px 0 12px;">Sección 5.1 — Menores de edad</h4>
+        <h4>Sección 5.1 — Menores de edad</h4>
         <div id="regMenores"></div>
-        <button type="button" class="btn btn-secondary" id="btnAddMenor" style="margin-bottom:16px;">
+        <button type="button" class="btn btn-secondary" id="btnAddMenor">
           + Agregar menor
         </button>
 
-        <h4 style="color:var(--azul-osc); margin:20px 0 12px;">Sección 6 — Vehículos y motos</h4>
-        <p style="font-size:0.9em; color:var(--gris-med);">Máximo 2 vehículos y 2 motos por apartamento (compartidos).</p>
+        <h4>Sección 6 — Vehículos y motos</h4>
+        <p class="ayuda-seccion">Máximo 2 vehículos y 2 motos por apartamento (compartidos).</p>
         <div id="regVehiculos"></div>
-        <div id="regMotos" style="margin-top:12px;"></div>
+        <div id="regMotos"></div>
 
-        <h4 style="color:var(--azul-osc); margin:20px 0 12px;">Sección 7 — Bicicletas</h4>
-        <p style="font-size:0.9em; color:var(--gris-med);">Máximo 2 bicicletas (compartidas).</p>
+        <h4>Sección 7 — Bicicletas</h4>
+        <p class="ayuda-seccion">Máximo 2 bicicletas (compartidas).</p>
         <div id="regBicis"></div>
 
-        <h4 style="color:var(--azul-osc); margin:20px 0 12px;">Sección 9 — Mascotas</h4>
-        <p style="font-size:0.9em; color:var(--gris-med);">Máximo 2 mascotas (compartidas).</p>
+        <h4>Sección 9 — Mascotas</h4>
+        <p class="ayuda-seccion">Máximo 2 mascotas (compartidas).</p>
         <div id="regMascotas"></div>
 
-        <h4 style="color:var(--azul-osc); margin:20px 0 12px;">Sección 10 — Contactos de emergencia</h4>
-        <p style="font-size:0.9em; color:var(--gris-med);">Máximo 2 contactos (compartidos).</p>
+        <h4>Sección 10 — Contactos de emergencia</h4>
+        <p class="ayuda-seccion">Máximo 2 contactos (compartidos).</p>
         <div id="regContactos"></div>
 
-        <button type="button" class="btn btn-primary btn-block" id="btnRegistrar" style="margin-top:20px;">
+        <button type="button" class="btn btn-primary btn-block" id="btnRegistrar">
           💾 Registrarme como residente
         </button>
-        <button type="button" class="btn btn-secondary btn-block" id="btnCancelarReg" style="margin-top:8px;">
+        <button type="button" class="btn btn-secondary btn-block" id="btnCancelarReg">
           ↩️ Cancelar
         </button>
       </form>
@@ -156,7 +156,7 @@
     <!-- ============================================================== -->
     <!-- VISTA EDITAR: edición del slot del residente N                 -->
     <!-- ============================================================== -->
-    <section id="view-editar" class="lookup-box hidden" style="max-width:640px;">
+    <section id="view-editar" class="lookup-box wide hidden">
       <h3>📋 Mis datos — <span id="editNombre"></span> (Residente <span id="editSlot"></span>)</h3>
       <p>Apartamento <strong id="editApto"></strong>. Actualice su información.
          Los datos del propietario y de los demás residentes NO se modifican.</p>
@@ -165,7 +165,7 @@
 
       <form id="formEditar">
 
-        <h4 style="color:var(--azul-osc); margin:20px 0 12px;">Mis datos personales</h4>
+        <h4>Mis datos personales</h4>
         <div class="field-row">
           <div class="field">
             <label>Nombre completo</label>
@@ -210,20 +210,20 @@
           <input type="email" id="editCorreo" autocomplete="off">
         </div>
 
-        <h4 style="color:var(--azul-osc); margin:20px 0 12px;">Mis vehículos</h4>
-        <p style="font-size:0.9em; color:var(--gris-med);">Slots compartidos con otros residentes del apto.</p>
+        <h4>Mis vehículos</h4>
+        <p class="ayuda-seccion">Slots compartidos con otros residentes del apto.</p>
         <div id="editVehiculos"></div>
 
-        <h4 style="color:var(--azul-osc); margin:20px 0 12px;">Mis mascotas</h4>
+        <h4>Mis mascotas</h4>
         <div id="editMascotas"></div>
 
-        <h4 style="color:var(--azul-osc); margin:20px 0 12px;">Mis contactos de emergencia</h4>
+        <h4>Mis contactos de emergencia</h4>
         <div id="editContactos"></div>
 
-        <button type="button" class="btn btn-primary btn-block" id="btnGuardarEdit" style="margin-top:20px;">
+        <button type="button" class="btn btn-primary btn-block" id="btnGuardarEdit">
           💾 Guardar mis datos
         </button>
-        <button type="button" class="btn btn-secondary btn-block" id="btnCancelarEdit" style="margin-top:8px;">
+        <button type="button" class="btn btn-secondary btn-block" id="btnCancelarEdit">
           ↩️ Cancelar
         </button>
       </form>

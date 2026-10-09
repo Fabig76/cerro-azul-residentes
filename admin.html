@@ -3,135 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#0066CC">
+  <meta name="theme-color" content="#142F70">
   <title>Portal Administrativo — Cerro Azul</title>
   <link rel="icon" href="assets/logo.jpg">
-  <link rel="stylesheet" href="assets/styles.css">
-  <style>
-    /* Estilos internos del panel admin (tablas, formulario de edición) */
-    .admin-wrap { max-width: 900px; margin: 0 auto; padding: 0 16px; }
-
-    .header-badge {
-      background: var(--azul-osc, #004A99);
-      color: #fff;
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 0.82em;
-      font-weight: 600;
-      white-space: nowrap;
-      margin-left: auto;
-    }
-
-    .search-bar {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 16px;
-      flex-wrap: wrap;
-    }
-    .search-bar input { flex: 1; min-width: 200px; padding: 10px 14px; font-size: 15px; }
-
-    .results-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 20px;
-      background: #fff;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    .results-table th {
-      background: var(--azul-claro, #E6F0FA);
-      color: var(--azul-osc, #004C99);
-      padding: 10px 12px;
-      text-align: left;
-      font-size: 0.9em;
-      font-weight: 600;
-    }
-    .results-table td { padding: 10px 12px; border-bottom: 1px solid var(--gris-borde, #DEE2E6); font-size: 0.92em; }
-    .results-table tr { cursor: pointer; transition: background 0.15s; }
-    .results-table tr:hover { background: var(--azul-claro, #E6F0FA); }
-    .results-table tr.selected { background: var(--azul-claro, #E6F0FA); font-weight: 600; }
-
-    .detail-card {
-      background: #fff;
-      padding: 24px;
-      border-radius: 8px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-      margin-top: 16px;
-    }
-    .detail-card h3 { color: var(--azul-osc, #004C99); margin: 0 0 16px; }
-
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .form-grid .full { grid-column: span 2; }
-    .form-grid label { font-size: 0.85em; color: var(--gris-med, #6C757D); }
-    .form-grid input { width: 100%; padding: 8px 10px; font-size: 14px; }
-    .form-grid input:disabled { background: #F8F9FA; color: var(--gris-med, #6C757D); }
-
-    .action-bar { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
-    .meta-info {
-      background: #F8F9FA;
-      padding: 12px 16px;
-      border-radius: 6px;
-      margin-bottom: 16px;
-      font-size: 0.92em;
-      color: var(--gris-med, #6C757D);
-    }
-    .no-results {
-      text-align: center;
-      padding: 40px;
-      color: var(--gris-med, #6C757D);
-      background: #fff;
-      border-radius: 8px;
-    }
-    .log { background: #f5f5f5; padding: 8px 12px; border-radius: 4px; font-family: monospace; font-size: 0.82em; max-height: 200px; overflow-y: auto; }
-
-    /* Secciones plegables del detalle — replican .section/.section-head del formulario */
-    .detail-card details {
-      border: 1px solid var(--gris-borde);
-      border-radius: 8px;
-      margin-bottom: 12px;
-      background: #FCFCFD;
-      overflow: hidden;
-    }
-    .detail-card summary {
-      padding: 13px 16px;
-      background: #F4F7FA;
-      cursor: pointer;
-      font-weight: 600;
-      color: var(--azul-osc);
-      user-select: none;
-      list-style: none;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .detail-card summary::-webkit-details-marker { display: none; }
-    .detail-card summary::after {
-      content: "▼";
-      font-size: 11px;
-      color: var(--gris-med);
-      transition: transform .2s;
-    }
-    .detail-card details:not([open]) summary::after { transform: rotate(-90deg); }
-    .detail-card details .form-grid {
-      padding: 16px;
-      border-top: 1px solid var(--gris-borde);
-      background: #FFF;
-    }
-    .detail-card details p[style*="font-size:0.82em"] {
-      padding: 0 16px 12px;
-    }
-  </style>
+  <link rel="stylesheet" href="assets/styles.css?v=20261008">
 </head>
-<body>
+<body class="tema-admin">
 
   <header class="site-header">
     <div class="header-inner">
       <img src="assets/logo.jpg" alt="Logo Urbanización Cerro Azul" class="logo">
       <div class="header-text">
         <h1>Urbanización Cerro Azul</h1>
-        <p class="nit">NIT 900770444 · Bello / Niquía</p>
         <p class="sub">Portal Administrativo</p>
+        <p class="nit">NIT 900770444 · Bello / Niquía</p>
       </div>
       <span class="header-badge" id="sessionBadge" style="display:none">Sesión activa</span>
     </div>
@@ -146,23 +31,25 @@
     <div id="view-login" class="lookup-box">
       <h3>🔧 Acceso administrativo</h3>
       <p>Solo personal autorizado de la administración puede ingresar.</p>
-      <div class="field" style="margin-bottom:18px;">
-        <label>Contraseña <span class="req">*</span></label>
+      <div class="field">
+        <label for="loginPassword">Contraseña <span class="req">*</span></label>
         <input type="password" id="loginPassword" placeholder="Ingrese la contraseña" autocomplete="current-password">
       </div>
       <button type="button" class="btn btn-primary btn-block" id="btnLogin">🔍 Ingresar</button>
-      <p style="margin-top:14px; font-size:12px; color:var(--gris-med);">
+      <p class="nota-pie">
         ¿Olvidó la contraseña? Edite la celda <strong>Config</strong> en el Google Sheet.
       </p>
     </div>
 
     <!-- VISTA 2: PANEL -->
     <div id="view-panel" class="hidden">
-      <div class="admin-nav" style="display:flex; gap:8px; margin-bottom:16px;">
-        <button type="button" class="btn btn-primary" id="btnNavResidentes">👥 Residentes</button>
-        <button type="button" class="btn btn-secondary" id="btnNavMudanzas">📦 Mudanzas</button>
-        <button type="button" class="btn btn-secondary" id="btnNavSalon">🏛️ Salón Social</button>
-        <button type="button" class="btn btn-secondary" id="btnLogout" style="margin-left:auto;">Cerrar sesión</button>
+      <div class="toolbar">
+        <div class="admin-nav">
+          <button type="button" class="btn btn-primary" id="btnNavResidentes">👥 Residentes</button>
+          <button type="button" class="btn btn-secondary" id="btnNavMudanzas">📦 Mudanzas</button>
+          <button type="button" class="btn btn-secondary" id="btnNavSalon">🏛️ Salón Social</button>
+        </div>
+        <button type="button" class="btn btn-ghost" id="btnLogout">Cerrar sesión</button>
       </div>
 
       <div id="tab-residentes-admin">
@@ -177,23 +64,29 @@
       </div>
 
       <div id="tab-mudanzas-admin" class="hidden">
-        <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
-          <label><strong>Estado:</strong></label>
-          <select id="mudanzasEstadoFilter">
-            <option value="Confirmada" selected>Confirmada</option>
-            <option value="Cancelada">Cancelada</option>
-            <option value="Todas">Todas</option>
-          </select>
-          <label><strong>Torre:</strong></label>
-          <select id="mudanzasTorreFilter">
-            <option value="">Todas</option>
-            <option value="1">Torre 1</option>
-            <option value="2">Torre 2</option>
-            <option value="3">Torre 3</option>
-          </select>
-          <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+        <div class="filter-bar">
+          <label class="filtro">
+            <span>Estado</span>
+            <select id="mudanzasEstadoFilter">
+              <option value="Confirmada" selected>Confirmada</option>
+              <option value="Cancelada">Cancelada</option>
+              <option value="Todas">Todas</option>
+            </select>
+          </label>
+          <label class="filtro">
+            <span>Torre</span>
+            <select id="mudanzasTorreFilter">
+              <option value="">Todas</option>
+              <option value="1">Torre 1</option>
+              <option value="2">Torre 2</option>
+              <option value="3">Torre 3</option>
+            </select>
+          </label>
+          <label class="filtro-check">
             <input type="checkbox" id="mudanzasProximosDiasCheck" checked>
-            <span>Solo próximos <input type="number" id="mudanzasProximosDiasInput" value="8" min="1" max="60" style="width:50px; padding:2px 6px;"> días</span>
+            <span>Solo próximos</span>
+            <input type="number" id="mudanzasProximosDiasInput" value="8" min="1" max="60" aria-label="Número de días">
+            <span>días</span>
           </label>
           <button type="button" class="btn btn-primary" id="btnCargarMudanzas">🔄 Actualizar lista</button>
         </div>
@@ -201,16 +94,18 @@
       </div>
 
       <div id="tab-salon-admin" class="hidden">
-        <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
-          <label><strong>Estado:</strong></label>
-          <select id="salonEstadoFilter">
-            <option value="PendientePago">PendientePago</option>
-            <option value="Pagado" selected>Pagado</option>
-            <option value="Cancelado">Cancelado</option>
-            <option value="Expirado">Expirado</option>
-            <option value="CanceladoPorAdmin">CanceladoPorAdmin</option>
-            <option value="Todos">Todos</option>
-          </select>
+        <div class="filter-bar">
+          <label class="filtro">
+            <span>Estado</span>
+            <select id="salonEstadoFilter">
+              <option value="PendientePago">PendientePago</option>
+              <option value="Pagado" selected>Pagado</option>
+              <option value="Cancelado">Cancelado</option>
+              <option value="Expirado">Expirado</option>
+              <option value="CanceladoPorAdmin">CanceladoPorAdmin</option>
+              <option value="Todos">Todos</option>
+            </select>
+          </label>
           <button type="button" class="btn btn-primary" id="btnCargarSalon">🔄 Actualizar lista</button>
         </div>
         <div id="salonList"></div>
@@ -218,17 +113,17 @@
     </div>
 
     <!-- VISTA 3: MODAL CANCELAR RESERVA -->
-    <div id="modal-cancelar-salon" class="modal-overlay hidden" style="position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px;">
-      <div class="modal-content" style="background:white; padding:28px; border-radius:12px; max-width:500px; width:100%; box-shadow:0 8px 32px rgba(0,0,0,0.25);">
-        <h3 style="color:var(--err); margin:0 0 16px;">⚠️ Cancelar reserva</h3>
+    <div id="modal-cancelar-salon" class="modal-overlay hidden">
+      <div class="modal-content">
+        <h3>⚠️ Cancelar reserva</h3>
         <p id="modalSalonDetalle"></p>
-        <div style="margin:16px 0;">
-          <label><strong>Motivo de cancelación (requerido):</strong></label>
-          <textarea id="modalSalonMotivo" rows="3" style="width:100%; padding:8px; margin-top:4px; border:1px solid var(--gris-borde); border-radius:4px;"></textarea>
+        <div class="field">
+          <label for="modalSalonMotivo"><strong>Motivo de cancelación (requerido):</strong></label>
+          <textarea id="modalSalonMotivo" rows="3"></textarea>
         </div>
-        <div style="display:flex; gap:12px; margin-top:20px;">
-          <button type="button" class="btn btn-secondary" id="btnCancelarModalSalon" style="flex:1;">❌ Cancelar (no borrar)</button>
-          <button type="button" class="btn btn-danger" id="btnConfirmarCancelarSalon" style="flex:1;">🗑️ Confirmar cancelación</button>
+        <div>
+          <button type="button" class="btn btn-secondary" id="btnCancelarModalSalon">❌ Cancelar (no borrar)</button>
+          <button type="button" class="btn btn-danger" id="btnConfirmarCancelarSalon">🗑️ Confirmar cancelación</button>
         </div>
       </div>
     </div>

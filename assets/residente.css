@@ -1,171 +1,78 @@
 /* ============================================================
-   PORTAL DEL RESIDENTE — estilos específicos
-   Cerro Azul Residentes (spec-residente.md F4)
+   Portal del Residente — solo lo propio de esta página.
+   La base (tarjetas, campos, botones, avisos) está en styles.css.
    ============================================================ */
 
-/* Lookup-box principal (mismo patrón que estado-cuenta.html) */
-.lookup-box {
-  max-width: 520px;
-  margin: 30px auto;
-  padding: 28px;
-  background: var(--fondo-card);
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-}
-
-.lookup-box h3 {
-  color: var(--azul-osc);
-  margin: 0 0 12px;
-  font-size: 1.3em;
-}
-
-.lookup-box p {
-  margin: 8px 0;
-  color: var(--gris-tx);
-  line-height: 1.5;
-}
-
-/* Alertas contextuales */
-.alert {
-  margin-top: 12px;
-  padding: 10px 14px;
-  border-radius: 6px;
-  font-size: 0.93em;
-  display: none;
-}
-
-.alert.hidden {
-  display: none !important;
-}
-
-.alert.show {
-  display: block;
-}
-
-.alert.error {
-  background: var(--err-fondo);
-  color: var(--err);
-  border-left: 4px solid var(--err);
-}
-
-.alert.success {
-  background: var(--ok-fondo);
-  color: var(--ok);
-  border-left: 4px solid var(--ok);
-}
-
-.alert.info {
-  background: var(--adv-fondo);
-  color: var(--adv);
-  border-left: 4px solid var(--adv);
-}
-
-/* Sección de residente en formulario */
+/* Bloque de cada residente en el registro */
 .residente-block {
-  border: 1px solid var(--gris-borde);
-  border-radius: 8px;
-  padding: 16px;
+  padding: 18px 18px 6px;
   margin-bottom: 12px;
-  background: var(--fondo);
+  background: var(--gris-bg);
+  border-radius: 18px;
+  animation: entrar .4s var(--curva) backwards;
 }
-
 .residente-block h4 {
-  margin: 0 0 12px;
-  color: var(--azul-osc);
-  font-size: 1em;
-}
-
-.field {
-  margin-bottom: 12px;
-}
-
-.field label {
-  display: block;
-  margin-bottom: 4px;
-  font-weight: 600;
+  margin: 0 0 14px;
+  font-size: 15.5px;
+  font-weight: 650;
   color: var(--gris-tx);
-  font-size: 0.92em;
 }
+.residente-block .field { margin-bottom: 14px; }
 
-.field input,
-.field select,
-.field textarea {
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid var(--gris-borde);
-  border-radius: 4px;
-  font-size: 0.95em;
-  font-family: inherit;
-}
-
-.field input:focus,
-.field select:focus,
-.field textarea:focus {
-  outline: none;
-  border-color: var(--azul);
-  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.15);
-}
-
-.field .req {
-  color: var(--err);
-}
-
-.field .help {
-  display: block;
-  margin-top: 4px;
-  color: var(--gris-med);
-  font-size: 0.85em;
-}
-
-/* Lista de residentes actuales en vista con-datos */
-.residentes-list {
-  list-style: none;
-  padding: 0;
-  margin: 12px 0;
-}
-
-.residentes-list li {
-  padding: 8px 12px;
-  background: var(--azul-claro);
-  border-radius: 4px;
-  margin-bottom: 6px;
-  font-size: 0.95em;
-}
-
-/* Grid para campos múltiples */
+/* Dos campos por fila */
 .field-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
-
 @media (max-width: 480px) {
-  .field-row {
-    grid-template-columns: 1fr;
-  }
+  .field-row { grid-template-columns: 1fr; gap: 0; }
 }
 
-/* Bloque colapsable (slots compartidos) */
+/* Cupos compartidos del apartamento: vehículos, motos, bicicletas, mascotas, contactos */
 .slot-compartido {
-  border: 1px dashed var(--gris-borde);
-  border-radius: 6px;
-  padding: 12px;
-  margin-bottom: 8px;
-  background: var(--fondo);
+  padding: 16px 18px 4px;
+  margin-bottom: 10px;
+  background: var(--fondo-card);
+  border-radius: 18px;
+  box-shadow: inset 0 0 0 1.5px var(--gris-borde);
+  animation: entrar .4s var(--curva) backwards;
 }
-
 .slot-compartido h5 {
-  margin: 0 0 8px;
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 650;
   color: var(--gris-med);
-  font-size: 0.9em;
-  font-weight: 600;
+}
+.slot-compartido .field { margin-bottom: 12px; }
+.slot-compartido.ocupado { background: var(--adv-fondo); box-shadow: inset 0 0 0 1.5px rgba(138, 75, 0, .25); }
+.slot-compartido.ocupado h5 { color: var(--adv); }
+
+/* Botones "+ Agregar…" (varios los crea js/residente.js) */
+#formRegistro > .btn-secondary:not(.btn-block) {
+  min-height: 42px;
+  padding: 0 18px;
+  font-size: 14.5px;
+  margin: 2px 0 6px !important;
+}
+#formRegistro > .btn-primary { margin-top: 26px; }
+#formEditar > .btn-primary { margin-top: 22px; }
+
+/* Lista de residentes actuales */
+.residentes-list { list-style: none; padding: 0; margin: 12px 0; }
+.residentes-list li {
+  padding: 11px 14px;
+  margin-bottom: 6px;
+  background: var(--acento-claro);
+  border-radius: var(--r-chip);
+  font-size: 15px;
 }
 
-.slot-compartido.ocupado {
-  background: var(--adv-fondo);
-  border-color: var(--adv);
-}
+/* Vista "apartamento no registrado": el enlace ocupa todo el ancho */
+#view-no-existe p > .btn-block { margin: 8px 0 0; }
 
-.slot-compartido.ocupado h5 {
-  color: var(--adv);
-}
+/* Vista de edición: textos que inserta el script */
+#editVehiculos p { font-size: 14px !important; margin: 0; }
+
+/* Títulos sin contenido debajo (el script deja vacías esas secciones) */
+#formEditar h4:has(+ div:empty) { display: none; }

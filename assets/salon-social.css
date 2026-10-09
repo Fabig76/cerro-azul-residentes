@@ -1,326 +1,242 @@
 /* ============================================================
-   PORTAL DEL SALON SOCIAL — estilos styles
-   Cerro Azul Residentes (spec-salon-social.md F4)
+   Reservas del Salón Social — solo lo propio de esta página.
+   La base (tarjetas, campos, botones, avisos) está en styles.css.
    ============================================================ */
 
-/* Layout general (lookup-box principal) */
-.lookup-box {
-  max-width: 520px;
-  margin: 30px auto;
-  padding: 28px;
-  background: var(--fondo-card);
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+/* Quién está reservando */
+.user-info {
+  display: inline-block;
+  padding: 9px 15px;
+  margin-bottom: 16px;
+  background: var(--acento-claro);
+  border-radius: var(--r-chip);
+  font-size: 14.5px;
+  color: var(--acento-osc);
 }
+.user-info strong { color: var(--acento-osc); }
 
-.lookup-box h3 {
-  color: var(--azul-osc);
-  margin: 0 0 12px;
-  font-size: 1.3em;
-}
-
-.lookup-box p {
-  margin: 8px 0;
-  color: var(--gris-tx);
-  line-height: 1.5;
-}
-
-/* Alertas contextuales */
-.alert {
-  margin-top: 12px;
-  padding: 10px 14px;
-  border-radius: 6px;
-  font-size: 0.93em;
-  display: none;
-}
-.alert.hidden { display: none !important; }
-.alert.show { display: block; }
-.alert.error {
-  background: var(--err-fondo);
-  color: var(--err);
-  border-left: 4px solid var(--err);
-}
-.alert.success {
-  background: var(--ok-fondo);
-  color: var(--ok);
-  border-left: 4px solid var(--ok);
-}
-.alert.info {
-  background: var(--adv-fondo);
-  color: var(--adv);
-  border-left: 4px solid var(--adv);
-}
-
-/* Vista de calendario (grid de 30 dias) */
+/* Calendario de 30 días */
 .calendario-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 6px;
   margin: 16px 0;
 }
-
+.calendario-grid > p { color: var(--gris-med); padding: 28px 0; }
 .calendario-day {
   aspect-ratio: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
-  padding: 6px;
+  gap: 3px;
+  padding: 4px;
+  border-radius: 16px;
   text-align: center;
-  font-size: 0.85em;
   cursor: pointer;
-  transition: transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .22s var(--rebote), box-shadow .2s ease, background-color .2s ease;
+  animation: aparecer .4s ease backwards;
 }
-.calendario-day:hover { transform: scale(1.05); }
+.calendario-day .day-num {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.calendario-day .day-slots { font-size: 10.5px; line-height: 1; letter-spacing: 1px; }
 
 .calendario-day.libre {
   background: var(--ok-fondo);
-  border: 1px solid var(--ok);
   color: var(--ok);
+  box-shadow: inset 0 0 0 1.5px rgba(19, 115, 51, .2);
 }
+.calendario-day.libre:hover {
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: inset 0 0 0 1.5px var(--ok), 0 10px 18px -10px rgba(19, 115, 51, .6);
+}
+.calendario-day.libre:active { transform: scale(.95); }
 .calendario-day.reservado {
   background: var(--err-fondo);
-  border: 1px solid var(--err);
   color: var(--err);
   cursor: not-allowed;
 }
 .calendario-day.pasado {
-  background: var(--gris-borde);
-  color: var(--gris-med);
+  background: transparent;
+  color: #B7BDC8;
   cursor: not-allowed;
-  opacity: 0.5;
 }
+.calendario-day.pasado .day-slots { opacity: .35; }
 
-.calendario-day .day-num {
-  font-size: 1.2em;
-  font-weight: bold;
-  line-height: 1;
+.leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 4px 0 20px;
+  font-size: 13.5px;
+  color: var(--gris-med);
 }
+.leyenda span { display: inline-flex; align-items: center; gap: 7px; }
+.leyenda i { width: 14px; height: 14px; border-radius: 5px; }
+.leyenda i.libre     { background: var(--ok-fondo);  box-shadow: inset 0 0 0 1.5px rgba(19, 115, 51, .35); }
+.leyenda i.reservado { background: var(--err-fondo); box-shadow: inset 0 0 0 1.5px rgba(197, 34, 31, .35); }
+.leyenda i.pasado    { background: var(--gris-borde); }
 
-.calendario-day .day-slots {
-  font-size: 0.7em;
-  margin-top: 2px;
-}
-
-/* Slot buttons (mañana/tarde) */
+/* Turnos: mañana / tarde */
 .slot-buttons {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin: 16px 0;
+  gap: 10px;
+  margin: 18px 0 22px;
 }
-
 .slot-btn {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
-  border: 2px solid var(--gris-borde);
-  border-radius: 8px;
+  gap: 12px;
+  min-height: 68px;
+  padding: 14px 20px;
+  border: 0;
+  border-radius: 20px;
   background: var(--fondo-card);
+  box-shadow: inset 0 0 0 1.5px var(--gris-borde);
+  font: 500 15.5px/1.35 var(--fuente);
+  color: var(--gris-tx);
   cursor: pointer;
-  font-size: 1em;
-  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .22s var(--curva), box-shadow .2s ease, background-color .2s ease;
+}
+.slot-btn .slot-info { text-align: left; }
+.slot-btn .slot-info strong { display: block; font-size: 17px; font-weight: 650; }
+.slot-btn .slot-precio {
+  flex: 0 0 auto;
+  padding: 7px 14px;
+  border-radius: var(--r-pill);
+  background: var(--ok-fondo);
+  color: var(--ok);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 .slot-btn:hover:not(:disabled) {
-  border-color: var(--azul);
-  background: var(--azul-claro);
+  transform: translateY(-2px);
+  background: var(--acento-claro);
+  box-shadow: inset 0 0 0 2px var(--acento), 0 14px 24px -16px rgba(0, 76, 153, .6);
 }
+.slot-btn:active:not(:disabled) { transform: scale(.98); }
 .slot-btn:disabled {
-  background: var(--err-fondo);
-  color: var(--err);
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-.slot-btn .slot-info {
-  text-align: left;
-}
-.slot-btn .slot-precio {
-  font-weight: bold;
-  color: var(--ok);
-}
-
-/* Step indicator (progreso) */
-.steps {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-  font-size: 0.85em;
-  color: var(--gris-med);
-}
-.step-item {
-  padding: 4px 12px;
-  border-radius: 12px;
-  background: var(--gris-borde);
-}
-.step-item.active {
-  background: var(--azul);
-  color: #fff;
-}
-
-/* Form fields */
-.field {
-  margin-bottom: 12px;
-}
-.field label {
-  display: block;
-  margin-bottom: 4px;
-  font-weight: 600;
-  color: var(--gris-tx);
-  font-size: 0.92em;
-}
-.field input,
-.field select,
-.field textarea {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid var(--gris-borde);
-  border-radius: 4px;
-  font-size: 0.95em;
-  font-family: inherit;
-}
-.field input:focus,
-.field select:focus,
-.field textarea:focus {
-  outline: none;
-  border-color: var(--azul);
-  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.15);
-}
-.field .req { color: var(--err); }
-
-/* Lista de mis reservas */
-.reservas-list {
-  list-style: none;
-  padding: 0;
-  margin: 12px 0;
-}
-.reservas-list li {
-  padding: 12px;
-  background: var(--fondo);
-  border-radius: 6px;
-  margin-bottom: 8px;
-  border-left: 4px solid var(--azul);
-}
-.reservas-list li.pagado {
-  border-left-color: var(--ok);
-}
-.reservas-list li.cancelado,
-.reservas-list li.expirado {
-  border-left-color: var(--gris-med);
-  opacity: 0.6;
-}
-
-/* Botones */
-.btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 1em;
-  transition: background 0.15s;
-  text-decoration: none;
-  display: inline-block;
-  text-align: center;
-}
-.btn-primary {
-  background: var(--azul);
-  color: #fff;
-}
-.btn-primary:hover { background: var(--azul-osc); }
-.btn-primary:disabled {
-  background: var(--gris-med);
+  background: var(--campo);
+  box-shadow: none;
+  color: #9299A6;
   cursor: not-allowed;
 }
-.btn-secondary {
-  background: var(--gris-borde);
-  color: var(--gris-tx);
-}
-.btn-secondary:hover { background: #c8c8c8; }
-.btn-danger {
-  background: var(--err);
-  color: #fff;
-}
-.btn-danger:hover { background: #B71C18; }
-.btn-block {
-  display: block;
-  width: 100%;
-}
+.slot-btn:disabled .slot-precio { background: transparent; color: #9299A6; text-decoration: line-through; }
 
-/* Link de pago (boton especial) */
+/* Valor y enlace de pago */
 .link-pago-box {
-  background: var(--azul-claro);
-  border: 2px dashed var(--azul);
-  border-radius: 8px;
-  padding: 16px;
-  margin: 16px 0;
+  margin: 4px 0 20px;
+  padding: 22px 20px;
+  background: var(--acento-claro);
+  border-radius: 22px;
   text-align: center;
 }
+.link-pago-box .etiqueta { margin: 0; font-size: 14px; color: var(--acento-osc); }
 .link-pago-box .precio {
-  font-size: 1.8em;
-  font-weight: bold;
-  color: var(--azul-osc);
-  margin: 8px 0;
+  margin: 4px 0 14px;
+  font-size: 38px;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--acento-osc);
+  font-variant-numeric: tabular-nums;
 }
 .link-pago-box .link {
-  display: inline-block;
-  margin-top: 8px;
-  word-break: break-all;
-  font-size: 0.9em;
+  margin-top: 12px;
+  font-size: 12.5px;
   color: var(--gris-med);
+  word-break: break-all;
 }
 
-/* Upload comprobante */
-.upload-area {
-  border: 2px dashed var(--gris-borde);
-  border-radius: 8px;
-  padding: 20px;
-  text-align: center;
-  margin: 12px 0;
-  background: var(--fondo);
-}
-.upload-area.dragover {
-  border-color: var(--azul);
-  background: var(--azul-claro);
-}
-.upload-area input[type="file"] { display: none; }
-.upload-area .file-name {
-  margin-top: 8px;
-  color: var(--ok);
+/* Los cuatro pasos de la reserva */
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 16px;
+  font-size: 13px;
   font-weight: 600;
 }
-
-/* Header con info del solicitante */
-.user-info {
-  background: var(--azul-claro);
-  padding: 12px;
-  border-radius: 6px;
-  margin-bottom: 16px;
-  font-size: 0.92em;
+.step-item {
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  background: var(--campo);
+  color: var(--gris-med);
 }
-.user-info strong { color: var(--azul-osc); }
+.step-item.active { background: var(--acento); color: #FFFFFF; }
 
-/* Mensaje de mora (alerta bloqueante) */
+/* Subir comprobante. js/salon-social.js abre el selector solo si el clic
+   cae en el área o en un <p>: por eso no se agregan otros elementos aquí. */
+.upload-area {
+  margin: 14px 0;
+  padding: 26px 18px;
+  border: 2px dashed #C3CAD6;
+  border-radius: 20px;
+  background: var(--gris-bg);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s ease, background-color .2s ease, transform .22s var(--curva);
+}
+.upload-area p { margin: 0; color: var(--gris-tx); font-weight: 600; font-size: 15px; }
+.upload-area p.tipos { margin-top: 4px; font-size: 13px; font-weight: 400; color: var(--gris-med); }
+.upload-area:hover { border-color: var(--acento); background: var(--acento-claro); }
+.upload-area.dragover { border-color: var(--acento); background: var(--acento-claro); transform: scale(1.02); }
+.upload-area input[type="file"] { display: none; }
+.upload-area .file-name:not(:empty) {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 7px 14px;
+  border-radius: var(--r-pill);
+  background: var(--ok-fondo);
+  color: var(--ok);
+  font-size: 14px;
+  font-weight: 600;
+  animation: caer .3s var(--curva) backwards;
+}
+
+/* Mis reservas */
+.reservas-list { list-style: none; padding: 0; margin: 14px 0; }
+.reservas-list > p { font-size: 15px; }
+.reservas-list li {
+  list-style: none;
+  padding: 15px 16px 15px 20px;
+  margin-bottom: 10px;
+  background: var(--gris-bg);
+  border-radius: 18px;
+  box-shadow: inset 5px 0 0 var(--acento);
+  font-size: 15px;
+  animation: entrar .4s var(--curva) backwards;
+}
+.reservas-list li.pagado    { box-shadow: inset 5px 0 0 #2FA36B; }
+.reservas-list li.pendiente { box-shadow: inset 5px 0 0 var(--naranja); }
+.reservas-list li.cancelado,
+.reservas-list li.expirado  { box-shadow: inset 5px 0 0 #A9B1BE; opacity: .7; }
+
+/* Apartamento en mora */
 .mora-box {
+  padding: 20px 22px;
+  margin-bottom: 18px;
   background: var(--err-fondo);
-  border-left: 4px solid var(--err);
-  padding: 20px;
-  border-radius: 6px;
-  margin-bottom: 16px;
+  border-radius: 20px;
 }
-.mora-box h3 { color: var(--err); margin: 0 0 8px; }
-.mora-box p { color: var(--err); margin: 4px 0; }
+.mora-box h3 { margin: 0 0 8px; font-size: 19px; color: var(--err); }
+.mora-box p { margin: 4px 0; color: var(--err); }
 
-/* Responsive */
+#btnMisReservas { margin-top: 4px; }
+
 @media (max-width: 480px) {
-  .calendario-grid {
-    gap: 3px;
-    font-size: 0.8em;
-  }
-  .slot-btn {
-    padding: 12px;
-    font-size: 0.9em;
-  }
+  .calendario-grid { gap: 4px; }
+  .calendario-day { border-radius: 12px; }
+  .calendario-day .day-num { font-size: 15px; }
+  .calendario-day .day-slots { font-size: 8.5px; letter-spacing: 0; }
+  .slot-btn { padding: 12px 16px; }
+  .link-pago-box .precio { font-size: 32px; }
 }

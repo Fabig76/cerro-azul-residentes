@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#0066CC">
   <title>Salón Social — Cerro Azul</title>
   <link rel="icon" href="assets/logo.jpg">
-  <link rel="stylesheet" href="assets/styles.css">
-  <link rel="stylesheet" href="assets/salon-social.css">
+  <link rel="stylesheet" href="assets/styles.css?v=20261008">
+  <link rel="stylesheet" href="assets/salon-social.css?v=20261008">
   <script src="js/salon-social.js?v=1"></script>
 </head>
 <body>
@@ -17,8 +17,8 @@
       <img src="assets/logo.jpg" alt="Logo Urbanización Cerro Azul" class="logo">
       <div class="header-text">
         <h1>Urbanización Cerro Azul</h1>
-        <p class="nit">NIT 900770444 · Bello / Niquía</p>
         <p class="sub">Reservas del Salón Social</p>
+        <p class="nit">NIT 900770444 · Bello / Niquía</p>
       </div>
     </div>
   </header>
@@ -36,21 +36,21 @@
 
       <div id="alert-login" class="alert hidden" role="alert"></div>
 
-      <div class="field" style="margin-bottom:12px;">
+      <div class="field">
         <label>N° de apartamento <span class="req">*</span></label>
         <input type="text" id="aptoInput" placeholder="Ej: 105, 202B" autocomplete="off">
       </div>
-      <div class="field" style="margin-bottom:18px;">
+      <div class="field">
         <label>Su cédula <span class="req">*</span></label>
         <input type="text" id="ccInput" placeholder="Solo números, sin puntos ni guiones" inputmode="numeric" autocomplete="off">
-        <small style="color:var(--gris-med); font-size:0.85em;">
+        <small>
           La cédula debe corresponder al propietario o a un residente del apartamento.
         </small>
       </div>
       <button type="button" class="btn btn-primary btn-block" id="btnIngresar">
         🔍 Continuar
       </button>
-      <p style="margin-top:18px; font-size:12px; color:var(--gris-med);">
+      <p class="nota-pie">
         <strong>¿Primera vez?</strong> El propietario debe haberlo agregado
         previamente en el
         <a href="index.html">formulario de residentes</a>.
@@ -66,7 +66,7 @@
         <h3>No puede hacer reservas</h3>
         <p><strong>Apartamento <span id="moraApto"></span></strong></p>
         <p id="moraMensaje"></p>
-        <p style="font-size:0.9em; margin-top:12px;">
+        <p>
           Tiene suspendidos los servicios de áreas comunes. Para poder reservar,
           primero debe ponerse al día con la administración.
         </p>
@@ -79,7 +79,7 @@
     <!-- ============================================================== -->
     <!-- VISTA 3: CALENDARIO (30 días)                                   -->
     <!-- ============================================================== -->
-    <section id="view-calendario" class="lookup-box" style="max-width:640px;">
+    <section id="view-calendario" class="lookup-box wide hidden">
       <h3>📅 Disponibilidad — Salón Social</h3>
 
       <div class="user-info">
@@ -90,26 +90,24 @@
 
       <div id="alert-calendario" class="alert hidden" role="alert"></div>
 
-      <p style="font-size:0.9em;">Selecciona un día disponible para ver los turnos.
+      <p>Selecciona un día disponible para ver los turnos.
          Cada turno (mañana o tarde) cuesta <strong>$125.000 COP</strong>.</p>
 
       <div class="calendario-grid" id="calendarioGrid">
         <!-- Se llena dinámicamente -->
       </div>
 
-      <div style="margin-top:16px; font-size:0.85em; color:var(--gris-med);">
-        <span style="display:inline-block; width:14px; height:14px; background:var(--ok-fondo); border:1px solid var(--ok); vertical-align:middle; margin-right:4px;"></span> Disponible
-        &nbsp;&nbsp;
-        <span style="display:inline-block; width:14px; height:14px; background:var(--err-fondo); border:1px solid var(--err); vertical-align:middle; margin-right:4px;"></span> Reservado
-        &nbsp;&nbsp;
-        <span style="display:inline-block; width:14px; height:14px; background:var(--gris-borde); vertical-align:middle; margin-right:4px;"></span> Pasado
+      <div class="leyenda">
+        <span><i class="libre"></i>Disponible</span>
+        <span><i class="reservado"></i>Reservado</span>
+        <span><i class="pasado"></i>Pasado</span>
       </div>
 
-      <button type="button" class="btn btn-secondary btn-block" id="btnMisReservas" style="margin-top:16px;">
+      <button type="button" class="btn btn-secondary btn-block" id="btnMisReservas">
         📋 Mis reservas
       </button>
 
-      <button type="button" class="btn btn-secondary btn-block" id="btnVolverLogin" style="margin-top:8px;">
+      <button type="button" class="btn btn-secondary btn-block" id="btnVolverLogin">
         ↩️ Cambiar de apartamento
       </button>
     </section>
@@ -117,7 +115,7 @@
     <!-- ============================================================== -->
     <!-- VISTA 4: RESERER (seleccionar turno + link de pago)              -->
     <!-- ============================================================== -->
-    <section id="view-reservar" class="lookup-box hidden" style="max-width:600px;">
+    <section id="view-reservar" class="lookup-box wide hidden">
       <h3>📝 Reservar turno</h3>
 
       <div class="user-info">
@@ -128,7 +126,7 @@
 
       <div id="alert-reservar" class="alert hidden" role="alert"></div>
 
-      <p style="font-size:0.9em;">Selecciona el turno que deseas reservar.
+      <p>Selecciona el turno que deseas reservar.
          Ambos turnos del mismo día pueden ser reservados (si están disponibles).</p>
 
       <div class="slot-buttons">
@@ -146,7 +144,7 @@
         </button>
       </div>
 
-      <button type="button" class="btn btn-secondary btn-block" id="btnVolverCalendario" style="margin-top:20px;">
+      <button type="button" class="btn btn-secondary btn-block" id="btnVolverCalendario">
         ↩️ Volver al calendario
       </button>
     </section>
@@ -154,7 +152,7 @@
     <!-- ============================================================== -->
     <!-- VISTA 5: PAGO (link + subir comprobante)                         -->
     <!-- ============================================================== -->
-    <section id="view-pago" class="lookup-box hidden" style="max-width:600px;">
+    <section id="view-pago" class="lookup-box wide hidden">
       <h3>💳 Confirmar y pagar</h3>
 
       <div class="user-info">
@@ -166,7 +164,7 @@
       <div id="alert-pago" class="alert hidden" role="alert"></div>
 
       <div class="link-pago-box">
-        <p style="margin:0; font-size:0.9em; color:var(--gris-med);">Valor a pagar</p>
+        <p class="etiqueta">Valor a pagar</p>
         <div class="precio">$125.000 COP</div>
         <a id="linkPago" href="#" target="_blank" class="btn btn-primary">
           🔗 Ir a pagar ahora
@@ -181,24 +179,24 @@
         <span class="step-item">4. ✅ Listo</span>
       </div>
 
-      <p style="font-size:0.9em;">
+      <p>
         <strong>⏰ Plazo:</strong> tiene <strong>48 horas</strong> para subir el comprobante.
         Si no lo sube, la reserva se cancela automáticamente y el horario se libera.
       </p>
 
       <div class="upload-area" id="uploadArea">
-        <p style="margin:0;">📎 Arrastra o haz click para subir el comprobante de pago</p>
-        <p style="margin:4px 0; font-size:0.85em; color:var(--gris-med);">
+        <p>📎 Arrastra o haz click para subir el comprobante de pago</p>
+        <p class="tipos">
           PDF, JPG o PNG. Máximo 10MB.
         </p>
         <input type="file" id="comprobanteInput" accept="application/pdf,image/jpeg,image/png">
         <div class="file-name" id="fileName"></div>
       </div>
 
-      <button type="button" class="btn btn-primary btn-block" id="btnSubirComprobante" disabled style="margin-top:12px;">
+      <button type="button" class="btn btn-primary btn-block" id="btnSubirComprobante" disabled>
         📤 Subir comprobante
       </button>
-      <button type="button" class="btn btn-secondary btn-block" id="btnCancelarReserva" style="margin-top:8px;">
+      <button type="button" class="btn btn-secondary btn-block" id="btnCancelarReserva">
         ❌ Cancelar reserva
       </button>
     </section>
@@ -206,7 +204,7 @@
     <!-- ============================================================== -->
     <!-- VISTA 6: MIS RESERVAS (lista de las reservas del solicitante)     -->
     <!-- ============================================================== -->
-    <section id="view-mis-reservas" class="lookup-box hidden" style="max-width:700px;">
+    <section id="view-mis-reservas" class="lookup-box xwide hidden">
       <h3>📋 Mis reservas</h3>
 
       <div class="user-info">
@@ -221,13 +219,13 @@
       </div>
 
       <div class="link-pago-box" id="linkPagoBoxMisReservas" style="display:none;">
-        <p style="margin:0 0 8px; font-size:0.9em; color:var(--gris-med);">Link de pago (configurado en la administración):</p>
+        <p class="etiqueta">Link de pago (configurado en la administración):</p>
         <a id="linkPagoMisReservas" href="#" target="_blank" class="btn btn-primary">
           🔗 Ir a pagar
         </a>
       </div>
 
-      <button type="button" class="btn btn-secondary btn-block" id="btnVolverCalDesdeMis" style="margin-top:20px;">
+      <button type="button" class="btn btn-secondary btn-block" id="btnVolverCalDesdeMis">
         ↩️ Volver al calendario
       </button>
     </section>

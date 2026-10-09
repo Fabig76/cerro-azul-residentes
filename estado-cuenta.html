@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0066CC">
   <title>Estado de Cuenta — Cerro Azul</title>
   <link rel="icon" href="assets/logo.jpg">
-  <link rel="stylesheet" href="assets/styles.css">
+  <link rel="stylesheet" href="assets/styles.css?v=20261008">
   <script src="js/estado-cuenta.js?v=3"></script>
 </head>
 <body>
@@ -15,8 +15,8 @@
       <img src="assets/logo.jpg" alt="Logo Urbanización Cerro Azul" class="logo">
       <div class="header-text">
         <h1>Urbanización Cerro Azul</h1>
-        <p class="nit">NIT 900770444 · Bello / Niquía</p>
         <p class="sub">Consulta de estado de cuenta y paz y salvo</p>
+        <p class="nit">NIT 900770444 · Bello / Niquía</p>
       </div>
     </div>
   </header>
@@ -30,23 +30,23 @@
       <p>Ingresa tu <strong>N° de formulario</strong>, tu <strong>N° de apartamento</strong> y tu <strong>cédula</strong> para ver tu saldo, tus últimos pagos y descargar tu factura o paz y salvo.</p>
       <div id="alert-ec-login" class="alert hidden" role="alert" aria-live="polite"></div>
 
-      <div class="field" style="margin-bottom:12px;">
+      <div class="field">
         <label>N° de formulario <span class="req">*</span></label>
         <input type="text" id="ecNumForm" placeholder="Ej: CA-0042" autocomplete="off">
       </div>
-      <div class="field" style="margin-bottom:12px;">
+      <div class="field">
         <label>N° de apartamento <span class="req">*</span></label>
         <input type="text" id="ecApto" placeholder="Ej: 101, 202B" autocomplete="off">
       </div>
-      <div class="field" style="margin-bottom:18px;">
+      <div class="field">
         <label>Cédula del propietario <span class="req">*</span></label>
         <input type="text" id="ecCc" placeholder="Solo números, sin puntos ni guiones" inputmode="numeric" autocomplete="off">
-        <small style="color:var(--gris-med);">La cédula debe coincidir con la registrada en el formulario de residentes.</small>
+        <small>La cédula debe coincidir con la registrada en el formulario de residentes.</small>
       </div>
       <button type="button" class="btn btn-primary btn-block" id="btnEcConsultar">
         🔍 Consultar
       </button>
-      <p style="margin-top:18px; font-size:12px; color:var(--gris-med);">
+      <p class="nota-pie">
         <strong>¿Perdiste tu N° de formulario?</strong> Escríbenos a
         <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a>.
       </p>
@@ -55,7 +55,7 @@
     <!-- ============================================================== -->
     <!-- VISTA ESTADO                                                  -->
     <!-- ============================================================== -->
-    <div id="view-estado" class="lookup-box hidden" style="max-width:600px;">
+    <div id="view-estado" class="lookup-box wide hidden">
       <h3>💳 Mi estado de cuenta</h3>
       <div id="alert-ec" class="alert hidden" role="alert" aria-live="polite"></div>
 
