@@ -99,7 +99,7 @@ impreso en PDF.
 
 - **Apps Script ID:** `17nuyzVYK2yN_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy`
 - **URL preservada:** `https://script.google.com/macros/s/AKfycbxp...Zp/exec`
-- **Última versión: V36_ENCARGADO (09-Oct-2026)** — basada en V36_TORRE2, agrega el valor de diligencia "Encargado" (mismos privilegios que Propietario). md5 `0f872b7218b96295ed79986fd6ab9320`. V35 (05-Oct-2026) sigue en producción para referencia.
+- **Última versión: V37_MUDANZAS_ELEMENTOS (09-Oct-2026)** — basada en V36_TORRE2, agrega el valor de diligencia "Encargado" (mismos privilegios que Propietario). md5 `0f872b7218b96295ed79986fd6ab9320`. V35 (05-Oct-2026) sigue en producción para referencia.
 
 ### Historial reciente (sesiones 04-Oct a 05-Oct-2026)
 

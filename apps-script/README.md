@@ -4,7 +4,7 @@ Este es el código del backend que conecta el formulario público
 (`https://fabig76.github.io/cerro-azul-residentes/`) con el Google Sheet
 (`https://docs.google.com/spreadsheets/d/16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc`).
 
-## Versión vigente: V36_ENCARGADO (09-Oct-2026). Apps Script "Versión" actual: V36_TORRE2 + Encargado (deploy manual del operador).
+## Versión vigente: V37_MUDANZAS_ELEMENTOS (09-Oct-2026). Apps Script "Versión" actual: V36_TORRE2 + Encargado (deploy manual del operador).
 
 **Backend V35 (LISTO PARA DEPLOY):** BUGFIX-022 — Restaura el módulo de Estado de Cuenta (478 líneas) que se había perdido del .gs desplegado. Las 6 funciones públicas (`ecConsultar`, `ecDescargarFactura`, `ecPazYSalvo`, `ecIniciarCarga`, `ecSubirFacturas`, `ecFinalizarCarga`) + 14 helpers + 3 constantes de hojas se restauran desde backup `hermes-varios/cerro-azul/cerro-azul-residentes-main/modulo-estado-cuenta.gs`. md5 `3af70d3f8298f900c4407470131cbb45` (222214 bytes). Al desplegar, Apps Script le asignará "Versión 33". IMPORTANTE: ejecutar `ecSetup` UNA VEZ antes del deploy para autorizar DriveApp/DocumentApp.
 

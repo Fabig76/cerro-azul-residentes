@@ -106,6 +106,61 @@ En `index.html` (formulario público de diligenciamiento):
 
 ---
 
+### BUGFIX-024 · Tipos de mudanza para elementos + descripción (commit `4c45f8d`, `5833166`)
+
+**Fecha:** 09-Oct-2026
+**Severidad:** MEJORA — funcionalidad nueva solicitada por el operador
+**Origen:** el operador detectó que los residentes usaban el campo "observaciones" para pedir autorización de ingreso/salida de elementos (ej. reserva MD-0019: "NO ES MUDANZA. Quiero solicitar autorización para el ingre...").
+
+**Qué cambió:**
+
+Antes, el portal de mudanzas solo tenía 2 tipos: "Salida del arrendatario actual" e "Ingreso del nuevo arrendatario". No existía una forma de agendar mudanza de elementos (muebles, enseres) que no implicara cambio de arrendatario.
+
+Se agregaron 2 tipos nuevos:
+- `SalidaElementos` — "Salida de elementos (muebles, enseres)"
+- `IngresoElementos` — "Ingreso de elementos (muebles, enseres)"
+
+Estos 2 tipos requieren una **descripción obligatoria** de los elementos (10-500 caracteres, texto real). Los 2 tipos de arrendatario NO requieren descripción.
+
+**Archivos modificados:**
+
+Backend (`apps-script/Codigo_V37_MUDANZAS_ELEMENTOS_20261009.gs`):
+- `MUDANZAS_NUM_COLS`: 19 → 23 (corrige bug preexistente: el Sheet tiene 22 cols T/U/V para check de vigilancia que no se escribían)
+- Nueva constante `COL_MUD_DESCRIPCION = 22`
+- `reservarMudanza()`: acepta 4 tipos, valida descripción (10-500 chars, regex texto real) solo para tipos de elementos
+- `adminListarReservasMudanzas()`: devuelve `descripcionElementos`
+- `vigilanteVerMudanzas()`: devuelve `descripcionElementos`
+
+Frontend:
+- `index.html`: 4 radios + paso 1.5 condicional (textarea descripción)
+- `js/app.js`: 4 mensajes contextuales, show/hide de descripción, envío de `descripcionElementos`
+- `js/vigilantes.js`: 4 colores por tipo + bloque amarillo con descripción
+- `js/admin.js`: descripción truncada en la tabla
+
+**Bugs encontrados durante la verificación E2E (corregidos en `5833166`):**
+
+1. `vigilanteVerMudanzas()` leía `descripcionElementos` de la fila pero NO lo agregaba al objeto `reservas.push()`. El vigilante no iba a ver la descripción. Fix: 1 línea.
+
+2. Las horas de mudanza se mostraban como "Sat Dec 30 1899 08:00:00 GMT-0456" porque `String(row[7])` serializaba un Date crudo. Fix: usar `normalizarHora()` (esto también resuelve el hallazgo R-23 de la auditoría externa).
+
+**Verificación post-deploy (09-Oct-2026):**
+
+- nextId: CA-0234 ✓
+- adminLogin / vigilanteLogin: token OK ✓
+- adminListarReservasMudanzas: 7 reservas, todas con `descripcionElementos` ✓
+- vigilanteVerMudanzas: horas "08:00 - 10:00", `descripcionElementos` presente ✓
+- dispMudanzas: 3 torres, 8 slots cada una ✓
+- lookupMatApto: Torre 1/2/3 (BUGFIX-023 sigue activo) ✓
+- getEstadoResidente: OK ✓
+- dispSalon: 31 días ✓
+
+**MD5:** `0747a256a29b62dfd66b071ecd14c3a2`
+**Drive ID:** `11HOoXb15-hx744EEriOSWAfShdwf9lkY`
+
+**Spec:** `docs/spec-mudanzas-tipos-elementos.md` (17KB)
+
+---
+
 ### BUGFIX-023-ENCARGADO · Valor de diligencia 'Encargado' para encargados/administradores (commit `f9a393e`)
 
 **Fecha:** 09-Oct-2026
