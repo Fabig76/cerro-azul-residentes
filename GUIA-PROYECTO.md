@@ -1090,7 +1090,7 @@ Agregado en septiembre 2026 (rama `feature/mudanzas`).
 - `assets/styles.css` — estilos calendario + slots
 - `docs/spec-mudanzas.md` — SPEC v1.0.0 (12 secciones, 21 KB)
 
-### 15.5 Límite operativo (BUGFIX-024 — 09-Oct-2026)
+### 15.5 Límite operativo (BUGFIX-025 — 09-Oct-2026)
 
 Decisión del operador tras revisar capacidad vs realidad operativa
 (único vigilante disponible):
@@ -1107,7 +1107,12 @@ Implementación:
 - Mensaje al usuario: "Ya existe una mudanza confirmada para la Torre X el YYYY-MM-DD (ID MD-XXXX, HH:MM-HH:MM). Solo se permite 1 mudanza por torre por día."
 
 Caso real expuesto: 07-Oct-2026 tuvo 2 mudanzas simultáneas en Torre 2
-(MD-0011 13-15 + MD-0013 15-17) que BUGFIX-024 ya no permitirá.
+(MD-0011 13-15 + MD-0013 15-17) que BUGFIX-025 ya no permitirá.
+
+Archivo en producción: `Codigo_V40_TORREDIA-20261009.gs` (md5 `57f6d8c069c6423c08c44e79c831f774`,
+Drive ID `191y-m0PScv9rsEoWz3Ek0Jo75_RXHZSr`,
+link https://drive.google.com/file/d/191y-m0PScv9rsEoWz3Ek0Jo75_RXHZSr/view).
+Verificado en producción (Versión 39 del editor de Apps Script, autonumerada).
 
 ### 15.6 Ver también
 
