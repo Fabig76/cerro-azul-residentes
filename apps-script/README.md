@@ -4,7 +4,7 @@ Este es el código del backend que conecta el formulario público
 (`https://fabig76.github.io/cerro-azul-residentes/`) con el Google Sheet
 (`https://docs.google.com/spreadsheets/d/16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc`).
 
-## Versión LISTA PARA DEPLOY: V35 backend (05-Oct-2026) — BUGFIX-022. En producción: V35 backend (Apps Script "Versión 33" ✓ verificado).
+## Versión vigente: V36_ENCARGADO (09-Oct-2026). Apps Script "Versión" actual: V36_TORRE2 + Encargado (deploy manual del operador).
 
 **Backend V35 (LISTO PARA DEPLOY):** BUGFIX-022 — Restaura el módulo de Estado de Cuenta (478 líneas) que se había perdido del .gs desplegado. Las 6 funciones públicas (`ecConsultar`, `ecDescargarFactura`, `ecPazYSalvo`, `ecIniciarCarga`, `ecSubirFacturas`, `ecFinalizarCarga`) + 14 helpers + 3 constantes de hojas se restauran desde backup `hermes-varios/cerro-azul/cerro-azul-residentes-main/modulo-estado-cuenta.gs`. md5 `3af70d3f8298f900c4407470131cbb45` (222214 bytes). Al desplegar, Apps Script le asignará "Versión 33". IMPORTANTE: ejecutar `ecSetup` UNA VEZ antes del deploy para autorizar DriveApp/DocumentApp.
 
@@ -79,6 +79,28 @@ de datos Ley 1581/2012). Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-010.
 
 BUGFIX-011 (V20): admin mudanzas con filtro "Próximos N días" (paridad
 con vigilante). Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-011.
+
+
+
+**Backend V36_ENCARGADO (09-Oct-2026) — Vigente, deployada por el operador:**
+
+V36 = V35 base (4868 líneas) + Torre 2 / BUGFIX-023 (línea 26, 563, 571) + valor "Encargado" como nueva opción de diligencia.
+
+Cambios:
+- Acepta `diligencia: "Encargado"` además de `Propietario`, `Arrendatario`, `Tenedor / Otro` (línea 295)
+- Privilegios de edición idénticos a Propietario / Tenedor / Otro / Inmobiliaria (línea 1039)
+- Registro de 10 con `Tenedor / Otro` sigue funcionando sin cambios (compatibilidad total)
+- Frontend (`index.html`): el radio button "Encargado / Admin" envía `value="Encargado"`
+- Frontend (`js/admin.js`): select de edición muestra la nueva opción
+
+md5 `0f872b7218b96295ed79986fd6ab9320` (222.463 bytes, 4870 líneas).
+
+**Backend V36_TORRE2 (08-Oct-2026) — Predecesor, ya en producción:**
+
+Agrega Torre 2 al lookup de matrículas inmobiliarias (BUGFIX-023). Línea 26: `MATRICULAS_TORRE_2 = 'Torre 2 - Etapa 4'; 185 aptos: 119..2420`. Línea 563: el for loop incluye Torre 2. Línea 571: la fuente reconoce "torre2".
+
+**Frontend V28 con mini-parser markdown (commit `2d17d34`):** para el asistente IA.
+
 
 ## ¿Qué hace?
 

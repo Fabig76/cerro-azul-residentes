@@ -106,6 +106,79 @@ En `index.html` (formulario público de diligenciamiento):
 
 ---
 
+### BUGFIX-023-ENCARGADO · Valor de diligencia 'Encargado' para encargados/administradores (commit `f9a393e`)
+
+**Fecha:** 09-Oct-2026
+**Severidad:** MEDIA — mejora de UX, no es bug
+**Origen:** pedido del operador para unificar UX con respecto al Sheet
+
+**Qué cambió:**
+
+Se agregó el valor `"Encargado"` como nueva opción válida de diligencia en el campo "Diligencia como" del formulario público, equivalente a "Tenedor / Otro" pero con un nombre más claro.
+
+**Archivos modificados (4):**
+
+1. `index.html` (líneas 119-120):
+   - `value="Tenedor / Otro"` → `value="Encargado"`
+   - Label visible: "Encargado / Admin" (sin cambios)
+   - La opción "Arrendatario" fue eliminada en el commit anterior (7a6dcff)
+
+2. `js/admin.js` (línea 204):
+   - Agregado `<option value="Encargado">Encargado / Admin</option>` al select de edición
+   - Ahora se pueden editar registros con diligencia "Encargado" desde el portal admin
+
+3. `apps-script/Codigo_V35_BUGFIX-022_2026-10-05.gs` (línea 295-296):
+   - `if (!['Propietario','Arrendatario','Tenedor / Otro'].includes(diligencia))` →
+   - `if (!['Propietario','Arrendatario','Tenedor / Otro','Encargado'].includes(diligencia))`
+   - Mensaje de error actualizado
+
+4. `apps-script/Codigo_V35_BUGFIX-022_2026-10-05.gs` (línea 1039):
+   - `if (diligencia !== 'Propietario' && diligencia !== 'Tenedor / Otro' && diligencia !== 'Inmobiliaria')` →
+   - `if (diligencia !== 'Propietario' && ... && diligencia !== 'Encargado')`
+   - Privilegios de edición: idénticos a Tenedor / Otro
+
+5. `apps-script/Codigo_V36_ENCARGADO_20261009.gs` (NUEVO):
+   - Versión basada en V36_TORRE2 (que incluye BUGFIX-023 de Torre 2)
+   - Con los 2 cambios de "Encargado" aplicados
+   - md5 `0f872b7218b96295ed79986fd6ab9320` (222.463 bytes, 4870 líneas)
+
+6. `apps-script/Código.gs` (NUEVO, canónico):
+   - Réplica del V36_ENCARGADO para que el repo refleje la última desplegada
+
+**Comportamiento esperado (verificado por curl):**
+
+- Webapp sigue respondiendo: ✓
+- nextId: ✓ CA-0231
+- adminLogin: ✓ con cerroazul2026
+- vigilanteLogin: ✓ con VigCerroAzul2026
+- lookupMatApto: ✓ Torre 1, Torre 2 (BUGFIX-023), Torre 3
+- dispSalon: ✓ calendario 30 días
+
+**Lo que NO se modificó:**
+
+- `js/residente.js` — el `<option value="Tenedor / Otro">` que aparece en ese archivo es un campo de PARENTESCO (no diligencia), no se toca
+- Los 10 registros existentes con diligencia "Tenedor / Otro" en el Sheet
+- Los 18 registros con diligencia "Arrendatario"
+- Los 202 registros con diligencia "Propietario"
+
+**Compatibilidad:**
+
+- Registros antiguos con "Tenedor / Otro" siguen siendo editables y válidos
+- Nuevos registros con "Encargado" tienen los mismos privilegios
+- Ambos valores conviven en el sistema
+
+**Deploy requerido:**
+
+El operador debe copiar el contenido de `apps-script/Codigo_V36_ENCARGADO_20261009.gs` a Apps Script editor y crear nueva versión. El archivo está también en `gdrive:Cerro Azul/proyecto formulario residentes/`.
+
+**Documentación adicional:**
+
+- `docs/REDISENO-2026-10-08.md` — rediseño visual
+- `references/auditoria-portalcerro.md` §14 — regla de versiones
+- `skills/cerro-azul-version-generator.md` — script de generación
+
+---
+
 
 ## Bugs Críticos Documentados
 

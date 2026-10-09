@@ -191,7 +191,8 @@
 
   · **"Registros"** (renombrada de "Hoja 1"): 138 columnas
     · Fila 1 congelada con formato azul Cerro Azul (#0066CC), texto blanco, negrita
-    · Validación de "Diligencia como" (Propietario/Tenedor / Otro; UI muestra "Encargado/Admin" para Tenedor / Otro)
+    · Validación de "Diligencia como" (Propietario / Tenedor / Otro / Encargado)
+      (V36+: "Encargado" es valor independiente con mismos privilegios que Tenedor / Otro)
   · **"Maestros"** (auxiliar, vacía): Apto | Estado | Notas
     · Pensada para validaciones futuras contra listado de aptos del conjunto
 
@@ -290,7 +291,8 @@ el lookup automático de matrículas. Total: 138 → 143 columnas.
 
 Obligatorios (devuelve error si falta):
   · N° Apto
-  · Diligencia como (debe ser Propietario/Tenedor / Otro; UI: "Propietario" o "Encargado/Admin")
+  · Diligencia como (debe ser Propietario / Tenedor / Otro / Encargado;
+      UI: "Propietario" o "Encargado/Admin"; "Tenedor / Otro" ya no aparece en formulario público)
   · Nombre y cédula del titular
   · Correo del titular (formato válido)
   · Celular del titular
@@ -1834,7 +1836,7 @@ y el cargador de cartera para el administrador.
 **Detectado por:** Operador (Fabio Lesmes) cuando un propietario del apto
 504 intentó consultar su estado de cuenta y vio el mensaje:
 ```
-"Diligencia como debe ser Propietario, o Tenedor / Otro (Encargado/Admin)."
+"Diligencia como debe ser Propietario, Arrendatario, Tenedor / Otro o Encargado."
 ```
 
 ### 24.1 Causa raíz
