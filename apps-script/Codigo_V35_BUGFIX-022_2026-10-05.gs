@@ -292,8 +292,8 @@ function submitRecord(data) {
   const apto = String(data.apto || '').trim();
   if (!apto) return { ok: false, error: 'Falta N° de apartamento.' };
   const diligencia = String(data.diligencia || '').trim();
-  if (!['Propietario','Arrendatario','Tenedor / Otro'].includes(diligencia)) {
-    return { ok: false, error: 'Diligencia como debe ser Propietario, Arrendatario o Tenedor / Otro.' };
+  if (!['Propietario','Arrendatario','Tenedor / Otro','Encargado'].includes(diligencia)) {
+    return { ok: false, error: 'Diligencia como debe ser Propietario, Arrendatario, Tenedor / Otro o Encargado.' };
   }
   const nombreTitular = String(data.nombreProp || '').trim();
   if (!nombreTitular) return { ok: false, error: 'Falta nombre del propietario/titular.' };
@@ -1036,7 +1036,7 @@ function verificarPropietario(numForm, apto, ccProp) {
   }
 
   const diligencia = String(found.values[4] || '').trim();
-  if (diligencia !== 'Propietario' && diligencia !== 'Tenedor / Otro' && diligencia !== 'Inmobiliaria') {
+  if (diligencia !== 'Propietario' && diligencia !== 'Tenedor / Otro' && diligencia !== 'Inmobiliaria' && diligencia !== 'Encargado') {
     return { ok: false, error: 'Esta autorización debe ser solicitada por el propietario del inmueble o por la inmobiliaria autorizada, no por un arrendatario. Contacte al propietario.' };
   }
 

@@ -201,6 +201,7 @@ const A = {
                 <option value="Propietario" ${r.diligencia==='Propietario'?'selected':''}>Propietario</option>
                 <option value="Arrendatario" ${r.diligencia==='Arrendatario'?'selected':''}>Arrendatario</option>
                 <option value="Tenedor / Otro" ${r.diligencia==='Tenedor / Otro'?'selected':''}>Tenedor / Otro</option>
+                <option value="Encargado" ${r.diligencia==='Encargado'?'selected':''}>Encargado / Admin</option>
               </select>
             </div>
           </div>
