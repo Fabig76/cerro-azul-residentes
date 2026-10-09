@@ -106,6 +106,49 @@ En `index.html` (formulario público de diligenciamiento):
 
 ---
 
+### V38-ADMIN-BORRAR · Endpoint admin para borrar reservas de mudanza (commit `5daaa91`)
+
+**Fecha:** 09-Oct-2026
+**Severidad:** MEJORA — herramienta administrativa
+**Origen:** el operador pidió quitar las reservas de prueba (MD-0001, MD-0002, MD-0003, MD-0020) que aparecían en el portal de vigilancia y confundían a los guardas.
+
+**Qué cambió:**
+
+Se agregó el endpoint `adminBorrarReservaMudanza` que borra FÍSICAMENTE una fila de la pestaña Mudanzas usando `sheet.deleteRow()`.
+
+**Archivos modificados:**
+
+1. `apps-script/Codigo_V38_BORRAR_MUDANZA_20261009.gs` (NUEVO):
+   - `ACTIONS_ADMIN`: agrega `'adminBorrarReservaMudanza'`
+   - `doPost`: routing del nuevo endpoint (requiere token admin vía `validarToken`)
+   - Nueva función `adminBorrarReservaMudanza(idReserva)`:
+     · Busca la reserva por ID
+     · Borra físicamente con `deleteRow()`
+     · `Logger.log` para auditoría
+     · NO toca la pestaña Registros
+
+2. `apps-script/Código.gs` (canónico = V38)
+
+**Por qué es seguro borrar en Mudanzas (y no en Registros):**
+
+- La pestaña Registros NO se debe borrar: el `numForm` (CA-XXXX) es credencial de edición, `getNextFormId` busca el max y colisiona, y hay referencias cruzadas.
+- La pestaña Mudanzas SÍ se puede borrar: el `MD-XXXX` NO es credencial (la edición se hace con numForm del Registros + apto + cédula), no hay referencias cruzadas, y el hash dedupe se recalcula al crear.
+
+**Efecto en el correlativo:**
+
+Al borrar la última reserva (MD-0020), el próximo ID real será MD-0020 otra vez (reutilizado). Inofensivo porque MD-0020 era una prueba cancelada.
+
+**Verificación post-deploy:**
+
+- Las 4 reservas de prueba borradas correctamente (MD-0003 requirió 2 intentos por error transitorio).
+- Quedan 16 reservas reales (MD-0004 a MD-0019).
+- Falso positivo detectado: MD-0008 tiene hash dedupe "e2eadd27..." que contiene "e2e", pero es una reserva real (no se borró).
+
+**MD5:** `f2f0cad52a343bb65c43d1853e473c66`
+**Drive ID:** `1fN85gZqpqW4vn1gmi78rWGrffgzrBfTK`
+
+---
+
 ### BUGFIX-024 · Tipos de mudanza para elementos + descripción (commit `4c45f8d`, `5833166`)
 
 **Fecha:** 09-Oct-2026
