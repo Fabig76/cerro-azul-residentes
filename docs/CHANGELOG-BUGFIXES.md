@@ -12,6 +12,74 @@
 
 ---
 
+### REDISENO-TEMA-OSCURO · Selector de tema claro/oscuro en header del portal principal (commit `dba2e79`)
+
+**Fecha:** 13-Oct-2026
+**Severidad:** MEJORA — solo cambia UI del portal principal
+**Origen:** preferencia del operador (dispositivo en modo oscuro) + sugerencia del skill `verification-before-completion`.
+
+**Qué cambió:**
+
+En el portal principal (`index.html`) se agregó un botón circular en la esquina
+superior derecha del header que permite alternar entre tema claro y oscuro.
+El cambio es **frontend only** — NO toca backend ni Sheet.
+
+Archivos modificados (2):
+- `index.html` — botón `.tema-toggle` en header + SVGs (luna/sol) + script anti-FOUC en `<head>` + handler antes de `</body>` + meta `theme-color` dual + cache-buster CSS bumpeado a `?v=20261013`
+- `assets/styles.css` — bloque `:root[data-tema="oscuro"]` con paleta oscura coherente al azul Cerro Azul (fondo #0F1419, tarjetas #1A2027, texto #E8ECF1) + estilos del botón + transición global de 0.3s
+
+**Comportamiento:**
+
+- El botón muestra LUNA 🌙 en modo claro (acción: "ir a oscuro")
+- El botón muestra SOL ☀️ en modo oscuro (acción: "ir a claro")
+- Detección automática del SO: si `prefers-color-scheme: dark` y es primera visita, arranca en oscuro
+- Persistencia: la elección se guarda en `localStorage` con clave `cerro-azul-tema`
+- Sin flash: el script anti-FOUC aplica el tema en `<head>` antes del primer paint
+
+**Verificación pre-deploy (12 chequeos):**
+
+1. CSS balanceado (442/442 llaves)
+2. HTML balanceado (header, body, script, html)
+3. Botón presente en DOM con `aria-label`
+4. data-tema cambia con click
+6. aria-label se actualiza
+7. Píxeles modo claro: header #ffffff, body rgb(242,244,248)
+8. Píxeles modo oscuro: header #1a2027, body rgb(15,20,25)
+9. SVG luna visible en modo claro (217 píxeles detectados)
+10. SVG sol visible en modo oscuro
+11. 0 errores JS en consola
+12. Variables CSS del bloque oscuro evaluadas correctamente
+
+**Lecciones aprendidas:**
+
+- **Lección #19:** NO usar emojis como íconos de UI cuando el color de fondo puede cambiar entre modos. El emoji luna 🌙 (blanco/amarillento) era invisible contra el fondo claro del botón en modo claro. **Fix:** SVG inline con `stroke="currentColor"`. Ahora el icono hereda el color del botón, que cambia con el tema.
+- **Lección #20:** script anti-FOUC en `<head>` es obligatorio para evitar el flash blanco de medio segundo al cargar la página cuando el usuario prefiere oscuro. Aplicar `data-tema` antes del primer paint.
+- **Lección #21:** usar `cache-buster` (`?v=YYYYMMDD`) en el `<link rel="stylesheet">` para forzar al navegador a re-descargar el CSS cuando hay cambios. Sin esto, los usuarios ven la versión vieja cacheada.
+
+**Lo que NO se modificó:**
+
+- Los otros 6 portales (`admin.html`, `vigilantes.html`, `estado-cuenta.html`, `salon-social.html`, `residente.html`, `cartera-admin.html`) siguen sin selector.
+- `js/app.js` — sin cambios (no se tocó JavaScript del portal)
+- Backend Apps Script `apps-script/Código.gs` — sin cambios
+- Hojas de Sheet — sin cambios
+- URL del Web App — sin cambios
+
+**Replicación futura (no incluida en este commit):**
+
+Para los otros 6 portales, el cambio es mínimo porque comparten `assets/styles.css`:
+1. Bloque del botón en su `<header>`
+2. Script anti-FOUC en su `<head>`
+3. Handler antes de `</body>`
+4. Bumpear cache-buster a `?v=20261013`
+
+Tiempo estimado: ~5 min por portal.
+
+**Reversa:**
+
+Un solo `git revert dba2e79` revierte todo el cambio.
+
+---
+
 ### REDISENO-FRONTEND · Reemplazo visual de los 7 portales (commit `0f1d6ce`)
 
 **Fecha:** 09-Oct-2026

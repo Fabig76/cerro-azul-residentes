@@ -13,6 +13,14 @@ Bello / Niquía, Colombia) actualicen sus datos y los de su familia,
 vehículos, mascotas y contactos de emergencia. Reemplaza el formato
 impreso en PDF.
 
+**Selector de tema claro/oscuro** (13-Oct-2026, commit `dba2e79`):
+el header del portal principal incluye un botón circular en la
+esquina superior derecha que alterna entre modo claro y modo oscuro.
+La elección se guarda en `localStorage` y se detecta automáticamente
+la preferencia del sistema operativo. Solo afecta el portal principal
+por ahora; los demás portales se actualizarán tras validación.
+Ver `docs/CHANGELOG-BUGFIXES.md` entrada REDISENO-TEMA-OSCURO.
+
 ## Tres módulos del formulario (pestañas)
 
   · **📝 Enviar / Crear registro** — alta de un nuevo apartamento

@@ -24,6 +24,7 @@
   14. [Respaldos](#14-respaldos)
   15. [Manuales de uso para residentes](#15-manuales-de-uso-para-residentes)
   16. [Agente IA — Asistente conversacional](#16-agente-ia--asistente-conversacional)
+  17. [Selector de tema claro/oscuro (13-Oct-2026)](#17-selector-de-tema-claroscuro-13-oct-2026)
 
 ---
 
@@ -2150,5 +2151,138 @@ Flujo:
 
 ---
 
-Última actualización: 05-Oct-2026 (V35 BUGFIX-022 desplegado "Versión 33" y verificado)
+Última actualización: 13-Oct-2026 (selector de tema claro/oscuro en portal principal, commit `dba2e79`)
 Mantenedor: Hermes Agent + Fabio Lesmes (operador)
+
+---
+
+## 17. Selector de tema claro/oscuro (13-Oct-2026)
+
+### 17.1 Necesidad
+
+El operador usa el dispositivo en modo oscuro permanentemente. Al entrar
+al portal público Cerro Azul (que solo tenía fondo claro) le molestaba
+la vista. Pidió un selector manual de tema.
+
+### 17.2 Decisión
+
+Solo se implementó en el portal principal (`index.html`) en esta primera
+fase. Los otros 6 portales (`admin.html`, `vigilantes.html`,
+`estado-cuenta.html`, `salon-social.html`, `residente.html`,
+`cartera-admin.html`) se actualizarán en commit posterior tras validar
+que el operador esté conforme con el resultado del portal principal.
+
+### 17.3 Implementación
+
+**Frontend only** — sin cambios en backend Apps Script ni Sheet.
+
+Dos archivos modificados (commit `dba2e79`, +139 líneas, -2 líneas):
+
+- `assets/styles.css`: bloque `:root[data-tema="oscuro"]` con paleta oscura
+  coherente al azul Cerro Azul. Estilos del botón `.tema-toggle`. Transición
+  global de 0.3s para evitar parpadeo.
+- `index.html`: botón circular con SVGs (luna/sol) en la esquina superior
+  derecha del header. Script anti-FOUC en `<head>` que aplica el tema antes
+  del primer paint. Handler del botón antes de `</body>`. Meta `theme-color`
+  dual para barra móvil.
+
+### 17.4 Sistema de temas del proyecto (resumen)
+
+El proyecto Cerro Azul tiene **3 ejes de tema**:
+
+| Eje | Mecanismo | Valores |
+|-----|-----------|---------|
+| **Modo visual** (claro/oscuro) | Atributo `data-tema` en `<html>` | `claro` (default), `oscuro` |
+| **Color de marca** (portal admin) | Clase `tema-admin` en `<body>` | (default), `tema-admin` |
+| **Color de marca** (portal vigilancia) | Clase `tema-vigilancia` en `<body>` | (default), `tema-vigilancia` |
+
+**Cómo interactúan:**
+- El modo visual (claro/oscuro) lo controla el usuario con el botón toggle.
+- El color de marca es por portal: el index.html usa el azul de marca,
+  admin.html usa azul oscuro (admin), vigilantes.html usa verde-azulado.
+- Estos ejes son ortogonales: el portal admin puede estar en modo claro
+  o modo oscuro, manteniendo su color de marca azul oscuro.
+
+**Selector actual:**
+- Solo el portal principal tiene el botón toggle.
+- El resto de portales usan el modo visual por defecto (claro).
+
+### 17.5 Detección automática y persistencia
+
+```javascript
+// En <head> (anti-FOUC)
+var guardado = localStorage.getItem('cerro-azul-tema');
+var prefiSO  = matchMedia('(prefers-color-scheme: dark)').matches;
+var tema     = guardado || (prefiSO ? 'oscuro' : 'claro');
+document.documentElement.setAttribute('data-tema', tema);
+```
+
+Comportamiento:
+1. Primera visita: detecta la preferencia del sistema operativo
+2. Visita subsecuente: respeta la elección guardada en `localStorage`
+3. Sin `localStorage` (modo incógnito, etc.): cae en el default del SO
+
+### 17.6 Cómo replicar a los otros portales
+
+Para cada uno de los 6 portales restantes, repetir este patrón:
+
+**A) En `<head>`** (después del `<link>` del stylesheet):
+
+```html
+<script>
+  (function() {
+    try {
+      var guardado = localStorage.getItem('cerro-azul-tema');
+      var prefiSO = window.matchMedia &&
+                    window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var tema = guardado || (prefiSO ? 'oscuro' : 'claro');
+      document.documentElement.setAttribute('data-tema', tema);
+    } catch (e) {}
+  })();
+</script>
+```
+
+**B) En el `<header>`** (después del bloque `.header-text`, antes de `</div>`):
+
+```html
+<button type="button" class="tema-toggle" id="temaToggle"
+        aria-label="Cambiar tema claro u oscuro" title="Cambiar tema">
+  <svg class="icono-luna" ...><!-- path de luna creciente --></svg>
+  <svg class="icono-sol" ...><!-- circle + 8 líneas de rayos --></svg>
+</button>
+```
+
+**C) Antes de `</body>`**:
+
+```html
+<script>
+  (function() {
+    var btn = document.getElementById('temaToggle');
+    if (!btn) return;
+    btn.addEventListener('click', function() {
+      var html = document.documentElement;
+      var actual = html.getAttribute('data-tema') === 'oscuro' ? 'oscuro' : 'claro';
+      var nuevo = actual === 'oscuro' ? 'claro' : 'oscuro';
+      html.setAttribute('data-tema', nuevo);
+      try { localStorage.setItem('cerro-azul-tema', nuevo); } catch (e) {}
+      btn.setAttribute('aria-label', nuevo === 'oscuro'
+        ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro');
+    });
+  })();
+</script>
+```
+
+**D) Bumpear cache-buster**: `?v=20261008` → `?v=20261013`
+
+**No requiere** ningún cambio en el CSS (ya está en `assets/styles.css`).
+
+### 17.7 Lecciones aprendidas
+
+- **#19** No usar emojis como íconos de UI cuando el fondo cambia entre
+  modos. SVG con `stroke="currentColor"` es la solución correcta.
+- **#20** Script anti-FOUC en `<head>` es obligatorio para evitar el flash
+  blanco al cargar si el usuario prefiere oscuro.
+- **#21** Bumpear cache-buster del CSS (`?v=YYYYMMDD`) en cada cambio para
+  forzar al navegador a re-descargar la versión nueva.
+
+Ver `docs/sesion-2026-10-13.md` para el detalle completo de la sesión.
