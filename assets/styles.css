@@ -86,6 +86,50 @@ body.tema-vigilancia {
   --sombra-boton: 0 1px 2px rgba(20, 30, 50, .10), 0 8px 16px -8px rgba(8, 92, 83, .6);
 }
 
+/* Tema oscuro (selector manual o detección automática del SO) */
+:root[data-tema="oscuro"] {
+  /* Marca: los azules funcionan igual en oscuro */
+  --azul:        #4D9EFF;
+  --azul-osc:    #0066CC;
+  --azul-claro:  #1A2A40;
+  --verde-azul:  #2DC9BC;
+  --naranja:     #FFA940;
+  --naranja-osc: #F39200;
+
+  /* Texto y superficies (inversión elegante, no blanco puro) */
+  --gris-tx:     #E8ECF1;
+  --gris-med:    #9BA4B4;
+  --gris-borde:  #2D3640;
+  --gris-claro:  #212A33;
+  --gris-bg:     #161B22;
+  --texto:       #E8ECF1;
+  --texto-med:   #9BA4B4;
+  --fondo:       #0F1419;
+  --fondo-card:  #1A2027;
+  --campo:       #212A33;
+  --campo-hover: #2A3340;
+  --linea:       #2D3640;
+
+  /* Estados (ajustados para mejor contraste en oscuro) */
+  --ok:          #34A853;
+  --ok-fondo:    #1A2E22;
+  --err:         #F28B82;
+  --err-fondo:   #2E1A1A;
+  --adv:         #FFB74D;
+  --adv-fondo:   #2E2210;
+
+  /* Anillo y sombras más sutiles en oscuro */
+  --anillo:       rgba(77, 158, 255, .25);
+  --sombra-1: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 22px -12px rgba(0, 0, 0, .6);
+  --sombra-2: 0 2px 6px rgba(0, 0, 0, .3), 0 28px 56px -24px rgba(0, 0, 0, .7);
+  --sombra-boton: 0 1px 2px rgba(0, 0, 0, .40), 0 8px 16px -8px rgba(77, 158, 255, .55);
+}
+
+:root[data-tema="oscuro"] header.site-header {
+  background: #1A2027;
+  border-bottom: 1px solid var(--linea);
+}
+
 /* ---------- 2. Base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -199,12 +243,60 @@ header.site-header img.logo {
   animation: latido 2.4s ease-in-out infinite;
 }
 
+/* Botón toggle de tema claro/oscuro (esquina superior derecha del header) */
+.tema-toggle {
+  margin-left: auto;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--gris-borde);
+  border-radius: 50%;
+  background: var(--campo);
+  color: var(--texto);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  transition: background .25s var(--curva), color .25s var(--curva),
+              transform .25s var(--rebote), border-color .25s var(--curva),
+              box-shadow .25s var(--curva);
+  box-shadow: var(--sombra-1);
+}
+.tema-toggle:hover {
+  background: var(--campo-hover);
+  transform: scale(1.06);
+  border-color: var(--acento);
+  box-shadow: 0 0 0 4px var(--anillo);
+}
+.tema-toggle:active { transform: scale(0.94); }
+.tema-toggle:focus-visible {
+  outline: 3px solid var(--acento);
+  outline-offset: 2px;
+}
+/* Mostrar el ícono que corresponde al tema actual.
+   En modo CLARO se muestra la luna (para "ir a oscuro").
+   En modo OSCURO se muestra el sol (para "ir a claro"). */
+:root:not([data-tema="oscuro"]) .tema-toggle .icono-sol  { display: none; }
+:root[data-tema="oscuro"]         .tema-toggle .icono-luna { display: none; }
+
+/* Transición global al cambiar de tema (evita parpadeo brusco) */
+html, body, .card, .section, .section-head, .section-body,
+input, select, textarea, button, .campo, .tema-toggle,
+header.site-header, .legal-banner, .mode-tab, .portal-link {
+  transition: background-color .3s var(--curva),
+              color .3s var(--curva),
+              border-color .3s var(--curva);
+}
+
 @media (max-width: 560px) {
   .header-inner { padding: 12px 16px 15px; gap: 12px; }
   header.site-header img.logo { width: 84px; height: 42px; border-radius: 12px; }
   .header-text h1 { font-size: 16px; }
   .header-text .nit { display: none; }
   .header-badge { font-size: 12px; padding: 6px 10px 6px 9px; }
+  .tema-toggle { width: 36px; height: 36px; font-size: 16px; }
 }
 
 /* ---------- 4. Estructura de página ---------- */

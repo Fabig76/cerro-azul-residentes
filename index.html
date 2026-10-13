@@ -3,11 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#0066CC">
+  <meta name="theme-color" content="#0066CC" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0F1419" media="(prefers-color-scheme: dark)">
   <title>Formulario de Residentes — Urbanización Cerro Azul</title>
   <meta name="description" content="Formulario oficial para actualización de datos de residentes y propietarios de la Urbanización Cerro Azul. Bello / Niquía.">
   <link rel="icon" href="assets/logo.jpg" type="image/jpeg">
-  <link rel="stylesheet" href="assets/styles.css?v=20261008">
+  <link rel="stylesheet" href="assets/styles.css?v=20261013">
+  <script>
+      // Anti-FOUC: aplica el tema antes de que el CSS termine de cargar.
+      // Sin esto, el usuario vería un flash blanco al cargar la pagina.
+      (function() {
+        try {
+          var guardado = localStorage.getItem('cerro-azul-tema');
+          var prefiSO = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var tema = guardado || (prefiSO ? 'oscuro' : 'claro');
+          document.documentElement.setAttribute('data-tema', tema);
+        } catch (e) { /* sin localStorage: queda en claro */ }
+      })();
+    </script>
 </head>
 <body>
 
@@ -19,6 +32,22 @@
       <p class="sub">Formato de actualización y manejo de datos de residentes</p>
       <p class="nit">NIT 900770444 · Bello / Niquía</p>
     </div>
+    <button type="button" class="tema-toggle" id="temaToggle" aria-label="Cambiar tema claro u oscuro" title="Cambiar tema">
+      <svg class="icono-luna" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+      <svg class="icono-sol" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/>
+        <line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/>
+        <line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+    </button>
   </div>
 </header>
 
@@ -919,5 +948,21 @@
 </script>
 
 <script src="js/asistente.js?v=1"></script>
+<script>
+      // Toggle de tema claro/oscuro. Sincroniza localStorage con el atributo data-tema en <html>.
+      (function() {
+        var btn = document.getElementById('temaToggle');
+        if (!btn) return;
+        btn.addEventListener('click', function() {
+          var html = document.documentElement;
+          var actual = html.getAttribute('data-tema') === 'oscuro' ? 'oscuro' : 'claro';
+          var nuevo = actual === 'oscuro' ? 'claro' : 'oscuro';
+          html.setAttribute('data-tema', nuevo);
+          try { localStorage.setItem('cerro-azul-tema', nuevo); } catch (e) {}
+          // Anuncia a lectores de pantalla el cambio
+          btn.setAttribute('aria-label', nuevo === 'oscuro' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro');
+        });
+      })();
+    </script>
 </body>
 </html>
