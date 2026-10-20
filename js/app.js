@@ -10,6 +10,13 @@
 // URL del Web App de Google Apps Script (desplegado por Fabio en urb.cerroazul@gmail.com)
 const APPS_SCRIPT_URL = window.APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec';
 
+// Constantes de mudanzas — sincronizadas con apps-script/Codigo.gs (BUGFIX-026 V41).
+// Backend usa MUDANZAS_CANCELACION_HORAS = 24 (apps-script/Codigo.gs línea ~798).
+// Debe coincidir exactamente para que la UI muestre el botón "Cancelar" en las mismas
+// reservas que el backend aceptaría cancelar.
+const MUDANZAS_CANCELACION_HORAS_FRONTEND = 24;
+const MUDANZAS_ANTICIPACION_DIAS_FRONTEND = 2;
+
 // Constantes de UI
 const $  = (s, ctx = document) => ctx.querySelector(s);
 const $$ = (s, ctx = document) => Array.from(ctx.querySelectorAll(s));
@@ -1225,7 +1232,7 @@ const M = {
         const fechaHora = new Date(r.fecha + 'T' + (r.horaInicio || '00:00') + ':00');
         const diffHoras = (fechaHora - now) / (1000 * 60 * 60);
         const esConfirmada = r.estado === 'Confirmada';
-        const esCancelable = esConfirmada && diffHoras >= MUDANZAS_CANCELACION_HORAS;
+        const esCancelable = esConfirmada && diffHoras >= MUDANZAS_CANCELACION_HORAS_FRONTEND;
         const esCancelada  = r.estado === 'Cancelada';
         const fechaLarga   = this.formatFechaLarga(r.fecha);
         const estadoBadge  = esConfirmada
