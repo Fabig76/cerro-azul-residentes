@@ -1242,7 +1242,7 @@ const M = {
             ? '<span class="badge badge-err">Cancelada</span>'
             : '<span class="badge badge-info">' + safe(r.estado) + '</span>';
         const accion = esCancelable
-          ? `<button type="button" class="btn btn-secondary btn-sm" data-action="cancelar-mi-reserva" data-id="${safe(r.id)}">🗑️ Cancelar reserva</button>`
+          ? `<button type="button" class="btn btn-danger btn-sm" data-action="cancelar-mi-reserva" data-id="${safe(r.id)}">🗑️ Cancelar reserva</button>`
           : esConfirmada
             ? '<small class="muted" style="color:var(--gris-med);">No se puede cancelar con menos de 24 h de anticipación. Contacte a la administración.</small>'
             : '';
