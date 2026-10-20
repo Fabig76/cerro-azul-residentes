@@ -2220,4 +2220,87 @@ Justificación del operador: "esta creo que es mejor porque solo tengo un solo v
 
 **Lección aprendida #14 (BUGFIX-025):** cuando el operador describe una preocupación operativa ("no es posible que los vigilantes estén todo el tiempo"), NO asumir que la pregunta es retórica. Convertir la preocupación en una decisión explícita con 2-5 opciones y pedirle que elija con razones simples (no técnicas). El operador es fuente de verdad sobre la realidad operativa.
 
+
+### BUGFIX-026 · Listar y cancelar reservas propias en el portal de mudanzas (commit pendiente, archivo `Codigo_V41_BUGFIX-026_MISRESERVASMUDANZAS_20261020.gs`)
+
+**Fecha:** 20-Oct-2026
+**Severidad:** ALTA — el único flujo público para que un residente gestione sus propias mudanzas estaba inoperante desde el deploy inicial del módulo (26-Sept-2026).
+**Detectado por:** Operador (Fabio Lesmes) el 20-Oct-2026 al reportar que el residente del apto 413 "tiene una mudanza y no se muestra" en el portal.
+**Bug latente desde:** implementación inicial del módulo mudanzas (commit `5ad6fbf`, rama `feature/mudanzas` 23-Sept-2026). Caso simétrico al BUGFIX-015 (V22, 02-Oct-2026) que resolvió la misma asimetría para Salón Social pero NO se aplicó a mudanzas.
+
+**Síntoma reportado por el usuario:**
+> "el portal de mudanzas no muestra las reservas que la persona tiene y por ende no puede cancelarlas porque no las muestra un ejemplo es el apto 413 tiene una mudanza y no se muestra"
+
+**Causa raíz:**
+El backend del módulo mudanzas (`Codigo.gs` → actualmente V40 desplegado) solo expone 4 endpoints: `verificarPropietario`, `dispMudanzas`, `reservarMudanza`, `cancelarMudanza`. NO existe un endpoint que liste las reservas de un numForm/apto autenticado. El frontend `js/app.js` método `M.showMisReservas()` (bindeado al botón `#btnMudMisReservas` de `index.html` línea 759) era un placeholder literal con la línea:
+```js
+showAlert('alert-mud-form', 'Para ver todas tus reservas, contacta a la administración. Esta función está en desarrollo.', 'info');
+```
+El comentario interno admitía el workaround planeado:
+> "Hoy no hay endpoint dedicado — usamos dispMudanzas en un rango y filtramos las que aparecen como ocupadoPor. Como dispMudanzas no devuelve numForm, mostramos solo las cancelables dentro de las visibles. Esta vista es informativa."
+…que nunca se implementó (`dispMudanzas` devuelve `slots[]` con disponibilidad booleana, no `numForm` del ocupante).
+
+**Asimetría histórica con Salón Social:**
+El módulo Salón Social sí tiene desde 02-Oct-2026 un endpoint `listarReservasPorApto` (BUGFIX-015 V22) usado por `salon-social.js` línea ~449:
+```js
+const r = await apiGet({
+  action: 'listarReservasPorApto',
+  apto: state.apto,
+  cc: state.cc
+});
+```
+…y su contraparte frontend (`view-mis-reservas`) lo consume. Ese mismo patrón faltaba replicado en el módulo mudanzas hasta hoy.
+
+**Fix aplicado:**
+1. Backend: nueva función `listarReservasMudanzasPorNumForm(numForm, apto, ccProp)` en `Codigo_V41` (~80 líneas).
+   - Valida identidad con `verificarPropietario(numForm, apto, ccProp)` (rechaza arrendatarios; coherente con `reservarMudanza`/`cancelarMudanza`).
+   - Lee pestaña `Mudanzas` del Sheet (`getMudanzasSheet()`).
+   - Filtra por `numForm === verif.numForm` AND `apto === verif.apto` (no cruzar entre aptos del mismo conjunto).
+   - Devuelve TODOS los estados (`Confirmada`, `Cancelada`, `Realizada`) ordenados por fecha ascendente (próximas primero, horaInicio como secundario).
+2. Backend: nueva ruta en `doPost` (4 líneas) que enruta `action: 'listarReservasMudanzasPorNumForm'` a la función. **No se tocó `doGet`**: la cancelación usa POST por simetría con `cancelarMudanza` que ya muta el Sheet.
+3. Frontend: `M.showMisReservas()` reemplazado (~115 líneas de las 7 originales). Ahora:
+   - Llama al endpoint nuevo vía `fetch` POST con el mismo patrón de headers/body que `submitReserva()`.
+   - Renderiza una card por reserva con: ID, tipo, fecha larga, horario, torre + ascensor, descripción de elementos (si aplica), fecha de creación y badge de estado.
+   - Botón "🗑️ Cancelar reserva" visible solo si `estado === 'Confirmada'` AND `fechaHora - now >= MUDANZAS_CANCELACION_HORAS` (regla de las 24h vigente desde V18 — la regla la aplica el backend igual, pero el frontend muestra un mensaje explicativo en lugar del botón si la reserva es Confirmada dentro de la ventana).
+   - `safe()` local para escapar HTML (no existía `escapeHtml` global en `js/app.js`, sí existe en `admin.js`, `estado-cuenta.js`, `cartera-admin.js`, `salon-social.js`, `residente.js`; se prefirió función local mínima para mantener la huella del cambio).
+4. Frontend: nuevo método `M.cancelarMiReserva(idReserva)` (~35 líneas) que reusa el endpoint `cancelarMudanza` existente (que ya valida identidad y la regla 24h). Tras éxito, refresca la lista con `await this.showMisReservas()`.
+5. Cache-buster: bump `?v=20261020` en `<script src="js/app.js">` (línea 787 de `index.html`) para forzar al navegador a re-descargar la nueva lógica.
+
+**Lo que NO se modificó (intencionalmente):**
+- Backend `cancelarMudanza` (sin cambios — se reusa, ya valida identidad y regla 24h).
+- Emails: `console.error` silencioso se mantiene (decisión del operador para esta iteración).
+- Sheet: ningún cambio.
+- Codigo.gs en-repo (snapshot V35, drift conocido).
+- Sheet de pruebas, Apps Script project, manual del agente.
+
+**Verificación pre-deploy (8 chequeos):**
+1. `node --check Codigo_V41_BUGFIX-026_MISRESERVASMUDANZAS_20261020.gs` → SYNTAX OK
+2. Llaves balanceadas: 876/876
+3. Backend: V41 baseado en V40 descargado de Drive (`md5 57f6d8c0…f774`, idéntico bit a bit)
+4. Backend: solo +81 líneas sobre V40 (mínimo cambio)
+5. Frontend: `node --check js/app.js` → SYNTAX OK
+6. `M.showMisReservas` ya no contiene el string "función en desarrollo" (grep -c "en desarrollo" = 0)
+7. Endpoint nuevo enrutado solo en `doPost`, no en `doGet` (consistencia con `cancelarMudanza`)
+8. `js/app.js` cache-buster bumpeado a `?v=20261020`
+
+**Lección aprendida #32 (BUGFIX-026):**
+Cuando se entrega un módulo con un feature a medio implementar (placeholder visible al usuario), etiquetarlo en CHANGELOG y en la skill para no repetir. Aquí el comentario interno del propio código ("función en desarrollo") ya advertía del problema — debería haber sido elevado a ticket/bugfix desde la sesión 26-Sept-2026, no 24 días después.
+
+Patrón replicable: aplicar auditoría 7-frentes a cada V_N+1 que toque módulos con formularios multi-paso. Los endpoints "lista de mis reservas" son omitidos frecuentemente porque el equipo se enfoca en el happy path (crear/cancelar).
+
+**Archivos afectados:**
+- `apps-script/Codigo_V41_BUGFIX-026_MISRESERVASMUDANZAS_20261020.gs` (nuevo, base = V40 deployado + 2 hunks)
+- `js/app.js` (reemplazo de `showMisReservas` + nuevo `cancelarMiReserva`)
+- `index.html` (cache-buster `?v=20261020`)
+- `docs/CHANGELOG-BUGFIXES.md` (esta entrada)
+- `apps-script/README.md` y `GUIA-PROYECTO.md` (versión V41 marcada como "PREPARADO")
+- `README-project.md` (mención a V41 próximo deploy)
+
+**Deploy:**
+- Drive ID: `1Ft3WHmWPdizK_hptkBKI12CDz45NMRUJ`
+- Link: https://drive.google.com/file/d/1Ft3WHmWPdizK_hptkBKI12CDz45NMRUJ/view
+- MD5: `a708d11897ff137c2a5efdcf090a8cef` (validado round-trip local ↔ Drive)
+- Tamaño: 230.026 bytes (5.026 líneas)
+- Estado: ARCHIVO EN DRIVE; deploy manual pendiente en Apps Script.
+
 **Lección aprendida #15 (BUGFIX-025):** ANTES de hacer patch sobre una constante, verificar TODAS sus ubicaciones con `grep -n`. No asumir que por estar adyacente a un anchor la línea no está ya en otro lado del archivo. Apps Script rechaza declaraciones duplicadas con error fatal de sintaxis.

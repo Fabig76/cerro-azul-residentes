@@ -1189,12 +1189,120 @@ const M = {
   },
 
   async showMisReservas() {
-    // Lista todas las reservas del numForm actual
-    // (Hoy no hay endpoint dedicado — usamos dispMudanzas en un rango
-    // y filtramos las que aparecen como ocupadoPor). Como dispMudanzas
-    // no devuelve numForm, mostramos solo las cancelables dentro de las
-    // visibles. Esta vista es informativa.
-    showAlert('alert-mud-form', 'Para ver todas tus reservas, contacta a la administración. Esta función está en desarrollo.', 'info');
+    // V41 BUGFIX-026: llama al backend `listarReservasMudanzasPorNumForm`,
+    // renderiza cards con idReserva/tipo/fecha/horario/torre/estado,
+    // y habilita botón Cancelar cuando aplica (regla 24h en backend).
+    hideAlert('alert-mud-form');
+    const container = $('#mudMisReservas');
+    container.innerHTML = '<p style="color:var(--gris-med);">Cargando tus reservas...</p>';
+    this.showVista('mis');
+
+    const safe = (s) => String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    try {
+      const resp = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'listarReservasMudanzasPorNumForm',
+          numForm: this.state.numForm,
+          apto:    this.state.apto,
+          ccProp:  this.state.ccProp
+        })
+      });
+      const data = await resp.json();
+      if (!data.ok) {
+        container.innerHTML = `<div class="alert alert-err">${safe(data.error || 'Error al cargar tus reservas.')}</div>`;
+        return;
+      }
+      if (!data.reservas || data.reservas.length === 0) {
+        container.innerHTML = '<div class="alert alert-info">No tienes reservas de mudanza registradas para este apartamento.</div>';
+        return;
+      }
+      const now = new Date();
+      const cardsHtml = data.reservas.map((r) => {
+        const fechaHora = new Date(r.fecha + 'T' + (r.horaInicio || '00:00') + ':00');
+        const diffHoras = (fechaHora - now) / (1000 * 60 * 60);
+        const esConfirmada = r.estado === 'Confirmada';
+        const esCancelable = esConfirmada && diffHoras >= MUDANZAS_CANCELACION_HORAS;
+        const esCancelada  = r.estado === 'Cancelada';
+        const fechaLarga   = this.formatFechaLarga(r.fecha);
+        const estadoBadge  = esConfirmada
+          ? '<span class="badge badge-ok">Confirmada</span>'
+          : esCancelada
+            ? '<span class="badge badge-err">Cancelada</span>'
+            : '<span class="badge badge-info">' + safe(r.estado) + '</span>';
+        const accion = esCancelable
+          ? `<button type="button" class="btn btn-secondary btn-sm" data-action="cancelar-mi-reserva" data-id="${safe(r.id)}">🗑️ Cancelar reserva</button>`
+          : esConfirmada
+            ? '<small class="muted" style="color:var(--gris-med);">No se puede cancelar con menos de 24 h de anticipación. Contacte a la administración.</small>'
+            : '';
+        const descripcion = r.descripcionElementos
+          ? `<div style="margin-top:4px;"><strong>Elementos:</strong> ${safe(r.descripcionElementos)}</div>`
+          : '';
+        return `
+          <div class="reserva-card" style="border:1px solid var(--borde); border-radius:8px; padding:12px; margin:8px 0; background:var(--tarjeta);">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+              <strong>${safe(r.tipo)} de arrendatario</strong>
+              ${estadoBadge}
+            </div>
+            <div style="margin-top:6px; font-size:14px;">
+              <div><strong>ID:</strong> <code>${safe(r.id)}</code></div>
+              <div><strong>Fecha:</strong> ${fechaLarga}</div>
+              <div><strong>Horario:</strong> ${safe(r.horaInicio)} a ${safe(r.horaFin)}</div>
+              <div><strong>Torre:</strong> ${safe(r.torre)}, Ascensor ${safe(r.ascensor)}</div>
+              ${descripcion}
+              <div style="color:var(--gris-med); font-size:12px; margin-top:4px;">Reservado el ${safe(r.fechaCreacion)}</div>
+            </div>
+            <div style="margin-top:8px;">${accion}</div>
+          </div>
+        `;
+      }).join('');
+      container.innerHTML = cardsHtml;
+      $$('button[data-action="cancelar-mi-reserva"]', container).forEach((btn) => {
+        btn.addEventListener('click', () => this.cancelarMiReserva(btn.dataset.id));
+      });
+    } catch (e) {
+      container.innerHTML = `<div class="alert alert-err">Error de red al cargar tus reservas: ${safe(e.message)}</div>`;
+    }
+  },
+
+  async cancelarMiReserva(idReserva) {
+    // V41 BUGFIX-026: reusa el endpoint `cancelarMudanza` (POST), que ya valida
+    // numForm+apto+ccProp y la regla 24h. Tras éxito, refresca la lista.
+    hideAlert('alert-mud-form');
+    const safe = (s) => String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const card = $$('#mudMisReservas .reserva-card').find((el) => {
+      const code = el.querySelector('code');
+      return code && code.textContent.trim() === String(idReserva).trim();
+    });
+    const btn = card ? card.querySelector('button[data-action="cancelar-mi-reserva"]') : null;
+    if (btn) { btn.disabled = true; btn.textContent = 'Cancelando...'; }
+    try {
+      const resp = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'cancelarMudanza',
+          numForm: this.state.numForm,
+          apto:    this.state.apto,
+          ccProp:  this.state.ccProp,
+          idReserva: idReserva
+        })
+      });
+      const data = await resp.json();
+      if (!data.ok) {
+        showAlert('alert-mud-form', safe(data.error || 'No se pudo cancelar la reserva.'), 'err');
+        if (btn) { btn.disabled = false; btn.textContent = '🗑️ Cancelar reserva'; }
+        return;
+      }
+      await this.showMisReservas();
+    } catch (e) {
+      showAlert('alert-mud-form', 'Error de red al cancelar: ' + safe(e.message), 'err');
+      if (btn) { btn.disabled = false; btn.textContent = '🗑️ Cancelar reserva'; }
+    }
   },
 
   // ============================================================

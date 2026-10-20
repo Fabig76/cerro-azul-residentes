@@ -8,6 +8,10 @@ Este es el código del backend que conecta el formulario público
 
 **Backend Apps Script:** V40 (226.542 bytes, 221KB, 4945 líneas) = V38 (BUGFIX-024 = adminBorrarReservaMudanza) + V37 (MUDANZAS_ELEMENTOS, 4 tipos + descripción) + V36 (BUGFIX-023 Torre 2 + Encargado) + BUGFIX-025 límite 1 mudanza POR TORRE POR DÍA.
 
+> Próximo deploy: **V41 — BUGFIX-026 (listar y cancelar reservas propias en portal mudanzas, 20-Oct-2026)**.
+> Archivo: `Codigo_V41_BUGFIX-026_MISRESERVASMUDANZAS_20261020.gs` (5.026 líneas).
+> Estado: backend y frontend ya modificados; pendiente subir .gs a Drive.
+
 > Nota: V39 (primer intento) tuvo un bug de declaración duplicada de
 > `MUDANZAS_EMAIL_ADMIN`. Se re-generó como V40 sin ese bug.
 > Ver CHANGELOG-BUGFIXES.md BUGFIX-025.
@@ -26,6 +30,7 @@ Historial de deploys recientes (sesión 09-Oct-2026 — BUGFIX-024):
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
 | **V40** | 09-Oct-2026 | `57f6d8c069c6423c08c44e79c831f774` | **BUGFIX-025: límite 1 mudanza POR TORRE POR DÍA (operador tiene 1 vigilante)** |
+| **V41** | 20-Oct-2026 (PREPARADO) | (en Drive) | **BUGFIX-026: listarReservasMudanzasPorNumForm + frontend cards + botón Cancelar en `js/app.js:M.showMisReservas()`. Cierra la asimetría con Salón Social (BUGFIX-015 V22) que ya tenía listarReservasPorApto**. Archivo `Codigo_V41_BUGFIX-026_MISRESERVASMUDANZAS_20261020.gs` (230.026 bytes, 5.026 líneas, MD5 `a708d11897ff137c2a5efdcf090a8cef`) ya en Drive ID `1Ft3WHmWPdizK_hptkBKI12CDz45NMRUJ`; pendiente deploy manual en Apps Script. |
 | V38 | 09-Oct-2026 20:31 | `f2f0cad52a343bb65c43d1853e473c66` | Endpoint admin `adminBorrarReservaMudanza` (borrar físico de reservas de prueba) |
 | V37 | 09-Oct-2026 20:12 | `0747a256a29b62dfd66b071ecd14c3a2` | MUDANZAS_ELEMENTOS: 4 tipos (Salida/Ingreso + Salida/IngresoElementos) + descripción obligatoria |
 | V36_ENCARGADO | 09-Oct-2026 04:05 | `0f872b7218b96295ed79986fd6ab9320` | Valor "Encargado" como opción válida de diligencia (mismos privilegios que Propietario) |

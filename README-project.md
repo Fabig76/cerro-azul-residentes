@@ -117,6 +117,11 @@ Ver `docs/CHANGELOG-BUGFIXES.md` entrada REDISENO-TEMA-OSCURO.
   · Cambio vs V35: +2 líneas (BUGFIX-023: MATRICULAS_TORRE_2)
   · Cubre Torre 1, Torre 2, Torre 3 y Parqueaderos
 
+> **Próximo deploy (PREPARADO, 20-Oct-2026):** V41 (BUGFIX-026) — listar
+> y cancelar reservas propias del módulo mudanzas desde el portal público.
+> Archivo: `apps-script/Codigo_V41_BUGFIX-026_MISRESERVASMUDANZAS_20261020.gs`.
+> Detalle: `docs/CHANGELOG-BUGFIXES.md` BUGFIX-026.
+
 ### Historial de deploys recientes
 
 | Versión | Hora | BUGFIX | Descripción |
