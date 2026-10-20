@@ -2290,8 +2290,9 @@ Patrón replicable: aplicar auditoría 7-frentes a cada V_N+1 que toque módulos
 
 **Archivos afectados:**
 - `apps-script/Codigo_V41_BUGFIX-026_MISRESERVASMUDANZAS_20261020.gs` (nuevo, base = V40 deployado + 2 hunks)
-- `js/app.js` (reemplazo de `showMisReservas` + nuevo `cancelarMiReserva`)
-- index.html (cache-buster `?v=20261021` post-auditoría; +2 hotfix lines en `js/app.js` línea ~16)
+- `js/app.js` (reemplazo de `showMisReservas` + nuevo `cancelarMiReserva` + hotfix `MUDANZAS_CANCELACION_HORAS_FRONTEND`)
+- `index.html` (cache-buster `?v=20261021` post-auditoría)
+- `assets/styles.css` (+13 líneas `.badge .badge-ok .badge-err .badge-info` para estilizar etiquetas de estado del módulo mudanzas)
 - `docs/CHANGELOG-BUGFIXES.md` (esta entrada)
 - `apps-script/README.md` y `GUIA-PROYECTO.md` (versión V41 marcada como "PREPARADO")
 - `README-project.md` (mención a V41 próximo deploy)
