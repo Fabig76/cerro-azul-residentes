@@ -883,6 +883,7 @@ const M = {
     $('#btnMudReservar').addEventListener('click', () => this.submitReserva());
     $('#btnMudOtra').addEventListener('click', () => this.reset());
     $('#btnMudMisReservas').addEventListener('click', () => this.showMisReservas());
+    $('#btnMudMisReservasForm').addEventListener('click', () => this.showMisReservas());
     $('#btnMudVolver').addEventListener('click', () => this.reset());
 
     // Tipo de autorizacion → mensaje contextual
