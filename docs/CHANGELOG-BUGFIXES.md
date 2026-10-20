@@ -2221,7 +2221,7 @@ Justificación del operador: "esta creo que es mejor porque solo tengo un solo v
 **Lección aprendida #14 (BUGFIX-025):** cuando el operador describe una preocupación operativa ("no es posible que los vigilantes estén todo el tiempo"), NO asumir que la pregunta es retórica. Convertir la preocupación en una decisión explícita con 2-5 opciones y pedirle que elija con razones simples (no técnicas). El operador es fuente de verdad sobre la realidad operativa.
 
 
-### BUGFIX-026 · Listar y cancelar reservas propias en el portal de mudanzas (commit pendiente, archivo `Codigo_V41_BUGFIX-026_MISRESERVASMUDANZAS_20261020.gs`)
+### BUGFIX-026 · Listar y cancelar reservas propias en el portal de mudanzas (DESPLEGADO 20-Oct-2026)
 
 **Fecha:** 20-Oct-2026
 **Severidad:** ALTA — el único flujo público para que un residente gestione sus propias mudanzas estaba inoperante desde el deploy inicial del módulo (26-Sept-2026).
@@ -2297,11 +2297,45 @@ Patrón replicable: aplicar auditoría 7-frentes a cada V_N+1 que toque módulos
 - `apps-script/README.md` y `GUIA-PROYECTO.md` (versión V41 marcada como "PREPARADO")
 - `README-project.md` (mención a V41 próximo deploy)
 
-**Deploy:**
+**Deploy (COMPLETADO 20-Oct-2026):**
+- Backend V41 desplegado por el operador en Apps Script (URL preservada `AKfycbxp…Zp/exec`, sin cambio de URL).
 - Drive ID: `1Ft3WHmWPdizK_hptkBKI12CDz45NMRUJ`
 - Link: https://drive.google.com/file/d/1Ft3WHmWPdizK_hptkBKI12CDz45NMRUJ/view
 - MD5: `a708d11897ff137c2a5efdcf090a8cef` (validado round-trip local ↔ Drive)
 - Tamaño: 230.026 bytes (5.026 líneas)
-- Estado: ARCHIVO EN DRIVE; deploy manual pendiente en Apps Script.
+- Frontend GitHub Pages: cache-buster `js/app.js?v=20261023` y `styles.css?v=20261021`.
+
+**Auditoría post-deploy (apto 413 real, CA-0257 / MD-0033):**
+
+Regresiones backend verificadas E2E:
+- `listarReservasMudanzasPorNumForm` → devuelve MD-0033 completo ✅
+- `verificarPropietario` (login) → autentica ✅
+- `dispMudanzas` → slot 08-10 del 27-oct marcado `reservadoPor: MD-0033` ✅
+- `cancelarMudanza` → valida ID inexistente con error correcto ✅
+
+2 bugs encontrados y corregidos en la misma sesión:
+1. **`MUDANZAS_CANCELACION_HORAS is not defined`** en `showMisReservas()`:
+   referenciaba una constante que solo existe en el backend. Fix:
+   `MUDANZAS_CANCELACION_HORAS_FRONTEND = 24` local en `js/app.js`.
+   (commit `d80e562`)
+2. **Badge "Confirmada" sin estilo**: no existían clases `.badge`. Fix:
+   13 líneas CSS `.badge/.badge-ok/.badge-err/.badge-info`. (commit `6a0705c`)
+
+Mejoras UX aplicadas tras la auditoría:
+- Botón "📋 Ver mis reservas" agregado a la vista del formulario
+  (post-login). Antes solo estaba en la vista de éxito tras reservar, por lo
+  que un residente recurrente no podía ver/gestionar sus reservas sin crear
+  una nueva. (commit `46f3829`)
+- Botón "🗑️ Cancelar reserva" en rojo (`btn-danger`) por pedido del
+  operador. (commit `ea050c9`)
+
+**Verificación de liberación de slot al cancelar (sin cambios en V41):**
+- `cancelarMudanza` cambia estado a `"Cancelada"` (NO borra la fila).
+- `findReservasEnRango` solo cuenta estado `"Confirmada"`.
+- `dispMudanzas` y el límite "1 por torre/día" usan `findReservasEnRango`.
+- Resultado: cancelar libera el slot Y el día; la fila queda como
+  "Cancelada" (auditoría).
+
+**Bitácora completa:** `docs/sesion-2026-10-20.md`.
 
 **Lección aprendida #15 (BUGFIX-025):** ANTES de hacer patch sobre una constante, verificar TODAS sus ubicaciones con `grep -n`. No asumir que por estar adyacente a un anchor la línea no está ya en otro lado del archivo. Apps Script rechaza declaraciones duplicadas con error fatal de sintaxis.

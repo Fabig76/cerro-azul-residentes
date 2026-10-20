@@ -107,20 +107,18 @@ Ver `docs/CHANGELOG-BUGFIXES.md` entrada REDISENO-TEMA-OSCURO.
 
 - **Apps Script ID:** `17nuyzVYK2yN_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy`
 - **URL preservada:** `https://script.google.com/macros/s/AKfycbxp...Zp/exec`
-- **Última versión: V40 (09-Oct-2026)** — Apps Script "Versión 40"
-  · 226.542 bytes, 4945 líneas
-  · MD5: `57f6d8c069c6423c08c44e79c831f774`
-  · Drive V40: `Codigo_V40_TORREDIA-20261009.gs` (ID `191y-m0PScv9rsEoWz3Ek0Jo75_RXHZSr`)
-  · Link: https://drive.google.com/file/d/191y-m0PScv9rsEoWz3Ek0Jo75_RXHZSr/view
-  · BUGFIX-025: límite 1 mudanza POR TORRE POR DÍA (operador tiene 1 vigilante)
-  · (Nota: V39 primer intento tuvo bug de declaración duplicada, reemplazado por V40)
-  · Cambio vs V35: +2 líneas (BUGFIX-023: MATRICULAS_TORRE_2)
-  · Cubre Torre 1, Torre 2, Torre 3 y Parqueaderos
+- **Última versión: V41 (20-Oct-2026)** — Apps Script "Versión 41"
+  · 230.026 bytes, 5.026 líneas
+  · MD5: `a708d11897ff137c2a5efdcf090a8cef`
+  · Drive V41: `Codigo_V41_BUGFIX-026_MISRESERVASMUDANZAS_20261020.gs` (ID `1Ft3WHmWPdizK_hptkBKI12CDz45NMRUJ`)
+  · Link: https://drive.google.com/file/d/1Ft3WHmWPdizK_hptkBKI12CDz45NMRUJ/view
+  · BUGFIX-026: listar y cancelar reservas propias del módulo mudanzas
+  · Basada en V40 (BUGFIX-025 límite 1 mudanza/torre/día)
 
-> **Próximo deploy (PREPARADO, 20-Oct-2026):** V41 (BUGFIX-026) — listar
-> y cancelar reservas propias del módulo mudanzas desde el portal público.
-> Archivo: `apps-script/Codigo_V41_BUGFIX-026_MISRESERVASMUDANZAS_20261020.gs`.
-> Detalle: `docs/CHANGELOG-BUGFIXES.md` BUGFIX-026.
+> **Nota V41 (20-Oct-2026):** cierra la asimetría con Salón Social
+> (BUGFIX-015 V22). El botón "📋 Ver mis reservas" ahora funciona en el
+> portal público de mudanzas y permite cancelar. Ver
+> `docs/CHANGELOG-BUGFIXES.md` BUGFIX-026 y `docs/sesion-2026-10-20.md`.
 
 ### Historial de deploys recientes
 
