@@ -190,6 +190,36 @@ un caller que ignora el boolean, produce falsos positivos. Al envolver en
 try/catch, decidir DÓNDE se maneja el error (propagar hacia arriba, no
 tragar en el helper si el caller necesita saberlo).
 
+### ✅ RESUELTO — V47 desplegada y correo entregado (25-Oct-2026)
+
+**La causa final fue la AUTORIZACIÓN del scope de Gmail.** Tras re-autorizar
+en el editor de Apps Script (aceptar el permiso "Enviar correo en tu
+nombre" / scope `https://mail.google.com/`), el error desapareció y el
+correo se entregó:
+
+```
+From: Cerro Azul <urb.cerroazul@gmail.com>  → al propietario (llega ✓)
+From: Cerro Azul <urb.cerroazul@gmail.com>  → copia admin@urbcerroazul.com (llega ✓)
+```
+
+**Cadena completa de la causa raíz (histórico):**
+
+| # | Problema | Fix |
+|---|---|---|
+| 1 | `MailApp` firma como `admin@urbcerroazul.com` (dominio nuevo, DKIM incompleto, sin DMARC) → no entrega | usar `GmailApp` + `from: urb.cerroazul@gmail.com` |
+| 2 | `GmailApp.getRemainingDailyQuota()` no existe (es de MailApp) | eliminar el log (V46) |
+| 3 | Helper tragaba la excepción + caller ignoraba retorno → falso positivo `correoEnviado:true` | propagar la excepción (V47) |
+| 4 | **Falta scope de Gmail** (`mail.google.com` / `gmail.send`) — el script solo tenía `script.send_mail` | **re-autorizar en el editor** (paso manual del operador) |
+| 5 | Alias "Send mail as" `urb.cerroazul@gmail.com` en `admin@urbcerroazul.com` | configurar en Gmail (paso manual del operador) |
+
+**Señal de que la autorización pasó:** al ejecutar `enviarEmailCerroAzul`
+manualmente, el error cambió de "The script does not have permission..." a
+"No se ha podido realizar el envío... no hay destinatario" (porque se llamó
+sin argumentos).
+
+**Estado:** V47 (md5 `9855d2dc`) desplegada (library `/45`), correo
+entregado a propietario y admin, filas de prueba limpiadas, `nextId` = CA-0275.
+
 **Validación en producción (post-deploy V43):**
 
 | Test | Resultado |
