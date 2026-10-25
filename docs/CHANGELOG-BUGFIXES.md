@@ -112,6 +112,42 @@ flujo cuando funciona** antes de habilitarlo.
 **Tests post-deploy:** T-027-12 a T-027-16 (ver
 `docs/sesion-2026-10-25.md` §7.1).
 
+#### ✅ Validación post-deploy (25-Oct-2026) — V42 DESPLEGADA Y VERIFICADA
+
+El operador desplegó V42 (URL `/exec` preservada). Validación completa
+del portal del residente: **25 tests, todos OK**. Detalle en
+`docs/validacion-post-deploy-v42.md`.
+
+| Test | Resultado |
+|---|---|
+| `registrarResidente` | ✅ `ok:true`, `slotAsignado:1` |
+| `actualizarResidente` (H-13, estaba roto) | ✅ `ok:true`, `slotActualizado:1` |
+| `verificarResidente` (CC ok / incorrecta) | ✅ ambas |
+| `getEstadoResidente` (existente / inexistente) | ✅ ambas |
+| `clearResidente` (CC ok / incorrecta / datos faltantes) | ✅ las 3 |
+| Slot compartido con dato del resident | ✅ en la columna correcta |
+| **UI end-to-end: registro** | ✅ "Registro exitoso" |
+| **UI end-to-end: editar y guardar** | ✅ "Sus datos personales han sido actualizados" |
+
+**Pérdidas de datos medidas: 0.** Se comparó la fila del Sheet antes y
+después de cada escritura. El propietario quedó intacto en todos los
+casos (nombre, CC, correo, celular, llaveros/tags, autorizaciones
+136/137/138 y firma).
+
+**Sandbox CA-0083 (apto 9999) restaurado al 100%** — la única diferencia
+vs el estado original es la Fecha Última Edición (esperada).
+
+**Regresión del resto del backend:** `nextId`, `lookupMatApto`,
+`lookupMatParq`, `dispMudanzas`, `adminLogin`, `vigilanteLogin` y los 7
+portales → todos OK.
+
+**Lección (tests):** dos peticiones POST de prueba devolvieron
+"Acción no reconocida" — era la **caché de respuestas de Google Apps
+Script** para cuerpos idénticos, no un bug. Repetir con un campo `_nonce`
+único dio la respuesta correcta en los 3 intentos. **Regla:** incluir
+siempre un nonce o timestamp único en el body de las peticiones POST de
+prueba.
+
 #### Auditoría pre-deploy V41 → V42 (25-Oct-2026) — ✅ SEGURO PARA DEPLOY
 
 Comparación exhaustiva código a código + banco de pruebas contra las 274
