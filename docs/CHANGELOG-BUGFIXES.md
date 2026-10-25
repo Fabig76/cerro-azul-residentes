@@ -12,6 +12,108 @@
 
 ---
 
+### BUGFIX-027 · Portal del residente roto + destrucción de datos del propietario (25-Oct-2026)
+
+**Severidad:** CRÍTICA — el flujo "Editar mis datos" del portal del
+residente **nunca funcionó**, y el flujo de auto-registro **ha estado
+borrando datos del propietario en producción**.
+
+**Origen:** detectado durante la auditoría del spec de envío del código
+por correo (`docs/spec-email-codigo-registro.md`).
+
+**Estado:** V42 generada y verificada con banco de pruebas (0 pérdidas en
+274 filas reales). **Pendiente de deploy manual por el operador.**
+
+**Drive:** `Codigo_V42_H13_H14_RESIDENTE_20261025.gs`
+(ID `19t7jhMbpocvopP57fIfJCKoNXdqNSBHd`, md5 `0b269bbc4cbf7fe44d3e2eeb2fbf5262`,
+242.137 bytes / 5.286 líneas).
+Link: https://drive.google.com/file/d/19t7jhMbpocvopP57fIfJCKoNXdqNSBHd/view
+
+#### Síntoma 1 — "Editar mis datos" siempre fallaba
+
+`actualizarResidente` construye su payload **sin `editMode: true`**.
+`submitRecord` entra entonces al branch de **creación**, llama
+`findRowByApto()`, encuentra la fila existente y **siempre** rechaza:
+
+```json
+{"ok":false,"error":"Ya existe un registro para el apartamento 218. ..."}
+```
+
+Verificado empíricamente el 25-Oct-2026 con el apto 218 / CA-0002 y la CC
+correcta del R1. **Ningún resident podía actualizar sus datos.**
+
+#### Síntoma 2 — el bug de fondo: el payload se desincronizó
+
+El payload de ambos flujos estaba escrito **a mano** con 40+ campos y se
+había desincronizado de `buildRowFromPayload()`. Medido con un banco de
+pruebas que ejecuta el código real contra las **274 filas reales** del
+Sheet:
+
+| Métrica | `actualizarResidente` | `registrarResidente` |
+|---|---:|---:|
+| Filas con pérdida (V41) | **200 / 274** | **36 / 74** |
+| Celdas perdidas (V41) | 1.585 | 334 |
+| Filas con pérdida (V42) | **0 / 274** | **0 / 74** |
+
+Columnas afectadas: 138 Autoriza Comunicaciones (242 filas), 137 Autoriza
+Datos de Menores (192), 130-135 Emergencias (168), 110-129 Mascotas (88),
+93 Llaveros Autorizados (51), 95-109 Dispositivos (37), 94 Tags (34),
+85-92 Bicicletas (21).
+
+> ⚠️ **`registrarResidente` estaba destruyendo datos EN VIVO.** Cada
+> resident que se auto-registraba en un apartamento sin residentes
+> **borraba las autorizaciones legales, las emergencias, las mascotas y los
+> vehículos del propietario**.
+
+**Causas raíz:**
+
+1. Falta `editMode: true` (síntoma 1).
+2. El payload mandaba `autDatos` pero **no** `autMenores` ni `autCom`;
+   `buildRowFromPayload` hace `v[137] = d.autMenores ? 'Sí' : 'No'` →
+   se escribía `'No'` y se **borraban** las autorizaciones legales.
+3. `validarYAplicarSlotsCompartidos` usaba claves que `buildRowFromPayload`
+   no lee (`bicis`: tipo/rodado vs clase/serial; `mascotas`: especie/edad
+   vs tipo/nombre/raza/…; `contactos`: parentesco/celular vs parent/tel).
+4. `buildRowFromPayload` lee `d.emergencias`, no `d.contactos` → las
+   columnas 130-135 quedaban vacías.
+5. `rowToObject` devuelve `'Sí'`/`'No'` como **string**, y `'No'` es
+   *truthy* en JS: `d.requiereRevision ? 'Sí' : 'No'` habría convertido
+   **246 filas** a `'Sí'`.
+
+**Solución:** reconstruir el payload desde `rowToObject(row.values)` —que
+ya existía y hace round-trip fiel de las 143 columnas— y sobreescribir
+**solo** lo que el resident puede cambiar. 8 funciones auxiliares
+nuevas. Por construcción es imposible perder un campo.
+
+Regla de slots (spec-residente.md §22.7) implementada en
+`_combinarSlotsCompartidos`: slot con datos → gana el Sheet; slot vacío →
+entra el dato del resident (al **primer slot vacío**, no al del mismo
+índice).
+
+**Verificación:**
+
+| Check | Resultado |
+|---|---|
+| `actualizarResidente` sobre 274 filas reales | 0 celdas perdidas |
+| `registrarResidente` sobre 74 filas elegibles | 0 celdas perdidas |
+| Slot ocupado (V1 del propietario + vehículo del resident) | V1 intacto, vehículo del resident en V2 |
+| `node --check` | OK |
+| `NUM_COLS` / `MUDANZAS_NUM_COLS` / `MailApp.sendEmail` / `doPost` / `MANUAL_CERRO` | sin cambios |
+| `submitRecord` / `buildRowFromPayload` | **sin tocar** |
+
+**Lección aprendida (nueva):** *no aplicar un parche mínimo de 1 línea
+sin medir el alcance real*. El fix de 1 línea habría "arreglado" el flujo
+y al mismo tiempo **activado la destrucción de 1.585 celdas** en 200
+registros, incluidas 242 autorizaciones legales. El fallo llevaba tiempo
+enmascarando la destrucción de datos. **Regla:** cuando un fix "mínimo"
+habilite un flujo que llevaba tiempo fallando, auditar **qué hace ese
+flujo cuando funciona** antes de habilitarlo.
+
+**Tests post-deploy:** T-027-12 a T-027-16 (ver
+`docs/sesion-2026-10-25.md` §7.1).
+
+---
+
 ### REDISENO-TEMA-OSCURO · Selector de tema claro/oscuro en header del portal principal (commit `dba2e79`)
 
 **Fecha:** 13-Oct-2026

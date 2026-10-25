@@ -17,22 +17,66 @@ Este es el código del backend que conecta el formulario público
 > `MUDANZAS_EMAIL_ADMIN`. Se re-generó como V40 sin ese bug.
 > Ver CHANGELOG-BUGFIXES.md BUGFIX-025.
 
+### 🆕 V42 — BUGFIX-027 (25-Oct-2026) — LISTA PARA DEPLOY, pendiente del operador
+
+**Archivo:** `Codigo_V42_H13_H14_RESIDENTE_20261025.gs`
+**Drive:** https://drive.google.com/file/d/19t7jhMbpocvopP57fIfJCKoNXdqNSBHd/view
+**Drive ID:** `19t7jhMbpocvopP57fIfJCKoNXdqNSBHd`
+**md5:** `0b269bbc4cbf7fe44d3e2eeb2fbf5262` (verificado en Drive)
+**Tamaño:** 242.137 bytes / 5.286 líneas
+**Base:** V41 descargada de Drive (md5 `a708d11897ff137c2a5efdcf090a8cef`)
+
+**Qué arregla:**
+
+1. **H-13:** `actualizarResidente` no mandaba `editMode: true` → el flujo
+   "Editar mis datos" del portal del residente **siempre fallaba** con
+   "Ya existe un registro".
+2. **H-14 + 3 causas raíz más:** el payload de `registrarResidente` y
+   `actualizarResidente` estaba desincronizado de `buildRowFromPayload`
+   y **borraba datos del propietario** (autorizaciones legales,
+   emergencias, mascotas, vehículos, llaveros/tags).
+
+**Verificación (banco de pruebas contra las 274 filas reales del Sheet):**
+
+| Métrica | V41 | V42 |
+|---|---:|---:|
+| `actualizarResidente` — filas con pérdida | 200/274 | **0/274** |
+| `registrarResidente` — filas con pérdida | 36/74 | **0/74** |
+
+**Lo que NO se tocó:** `submitRecord`, `buildRowFromPayload`, `doPost`,
+`MANUAL_CERRO`, `NUM_COLS` (143), `MUDANZAS_NUM_COLS` (23), los 9
+`MailApp.sendEmail` existentes, y los módulos de mudanzas / salón /
+estado de cuenta.
+
+Ver `docs/sesion-2026-10-25.md` y `docs/CHANGELOG-BUGFIXES.md`
+(BUGFIX-027).
+
+### Deploy manual de V42 (5 pasos)
+
+1. Descargar `Codigo_V42_H13_H14_RESIDENTE_20261025.gs` del link de arriba.
+2. Abrir https://script.google.com/d/17nuyzVYK2y_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy/edit
+   (sesión `urb.cerroazul@gmail.com`).
+3. Panel izquierdo → `Código.gs` → Ctrl+A → **borrar** → Ctrl+V → Ctrl+S.
+4. **Implementar → Nueva implementación → Aplicación web** →
+   Ejecutar como "Yo" → Acceso "Cualquier persona".
+5. Verificar que la URL `/exec` **no cambió**.
+
 **Frontend GitHub Pages:** V28 (lógica) — módulo mudanzas actualizado
 20-Oct-2026 con BUGFIX-026 (cache-buster `js/app.js?v=20261023`).
 
-URL del Web App (preservada entre versiones):
+**URL del Web App (preservada entre versiones):**
 `https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec`
 
-MD5 del V40 listo para deploy: `57f6d8c069c6423c08c44e79c831f774`
-Drive: `Codigo_V40_TORREDIA-20261009.gs` (ID `191y-m0PScv9rsEoWz3Ek0Jo75_RXHZSr`)
-Link: https://drive.google.com/file/d/191y-m0PScv9rsEoWz3Ek0Jo75_RXHZSr/view
+**MD5 del V40 listo para deploy:** `57f6d8c069c6423c08c44e79c831f774`
+**Drive:** `Codigo_V40_TORREDIA-20261009.gs` (ID `191y-m0PScv9rsEoWz3Ek0Jo75_RXHZSr`)
+**Link:** https://drive.google.com/file/d/191y-m0PScv9rsEoWz3Ek0Jo75_RXHZSr/view
 
 Historial de deploys recientes (sesión 09-Oct-2026 — BUGFIX-024):
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
-| **V40** | 09-Oct-2026 | `57f6d8c069c6423c08c44e79c831f774` | **BUGFIX-025: límite 1 mudanza POR TORRE POR DÍA (operador tiene 1 vigilante)** |
 | **V41** | 20-Oct-2026 (DESPLEGADO ✓) | `a708d11897ff137c2a5efdcf090a8cef` | **BUGFIX-026: listarReservasMudanzasPorNumForm + frontend cards + botón Cancelar en `js/app.js:M.showMisReservas()`. Cierra la asimetría con Salón Social (BUGFIX-015 V22)**. Archivo `Codigo_V41_BUGFIX-026_MISRESERVASMUDANZAS_20261020.gs` (230.026 bytes, 5.026 líneas) en Drive ID `1Ft3WHmWPdizK_hptkBKI12CDz45NMRUJ`. |
+| **V42** | 25-Oct-2026 (LISTA, PENDIENTE) | `0b269bbc4cbf7fe44d3e2eeb2fbf5262` | **BUGFIX-027: repara el portal del residente (H-13: "Editar mis datos" roto) + elimina la destrucción de datos del propietario (H-14 y 3 causas raíz más). Verificado con banco de pruebas: 0 pérdidas en 274 filas reales.** |
 | V38 | 09-Oct-2026 20:31 | `f2f0cad52a343bb65c43d1853e473c66` | Endpoint admin `adminBorrarReservaMudanza` (borrar físico de reservas de prueba) |
 | V37 | 09-Oct-2026 20:12 | `0747a256a29b62dfd66b071ecd14c3a2` | MUDANZAS_ELEMENTOS: 4 tipos (Salida/Ingreso + Salida/IngresoElementos) + descripción obligatoria |
 | V36_ENCARGADO | 09-Oct-2026 04:05 | `0f872b7218b96295ed79986fd6ab9320` | Valor "Encargado" como opción válida de diligencia (mismos privilegios que Propietario) |

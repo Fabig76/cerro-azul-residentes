@@ -49,6 +49,7 @@ const ACTIONS_ADMIN = [
   'adminBuscar', 'adminObtener', 'adminGuardar',
   'adminListarReservasMudanzas', 'adminListarReservasSalon',
   'adminVerComprobanteSalon', 'adminCancelarReservaSalon',
+  'adminBorrarReservaMudanza',
   'configurarTriggerExpiracion'
 ];
 
@@ -255,6 +256,12 @@ function doPost(e) {
     }
     if (action === 'cancelarMudanza') {
       return jsonOut(cancelarMudanza(payload));
+    }
+    // BUGFIX-026 [V41]: listar reservas del solicitante (módulo mudanzas)
+    if (action === 'listarReservasMudanzasPorNumForm') {
+      return jsonOut(listarReservasMudanzasPorNumForm(
+        payload.numForm, payload.apto, payload.ccProp
+      ));
     }
     // --- ADMINISTRACION (admin.html) ---
     if (action === 'adminGuardar') {
@@ -815,6 +822,12 @@ const MUDANZAS_SLOTS_SABADO = [
 ];
 const MUDANZAS_SLOTS_DOMINGO = [];
 
+// BUGFIX-024 · 09-Oct-2026 — Límite 1 mudanza POR TORRE POR DÍA
+// Operador confirmó 1 vigilante disponible; 2 mudanzas misma torre/día
+// sería imposible de atender. Decisión: OPCIÓN 2 (1 por torre/día).
+// Ver CHANGELOG-BUGFIXES.md BUGFIX-024.
+const MUDANZAS_MAX_POR_TORRE_DIA = 1;
+
 // Columnas de la pestaña Mudanzas (A..S)
 const COL_MUD_ID       = 0;  // A
 const COL_MUD_NUMFORM  = 1;  // B
@@ -1128,14 +1141,18 @@ function dispMudanzas(torre, ascensor, desde, hasta) {
   const minFechaStr = Utilities.formatDate(minFecha, 'America/Bogota', 'yyyy-MM-dd');
 
   const resultado = slotsTeoricos.map(s => {
-    const reservado = reservas.find(r => r.fecha === s.fecha && r.horaInicio === s.horaInicio);
+    // BUGFIX-024: si ya hay CUALQUIER reserva Confirmada en (torre, fecha),
+    // todos los slots del día se bloquean (no solo el slot exacto).
+    const reservasDelDia = reservas.filter(r => r.fecha === s.fecha);
+    const ocupadoMismoSlot = reservasDelDia.find(r => r.horaInicio === s.horaInicio);
+    const ocupadoOtroSlot = reservasDelDia.length > 0 && !ocupadoMismoSlot;
     const muyPronto = s.fecha < minFechaStr;
     return {
       fecha: s.fecha,
       horaInicio: s.horaInicio,
       horaFin: s.horaFin,
-      disponible: !reservado && !muyPronto,
-      reservadoPor: reservado ? reservado.id : null
+      disponible: reservasDelDia.length === 0 && !muyPronto,
+      reservadoPor: ocupadoMismoSlot ? ocupadoMismoSlot.id : (ocupadoOtroSlot ? 'OTRA-RESERVA' : null)
     };
   });
 
@@ -1207,6 +1224,19 @@ function reservarMudanza(data) {
 
   try {
     const reservas = findReservasEnRango(torre, ascensor, fecha, fecha);
+
+    // BUGFIX-024: límite 1 mudanza POR TORRE POR DÍA.
+    if (reservas.length >= MUDANZAS_MAX_POR_TORRE_DIA) {
+      const otra = reservas[0];
+      return {
+        ok: false,
+        error: 'Ya existe una mudanza confirmada para la Torre ' + torre + ' el ' + fecha +
+               ' (ID ' + otra.id + ', ' + otra.horaInicio + '-' + otra.horaFin +
+               '). Solo se permite 1 mudanza por torre por día. ' +
+               'Por favor seleccione otra fecha u otra torre, o contacte a la administración.'
+      };
+    }
+
     const duplicado = reservas.find(r => r.horaInicio === horaInicio);
     if (duplicado) {
       return { ok: false, error: 'Este horario ya fue reservado por otro residente. Por favor seleccione otro.' };
@@ -1311,6 +1341,81 @@ function cancelarMudanza(data) {
   } finally {
     lock.releaseLock();
   }
+}
+
+// ---------------------------------------------------------------------
+// Endpoint 4.5: listarReservasMudanzasPorNumForm (GET) [V41 BUGFIX-026]
+// Devuelve TODAS las reservas de mudanza del numForm + apto del solicitante
+// autenticado (Confirmadas, Canceladas y Realizadas), ordenadas por
+// fecha ascendente (próximas primero). Permite al residente recuperar y
+// cancelar reservas previas (BUG #1 del análisis del módulo mudanzas:
+// el botón "📋 Ver mis reservas" en `showMisReservas()` era un placeholder
+// que solo mostraba un mensaje "función en desarrollo").
+// Cierra la asimetría con el salón social que ya tenía `listarReservasPorApto`
+// (BUGFIX-015 V22) desde 02-Oct-2026.
+// ---------------------------------------------------------------------
+function listarReservasMudanzasPorNumForm(numForm, apto, ccProp) {
+  const verif = verificarPropietario(numForm, apto, ccProp);
+  if (!verif.ok) return verif;
+
+  const sheet = getMudanzasSheet();
+  if (!sheet) {
+    return { ok: true, numForm: verif.numForm, apto: verif.apto, nombre: verif.nombreProp, reservas: [], total: 0 };
+  }
+  const last = sheet.getLastRow();
+  if (last < MUDANZAS_HEADER_ROW + 1) {
+    return { ok: true, numForm: verif.numForm, apto: verif.apto, nombre: verif.nombreProp, reservas: [], total: 0 };
+  }
+
+  const data = sheet.getRange(
+    MUDANZAS_HEADER_ROW + 1, 1,
+    last - MUDANZAS_HEADER_ROW,
+    MUDANZAS_NUM_COLS
+  ).getValues();
+
+  const reservas = [];
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i];
+    const numFormRow = String(row[COL_MUD_NUMFORM] || '').trim();
+    const aptoRow    = String(row[COL_MUD_APTO]    || '').trim();
+    // Solo reservas del mismo numForm Y mismo apto (no cruzar entre aptos)
+    if (numFormRow !== verif.numForm) continue;
+    if (aptoRow    !== verif.apto)    continue;
+    const fecha = formatDateOnly(row[COL_MUD_FECHA]);
+    if (!fecha) continue;
+    reservas.push({
+      id:        String(row[COL_MUD_ID]       || ''),
+      numForm:   numFormRow,
+      apto:      aptoRow,
+      tipo:      String(row[COL_MUD_TIPO]     || ''),
+      torre:     String(row[COL_MUD_TORRE]    || ''),
+      ascensor:  String(row[COL_MUD_ASCENSOR] || ''),
+      fecha:     fecha,
+      horaInicio:normalizarHora(row[COL_MUD_HORA_INI]),
+      horaFin:   normalizarHora(row[COL_MUD_HORA_FIN]),
+      estado:    String(row[COL_MUD_ESTADO]   || ''),
+      fechaCreacion: row[COL_MUD_FECHARES] ? Utilities.formatDate(new Date(row[COL_MUD_FECHARES]), 'America/Bogota', "yyyy-MM-dd'T'HH:mm:ss") : '',
+      descripcionElementos: String(row[COL_MUD_DESCRIPCION] || '')
+    });
+  }
+
+  // Ordenar: próximas primero (fecha asc, horaInicio asc).
+  // Dentro del mismo día, secundarios por hora ascendente.
+  reservas.sort(function (a, b) {
+    if (a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
+    return (a.horaInicio || '').localeCompare(b.horaInicio || '');
+  });
+
+  Logger.log('[listarReservasMudanzasPorNumForm] numForm ' + verif.numForm + ' apto ' + verif.apto + ' → ' + reservas.length + ' reservas');
+
+  return {
+    ok: true,
+    numForm: verif.numForm,
+    apto: verif.apto,
+    nombre: verif.nombreProp,
+    reservas: reservas,
+    total: reservas.length
+  };
 }
 
 // ---------------------------------------------------------------------
@@ -2134,6 +2239,236 @@ function verificarResidente(apto, cc) {
 // Valida que el apto exista, que no haya residentes, y luego reusa
 // submitRecord para escribir el registro. LockService para concurrencia.
 // ---------------------------------------------------------------------
+// =====================================================================
+// BUGFIX-027 · 25-Oct-2026 — Reparación del portal del residente
+// =====================================================================
+//
+// CONTEXTO (detectado durante la auditoría del spec de correo):
+//
+// El flujo "Editar mis datos" del portal del residente (residente.html)
+// estaba COMPLETAMENTE ROTO. `actualizarResidente` construía su payload
+// sin `editMode: true`, por lo que submitRecord() entraba al branch de
+// CREACIÓN, findRowByApto() encontraba la fila existente y rechazaba
+// SIEMPRE con "Ya existe un registro para el apartamento X".
+// Verificado empíricamente el 25-Oct-2026 contra el apto 218 / CA-0002.
+//
+// PERO el bug de fondo era más grave: el payload estaba escrito A MANO
+// con 40+ campos y se había DESINCRONIZADO de buildRowFromPayload().
+// Medido con un banco de pruebas sobre las 274 filas REALES del Sheet:
+//
+//   actualizarResidente -> 200/274 filas perdían datos
+//   registrarResidente  ->  36/ 74 filas perdían datos (¡EN VIVO!)
+//
+//   col 137 Autoriza Datos de Menores    192 filas (70.1%)  <-- LEGAL
+//   col 138 Autoriza Comunicaciones      242 filas (88.3%)  <-- LEGAL
+//   col 130-135 Emergencias/Contactos    168 filas (61.3%)
+//   col  93 Llaveros Autorizados          51 filas (18.6%)
+//   col 110-129 Mascotas                 88 filas (32.1%)
+//   col  85-92  Bicicletas               21 filas ( 7.7%)
+//
+// LA SOLUCIÓN: usar rowToObject(row.values), que YA existe en el
+// codebase y hace un round-trip fiel de las 143 columnas, y encima
+// sobreescribir SOLO los campos que el residente puede cambiar.
+// Así, por construcción, no se puede perder ningún campo.
+//
+// Reglas de negocio que se respetan (spec-residente.md §22.7):
+//   · El residente solo puede editar SU propio slot.
+//   · NO puede modificar slots ocupados por otro residente.
+//   · NO puede tocar dispositivos/llaveros/tags (solo el propietario).
+//   · NO puede tocar las autorizaciones legales del propietario.
+//   · NO puede borrar los datos del propietario.
+//   · SÍ puede llenar un slot compartido VACÍO con sus datos.
+//
+// ---------------------------------------------------------------------
+
+// BUGFIX-027: buildRowFromPayload() convierte con TRUTHINESS:
+//   v[136] = d.autDatos ? 'Sí' : 'No'
+// El string 'No' es truthy en JS, asi que mandar 'No' escribiria 'Sí'.
+// Hay que mandar BOOLEANOS. Se preserva el valor ORIGINAL del Sheet.
+function _preservarAutorizaciones(values) {
+  const b = function (i) { return String(values[i] || '').trim() === 'Sí'; };
+  return { autDatos: b(136), autMenores: b(137), autCom: b(138) };
+}
+
+// BUGFIX-027: idem para `requiereRevision` (col 15) y para
+// `manejoEspecial` de mascotas (col 116/126): son tri-estado
+// (Sí / No / vacio) y no pueden representarse con un simple booleano.
+function _preservarTriEstado(v) {
+  const s = String(v || '').trim();
+  if (s === 'Sí') return true;
+  if (s === 'No') return false;
+  return '';
+}
+
+// BUGFIX-027: extrae los dispositivos (llaveros/tags) actuales del Sheet.
+function _preservarDispositivos(values) {
+  const out = [];
+  for (let i = 0; i < 3; i++) {
+    const b = 95 + i * 5;
+    out.push({
+      tipo:   String(values[b + 0] || '').trim(),
+      codigo: String(values[b + 1] || '').trim(),
+      placa:  String(values[b + 2] || '').trim(),
+      fecha:  String(values[b + 3] || '').trim(),
+      recibe: String(values[b + 4] || '').trim()
+    });
+  }
+  return out;
+}
+
+// BUGFIX-027: reconstruye un slot compartido DESDE EL SHEET usando las
+// MISMAS claves que lee buildRowFromPayload().
+//
+// La funcion previa `validarYAplicarSlotsCompartidos` usaba claves que
+// NO coincidian con buildRowFromPayload():
+//   - bicis     -> usaba tipo/rodado;      buildRow lee marca,color,clase,serial
+//   - mascotas  -> usaba especie/edad;     buildRow lee tipo,nombre,raza,color,
+//                                               sexo,vacuna,manejoEspecial,
+//                                               registro,aseguradora,poliza
+//   - contactos -> usaba parentesco/celular;buildRow lee nombre,parent,tel
+// Con esas claves, buildRowFromPayload() escribia '' en las columnas
+// correctas y el dato original se perdia.
+function _preservarSlotCompartido(values, tipo, baseInicial, anchoSlot, numSlots) {
+  const out = [];
+  for (let i = 0; i < numSlots; i++) {
+    const b = baseInicial + i * anchoSlot;
+    const cel = function (k) { return String(values[b + k] || '').trim(); };
+    if (tipo === 'vehiculos' || tipo === 'motos') {
+      out.push({ marca: cel(0), tipo: cel(1), color: cel(2), placa: cel(3), modelo: cel(4), tag: cel(5) });
+    } else if (tipo === 'bicis') {
+      out.push({ marca: cel(0), color: cel(1), clase: cel(2), serial: cel(3) });
+    } else if (tipo === 'mascotas') {
+      out.push({
+        tipo: cel(0), nombre: cel(1), raza: cel(2), color: cel(3),
+        sexo: cel(4), vacuna: cel(5),
+        manejoEspecial: _preservarTriEstado(cel(6)),
+        registro: cel(7), aseguradora: cel(8), poliza: cel(9)
+      });
+    } else if (tipo === 'contactos') {
+      out.push({ nombre: cel(0), parent: cel(1), tel: cel(2) });
+    }
+  }
+  return out;
+}
+
+// BUGFIX-027: normaliza un objetoSlot que ENVIA el frontend del portal
+// del residente (js/residente.js) a las claves canonicas que lee
+// buildRowFromPayload().
+//
+// El frontend del portal del residente usa un subconjunto de campos con
+// OTROS nombres que el formulario principal (js/app.js):
+//  resident.bicis     -> { marca, color, tipo,   rodado }
+//   resident.mascotas  -> { nombre, especie, raza, edad, vacuna }
+//   resident.contactos -> { nombre, parentesco, celular }
+// Sin esta normalizacion, esos datos se escribian en columnas equivocadas.
+function _normalizarNuevoSlot(tipo, obj) {
+  const o = obj || {};
+  const g = function (a, b) {
+    const v = (o[a] !== undefined && o[a] !== null && o[a] !== '') ? o[a] : (o[b] || '');
+    return String(v).trim();
+  };
+  if (tipo === 'vehiculos' || tipo === 'motos') {
+    return { marca: g('marca'), tipo: g('tipo'), color: g('color'),
+             placa: g('placa'), modelo: g('modelo'), tag: g('tag') };
+  }
+  if (tipo === 'bicis') {
+    return { marca: g('marca'), color: g('color'), clase: g('clase', 'tipo'),
+             serial: g('serial', 'rodado') };
+  }
+  if (tipo === 'mascotas') {
+    return { tipo: g('tipo', 'especie'), nombre: g('nombre'), raza: g('raza'),
+             color: g('color'), sexo: g('sexo'), vacuna: g('vacuna'),
+             manejoEspecial: _preservarTriEstado(g('manejoEspecial')),
+             registro: g('registro'), aseguradora: g('aseguradora'),
+             poliza: g('poliza') };
+  }
+  if (tipo === 'contactos') {
+    return { nombre: g('nombre'), parent: g('parent', 'parentesco'),
+             tel: g('tel', 'celular') };
+  }
+  return {};
+}
+
+// BUGFIX-027: objeto vacio con las claves canonicas del tipo.
+function _slotVacio(tipo) {
+  if (tipo === 'vehiculos' || tipo === 'motos') {
+    return { marca: '', tipo: '', color: '', placa: '', modelo: '', tag: '' };
+  }
+  if (tipo === 'bicis') {
+    return { marca: '', color: '', clase: '', serial: '' };
+  }
+  if (tipo === 'mascotas') {
+    return { tipo: '', nombre: '', raza: '', color: '', sexo: '', vacuna: '',
+             manejoEspecial: '', registro: '', aseguradora: '', poliza: '' };
+  }
+  if (tipo === 'contactos') {
+    return { nombre: '', parent: '', tel: '' };
+  }
+  return {};
+}
+
+// BUGFIX-027: combina los slots compartidos del Sheet con los datos que
+// trae el RESIDENTE.
+//
+// Regla (spec-residente.md §22.7): el residente SOLO puede agregar a un
+// slot VACIO. Si el slot ya tiene datos (del propietario o de otro
+// residente), se preserva intacto.
+//
+//   slot con datos en el Sheet  -> se preserva (gana el Sheet)
+//   slot vacio + dato del res. -> se usa el dato del residente
+//   slot vacio + sin dato       -> queda vacio
+function _combinarSlotsCompartidos(values, tipo, baseInicial, anchoSlot, numSlots, nuevos) {
+  const delSheet = _preservarSlotCompartido(values, tipo, baseInicial, anchoSlot, numSlots);
+  const lista = Array.isArray(nuevos) ? nuevos : [];
+  const out = [];
+  // Indice del siguiente dato del residente por asignar. Los datos del
+  // residente van al PRIMER slot VACIO, no al slot del mismo indice: si
+  // el propietario ya tiene V1 ocupado, el vehiculo del resident debe
+  // ir a V2, no descartarse.
+  let siguiente = 0;
+  for (let i = 0; i < numSlots; i++) {
+    const b = baseInicial + i * anchoSlot;
+    let hayDatos = false;
+    for (let k = 0; k < anchoSlot; k++) {
+      if (String(values[b + k] || '').trim()) { hayDatos = true; break; }
+    }
+    if (hayDatos) {
+      out.push(delSheet[i]);                               // el Sheet gana
+    } else if (siguiente < lista.length && lista[siguiente]) {
+      out.push(_normalizarNuevoSlot(tipo, lista[siguiente]));  // slot vacio -> del residente
+      siguiente++;
+    } else {
+      out.push(_slotVacio(tipo));
+    }
+  }
+  return out;
+}
+
+// BUGFIX-027: preserva los menores del Sheet si existen; si no, usa los
+// que trae el residente (4 slots de 3 columnas: nombre, edad, parent).
+function _combinarMenores(values, nuevos) {
+  const out = [];
+  for (let i = 0; i < 4; i++) {
+    const b = 49 + i * 3;
+    const nombre = String(values[b + 0] || '').trim();
+    const edad   = String(values[b + 1] || '').trim();
+    const parent = String(values[b + 2] || '').trim();
+    if (nombre || edad || parent) {
+      out.push({ nombre: nombre, edad: edad, parent: parent });
+    } else if (i < (Array.isArray(nuevos) ? nuevos.length : 0) && nuevos[i]) {
+      const n = nuevos[i] || {};
+      out.push({
+        nombre: String(n.nombre || '').trim(),
+        edad:   String(n.edad || '').trim(),
+        parent: String(n.parent || n.parentesco || '').trim()
+      });
+    } else {
+      out.push({ nombre: '', edad: '', parent: '' });
+    }
+  }
+  return out;
+}
+
 function registrarResidente(data) {
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(30000)) {
@@ -2215,51 +2550,67 @@ function registrarResidente(data) {
     const _dispResidente = Array.isArray(data.dispositivos) ? data.dispositivos : [];
     const dispositivosFinal = _dispResidente.length > 0 ? _dispResidente : _dispConDatos;
 
+    // BUGFIX-027 · 25-Oct-2026 — Reconstrucción fiel del payload.
+    //
+    // El payload anterior estaba escrito A MANO y se había
+    // desincronizado de buildRowFromPayload(): las autorizaciones
+    // legales (col 136/137/138) NO se mandaban, y buildRowFromPayload()
+    // hace v[137] = d.autMenores ? 'Sí' : 'No' -> se BORRABA la
+    // autorización de menores y la de comunicaciones.
+    // Medido con un banco de pruebas sobre las 274 filas REALES del
+    // Sheet, la version anterior perdia datos en 36 de las 74 filas
+    // elegibles (registro de un residente en un apto sin residentes):
+    //   col 138 Autoriza Comunicaciones      61 filas (88.3%)  <-- LEGAL
+    //   col 137 Autoriza Datos de Menores    46 filas (70.1%)  <-- LEGAL
+    //   col 130-135 Emergencias/Contactos    25 filas (61.3%)
+    //   col  93 Llaveros Autorizados          6 filas (18.6%)
+    //   ... vehiculos, motos, bicis, mascotas y menores del PROPIETARIO
+    //   tambien se perdian.
+    //
+    // rowToObject() ya existe y hace un round-trip fiel de las 143
+    // columnas. Partimos de ahi y sobreescribimos SOLO lo que el
+    // residente puede cambiar. Por construccion, no se puede perder
+    // ningun campo.
+    const _base = rowToObject(row.values);
+    const _aut = _preservarAutorizaciones(row.values);
+
     const payload = {
+      ..._base,
       editMode: true,                                       // BUGFIX-012: clave del fix
       apto: apto,
       numForm: String(row.values[COL_NUM_FORM] || ''),
-      diligencia: String(row.values[4] || ''),
-      nombreProp: String(row.values[5] || ''),
-      ccProp: String(row.values[6] || ''),
-      correoProp: String(row.values[7] || ''),
-      celProp: String(row.values[8] || ''),
-      telFijoProp: String(row.values[9] || ''),
-      parq1Celda: String(row.values[10] || ''),
-      parq1Mat: String(row.values[11] || ''),
-      parq2Celda: String(row.values[12] || ''),
-      parq2Mat: String(row.values[13] || ''),
-      matriculaApto: String(row.values[14] || ''),
-      requiereRevision: String(row.values[15] || '') === 'Sí',
-      observMatriculas: String(row.values[16] || ''),
-      nombreArr: String(row.values[17] || ''),
-      ccArr: String(row.values[18] || ''),
-      correoArr: String(row.values[19] || ''),
-      celArr: String(row.values[20] || ''),
-      parqTerNom: String(row.values[21] || ''),
-      parqTerApto: String(row.values[22] || ''),
-      parqTerCel: String(row.values[23] || ''),
-      inmobRazon: String(row.values[24] || ''),
-      inmobNit: String(row.values[25] || ''),
-      inmobContacto: String(row.values[26] || ''),
-      inmobTel: String(row.values[27] || ''),
-      inmobCorreo: String(row.values[28] || ''),
+      // BUGFIX-027: rowToObject() devuelve esto como STRING 'Sí'/'No'.
+      // buildRowFromPayload() hace `d.requiereRevision ? 'Sí' : 'No'` y el
+      // string 'No' es TRUTHY -> escribiria 'Sí' en 246 filas. Se envia
+      // como tri-estado (true / false / '').
+      requiereRevision: _preservarTriEstado(String(row.values[15] || '')),
+      // El residente que se registra ocupa el slot asignado; los demas
+      // slots de residentes quedan vacios (es un apto sin residentes).
       residentes: residentes,
-      menores: Array.isArray(data.menores) ? data.menores : [],
-      vehiculos: Array.isArray(data.vehiculos) ? data.vehiculos : [],
-      motos: Array.isArray(data.motos) ? data.motos : [],
-      bicis: Array.isArray(data.bicis) ? data.bicis : [],
+      // Slots compartidos: si el Sheet ya tiene datos, GANA el Sheet
+      // (son del propietario y no se pueden pisar). Si el slot esta
+      // VACIO, entra el dato del residente.
+      menores:   _combinarMenores(row.values, data.menores),
+      vehiculos: _combinarSlotsCompartidos(row.values, 'vehiculos', 61, 6, 2, data.vehiculos),
+      motos:     _combinarSlotsCompartidos(row.values, 'motos', 73, 6, 2, data.motos),
+      bicis:     _combinarSlotsCompartidos(row.values, 'bicis', 85, 4, 2, data.bicis),
+      mascotas:  _combinarSlotsCompartidos(row.values, 'mascotas', 110, 10, 2, data.mascotas),
+      // BUGFIX-027: buildRowFromPayload() lee la clave 'emergencias'
+      // (no 'contactos'). Con 'contactos' el dato se descartaba y las
+      // columnas 130-135 quedaban vacias.
+      emergencias: _combinarSlotsCompartidos(row.values, 'contactos', 130, 3, 2, data.contactos),
+      // Dispositivos: solo el propietario los autoriza. Se preservan.
       dispositivos: dispositivosFinal,                       // BUGFIX-012: preserva del propietario
-      mascotas: Array.isArray(data.mascotas) ? data.mascotas : [],
-      contactos: Array.isArray(data.contactos) ? data.contactos : [],
-      autorAcesso: String(row.values[136] || '') === 'Sí',
-      // BUGFIX-012: preservar la autorización de datos original del propietario
-      // (antes había `autDatos: true` que la sobrescribía siempre)
-      autDatos: String(row.values[136] || '') === 'Sí',
-      autImagenes: false,
-      firmaNom: String(row.values[139] || ''),
-      firmaCC: String(row.values[140] || ''),
-      firmaFecha: String(row.values[141] || '')
+      llaverosAut: String(row.values[93] || ''),
+      tagsAut:     String(row.values[94] || ''),
+      // Autorizaciones legales: se preservan del propietario.
+      autDatos:   _aut.autDatos,
+      autMenores: _aut.autMenores,
+      autCom:     _aut.autCom,
+      // Firma del propietario: se preserva.
+      firmaNom:  String(row.values[139] || ''),
+      firmaCC:   String(row.values[140] || ''),
+      firmaFecha: String(row.values[141] || ''),
     };
 
     const result = submitRecord(payload);
@@ -2318,50 +2669,64 @@ function actualizarResidente(data) {
     const datos = data.datosActualizados || {};
     const nuevosResidentes = Array.isArray(datos.residentes) ? datos.residentes : [];
 
-    // Construir payload para submitRecord manteniendo intactos los demás residentes
+    // BUGFIX-027 · 25-Oct-2026 — Reconstrucción fiel del payload.
+    //
+    // El payload anterior estaba escrito A MANO con 40+ campos y se había
+    // desincronizado de buildRowFromPayload(). Medido con un banco de
+    // pruebas sobre las 274 filas REALES del Sheet, la version anterior
+    // perdia datos en 200 de 274 filas, entre ellas:
+    //   col 137 Autoriza Datos de Menores  192 filas (70.1%)  <-- LEGAL
+    //   col 138 Autoriza Comunicaciones    242 filas (88.3%)  <-- LEGAL
+    //   col 130-135 Emergencias            168 filas (61.3%)
+    //   col  93 Llaveros Autorizados        51 filas (18.6%)
+    //   col 110-129 Mascotas               88 filas (32.1%)
+    //
+    // rowToObject() ya existe y hace un round-trip fiel de las 143
+    // columnas. Partimos de ahi y sobreescribimos SOLO lo que el
+    // residente puede cambiar. Por construccion, no se puede perder
+    // ningun campo.
+    //
+    // BUGFIX-027 (H-13): faltaba `editMode: true`. Sin el, submitRecord()
+    // entra al branch de CREACION, findRowByApto() encuentra la fila
+    // existente y rechaza SIEMPRE con "Ya existe un registro para el
+    // apartamento X". El flujo "Editar mis datos" del portal del residente
+    // estaba roto por esto (verificado 25-Oct-2026 con el apto 218).
+    const _base = rowToObject(row.values);
+    const _aut = _preservarAutorizaciones(row.values);
+
     const payload = {
+      ..._base,
+      editMode: true,                                       // BUGFIX-027: H-13
       apto: apto,
       numForm: String(row.values[COL_NUM_FORM] || ''),
-      diligencia: String(row.values[4] || ''),
-      nombreProp: String(row.values[5] || ''),
-      ccProp: String(row.values[6] || ''),
-      correoProp: String(row.values[7] || ''),
-      celProp: String(row.values[8] || ''),
-      telFijoProp: String(row.values[9] || ''),
-      parq1Celda: String(row.values[10] || ''),
-      parq1Mat: String(row.values[11] || ''),
-      parq2Celda: String(row.values[12] || ''),
-      parq2Mat: String(row.values[13] || ''),
-      matriculaApto: String(row.values[14] || ''),
-      requiereRevision: String(row.values[15] || '') === 'Sí',
-      observMatriculas: String(row.values[16] || ''),
-      nombreArr: String(row.values[17] || ''),
-      ccArr: String(row.values[18] || ''),
-      correoArr: String(row.values[19] || ''),
-      celArr: String(row.values[20] || ''),
-      parqTerNom: String(row.values[21] || ''),
-      parqTerApto: String(row.values[22] || ''),
-      parqTerCel: String(row.values[23] || ''),
-      inmobRazon: String(row.values[24] || ''),
-      inmobNit: String(row.values[25] || ''),
-      inmobContacto: String(row.values[26] || ''),
-      inmobTel: String(row.values[27] || ''),
-      inmobCorreo: String(row.values[28] || ''),
+      // BUGFIX-027: ver nota en registrarResidente (tri-estado, no string).
+      requiereRevision: _preservarTriEstado(String(row.values[15] || '')),
       // Preservar los otros residentes, solo actualizar el slot N
       residentes: construirResidentesParaActualizar(row.values, slot, nuevosResidentes),
-      menores: Array.isArray(datos.menores) ? datos.menores : construirMenoresActuales(row.values),
-      vehiculos: validarYAplicarSlotsCompartidos(row.values, 'vehiculos', 61, 6, 2, datos.vehiculos),
-      motos: validarYAplicarSlotsCompartidos(row.values, 'motos', 73, 6, 2, datos.motos),
-      bicis: validarYAplicarSlotsCompartidos(row.values, 'bicis', 85, 4, 2, datos.bicis),
-      dispositivos: [],
-      mascotas: validarYAplicarSlotsCompartidos(row.values, 'mascotas', 110, 10, 2, datos.mascotas),
-      contactos: validarYAplicarSlotsCompartidos(row.values, 'contactos', 130, 3, 2, datos.contactos),
-      autorAcesso: String(row.values[136] || '') === 'Sí',
-      autDatos: true,
-      autImagenes: false,
-      firmaNom: String(row.values[139] || ''),
-      firmaCC: String(row.values[140] || ''),
-      firmaFecha: String(row.values[141] || '')
+      // Slots compartidos: si el Sheet ya tiene datos, GANA el Sheet
+      // (el resident no puede pisar datos del propietario ni de otro
+      // residente). Si el slot esta VACIO, entra el dato del resident.
+      menores:   _combinarMenores(row.values, datos.menores),
+      vehiculos: _combinarSlotsCompartidos(row.values, 'vehiculos', 61, 6, 2, datos.vehiculos),
+      motos:     _combinarSlotsCompartidos(row.values, 'motos', 73, 6, 2, datos.motos),
+      bicis:     _combinarSlotsCompartidos(row.values, 'bicis', 85, 4, 2, datos.bicis),
+      mascotas:  _combinarSlotsCompartidos(row.values, 'mascotas', 110, 10, 2, datos.mascotas),
+      // BUGFIX-027: buildRowFromPayload() lee la clave 'emergencias'
+      // (no 'contactos'). Con 'contactos' el dato se descartaba y las
+      // columnas 130-135 quedaban vacias.
+      emergencias: _combinarSlotsCompartidos(row.values, 'contactos', 130, 3, 2, datos.contactos),
+      // Dispositivos: solo el propietario los autoriza. Se preservan.
+      dispositivos: _preservarDispositivos(row.values),
+      llaverosAut: String(row.values[93] || ''),
+      tagsAut:     String(row.values[94] || ''),
+      // Autorizaciones legales: se preservan del propietario.
+      autDatos:   _aut.autDatos,
+      autMenores: _aut.autMenores,
+      autCom:     _aut.autCom,
+      // Firma del propietario: se preserva.
+      firmaNom:  String(row.values[139] || ''),
+      firmaCC:   String(row.values[140] || ''),
+      firmaFecha: String(row.values[141] || ''),
     };
 
     const result = submitRecord(payload);
