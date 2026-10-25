@@ -569,7 +569,13 @@ function mostrarExito(data) {
 function mostrarAvisoCorreo(data) {
   const el = $('#success-correo-aviso');
   if (!el) return;
-  if (data.editMode) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+  if (data.editMode) {
+    el.classList.add('hidden');
+    el.classList.remove('alert-ok');
+    el.classList.remove('alert-err');
+    el.innerHTML = '';
+    return;
+  }
   if (data.correoEnviado) {
     el.classList.remove('hidden');
     el.classList.remove('alert-err');
@@ -590,6 +596,8 @@ function mostrarAvisoCorreo(data) {
   } else {
     // No era Propietario, o no aplica: sin aviso de correo.
     el.classList.add('hidden');
+    el.classList.remove('alert-ok');
+    el.classList.remove('alert-err');
     el.innerHTML = '';
   }
 }
