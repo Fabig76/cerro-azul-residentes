@@ -64,6 +64,31 @@ propio para que su fallo no afecte al correo del propietario.
 de llenado, hay que subir la cuenta a Google Workspace o enviar por
 lotes antes de desplegar (2 correos por registro × ~954 unidades).
 
+**✅ D1 CERRADA (25-Oct-2026):** el operador confirmó *"no nunca hay
+campaña masiva"*. La cuota de MailApp no es una preocupación. Feature
+desplegado sin cambio de plan.
+
+**Validación en producción (post-deploy V43):**
+
+| Test | Resultado |
+|---|---|
+| Crear como Propietario + `__origen` | ✅ `correoEnviado: true` |
+| Crear como Encargado | ✅ sin correo (no dispara) |
+| Crear sin `__origen` | ✅ sin correo (no dispara) |
+| Editar registro existente | ✅ sin correo (no dispara) |
+| `clearResidente` con off-by-one corregido | ✅ verificado (0 fugas, 0 sobre-borrado) |
+| `nextId` tras limpieza | ✅ `CA-0275` (restaurado) |
+
+> Nota sobre la verificación del correo: el backend devuelve
+> `correoEnviado: true` (la llamada `MailApp.sendEmail` no lanzó
+> excepción), pero **la entrega física solo se puede confirmar desde la
+> bandeja de `urb.cerroazul@gmail.com`** (el remitente). Se intentó
+> verificar vía Gmail API con la cuenta de Hermes
+> (`computadores.y.portatiles@gmail.com`), pero el correo no aparece ahí
+> porque el remitente es otra cuenta. **El operador debe revisar su
+> bandeja de entrada (urb.cerroazul@gmail.com) para confirmar la copia
+> de auditoría de cada registro nuevo.**
+
 **También incluye H-17** (ver entrada siguiente).
 
 ---
