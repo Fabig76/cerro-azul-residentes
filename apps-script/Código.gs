@@ -1463,6 +1463,38 @@ function listarReservasMudanzasPorNumForm(numForm, apto, ccProp) {
 // El contenido es MINIMO: el código, el apartamento y cómo usarlo.
 // NO incluye cédula, celular, ni datos de residentes/vehículos/mascotas.
 // ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+// BUGFIX-028 (V45) · Helper de envio de correo con remitente CONFIABLE.
+//
+// PROBLEMA: MailApp.sendEmail() usa el remitente primario de la cuenta
+// de Google Workspace (admin@urbcerroazul.com). Ese dominio es NUEVO
+// (creado 30-ago-2026), con DKIM incompleto y SIN DMARC, por lo que los
+// servidores receptores (Gmail, Outlook, Hotmail) DESCARTAN o retienen
+// silenciosamente los correos. Evidencia: 0 correos entregados de
+// admin@urbcerroazul.com; los correos SMTP del proyecto de pagos, que
+// envian como urb.cerroazul@gmail.com, SI llegan.
+//
+// SOLUCION: GmailApp.sendEmail() permite especificar 'from'. Usamos
+// urb.cerroazul@gmail.com (dominio @gmail.com, 100%% confiable).
+//
+// REQUISITO del operador: en la cuenta admin@urbcerroazul.com, Gmail ->
+// Configuracion -> Cuentas e importacion -> 'Enviar como' debe tener
+// urb.cerroazul@gmail.com agregado y verificado (Send mail as alias).
+// Sin ese alias, GmailApp lanza error y devolvemos false (sin excepcion).
+// ---------------------------------------------------------------------
+function enviarEmailCerroAzul(to, subject, body) {
+  try {
+    GmailApp.sendEmail(to, subject, body, {
+      from: 'urb.cerroazul@gmail.com',
+      name: 'Cerro Azul'
+    });
+    return true;
+  } catch (e) {
+    Logger.log('[enviarEmailCerroAzul] fallo de envio: ' + e);
+    return false;
+  }
+}
+
 function enviarEmailCodigoRegistro(row, numForm) {
   const correo = String(row[7] || '').trim();   // col H = Correo Propietario
   if (!correo || correo.indexOf('@') === -1) {
@@ -1492,14 +1524,14 @@ function enviarEmailCodigoRegistro(row, numForm) {
     'Indique su nombre completo, cedula y numero de apartamento.\n\n' +
     '--\nUrbanizacion Cerro Azul — NIT 900770444\n';
 
-  Logger.log('[enviarEmailCodigoRegistro] cuota restante MailApp: ' + MailApp.getRemainingDailyQuota());
+  Logger.log('[enviarEmailCodigoRegistro] cuota restante GmailApp: ' + GmailApp.getRemainingDailyQuota());
 
-  MailApp.sendEmail(correo, subject, body);
+  enviarEmailCerroAzul(correo, subject, body);
 
   // Copia de seguridad a la administracion (auditoria). Si falla, NO
   // afecta el correo al propietario (ya enviado).
   try {
-    MailApp.sendEmail(
+    enviarEmailCerroAzul(
       REGISTRO_EMAIL_ADMIN,
       '[Cerro Azul] Nuevo registro ' + numForm + ' (apto ' + apto + ')',
       'Registro creado:\n\n' +
@@ -1533,7 +1565,7 @@ function enviarEmailConfirmacionAdmin(row) {
     'Placa:         ' + (row[COL_MUD_PLACA] || '(no indicada)') + '\n' +
     'Observaciones: ' + (row[COL_MUD_OBS] || '(sin observaciones)') + '\n\n' +
     '--\nCerro Azul — Sistema de agendamiento de mudanzas\n';
-  MailApp.sendEmail(MUDANZAS_EMAIL_ADMIN, subject, body);
+  enviarEmailCerroAzul(MUDANZAS_EMAIL_ADMIN, subject, body);
 }
 
 function enviarEmailConfirmacionResidente(row) {
@@ -1554,7 +1586,7 @@ function enviarEmailConfirmacionResidente(row) {
     'Para cancelar su reserva, ingrese nuevamente al formulario con su ' +
     'N° de formulario, apartamento y cedula del propietario.\n\n' +
     '--\nCerro Azul — Sistema de agendamiento de mudanzas\n';
-  MailApp.sendEmail(to, subject, body);
+  enviarEmailCerroAzul(to, subject, body);
 }
 
 function enviarEmailCancelacionAdmin(row) {
@@ -1566,7 +1598,7 @@ function enviarEmailCancelacionAdmin(row) {
     'Tipo:        ' + row[COL_MUD_TIPO] + '\n' +
     'Fecha:       ' + row[COL_MUD_FECHA] + ' ' + row[COL_MUD_HORA_INI] + '-' + row[COL_MUD_HORA_FIN] + '\n' +
     'Cancelada por: ' + row[COL_MUD_NOMBRE] + ' (CC ' + row[COL_MUD_CC] + ')\n';
-  MailApp.sendEmail(MUDANZAS_EMAIL_ADMIN, subject, body);
+  enviarEmailCerroAzul(MUDANZAS_EMAIL_ADMIN, subject, body);
 }
 
 function enviarEmailCancelacionResidente(row) {
@@ -1580,7 +1612,7 @@ function enviarEmailCancelacionResidente(row) {
     row[COL_MUD_HORA_INI] + '-' + row[COL_MUD_HORA_FIN] + '\n\n' +
     'Si necesita reprogramar, ingrese nuevamente al formulario de Cerro Azul.\n\n' +
     '--\nCerro Azul\n';
-  MailApp.sendEmail(to, subject, body);
+  enviarEmailCerroAzul(to, subject, body);
 }
 
 // =====================================================================
@@ -3339,7 +3371,7 @@ function reservarSalon(data) {
     ]);
 
     // Notificar al admin
-    MailApp.sendEmail(
+    enviarEmailCerroAzul(
       'urb.cerroazul@gmail.com',
       'Nueva reserva salón social — ' + id,
       'Reserva creada:\n' +
@@ -3439,7 +3471,7 @@ function subirComprobanteSalon(data) {
     sheet.getRange(rowFound, 18).setValue(cc);                // R (B3: SUBIDO POR)
 
     // Notificar al admin
-    MailApp.sendEmail(
+    enviarEmailCerroAzul(
       'urb.cerroazul@gmail.com',
       'Comprobante subido — ' + reservaId,
       'El residente ' + cc + ' subió un comprobante para la reserva ' + reservaId + '.\n\n' +
@@ -3507,7 +3539,7 @@ function cancelarReservaSalon(data) {
 
     Logger.log('[cancelarReservaSalon] ' + reservaId + ' por CC ' + cc + ' apto ' + apto);
 
-    MailApp.sendEmail(
+    enviarEmailCerroAzul(
       'urb.cerroazul@gmail.com',
       'Reserva cancelada — ' + reservaId,
       'El solicitante CC ' + cc + ' canceló la reserva ' + reservaId +
@@ -3753,7 +3785,7 @@ function adminCancelarReservaSalon(data) {
 
     Logger.log('[adminCancelarReservaSalon] ' + reservaId + ' motivo: ' + motivo + ' estadoOriginal: ' + estadoOriginal);
 
-    MailApp.sendEmail(
+    enviarEmailCerroAzul(
       'urb.cerroazul@gmail.com',
       'Reserva cancelada por admin — ' + reservaId,
       'El administrador canceló la reserva ' + reservaId + '.\n\n' +
@@ -3819,7 +3851,7 @@ function expirarReservasSalon() {
     Logger.log('[expirarReservasSalon] RS-' + String(row[0]).replace('RS-', '') + ' apto ' + String(row[2]) + ' expirada');
   }
   if (count > 0) {
-    MailApp.sendEmail(
+    enviarEmailCerroAzul(
       'urb.cerroazul@gmail.com',
       count + ' reservas de salón social expiradas',
       'El trigger automático canceló ' + count + ' reservas PendientePago que superaron las 48 horas sin subir comprobante.\n\nLos slots han sido liberados.'
