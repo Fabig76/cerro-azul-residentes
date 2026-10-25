@@ -98,7 +98,11 @@
       '#ca-pie { font-size: 11px; color: #687084; padding: 4px 10px; background: #f6f8fb; border-top: 1px solid #e0e4eb; text-align: center; }',
       '@media (max-width: 480px) {',
       '  #ca-ventana { right: 8px; left: 8px; width: auto; }',
-      '  #ca-banner { font-size: 13px; padding: 6px 10px; }',
+      '  #ca-banner { font-size: 12px; padding: 5px 8px; gap: 6px; }',
+      '  #ca-banner .ca-icon { font-size: 15px; }',
+      '  #ca-banner .ca-text { font-size: 11px; }',
+      '  #ca-banner .ca-toggle { padding: 5px 10px; font-size: 12px; white-space: nowrap; }',
+      '  body { padding-top: 40px !important; }',
       '}'
     ].join('\n');
     document.head.appendChild(s);
@@ -117,6 +121,7 @@
 
     var ventana = document.createElement('div');
     ventana.id = 'ca-ventana';
+    ventana.className = 'ca-oculta';  // arranca CERRADA; se abre solo al tocar "Abrir chat"
     ventana.innerHTML =
       '<div id="ca-head">' +
         '<span>🤖 Asistente Cerro Azul</span>' +
