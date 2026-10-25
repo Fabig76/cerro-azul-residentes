@@ -12,6 +12,30 @@
 
 ---
 
+## FEAT · Chat del asistente arranca cerrado (25-Oct-2026)
+
+**Estado:** ✅ Implementado y desplegado (frontend, GitHub Pages).
+
+**Problema:** la ventana del chat del asistente IA (`js/asistente.js`) se
+inyectaba **abierta** al cargar la página. En celular ocupa casi toda la
+pantalla (ancho completo, 460px de alto) y estorba al llenar el formulario.
+
+**Solución (Opción A — mínima):**
+- La ventana ahora se inyecta con `class="ca-oculta"` → arranca **cerrada**
+  (`display: none`). Se abre solo al tocar "Abrir chat" en el banner.
+- Banner compacto en móvil (`@media max-width:480px`): fuente 11-12px,
+  menos padding, `padding-top` del body de 46px → 40px.
+- Cache-buster `asistente.js` → `v=2` en los 7 HTML.
+
+**Verificado en producción:** al cargar → ventana cerrada; al tocar
+"Abrir chat" → se abre (botón cambia a "Ocultar chat"); al tocar
+"Ocultar chat" → se cierra.
+
+**Commit:** `df6d58d`. Solo frontend (`js/asistente.js` + 7 HTML), no
+toca el backend.
+
+---
+
 ### BUGFIX-028 · Envío del código CA-XXXX al correo del propietario (25-Oct-2026)
 
 **Estado:** V43 generada y verificada. **Pendiente de deploy manual
