@@ -1524,8 +1524,6 @@ function enviarEmailCodigoRegistro(row, numForm) {
     'Indique su nombre completo, cedula y numero de apartamento.\n\n' +
     '--\nUrbanizacion Cerro Azul — NIT 900770444\n';
 
-  Logger.log('[enviarEmailCodigoRegistro] cuota restante GmailApp: ' + GmailApp.getRemainingDailyQuota());
-
   enviarEmailCerroAzul(correo, subject, body);
 
   // Copia de seguridad a la administracion (auditoria). Si falla, NO
