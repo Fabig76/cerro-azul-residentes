@@ -140,6 +140,30 @@ Workspace (Admin → Gmail → Autenticar correo) y añadir DMARC
 (`_dmarc.urbcerroazul.com`). Con eso, `admin@urbcerroazul.com` ganaría
 reputación y se podría volver a MailApp.
 
+### ⚠️ V46 — bug de V45: `GmailApp.getRemainingDailyQuota()` no existe
+
+Al validar V45 en producción, el registro devolvió:
+
+```json
+"correoError": "GmailApp.getRemainingDailyQuota is not a function"
+```
+
+**Causa:** `getRemainingDailyQuota()` es un método de **MailApp**, no de
+**GmailApp**. El log de cuota que quedó de V44 se cambió mal (de
+`MailApp.` a `GmailApp.`), y como estaba **antes** del `sendEmail`,
+lanzaba excepción y abortaba el envío (`correoEnviado: false`).
+
+**Fix (V46):** eliminar las 2 líneas del log inválido. V46 = V45 sin ese
+log.
+
+**V46:** md5 `ed8751ca113325a970e5f073a55c91c5`, 248.373 B / 5.422 líneas.
+Drive ID `1zCoGSe88VG2RTNqq0Tlxj75Tf9tA02JW`, commit `4c8c214`.
+Link: https://drive.google.com/file/d/1zCoGSe88VG2RTNqq0Tlxj75Tf9tA02JW/view
+
+**Lección:** al migrar `MailApp` → `GmailApp`, revisar TODOS los métodos
+usados. `MailApp` y `GmailApp` comparten `sendEmail` pero **NO** comparten
+`getRemainingDailyQuota` (solo MailApp lo tiene).
+
 **Validación en producción (post-deploy V43):**
 
 | Test | Resultado |
