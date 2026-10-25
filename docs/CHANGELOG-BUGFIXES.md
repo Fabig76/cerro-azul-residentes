@@ -68,6 +68,31 @@ lotes antes de desplegar (2 correos por registro × ~954 unidades).
 campaña masiva"*. La cuota de MailApp no es una preocupación. Feature
 desplegado sin cambio de plan.
 
+### ⚠️ Corrección de email de auditoría → V44 (25-Oct-2026)
+
+**Problema detectado en validación:** la copia de auditoría se enviaba a
+`urb.cerroazul@gmail.com` (auto-envío) y no llegaba. Al investigar:
+
+1. **`admin@cerroazul.com` (sin "urb") NO existe:** el dominio
+   `cerroazul.com` está **aparcado** (MX `park-mx.above.com` = Above.com
+   domain parking). No tiene buzones; rebota.
+2. **El dominio real es `urbcerroazul.com`** (Google Workspace, MX
+   `smtp.google.com`). El operador confirmó que `urb.cerroazul@gmail.com`
+   y `admin@urbcerroazul.com` son **el mismo buzón** (Workspace premium).
+
+**Fix (V44):**
+- `REGISTRO_EMAIL_ADMIN` → `admin@urbcerroazul.com`.
+- Añadido `Logger.log(MailApp.getRemainingDailyQuota())` para diagnosticar
+  la entrega (el correo no llegaba ni a cuentas válidas).
+
+**V44:** md5 `b3a862cd24c9fe1bc879d1e283b34d02`, 247.021 B / 5.392 líneas.
+Drive ID `18uUiS6zrDXxYjjVf23xZc3j6tIhQOhI7`, commit `fa01c07`.
+Link: https://drive.google.com/file/d/18uUiS6zrDXxYjjVf23xZc3j6tIhQOhI7/view
+
+**Pendiente:** operador despliega V44 y revisa en el editor de Apps Script
+→ Ejecuciones → el `Logger.log` con la cuota restante de MailApp, para
+confirmar si la causa era cuota o restricción de la cuenta.
+
 **Validación en producción (post-deploy V43):**
 
 | Test | Resultado |
