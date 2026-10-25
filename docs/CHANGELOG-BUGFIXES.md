@@ -112,6 +112,38 @@ flujo cuando funciona** antes de habilitarlo.
 **Tests post-deploy:** T-027-12 a T-027-16 (ver
 `docs/sesion-2026-10-25.md` §7.1).
 
+#### Auditoría pre-deploy V41 → V42 (25-Oct-2026) — ✅ SEGURO PARA DEPLOY
+
+Comparación exhaustiva código a código + banco de pruebas contra las 274
+filas reales del Sheet. Documento completo:
+`docs/auditoria-v42-pre-deploy.md`.
+
+| Dimensión | Resultado |
+|---|---|
+| Funciones de V41 ausentes en V42 | **0** |
+| Funciones de V41 modificadas | **0** (103/103 intactas byte a byte) |
+| Constantes modificadas / ausentes / nuevas | **0 / 0 / 0** (68 = 68) |
+| Rutas de `doPost` diferentes | **0** (44 = 44) |
+| `MailApp.sendEmail` | 9 = 9 |
+| Contenido de `MANUAL_CERRO` | **idéntico** |
+| Celdas perdidas (round-trip sobre 274 filas) | **0** |
+| Rechazos nuevos de `submitRecord` | **0** (26 en V41 = 26 en V42) |
+
+**Las 54 celdas alteradas** son todas "relleno de celdas vacías" (9 en
+col 15, 8 en cada col 136/137/138, 21 en col 141). **Ninguna fila con
+valor real cambia** — es el mismo comportamiento del formulario
+principal.
+
+**No se tocó:** `submitRecord`, `buildRowFromPayload`, `doPost`,
+`rowToObject`, `MANUAL_CERRO`, ni ningún archivo de frontend (el commit
+no toca `js/`, `index.html` ni `assets/`).
+
+**Riesgo residual (declarado):** el flujo "Editar mis datos" pasa de
+SIEMPRE FALLAR a FUNCIONAR. Es el objetivo del fix, y está mitigado con
+4 verificaciones (0 pérdidas medidas, slots del propietario ganan,
+solo escribe su propio slot, dispositivos y autorizaciones preservados).
+Requiere ejecutar T-027-12 a T-027-16 post-deploy.
+
 ---
 
 ### REDISENO-TEMA-OSCURO · Selector de tema claro/oscuro en header del portal principal (commit `dba2e79`)
