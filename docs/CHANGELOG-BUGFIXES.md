@@ -93,6 +93,53 @@ Link: https://drive.google.com/file/d/18uUiS6zrDXxYjjVf23xZc3j6tIhQOhI7/view
 → Ejecuciones → el `Logger.log` con la cuota restante de MailApp, para
 confirmar si la causa era cuota o restricción de la cuenta.
 
+### 🔴 CAUSA RAÍZ DEFINITIVA — V45 (25-Oct-2026)
+
+Investigación a fondo con **acceso IMAP a la bandeja de
+`urb.cerroazul@gmail.com`** (App Password en `/opt/hermes-cerro-azul/secrets.env`)
+y **Gmail API a `computadores.y.portatiles@gmail.com`** (token de Hermes):
+
+**El problema NO es cuota ni código — es el REMITENTE.**
+
+| Remitente | Dominio | ¿Entrega? |
+|---|---|---|
+| `urb.cerroazul@gmail.com` | @gmail.com (confiable) | ✅ SÍ (proyecto de pagos SMTP) |
+| `admin@urbcerroazul.com` | @urbcerroazul.com (NUEVO) | ❌ NO |
+
+`MailApp.sendEmail()` usa el remitente primario de la cuenta Workspace =
+`admin@urbcerroazul.com`. Ese dominio es **nuevo** (whois: creado
+30-ago-2026), con **DKIM incompleto** (selector `20251104` = fecha
+futura, sin registro DNS) y **sin DMARC**. Los receptores descartan o
+retienen silenciosamente sus correos.
+
+**Evidencia:**
+- 0 correos de `admin@urbcerroazul.com` entregados a `computadores`
+  (nunca, en todo el historial).
+- Los correos SMTP del proyecto de pagos (`From: urb.cerroazul@gmail.com`)
+  SÍ llegan (mudanzas MD-0001..4 el 23-sep).
+- 75 avisos `mailer-daemon` (62 Failure 24-oct + 13 Delay 25-oct) por
+  `452 4.2.2 recipient inbox out of storage` → en OTROS destinatarios,
+  por **typos de correo en el Sheet** (gmail.co, gmmail.com, hormail.com).
+
+**Solución (V45):** helper `enviarEmailCerroAzul(to, subject, body)` que
+usa `GmailApp.sendEmail` con `from: 'urb.cerroazul@gmail.com'` (dominio
+gmail confiable). Reemplaza las 11 llamadas `MailApp.sendEmail` (registro
++ salón social + mudanzas). Con try/catch: si el alias "Send mail as" no
+está configurado, devuelve false y loguea, sin romper el registro.
+
+**REQUISITO del operador:** en `admin@urbcerroazul.com` → Gmail →
+Configuración → Cuentas e importación → "Enviar como" debe tener
+`urb.cerroazul@gmail.com` verificado (alias Send mail as).
+
+**V45:** md5 `71dc1c0e1045ff113f03dcc5d0faf535`, 248.481 B / 5.424 líneas.
+Drive ID `1MdUxKDmhcXgAX8JAbcyBpm2GCUNQruNQ`, commit `44a4a11`.
+Link: https://drive.google.com/file/d/1MdUxKDmhcXgAX8JAbcyBpm2GCUNQruNQ/view
+
+**Solución de fondo (configuración, no código):** completar DKIM en Google
+Workspace (Admin → Gmail → Autenticar correo) y añadir DMARC
+(`_dmarc.urbcerroazul.com`). Con eso, `admin@urbcerroazul.com` ganaría
+reputación y se podría volver a MailApp.
+
 **Validación en producción (post-deploy V43):**
 
 | Test | Resultado |
