@@ -839,7 +839,7 @@ const MUDANZAS_EMAIL_ADMIN      = 'urb.cerroazul@gmail.com';
 
 // BUGFIX-028 (25-Oct-2026): envío del código CA-XXXX al correo del
 // propietario al crear el registro. Ver docs/spec-email-codigo-registro.md.
-const REGISTRO_EMAIL_ADMIN     = 'urb.cerroazul@gmail.com';
+const REGISTRO_EMAIL_ADMIN     = 'admin@urbcerroazul.com'; // BUGFIX-028: Workspace premium (misma cuenta que urb.cerroazul@gmail.com)
 
 const MUDANZAS_SLOTS_LUN_VIE = [
   ['08:00', '10:00'],
@@ -1491,6 +1491,8 @@ function enviarEmailCodigoRegistro(row, numForm) {
     'administracion: WhatsApp 316 924 0748 o correo urb.cerroazul@gmail.com\n' +
     'Indique su nombre completo, cedula y numero de apartamento.\n\n' +
     '--\nUrbanizacion Cerro Azul — NIT 900770444\n';
+
+  Logger.log('[enviarEmailCodigoRegistro] cuota restante MailApp: ' + MailApp.getRemainingDailyQuota());
 
   MailApp.sendEmail(correo, subject, body);
 
