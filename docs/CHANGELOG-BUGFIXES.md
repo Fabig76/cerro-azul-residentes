@@ -164,6 +164,32 @@ Link: https://drive.google.com/file/d/1zCoGSe88VG2RTNqq0Tlxj75Tf9tA02JW/view
 usados. `MailApp` y `GmailApp` comparten `sendEmail` pero **NO** comparten
 `getRemainingDailyQuota` (solo MailApp lo tiene).
 
+### ⚠️ V47 — falso positivo en V46: helper tragaba la excepción
+
+Al validar V46, la respuesta decía `correoEnviado: true` pero el correo
+**no aparecía en "Enviados"** (verificado por IMAP). Dos bugs:
+
+1. El helper `enviarEmailCerroAzul` envolvía `GmailApp.sendEmail` en
+   `try/catch` y devolvía `false`.
+2. `enviarEmailCodigoRegistro` ignoraba ese retorno y hacía `return true`
+   incondicional → falso positivo.
+
+**Fix (V47):** el helper ya NO captura la excepción; la propaga al caller.
+`submitRecord` la captura y la reporta en `correoError` (el registro ya
+está escrito, así que un fallo de correo nunca pierde el registro). Esto
+revela el error real de `GmailApp` en la próxima prueba (lo más probable:
+alias "Send mail as" no configurado → "The from address does not match a
+verified Sender Identity").
+
+**V47:** md5 `9855d2dc09967c26a3ee8ef79bfbea55`, 248.532 B / 5.422 líneas.
+Drive ID `16jVhaU-wGF2NaS3_ZxfcIH_QaYuEBB7P`, commit `d7f7d0a`.
+Link: https://drive.google.com/file/d/16jVhaU-wGF2NaS3_ZxfcIH_QaYuEBB7P/view
+
+**Lección:** un helper que traga la excepción y devuelve boolean, sumado a
+un caller que ignora el boolean, produce falsos positivos. Al envolver en
+try/catch, decidir DÓNDE se maneja el error (propagar hacia arriba, no
+tragar en el helper si el caller necesita saberlo).
+
 **Validación en producción (post-deploy V43):**
 
 | Test | Resultado |
