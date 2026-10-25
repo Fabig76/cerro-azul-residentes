@@ -12,6 +12,114 @@
 
 ---
 
+### BUGFIX-028 · Envío del código CA-XXXX al correo del propietario (25-Oct-2026)
+
+**Estado:** V43 generada y verificada. **Pendiente de deploy manual
+por el operador.**
+
+**Drive:** `Codigo_V43_BUGFIX-027_CLEAR_OFFBYONE_20261025.gs`
+(ID `1TcSzTQh6hd5Fs7qcRKgnhUmIcgCrN4st`, md5 `d64c15a8cfc25ea3e211e10a7898d94b`,
+246.840 bytes / 5.390 líneas).
+Link: https://drive.google.com/file/d/1TcSzTQh6hd5Fs7qcRKgnhUmIcgCrN4st/view
+
+**Qué hace:** al crear un registro con `diligencia = "Propietario"`, el
+backend envía el código `CA-XXXX` al correo del propietario registrado y
+la tarjeta de éxito muestra un aviso de que se envió.
+
+**Regla de envío — 3 condiciones independientes** (todas deben cumplirse):
+
+```
+!editMode                       → es una CREACIÓN, no una edición
+__origen === 'formulario-publico' → solo el formulario público emite
+diligencia === 'Propietario'     → regla de negocio del operador
+```
+
+La bandera `__origen` la manda **solo** `js/app.js`. `js/residente.js`
+no la manda, así que el portal del residente nunca dispara el envío. La
+decisión la toma el backend, no el cliente.
+
+**El registro NUNCA se pierde por un fallo de correo:** el envío va
+**después** de `setValues()`, dentro de `try/catch`. Si falla, el
+registro queda escrito, `correoEnviado` va en `false` y el frontend
+muestra un aviso distinto con el código en pantalla.
+
+**Contenido del correo (mínimo):** el código, el número de apartamento,
+la URL del portal, las instrucciones para editar y un canal de
+contacto. **NO** incluye cédula, celular, ni datos de residentes,
+vehículos, mascotas o placas. Hay una copia de auditoría a la
+administración (mismo patrón que mudanzas y salón social), en `try/catch`
+propio para que su fallo no afecte al correo del propietario.
+
+**Verificación (banco de pruebas):**
+
+| Check | Resultado |
+|---|---|
+| Matriz de 7 casos de la regla de envío | ✅ 7/7 |
+| Contenido del correo (sin datos sensibles) | ✅ sin CC, celular, placas ni datos de terceros |
+| `node --check` backend + frontend | ✅ |
+| `NUM_COLS` / `MUDANZAS_NUM_COLS` / routing / `MANUAL_CERRO` | sin cambios |
+| Diff V42 → V43 | 1 función nueva + 2 bloques; 0 funciones modificadas |
+
+**Pendiente de decisión del operador:** **D1** — si habrá campaña masiva
+de llenado, hay que subir la cuenta a Google Workspace o enviar por
+lotes antes de desplegar (2 correos por registro × ~954 unidades).
+
+**También incluye H-17** (ver entrada siguiente).
+
+---
+
+### H-17 · 🔴 CRÍTICO — Off-by-one en `clearResidente` (corregido en V43)
+
+**Severidad:** CRÍTICA — borraba datos del propietario y dejaba datos
+del resident anterior.
+
+**Detectado:** en la auditoría de simetría (25-Oct-2026) sobre los 5
+flujos que escriben la hoja `Registros`.
+
+**Causa raíz:** `getRange` es **1-based**, pero el rango estaba escrito
+como si fuera 0-based:
+
+```javascript
+// ANTES (preexistente desde V34, 05-Oct-2026):
+sheet.getRange(rowNumber, 110, 1, 26).clearContent();
+// borra columnas 110..135 = idx0 109..134
+```
+
+| | Columna (1-based) | idx0 | Efecto |
+|---|---|---|---|
+| **Borra de más** | 110 = `Disp3 Recibe` | 109 | **Dato del PROPIETARIO** — el resident no puede tocar dispositivos. **2 registros** (CA-0030, CA-0128) |
+| **Borra de menos** | 136 = `Emerg2 Teléfonos` | 135 | **No se borra** → queda el teléfono del resident anterior. **94 registros** (34.3%) |
+
+**Fix (V43):** `getRange(rowNumber, 111, 1, 26)` → idx0 110..135 =
+`Masc1 Tipo` … `Emerg2 Teléfonos` = Mascotas (20) + Contactos (6) = **26
+columnas exactas**.
+
+**Verificación sobre las 274 filas reales:**
+
+| | Dato del propietario borrado | Dato del resident que queda |
+|---|---:|---:|
+| Antes | 2 | 94 |
+| Después | **0** | **0** |
+
+**Lección:** el rango `clearContent` sobre la hoja `Registros` debe
+verificarse contra los índices del **header real**, no por aritmética.
+El rango de 30..93 (residentes..bicis) sí era correcto (64 columnas
+exactas).
+
+---
+
+### H-16 · 🟡 MEDIO — `adminGuardar` auditado: SEGURO (sin cambios)
+
+**Detectado** en la misma auditoría de simetría: `adminGuardar` usa un
+patrón distinto a los flujos del residente — lee la fila actual del
+Sheet y **solo sobrescribe los campos enviados**, y el frontend siempre
+envía los arrays completos cargados del Sheet.
+
+**Verificación sobre las 274 filas reales:** 0 celdas perdidas, 0
+alteradas. **No requiere fix.**
+
+---
+
 ### BUGFIX-027 · Portal del residente roto + destrucción de datos del propietario (25-Oct-2026)
 
 **Severidad:** CRÍTICA — el flujo "Editar mis datos" del portal del

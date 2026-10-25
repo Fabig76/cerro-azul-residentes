@@ -8,7 +8,7 @@
   <title>Formulario de Residentes — Urbanización Cerro Azul</title>
   <meta name="description" content="Formulario oficial para actualización de datos de residentes y propietarios de la Urbanización Cerro Azul. Bello / Niquía.">
   <link rel="icon" href="assets/logo.jpg" type="image/jpeg">
-  <link rel="stylesheet" href="assets/styles.css?v=20261021">
+  <link rel="stylesheet" href="assets/styles.css?v=20261025">
   <script>
       // Anti-FOUC: aplica el tema antes de que el CSS termine de cargar.
       // Sin esto, el usuario vería un flash blanco al cargar la pagina.
@@ -563,6 +563,8 @@
       <p>Tu N° de formulario es:</p>
       <div class="num-form" id="success-num-form">CA-0000</div>
       <div class="advice" id="success-advice"></div>
+      <!-- BUGFIX-028: aviso de correo con el codigo (oculto por defecto) -->
+      <div id="success-correo-aviso" class="alert hidden" role="status"></div>
       <div class="botones centro">
         <button type="button" class="btn btn-secondary" onclick="window.print();">🖨️ Imprimir comprobante</button>
         <button type="button" class="btn btn-primary" id="btnNuevoAfter" onclick="location.reload();">Enviar otro registro</button>
@@ -785,7 +787,7 @@
   </p>
 </footer>
 
-<script src="js/app.js?v=20261023"></script>
+<script src="js/app.js?v=20261025"></script>
 <script>
   // ============================================================
   // Generador dinámico de campos repetidos (residentes, vehículos, etc.)

@@ -364,12 +364,39 @@ function submitRecord(data) {
   const row = buildRowFromPayload(data, assignedNumForm, fechaRegistroOriginal);
   sheet.getRange(targetRow, 1, 1, NUM_COLS).setValues([row]);
 
+  // BUGFIX-028: enviar el codigo CA-XXXX al correo del propietario.
+  //
+  // TRES condiciones independientes deben cumplirse:
+  //   1. !editMode                       -> es una CREACION, no una edicion
+  //   2. __origen === 'formulario-publico' -> solo el formulario publico
+  //                                         emite; el portal del residente
+  //                                         NO manda esta bandera
+  //   3. diligencia === 'Propietario'     -> regla de negocio del operador
+  //
+  // La escritura YA ocurrio: un fallo de correo NO puede perder el
+  // registro. Se captura el error y se reporta en la respuesta.
+  let correoEnviado = false;
+  let correoError = '';
+  const debeEnviar = !editMode
+    && String(data.__origen || '') === 'formulario-publico'
+    && diligencia === 'Propietario';
+  if (debeEnviar) {
+    try {
+      correoEnviado = enviarEmailCodigoRegistro(row, assignedNumForm);
+    } catch (e) {
+      correoError = String(e && e.message || e);
+      Logger.log('[submitRecord] BUGFIX-028 fallo envio correo: ' + correoError);
+    }
+  }
+
   return {
     ok: true,
     numForm: assignedNumForm,
     apto: apto,
     editMode: editMode,
     rowNumber: targetRow,
+    correoEnviado: correoEnviado,
+    correoError: correoError,
     message: editMode
       ? 'Registro actualizado correctamente. Tu N° de formulario sigue siendo ' + assignedNumForm + '.'
       : 'Registro creado correctamente. Tu N° de formulario es ' + assignedNumForm + '. GUÁRDALO en un lugar seguro: lo necesitarás para volver a editar tu información.'
@@ -809,6 +836,10 @@ const MUDANZAS_LOCK_TIMEOUT_MS   = 30000;
 // getScriptLock() es independiente del documento y funciona siempre.
 // (Fix aplicado 23-Sep-2026 después del primer test E2E)
 const MUDANZAS_EMAIL_ADMIN      = 'urb.cerroazul@gmail.com';
+
+// BUGFIX-028 (25-Oct-2026): envío del código CA-XXXX al correo del
+// propietario al crear el registro. Ver docs/spec-email-codigo-registro.md.
+const REGISTRO_EMAIL_ADMIN     = 'urb.cerroazul@gmail.com';
 
 const MUDANZAS_SLOTS_LUN_VIE = [
   ['08:00', '10:00'],
@@ -1421,6 +1452,69 @@ function listarReservasMudanzasPorNumForm(numForm, apto, ccProp) {
 // ---------------------------------------------------------------------
 // Emails
 // ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+// BUGFIX-028 · Envío del código CA-XXXX al correo del propietario
+//
+// Se invoca SOLO desde submitRecord() cuando:
+//   · es una CREACIÓN (editMode = false), y
+//   · __origen === 'formulario-publico' (solo el formulario público), y
+//   · diligencia === 'Propietario'.
+//
+// El contenido es MINIMO: el código, el apartamento y cómo usarlo.
+// NO incluye cédula, celular, ni datos de residentes/vehículos/mascotas.
+// ---------------------------------------------------------------------
+function enviarEmailCodigoRegistro(row, numForm) {
+  const correo = String(row[7] || '').trim();   // col H = Correo Propietario
+  if (!correo || correo.indexOf('@') === -1) {
+    Logger.log('[enviarEmailCodigoRegistro] sin correo valido, no se envia');
+    return false;
+  }
+  const nombre = String(row[5] || '').trim();   // col F = Nombre Propietario
+  const apto   = String(row[3] || '').trim();   // col D = N° Apto
+
+  const subject = 'Cerro Azul — su codigo de formulario es ' + numForm;
+
+  const body =
+    'Hola ' + nombre + ',\n\n' +
+    'Su registro en la Urbanizacion Cerro Azul quedo registrado.\n\n' +
+    '  N° de formulario: ' + numForm + '\n' +
+    '  Apartamento:       ' + apto + '\n\n' +
+    'Este codigo es lo que necesita para volver a editar su informacion,\n' +
+    'agendar mudanzas y consultar su estado de cuenta.\n\n' +
+    'Para editar su registro:\n' +
+    '  1. Entre a https://fabig76.github.io/cerro-azul-residentes/\n' +
+    '  2. Abra la pestana "Editar mi registro"\n' +
+    '  3. Escriba su codigo ' + numForm + ', su numero de apartamento\n' +
+    '     y la cedula del propietario\n' +
+    '  4. Toque "Buscar mi registro"\n\n' +
+    'Si no puede entrar o cree que hubo un error, comunicquese con la\n' +
+    'administracion: WhatsApp 316 924 0748 o correo urb.cerroazul@gmail.com\n' +
+    'Indique su nombre completo, cedula y numero de apartamento.\n\n' +
+    '--\nUrbanizacion Cerro Azul — NIT 900770444\n';
+
+  MailApp.sendEmail(correo, subject, body);
+
+  // Copia de seguridad a la administracion (auditoria). Si falla, NO
+  // afecta el correo al propietario (ya enviado).
+  try {
+    MailApp.sendEmail(
+      REGISTRO_EMAIL_ADMIN,
+      '[Cerro Azul] Nuevo registro ' + numForm + ' (apto ' + apto + ')',
+      'Registro creado:\n\n' +
+      '  N° Formulario: ' + numForm + '\n' +
+      '  Apartamento:   ' + apto + '\n' +
+      '  Propietario:   ' + nombre + '\n' +
+      '  Correo:       ' + correo + '\n' +
+      '  Se envio el codigo al propietario.\n'
+    );
+  } catch (e) {
+    Logger.log('[enviarEmailCodigoRegistro] copia admin fallo: ' + e);
+  }
+
+  Logger.log('[enviarEmailCodigoRegistro] enviado ' + numForm + ' a ' + correo);
+  return true;
+}
+
 function enviarEmailConfirmacionAdmin(row) {
   const subject = '[Cerro Azul] Nueva reserva de mudanza ' + row[COL_MUD_ID];
   const body =
@@ -2878,9 +2972,19 @@ function clearResidente(data) {
     // AD (30) a CO (93) = 64 columnas: residentes(20) + menores(12) + vehiculos(12) + motos(12) + bicis(8)
     sheet.getRange(rowNumber, 30, 1, 64).clearContent();
 
-    // Limpiar v[110..135] (índices 0-based) = columnas DG..EF (1-based 110..135)
-    // DG (110) a EF (135) = 26 columnas: mascotas(20) + contactos(6)
-    sheet.getRange(rowNumber, 110, 1, 26).clearContent();
+    // Limpiar v[110..135] (índices 0-based) = columnas 1-based 111..136
+    //
+    // BUGFIX-027-H17 (25-Oct-2026): OFF-BY-ONE corregido. Antes era
+    // getRange(rowNumber, 110, 1, 26), que en 1-based borra 110..135 =
+    // idx0 109..134, es decir:
+    //   - BORRABA de más: idx0 109 = "Disp3 Recibe" (la última celda del
+    //     slot 3 de DISPOSITIVOS, que es dato del PROPIETARIO y el
+    //     resident NO puede tocar). 2 registros afectados.
+    //   - NO borraba: idx0 135 = "Emerg2 Teléfonos" (quedaba el dato
+    //     del resident anterior). 94 registros afectados.
+    // El rango correcto en 1-based es 111..136 (idx0 110..135) = Mascotas
+    // (20) + Contactos/Emergencias (6) = 26 columnas exactas.
+    sheet.getRange(rowNumber, 111, 1, 26).clearContent();
 
     Logger.log('[clearResidente] numForm=' + numForm + ' apto=' + apto + ' ts=' + new Date().toISOString() + ' celdasLimpiadas=90');
 

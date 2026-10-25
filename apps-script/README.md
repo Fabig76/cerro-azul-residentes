@@ -4,7 +4,59 @@ Este es el código del backend que conecta el formulario público
 (`https://fabig76.github.io/cerro-azul-residentes/`) con el Google Sheet
 (`https://docs.google.com/spreadsheets/d/16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc`).
 
-## Versión desplegada: V41 backend + V28 frontend (20-Oct-2026) — Apps Script "Versión 41"
+## 🆕 V43 — BUGFIX-028 + H-17 (25-Oct-2026) — LISTA PARA DEPLOY
+
+**Archivo:** `Codigo_V43_BUGFIX-027_CLEAR_OFFBYONE_20261025.gs`
+**Drive:** https://drive.google.com/file/d/1TcSzTQh6hd5Fs7qcRKgnhUmIcgCrN4st/view
+**Drive ID:** `1TcSzTQh6hd5Fs7qcRKgnhUmIcgCrN4st`
+**md5:** `d64c15a8cfc25ea3e211e10a7898d94b` (verificado en Drive)
+**Tamaño:** 246.840 bytes / 5.390 líneas
+**Base:** V42 descargada de Drive (md5 `0b269bbc4cbf7fe44d3e2eeb2fbf5262`)
+
+**Qué incluye:**
+
+1. **BUGFIX-028 — envío del código CA-XXXX al correo del propietario.**
+   Solo al **crear** un registro con `diligencia = "Propietario"`.
+   Regla de 3 condiciones (todas deben cumplirse):
+   `!editMode` AND `__origen === 'formulario-publico'` AND
+   `diligencia === 'Propietario'`. La bandera `__origen` la manda solo
+   `js/app.js`; el portal del residente nunca dispara el envío.
+   El envío va **después** de `setValues()` dentro de `try/catch`: un
+   fallo de correo **nunca** pierde el registro.
+2. **H-17 — off-by-one en `clearResidente`.** Antes borraba la columna
+   `Disp3 Recibe` (dato del PROPIETARIO, 2 registros) y **no** borraba
+   `Emerg2 Teléfonos` (quedaba el dato del resident anterior, 94
+   registros). Corregido: `getRange(rowNumber, 111, 1, 26)`.
+
+**Frontend (ya en el repo, falta push a GitHub Pages):**
+`js/app.js` (`__origen` + `mostrarAvisoCorreo()`), `index.html`
+(`#success-correo-aviso` + cache-buster `?v=20261025`),
+`assets/styles.css` (`.num-form-inline`).
+
+**Lo que NO se tocó:** `NUM_COLS` (143), `MUDANZAS_NUM_COLS` (23), el
+routing de `doPost` (44 rutas), `MANUAL_CERRO`, los módulos de mudanzas /
+salón / estado de cuenta / vigilantes.
+
+**Pendiente de decisión:** D1 (cuota de MailApp para campaña masiva).
+
+### Deploy manual de V43 (5 pasos)
+
+1. Descargar `Codigo_V43_BUGFIX-027_CLEAR_OFFBYONE_20261025.gs` del link de arriba.
+2. Abrir https://script.google.com/d/17nuyzVYK2y_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy/edit
+   (sesión `urb.cerroazul@gmail.com`).
+3. Panel izquierdo → `Código.gs` → Ctrl+A → **borrar** → Ctrl+V → Ctrl+S.
+4. **Implementar → Nueva implementación → Aplicación web** →
+   Ejecutar como "Yo" → Acceso "Cualquier persona".
+5. Verificar que la URL `/exec` **no cambió**.
+
+**Versión anterior desplegada: V42 (25-Oct-2026) — BUGFIX-027.**
+Archivo `Codigo_V42_H13_H14_RESIDENTE_20261025.gs`
+(Drive ID `19t7jhMbpocvopP57fIfJCKoNXdqNSBHd`, md5
+`0b269bbc4cbf7fe44d3e2eeb2fbf5262`, 242.137 B / 5.286 líneas).
+Repara el portal del residente (H-13) y elimina la destrucción de datos
+del propietario (H-14). Validado post-deploy: 25/25 tests OK.
+
+## Versión desplegada: V42 backend + V28 frontend (20-Oct-2026) — Apps Script "Versión 41"
 
 **Backend Apps Script:** V41 (230.026 bytes, 5.026 líneas) = V40 (BUGFIX-025 límite 1 mudanza/torre/día) + BUGFIX-026 (listar y cancelar reservas propias del módulo mudanzas).
 

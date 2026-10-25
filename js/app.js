@@ -361,6 +361,10 @@ function recolectar() {
   return {
     editMode: state.mode === 'edit',
     numForm: state.numForm,
+    // BUGFIX-028: marca de origen. El backend SOLO envia el codigo por
+    // correo si viene de aqui (el formulario publico). El portal del
+    // residente usa js/residente.js, que NO manda esta bandera.
+    __origen: 'formulario-publico',
     apto: val('#apto'),
     diligencia: getRadio('diligencia'),
     nombreProp: val('#nombreProp'),
@@ -556,7 +560,38 @@ function mostrarExito(data) {
       <em>La administración NO puede recuperar este número por ti.</em>
     `;
   }
+  // BUGFIX-028: aviso de correo enviado (solo en creacion con Propietario).
+  mostrarAvisoCorreo(data);
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// BUGFIX-028 - Aviso sobre el envio del codigo por correo.
+function mostrarAvisoCorreo(data) {
+  const el = $('#success-correo-aviso');
+  if (!el) return;
+  if (data.editMode) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+  if (data.correoEnviado) {
+    el.classList.remove('hidden');
+    el.classList.remove('alert-err');
+    el.classList.add('alert-ok');
+    el.innerHTML = '<strong>Te enviamos un correo con tu codigo ' +
+      '<span class="num-form-inline">' + data.numForm + '</span>.</strong><br>' +
+      'Lo enviamos al correo que registraste como propietario. ' +
+      'Revisa tu bandeja de entrada (y la carpeta de spam) para tener el codigo a la mano.';
+  } else if (data.correoError) {
+    el.classList.remove('hidden');
+    el.classList.remove('alert-ok');
+    el.classList.add('alert-err');
+    el.innerHTML = '<strong>No pudimos enviar el correo con tu codigo.</strong><br>' +
+      'Tu registro <strong>si quedo guardado</strong> y tu codigo es ' +
+      '<span class="num-form-inline">' + data.numForm + '</span>. ' +
+      'Copialo ahora y guardalo. Si lo pierdes, escribe a ' +
+      'urb.cerroazul@gmail.com o al WhatsApp 316 924 0748.';
+  } else {
+    // No era Propietario, o no aplica: sin aviso de correo.
+    el.classList.add('hidden');
+    el.innerHTML = '';
+  }
 }
 
 // ============================================================

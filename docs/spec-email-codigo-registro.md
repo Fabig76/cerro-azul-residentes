@@ -862,7 +862,111 @@ apartamentos de prueba y **NO se borran** (prohibido eliminar filas — §18 del
 Auditoría realizada contra el código real de V41 (no contra el spec). Se
 listan los hallazgos, el análisis y la corrección aplicada.
 
-### H-01 — CRÍTICO — `apps-script/Código.gs` del repo está en V38, no en V41
+### Estado de los hallazgos (25-Oct-2026, tras V42 desplegado)
+
+| # | Severidad | Tipo | Estado |
+|---|---|---|---|
+| H-01 | 🔴 Crítico | Deploy drift | ✅ **RESUELTO** — repo sincronizado con V42 |
+| H-02 | 🔴 Crítico | 3 capas de protección | ✅ **RESUELTO** en V42 |
+| H-03 | 🟠 Alto | Bandera del cliente | ✅ **Corregido en el spec** (eliminado) |
+| H-04 | 🟠 Alto | Orden escritura→correo | ✅ **Corregido en el spec** |
+| H-05 | 🟡 Medio | Cuota de MailApp | ⏳ **PENDIENTE — decisión D1** |
+| H-06 | 🟡 Medio | Cache-buster | ✅ **Corregido en el spec** (§3.2.4) |
+| H-07 | 🟡 Medio | Texto "NO puede recuperar" | ⏳ **PENDIENTE — decisión D2** |
+| H-08 | 🟡 Medio | `MANUAL_CERRO` desactualizado | ⏳ **PENDIENTE — decisión D3** |
+| H-09 | 🔵 Bajo | `numForm` en logs | ✅ **Corregido en el spec** |
+| H-10 | 🔵 Bajo | `.num-form` en `.alert` | ✅ **Corregido en el spec** (`.num-form-inline`) |
+| H-11 | 🔵 Bajo | Nombre de función ambiguo | ✅ **Corregido en el spec** |
+| H-12 | 🔵 Bajo | Falta `Logger.log` | ✅ **Corregido en el spec** |
+| H-13 | 🔴 Crítico | Portal del residente roto | ✅ **RESUELTO en V42** (desplegado y validado) |
+| H-14 | 🔴 Crítico | Destrucción de datos del propietario | ✅ **RESUELTO en V42** (desplegado y validado) |
+| H-15 | 🟡 Medio | Copia al admin consume cuota | ✅ **Documentado** en D1 |
+| **H-16** | 🟡 Medio | `adminGuardar` ¿destruye datos? | ✅ **AUDITADO — SEGURO** (0 pérdidas, 0 alteraciones) |
+| **H-17** | 🔴 **Crítico** | **Off-by-one en `clearResidente`** | ✅ **RESUELTO en V43** |
+
+### H-17 — 🔴 CRÍTICO (preexistente) — `clearResidente` borra de más y de menos
+
+**Detectado** en la auditoría de simetría (25-Oct-2026), al revisar los 5
+flujos que escriben la hoja `Registros`.
+
+**Causa raíz:** off-by-one en el rango de borrado.
+
+```javascript
+// ANTES (preexistente desde V34):
+sheet.getRange(rowNumber, 110, 1, 26).clearContent();
+// getRange es 1-based → borra columnas 110..135 = idx0 109..134
+```
+
+| | Columna (1-based) | idx0 | Efecto |
+|---|---|---|---|
+| **Borra de más** | 110 = `Disp3 Recibe` | 109 | **Dato del PROPIETARIO** borrado (el resident no puede tocar dispositivos) — **2 registros** afectados (CA-0030, CA-0128) |
+| **Borra de menos** | 136 = `Emerg2 Teléfonos` | 135 | **No se borra** → queda el teléfono del resident anterior — **94 registros** afectados (34.3%) |
+
+**Fix (V43):** `getRange(rowNumber, 111, 1, 26)` → borra idx0 110..135 =
+`Masc1 Tipo` … `Emerg2 Teléfonos` = Mascotas (20) + Contactos (6) = **26
+columnas exactas**.
+
+**Verificación (274 filas reales):**
+
+| | Dato del propietario borrado | Dato del resident que queda |
+|---|---:|---:|
+| Antes | **2** | **94** |
+| Después | **0** | **0** |
+
+**Preexistente en:** V34, V36, V38, V40, V41, V42 (el bug venía desde
+V34, 05-Oct-2026). No lo introdujo BUGFIX-027.
+
+**Nota:** era un bug *latente* — `clearResidente` es un flujo que el
+operador usa pocas veces. Con V43 queda corregido.
+
+---
+
+### H-16 — 🟡 MEDIO — `adminGuardar` auditado y SEGURO
+
+**Detectado** en la misma auditoría de simetría.
+
+**Análisis:** `adminGuardar` usa un patrón **distinto y más seguro** que
+los flujos del residente: lee la fila actual del Sheet y **solo
+sobrescribe los campos enviados** (`setStr`/`set` con guarda
+`if (v !== undefined)`), y el frontend (`js/admin.js` →
+`recolectarPayload()` → `leerArray(name, count)`) **siempre envía los
+arrays completos** (4/4/2/2/2/3/2/2) cargados del Sheet.
+
+**Verificación (banco de pruebas sobre las 274 filas reales):**
+
+```
+Celdas PERDIDAS:   0
+Celdas ALTERADAS:  0
+```
+
+**`adminGuardar` NO destruye datos. No requiere fix.**
+
+> Nota: una primera versión de la simulación reportaba 269 alteraciones
+> en col 116/126 (`Manejo Especial`). Era un **falso positivo del
+> test**: el `<select>` del admin tiene `<option value="">` + `"true"`/
+> `"false"`, y el valor por defecto cuando la mascota está vacía es `''`
+> (no `'false'`). Al modelar el DOM real del select → 0/0.
+
+---
+
+### Auditoría de simetría — resumen
+
+Los **5 flujos** que escriben la hoja `Registros` (143 columnas):
+
+| # | Flujo | Patrón | Estado |
+|---|---|---|---|
+| 1 | `submitRecord` (formulario público) | `buildRowFromPayload` | ✅ verificado 0 pérdidas |
+| 2 | `registrarResidente` | `submitRecord` + `rowToObject` | ✅ V42, 0 pérdidas |
+| 3 | `actualizarResidente` | `submitRecord` + `rowToObject` | ✅ V42, 0 pérdidas |
+| 4 | `adminGuardar` | `setStr`/`set` sobre fila actual | ✅ **H-16: SEGURO**, 0 pérdidas |
+| 5 | `clearResidente` | `clearContent` por rangos | ⚠️ **H-17: off-by-one → corregido en V43** |
+
+Los demás `clearContent` del backend pertenecen a **otras hojas**
+(`Cartera`/`Pagos`) y no a `Registros`.
+
+---
+
+### H-01 — ✅ RESUELTO — `apps-script/Código.gs` del repo estaba en V38, no en V41
 
 **Detectado:** al generar V42 desde el archivo canónico del repo, se
 habrían perdido **120 líneas** de código desplegado (V40 BUGFIX-025 + V41
@@ -883,8 +987,12 @@ Lo que se habría perdido:
 - `adminBorrarReservaMudanza` (V38).
 
 **Corrección aplicada:** F1 paso 1 usa `rclone copy` de V41 **desde Drive**.
-El archivo canónico del repo se sincroniza en F5 (paso 6), en un **commit
-separado** del de la feature, para no mezclar.
+El archivo canónico del repo **quedó sincronizado con V42** en el commit
+`b95bccb` (25-Oct-2026):
+
+```
+apps-script/Código.gs   md5 0b269bbc4cbf7fe44d3e2eeb2fbf5262  5286 líneas  (= V42)
+```
 
 **Regla aplicada:** `references/deploy-drift-check-procedure.md` — "SIEMPRE
 generar V_N+1 desde la última en Drive, NUNCA desde el repo".

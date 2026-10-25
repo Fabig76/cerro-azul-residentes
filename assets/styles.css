@@ -1035,6 +1035,12 @@ body.tema-vigilancia .btn-secondary:hover { background: #D0ECE7; }
   clip-path: polygon(13% 47%, 0 62%, 40% 100%, 100% 20%, 86% 7%, 38% 71%);
   animation: sello .5s .18s var(--rebote) backwards;
 }
+/* BUGFIX-028: codigo CA-XXXX dentro de un .alert (el .num-form es block) */
+.num-form-inline {
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
 .num-form, .id-reserva {
   display: inline-block;
   margin: 16px auto;
