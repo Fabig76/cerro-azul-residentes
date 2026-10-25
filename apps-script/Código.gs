@@ -1483,16 +1483,14 @@ function listarReservasMudanzasPorNumForm(numForm, apto, ccProp) {
 // Sin ese alias, GmailApp lanza error y devolvemos false (sin excepcion).
 // ---------------------------------------------------------------------
 function enviarEmailCerroAzul(to, subject, body) {
-  try {
-    GmailApp.sendEmail(to, subject, body, {
-      from: 'urb.cerroazul@gmail.com',
-      name: 'Cerro Azul'
-    });
-    return true;
-  } catch (e) {
-    Logger.log('[enviarEmailCerroAzul] fallo de envio: ' + e);
-    return false;
-  }
+  // NO se captura la excepcion aqui: si GmailApp falla (alias 'Send mail
+  // as' no configurado, cuota, etc.) la excepcion se PROPAGA al caller.
+  // submitRecord la captura y la reporta en correoError (el registro YA
+  // esta escrito, asi que un fallo de correo nunca pierde el registro).
+  GmailApp.sendEmail(to, subject, body, {
+    from: 'urb.cerroazul@gmail.com',
+    name: 'Cerro Azul'
+  });
 }
 
 function enviarEmailCodigoRegistro(row, numForm) {
