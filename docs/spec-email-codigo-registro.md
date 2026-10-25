@@ -3,8 +3,13 @@
 > **Versión:** 1.0 (borrador auditado)
 > **Fecha:** 25-Oct-2026
 > **Solicitado por:** Fabio Lesmes (operador)
-> **Estado:** Especificado y auditado — pendiente de aprobación e implementación
-> **Base:** V41 desplegada (md5 `a708d11897ff137c2a5efdcf090a8cef`, 5.026 líneas)
+> **Estado:** ✅ **IMPLEMENTADO Y DESPLEGADO en V47** (25-Oct-2026)
+> **Base:** V47 desplegada (md5 `9855d2dc09967c26a3ee8ef79bfbea55`, 5.422 líneas)
+>
+> Nota: el spec documenta el diseño original. La implementación final (V47)
+> usa `GmailApp` con remitente `urb.cerroazul@gmail.com` en lugar de
+> `MailApp`, por el problema de entrega del dominio `admin@urbcerroazul.com`
+> (ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-028). Verificado en producción.
 
 ---
 

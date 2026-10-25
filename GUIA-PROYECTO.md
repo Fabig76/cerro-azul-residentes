@@ -2045,10 +2045,12 @@ vigilancia. Si el vigilante tiene una lógica útil, replicarla en admin.
 
 ---
 
-## Resumen de versiones Apps Script desplegadas (26-Sept-2026)
+## Resumen de versiones Apps Script desplegadas (25-Oct-2026)
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
+| **V47** | 25-Oct-2026 (DESPLEGADO ✓) | `9855d2dc09967c26a3ee8ef79bfbea55` | **BUGFIX-028: envío del código CA-XXXX al correo del propietario (GmailApp + from: urb.cerroazul@gmail.com) + H-17 off-by-one clearResidente.** Verificado en producción en los 3 flujos (registro, salón social, mudanza). Archivo `Codigo_V47_BUGFIX-028_FIXEMAIL_20261025.gs` (248.532 bytes, 5.422 líneas), Drive ID `16jVhaU-wGF2NaS3_ZxfcIH_QaYuEBB7P`. |
+| **V42** | 25-Oct-2026 (DESPLEGADO ✓) | `0b269bbc4cbf7fe44d3e2eeb2fbf5262` | **BUGFIX-027: repara el portal del residente (H-13 "Editar mis datos" roto) + elimina la destrucción de datos del propietario (H-14 y 3 causas raíz más). 0 pérdidas en 274 filas reales.** |
 | **V35** | 05-Oct-2026 (deploy "Versión 33" ✓ verificado) | `3af70d3f8298f900c4407470131cbb45` | **BUGFIX-022: restaurar módulo de Estado de Cuenta (478 líneas) — 6 funciones públicas ec* + 14 helpers. El módulo se había perdido del .gs desplegado en algún deploy entre V20 y V21** |
 | **V34** | 05-Oct-2026 (deploy "Versión 32" ✓ verificado) | `73bf233649f51be937e90be2a83628ba` | **BUGFIX-021: adminVerComprobanteSalon devuelve `tieneComprobante: true` en éxito (1 línea). Frontend ya esperaba el campo, solo faltaba en la respuesta del backend** |
 | **V33** | 05-Oct-2026 (deploy "Versión 31" ✓ verificado) | `3607f5efaa9c015fe6bfd0e0c4d44de3` | **BUGFIX-020: cédula del propietario en "Editar mi registro" (lectura+escritura)** |

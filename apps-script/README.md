@@ -4,59 +4,57 @@ Este es el código del backend que conecta el formulario público
 (`https://fabig76.github.io/cerro-azul-residentes/`) con el Google Sheet
 (`https://docs.google.com/spreadsheets/d/16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc`).
 
-## 🆕 V43 — BUGFIX-028 + H-17 (25-Oct-2026) — LISTA PARA DEPLOY
+## ✅ V47 — BUGFIX-028 + H-17 + H-13/H-14 (25-Oct-2026) — DESPLEGADA Y VERIFICADA
 
-**Archivo:** `Codigo_V43_BUGFIX-027_CLEAR_OFFBYONE_20261025.gs`
-**Drive:** https://drive.google.com/file/d/1TcSzTQh6hd5Fs7qcRKgnhUmIcgCrN4st/view
-**Drive ID:** `1TcSzTQh6hd5Fs7qcRKgnhUmIcgCrN4st`
-**md5:** `d64c15a8cfc25ea3e211e10a7898d94b` (verificado en Drive)
-**Tamaño:** 246.840 bytes / 5.390 líneas
-**Base:** V42 descargada de Drive (md5 `0b269bbc4cbf7fe44d3e2eeb2fbf5262`)
+**Archivo:** `Codigo_V47_BUGFIX-028_FIXEMAIL_20261025.gs`
+**Drive:** https://drive.google.com/file/d/16jVhaU-wGF2NaS3_ZxfcIH_QaYuEBB7P/view
+**Drive ID:** `16jVhaU-wGF2NaS3_ZxfcIH_QaYuEBB7P`
+**md5:** `9855d2dc09967c26a3ee8ef79bfbea55` (verificado en Drive)
+**Tamaño:** 248.532 bytes / 5.422 líneas
+**Apps Script "Versión 45"** (deploy library `/45`)
 
-**Qué incluye:**
+**Qué incluye (acumulado desde V42):**
 
 1. **BUGFIX-028 — envío del código CA-XXXX al correo del propietario.**
    Solo al **crear** un registro con `diligencia = "Propietario"`.
-   Regla de 3 condiciones (todas deben cumplirse):
-   `!editMode` AND `__origen === 'formulario-publico'` AND
-   `diligencia === 'Propietario'`. La bandera `__origen` la manda solo
-   `js/app.js`; el portal del residente nunca dispara el envío.
-   El envío va **después** de `setValues()` dentro de `try/catch`: un
-   fallo de correo **nunca** pierde el registro.
-2. **H-17 — off-by-one en `clearResidente`.** Antes borraba la columna
-   `Disp3 Recibe` (dato del PROPIETARIO, 2 registros) y **no** borraba
-   `Emerg2 Teléfonos` (quedaba el dato del resident anterior, 94
-   registros). Corregido: `getRange(rowNumber, 111, 1, 26)`.
+   Regla de 3 condiciones: `!editMode` AND `__origen === 'formulario-publico'`
+   AND `diligencia === 'Propietario'`. Envío **después** de `setValues()`.
+2. **H-17 — off-by-one en `clearResidente`** (corregido: `getRange(...,111,...)`).
+3. **H-13/H-14 — portal del residente** (repara "Editar mis datos" + evita
+   borrado de datos del propietario).
 
-**Frontend (ya en el repo, falta push a GitHub Pages):**
-`js/app.js` (`__origen` + `mostrarAvisoCorreo()`), `index.html`
-(`#success-correo-aviso` + cache-buster `?v=20261025`),
-`assets/styles.css` (`.num-form-inline`).
+**⚡ Sobre el envío de correo (resuelto 25-Oct-2026):** usa `GmailApp` con
+remitente `urb.cerroazul@gmail.com` (no `admin@urbcerroazul.com`, que no
+entregaba por ser dominio nuevo sin DKIM/DMARC). **Requiere** que en
+`admin@urbcerroazul.com` esté configurado el alias "Enviar como"
+`urb.cerroazul@gmail.com` y re-autorizado el scope de Gmail.
+
+**Verificado en producción (25-Oct-2026):** correo entregado a propietario
+y admin en los 3 flujos (registro CA-XXXX, salón social RS-0023, mudanza
+MD-0039).
+
+**Frontend (GitHub Pages, ya desplegado):** `js/app.js` (`__origen` +
+`mostrarAvisoCorreo()`), `index.html` (`#success-correo-aviso` +
+cache-buster `?v=20261026`), `assets/styles.css` (`.num-form-inline`).
 
 **Lo que NO se tocó:** `NUM_COLS` (143), `MUDANZAS_NUM_COLS` (23), el
 routing de `doPost` (44 rutas), `MANUAL_CERRO`, los módulos de mudanzas /
 salón / estado de cuenta / vigilantes.
 
-**Pendiente de decisión:** D1 (cuota de MailApp para campaña masiva).
+### Deploy manual (referencia para futuras versiones)
 
-### Deploy manual de V43 (5 pasos)
+1. Descargar el `.gs` del link de arriba.
+2. Abrir https://script.google.com/d/17nuyzVYK2yN_TABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy/edit
+   (sesión `admin@urbcerroazul.com`).
+3. `Código.gs` → Ctrl+A → borrar → pegar → Ctrl+S.
+4. **Implementar → Nueva implementación → Aplicación web → Yo / Cualquier persona.**
+5. ⚠️ Re-autorizar el scope de Gmail (`mail.google.com` / `gmail.send`).
+6. Verificar que la URL `/exec` no cambió.
 
-1. Descargar `Codigo_V43_BUGFIX-027_CLEAR_OFFBYONE_20261025.gs` del link de arriba.
-2. Abrir https://script.google.com/d/17nuyzVYK2y_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy/edit
-   (sesión `urb.cerroazul@gmail.com`).
-3. Panel izquierdo → `Código.gs` → Ctrl+A → **borrar** → Ctrl+V → Ctrl+S.
-4. **Implementar → Nueva implementación → Aplicación web** →
-   Ejecutar como "Yo" → Acceso "Cualquier persona".
-5. Verificar que la URL `/exec` **no cambió**.
+## Historial de versiones del backend (referencia)
 
-**Versión anterior desplegada: V42 (25-Oct-2026) — BUGFIX-027.**
-Archivo `Codigo_V42_H13_H14_RESIDENTE_20261025.gs`
-(Drive ID `19t7jhMbpocvopP57fIfJCKoNXdqNSBHd`, md5
-`0b269bbc4cbf7fe44d3e2eeb2fbf5262`, 242.137 B / 5.286 líneas).
-Repara el portal del residente (H-13) y elimina la destrucción de datos
-del propietario (H-14). Validado post-deploy: 25/25 tests OK.
-
-## Versión desplegada: V42 backend + V28 frontend (20-Oct-2026) — Apps Script "Versión 41"
+> La versión vigente desplegada es **V47** (ver cabecera arriba).
+> El historial completo en `docs/CHANGELOG-BUGFIXES.md`.
 
 **Backend Apps Script:** V41 (230.026 bytes, 5.026 líneas) = V40 (BUGFIX-025 límite 1 mudanza/torre/día) + BUGFIX-026 (listar y cancelar reservas propias del módulo mudanzas).
 
@@ -69,7 +67,7 @@ del propietario (H-14). Validado post-deploy: 25/25 tests OK.
 > `MUDANZAS_EMAIL_ADMIN`. Se re-generó como V40 sin ese bug.
 > Ver CHANGELOG-BUGFIXES.md BUGFIX-025.
 
-### 🆕 V42 — BUGFIX-027 (25-Oct-2026) — LISTA PARA DEPLOY, pendiente del operador
+### V42 — BUGFIX-027 (25-Oct-2026) — ✅ desplegada (superada por V47)
 
 **Archivo:** `Codigo_V42_H13_H14_RESIDENTE_20261025.gs`
 **Drive:** https://drive.google.com/file/d/19t7jhMbpocvopP57fIfJCKoNXdqNSBHd/view
@@ -127,8 +125,9 @@ Historial de deploys recientes (sesión 09-Oct-2026 — BUGFIX-024):
 
 | Versión | Hora | MD5 | Descripción |
 |---------|------|-----|-------------|
+| **V47** | 25-Oct-2026 (DESPLEGADO ✓) | `9855d2dc09967c26a3ee8ef79bfbea55` | **BUGFIX-028: envío del código CA-XXXX al correo del propietario (GmailApp + from: urb.cerroazul@gmail.com) + H-17 off-by-one clearResidente.** Verificado en producción en los 3 flujos (registro, salón social, mudanza). Archivo `Codigo_V47_BUGFIX-028_FIXEMAIL_20261025.gs` (248.532 bytes, 5.422 líneas), Drive ID `16jVhaU-wGF2NaS3_ZxfcIH_QaYuEBB7P`. |
+| **V42** | 25-Oct-2026 (DESPLEGADO ✓) | `0b269bbc4cbf7fe44d3e2eeb2fbf5262` | **BUGFIX-027: repara el portal del residente (H-13: "Editar mis datos" roto) + elimina la destrucción de datos del propietario (H-14 y 3 causas raíz más). Verificado con banco de pruebas: 0 pérdidas en 274 filas reales.** |
 | **V41** | 20-Oct-2026 (DESPLEGADO ✓) | `a708d11897ff137c2a5efdcf090a8cef` | **BUGFIX-026: listarReservasMudanzasPorNumForm + frontend cards + botón Cancelar en `js/app.js:M.showMisReservas()`. Cierra la asimetría con Salón Social (BUGFIX-015 V22)**. Archivo `Codigo_V41_BUGFIX-026_MISRESERVASMUDANZAS_20261020.gs` (230.026 bytes, 5.026 líneas) en Drive ID `1Ft3WHmWPdizK_hptkBKI12CDz45NMRUJ`. |
-| **V42** | 25-Oct-2026 (LISTA, PENDIENTE) | `0b269bbc4cbf7fe44d3e2eeb2fbf5262` | **BUGFIX-027: repara el portal del residente (H-13: "Editar mis datos" roto) + elimina la destrucción de datos del propietario (H-14 y 3 causas raíz más). Verificado con banco de pruebas: 0 pérdidas en 274 filas reales.** |
 | V38 | 09-Oct-2026 20:31 | `f2f0cad52a343bb65c43d1853e473c66` | Endpoint admin `adminBorrarReservaMudanza` (borrar físico de reservas de prueba) |
 | V37 | 09-Oct-2026 20:12 | `0747a256a29b62dfd66b071ecd14c3a2` | MUDANZAS_ELEMENTOS: 4 tipos (Salida/Ingreso + Salida/IngresoElementos) + descripción obligatoria |
 | V36_ENCARGADO | 09-Oct-2026 04:05 | `0f872b7218b96295ed79986fd6ab9320` | Valor "Encargado" como opción válida de diligencia (mismos privilegios que Propietario) |

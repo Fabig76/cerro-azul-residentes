@@ -103,27 +103,33 @@ Ver `docs/CHANGELOG-BUGFIXES.md` entrada REDISENO-TEMA-OSCURO.
 
 > ⚠️ **Fuente de verdad de versiones:** este archivo puede quedar desactualizado.
 > Para la versión vigente, consultar `apps-script/README.md` (cabecera + tabla) y
-> `docs/CHANGELOG-BUGFIXES.md`. Resumen a 05-Oct-2026:
+> `docs/CHANGELOG-BUGFIXES.md`. Resumen a 25-Oct-2026:
 
-- **Apps Script ID:** `17nuyzVYK2yN_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy`
-- **URL preservada:** `https://script.google.com/macros/s/AKfycbxp...Zp/exec`
-- **Última versión: V41 (20-Oct-2026)** — Apps Script "Versión 41"
-  · 230.026 bytes, 5.026 líneas
-  · MD5: `a708d11897ff137c2a5efdcf090a8cef`
-  · Drive V41: `Codigo_V41_BUGFIX-026_MISRESERVASMUDANZAS_20261020.gs` (ID `1Ft3WHmWPdizK_hptkBKI12CDz45NMRUJ`)
-  · Link: https://drive.google.com/file/d/1Ft3WHmWPdizK_hptkBKI12CDz45NMRUJ/view
-  · BUGFIX-026: listar y cancelar reservas propias del módulo mudanzas
-  · Basada en V40 (BUGFIX-025 límite 1 mudanza/torre/día)
+- **Apps Script ID:** `17nuyzVYK2yN_TABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy`
+- **URL preservada:** `https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec`
+- **Última versión desplegada: V47 (25-Oct-2026)** — Apps Script "Versión 45"
+  · 248.532 bytes, 5.422 líneas
+  · MD5: `9855d2dc09967c26a3ee8ef79bfbea55`
+  · Drive V47: `Codigo_V47_BUGFIX-028_FIXEMAIL_20261025.gs` (ID `16jVhaU-wGF2NaS3_ZxfcIH_QaYuEBB7P`)
+  · Link: https://drive.google.com/file/d/16jVhaU-wGF2NaS3_ZxfcIH_QaYuEBB7P/view
+  · BUGFIX-028: envío del código CA-XXXX al correo del propietario + H-17
+    (off-by-one en `clearResidente`) + H-13/H-14 (portal del residente).
 
-> **Nota V41 (20-Oct-2026):** cierra la asimetría con Salón Social
-> (BUGFIX-015 V22). El botón "📋 Ver mis reservas" ahora funciona en el
-> portal público de mudanzas y permite cancelar. Ver
-> `docs/CHANGELOG-BUGFIXES.md` BUGFIX-026 y `docs/sesion-2026-10-20.md`.
+> **Nota V47 (25-Oct-2026):** el envío de correo usa `GmailApp` con
+> remitente `urb.cerroazul@gmail.com` (no `admin@urbcerroazul.com`, que
+> no entregaba por ser dominio nuevo sin DKIM/DMARC). Verificado en
+> producción: correo entregado a propietario y admin en los 3 flujos
+> (registro, salón social, mudanzas). Detalle en
+> `docs/CHANGELOG-BUGFIXES.md` BUGFIX-028.
 
 ### Historial de deploys recientes
 
 | Versión | Hora | BUGFIX | Descripción |
 |---------|------|--------|-------------|
+| V47 | 25-Oct-2026 | BUGFIX-028 | Envío de correo (código CA-XXXX) + H-17 + H-13/H-14 |
+| V42 | 25-Oct-2026 | BUGFIX-027 | Repara portal del residente (H-13) + evita borrado de datos (H-14) |
+| V41 | 20-Oct-2026 | BUGFIX-026 | listar/cancelar reservas propias de mudanzas |
+| V40 | 09-Oct-2026 | BUGFIX-025 | Límite 1 mudanza por torre/día |
 | V36 | 08-Oct-2026 | BUGFIX-023 | Torre 2 en lookup de matrículas (185 aptos nuevos) |
 | V35 | 05-Oct-2026 | BUGFIX-022 | Restaurar módulo de Estado de Cuenta (478 líneas) |
 | V34 | 05-Oct-2026 | BUGFIX-021 | adminVerComprobanteSalon devuelve tieneComprobante: true |
