@@ -362,6 +362,25 @@ function submitRecord(data) {
 
   // Construir el array de valores
   const row = buildRowFromPayload(data, assignedNumForm, fechaRegistroOriginal);
+
+  // 🔴 BLINDAJE (V46, 27-Oct-2026): nunca escribir una fila a medias.
+  // Las validaciones de arriba miran el payload de entrada, pero el payload
+  // puede llegar incompleto por desincronización de claves entre el frontend
+  // y buildRowFromPayload. Aquí se verifica el ROW FINAL (lo que de verdad se
+  // va a escribir al Sheet): si el propietario no tiene nombre, cédula ni
+  // celular, se ABORTA sin escribir. Esto corta la hemorragia de filas basura
+  // (CA-0234, 0235, 0246, 0248, 0249, 0265, 0266, 0271, 0277...) que quedaban
+  // solo con N° Formulario + fechas + apto y bloqueaban el apartamento.
+  const _bNombre = String(row[5] || '').trim();
+  const _bCc     = String(row[6] || '').trim();
+  const _bCel    = String(row[8] || '').trim();
+  if (!_bNombre || !_bCc || !_bCel) {
+    Logger.log('[submitRecord][BLINDAJE] ABORTADO apto=' + String(row[3] || '') +
+               ' nombre=' + !!_bNombre + ' cc=' + !!_bCc + ' cel=' + !!_bCel +
+               ' — payload incompleto, no se escribió la fila.');
+    return { ok: false, error: 'Faltan datos obligatorios del propietario (nombre, cédula o celular). El registro no se guardó. Revise el formulario y reenvíe.' };
+  }
+
   sheet.getRange(targetRow, 1, 1, NUM_COLS).setValues([row]);
 
   // BUGFIX-028: enviar el codigo CA-XXXX al correo del propietario.
