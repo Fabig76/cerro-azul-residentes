@@ -269,7 +269,7 @@ function poblarFormulario(r) {
   setChecked('autCom', r.autCom === 'Sí');
   setVal('#firmaNom', r.firmaNom);
   setVal('#firmaCC', r.firmaCC);
-  setVal('#firmaFecha', r.firmaFecha || new Date().toISOString().slice(0, 10));
+  setVal('#firmaFecha', r.firmaFecha || CA.hoyLocal());
 }
 
 // ============================================================
@@ -624,7 +624,7 @@ function resetForm() {
   $('#editIndicator').classList.add('hidden');
   $('#success-card').classList.add('hidden');
   $('#form-card').classList.remove('hidden');
-  $('#firmaFecha').value = new Date().toISOString().slice(0, 10);
+  $('#firmaFecha').value = CA.hoyLocal();
 }
 $('#btnNuevo').addEventListener('click', resetForm);
 
@@ -783,7 +783,7 @@ document.addEventListener('change', (e) => {
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
-  $('#firmaFecha').value = new Date().toISOString().slice(0, 10);
+  $('#firmaFecha').value = CA.hoyLocal();
   // Sincronizar campo firmaFecha2 (copia disabled) desde firmaFecha
   const fecha1 = $('#firmaFecha');
   const fecha2 = $('#firmaFecha2');

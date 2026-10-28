@@ -452,7 +452,7 @@ const V = {
 
   async verReservasSalon(fecha) {
     if (!fecha) {
-      fecha = new Date().toISOString().slice(0, 10);
+      fecha = CA.hoyLocal();
     }
     const container = document.getElementById('salonCards');
     container.innerHTML = '<p style="grid-column: span 2; text-align:center; color:var(--texto-med); padding:20px;">Cargando...</p>';
@@ -518,13 +518,13 @@ const V = {
         V.switchTab(t.dataset.tab);
         // Cargar datos cuando se cambia al tab salón
         if (t.dataset.tab === 'salon') {
-          const fecha = document.getElementById('salonFecha').value || new Date().toISOString().slice(0, 10);
+          const fecha = document.getElementById('salonFecha').value || CA.hoyLocal();
           V.verReservasSalon(fecha);
         }
       });
     });
     // Por defecto, fecha = hoy
-    const hoy = new Date().toISOString().slice(0, 10);
+    const hoy = CA.hoyLocal();
     document.getElementById('mudFecha').value = hoy;
     document.getElementById('mudFecha').addEventListener('change', () => {
       const f = document.getElementById('mudFecha').value;
@@ -538,7 +538,7 @@ const V = {
       V.verReservasSalon(document.getElementById('salonFecha').value);
     });
     document.getElementById('btnSalonHoy').addEventListener('click', () => {
-      const h = new Date().toISOString().slice(0, 10);
+      const h = CA.hoyLocal();
       document.getElementById('salonFecha').value = h;
       V.verReservasSalon(h);
     });
