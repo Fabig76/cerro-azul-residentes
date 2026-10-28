@@ -37,7 +37,13 @@ const A = {
       if (v != null) url.searchParams.set(k, v);
     });
     const r = await fetch(url.toString(), { method: 'GET', redirect: 'follow' });
-    return r.json();
+    const j = await r.json();
+    // AUD-T13: sesión expirada
+    if (j && j.ok === false && String(j.error || '').indexOf('Sesión no válida') === 0) {
+      A.logout();
+      A.showAlert('Su sesión expiró. Ingrese de nuevo.', 'err');
+    }
+    return j;
   },
   async apiPost(payload) {
     const r = await fetch(APPS_SCRIPT_URL, {
@@ -46,7 +52,13 @@ const A = {
       body: JSON.stringify(payload),
       redirect: 'follow'
     });
-    return r.json();
+    const j = await r.json();
+    // AUD-T13: sesión expirada
+    if (j && j.ok === false && String(j.error || '').indexOf('Sesión no válida') === 0) {
+      A.logout();
+      A.showAlert('Su sesión expiró. Ingrese de nuevo.', 'err');
+    }
+    return j;
   },
 
   state: {
@@ -91,10 +103,11 @@ const A = {
     const btn = document.getElementById('btnLogin');
     btn.disabled = true; btn.textContent = 'Verificando...';
     try {
-      const r = await fetch(APPS_SCRIPT_URL + '?action=adminLogin&password=' + encodeURIComponent(password)).then(x=>x.json());
+      const r = await CA.api({ action: 'adminLogin', password: password });
       if (!r.ok) { A.showAlert(r.error || 'Error de autenticación.', 'err'); return; }
       A.state.loggedIn = true;
       sessionStorage.setItem('adminLoggedIn', 'true');
+      sessionStorage.setItem('adminLoginAt', Date.now());
       if (r.token) sessionStorage.setItem('adminToken', r.token);
       document.getElementById('sessionBadge').style.display = '';
       document.getElementById('loginPassword').value = '';
@@ -106,8 +119,11 @@ const A = {
   },
 
   logout() {
+    // AUD-T13: revocar el token en el servidor (sin esperar)
+    CA.api({ action: 'logout', rol: 'admin', token: sessionStorage.getItem('adminToken') }).catch(() => {});
     A.state.loggedIn = false;
     sessionStorage.removeItem('adminLoggedIn');
+    sessionStorage.removeItem('adminLoginAt');
     sessionStorage.removeItem('adminToken');
     document.getElementById('sessionBadge').style.display = 'none';
     A.showVista('login');
@@ -770,8 +786,7 @@ const A = {
       alert('Por favor ingrese el motivo de cancelación.');
       return;
     }
-    const password = prompt('Para confirmar, ingrese la contraseña de administrador:');
-    if (!password) return;
+    // AUD-T13: ya no se pide contraseña; el token de sesión admin basta.
 
     const btn = document.getElementById('btnConfirmarCancelarSalon');
     btn.disabled = true;
@@ -781,8 +796,7 @@ const A = {
       const r = await A.apiPost({
         action: 'adminCancelarReservaSalon',
         reservaId: A.salonState.currentReservaId,
-        motivo: motivo,
-        adminPassword: password
+        motivo: motivo
       });
 
       if (!r.ok) {
@@ -830,6 +844,11 @@ const A = {
 
 document.addEventListener('DOMContentLoaded', () => {
   A.bindEvents();
+  // AUD-T13: si la sesión tiene más de 11 horas, cerrar antes de mostrar el panel
+  const loginAt = parseInt(sessionStorage.getItem('adminLoginAt') || '0', 10);
+  if (sessionStorage.getItem('adminLoggedIn') === 'true' && (Date.now() - loginAt > 11 * 60 * 60 * 1000)) {
+    A.logout();
+  }
   if (sessionStorage.getItem('adminLoggedIn') === 'true') {
     A.state.loggedIn = true;
     document.getElementById('sessionBadge').style.display = '';

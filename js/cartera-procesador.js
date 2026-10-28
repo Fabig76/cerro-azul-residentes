@@ -129,7 +129,7 @@ async function generarPdfApto(pdfOrigen, paginas1Based) {
 }
 
 // postFn(payload) -> Promise<respuestaJSON>. Reintenta cada lote hasta 3 veces.
-async function subirFacturas(arrayBuffer, grupos, idCarga, password, postFn, onProgreso) {
+async function subirFacturas(arrayBuffer, grupos, idCarga, token, postFn, onProgreso) {
   const pdfOrigen = await PDFLib.PDFDocument.load(arrayBuffer);
   for (let i = 0; i < grupos.length; i += LOTE_FACTURAS) {
     const lote = grupos.slice(i, i + LOTE_FACTURAS);
@@ -138,7 +138,7 @@ async function subirFacturas(arrayBuffer, grupos, idCarga, password, postFn, onP
     let r = null, err = null;
     for (let intento = 1; intento <= 3; intento++) {
       try {
-        r = await postFn({ action: 'ecSubirFacturas', password: password, idCarga: idCarga, archivos: archivos });
+        r = await postFn({ action: 'ecSubirFacturas', token: token, idCarga: idCarga, archivos: archivos });
         if (r && r.ok) break;
         err = new Error((r && r.error) || 'Respuesta inválida');
       } catch (e) { err = e; }

@@ -38,7 +38,13 @@ const V = {
       if (v != null) url.searchParams.set(k, v);
     });
     const r = await fetch(url.toString(), { method: 'GET', redirect: 'follow' });
-    return r.json();
+    const j = await r.json();
+    // AUD-T13: sesión expirada
+    if (j && j.ok === false && String(j.error || '').indexOf('Sesión no válida') === 0) {
+      V.logout();
+      V.showAlert('Su sesión expiró. Ingrese de nuevo.', 'err');
+    }
+    return j;
   },
 
   state: {
@@ -95,10 +101,11 @@ const V = {
     const btn = document.getElementById('btnLogin');
     btn.disabled = true; btn.textContent = 'Verificando...';
     try {
-      const r = await fetch(APPS_SCRIPT_URL + '?action=vigilanteLogin&password=' + encodeURIComponent(password)).then(x=>x.json());
+      const r = await CA.api({ action: 'vigilanteLogin', password: password });
       if (!r.ok) { V.showAlert(r.error || 'Error de autenticación.', 'err'); return; }
       V.state.loggedIn = true;
       sessionStorage.setItem('vigilanteLoggedIn', 'true');
+      sessionStorage.setItem('vigilanteLoginAt', Date.now());
       if (r.token) sessionStorage.setItem('vigilanteToken', r.token);
       document.getElementById('sessionBadge').style.display = '';
       document.getElementById('loginPassword').value = '';
@@ -110,8 +117,11 @@ const V = {
   },
 
   logout() {
+    // AUD-T13: revocar el token en el servidor (sin esperar)
+    CA.api({ action: 'logout', rol: 'vigilante', token: sessionStorage.getItem('vigilanteToken') }).catch(() => {});
     V.state.loggedIn = false;
     sessionStorage.removeItem('vigilanteLoggedIn');
+    sessionStorage.removeItem('vigilanteLoginAt');
     sessionStorage.removeItem('vigilanteToken');
     document.getElementById('sessionBadge').style.display = 'none';
     V.showVista('login');
@@ -537,6 +547,11 @@ const V = {
 
 document.addEventListener('DOMContentLoaded', () => {
   V.bindEvents();
+  // AUD-T13: si la sesión tiene más de 11 horas, cerrar antes de mostrar el panel
+  const loginAt = parseInt(sessionStorage.getItem('vigilanteLoginAt') || '0', 10);
+  if (sessionStorage.getItem('vigilanteLoggedIn') === 'true' && (Date.now() - loginAt > 11 * 60 * 60 * 1000)) {
+    V.logout();
+  }
   if (sessionStorage.getItem('vigilanteLoggedIn') === 'true') {
     V.state.loggedIn = true;
     document.getElementById('sessionBadge').style.display = '';

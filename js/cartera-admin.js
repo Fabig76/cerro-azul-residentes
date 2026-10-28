@@ -5,14 +5,14 @@
 // Deps: pdfjsLib, PDFLib, XLSX (cargados en cartera-admin.html) +
 //       parsearCartera, leerPdf, agruparFacturas, cruzar, subirFacturas
 //       (cargados desde js/cartera-procesador.js).
-// Estado sensible (_password, _pdfBuffer) vive SOLO en memoria.
+// Estado sensible (_token, _pdfBuffer) vive SOLO en memoria.
 // =====================================================================
 
 (function () {
   'use strict';
 
   // ---- Estado en memoria (NO sessionStorage, NO localStorage) ----
-  let _password = null;
+  let _token = null;
   let _analisis = null;   // { pc, grupos, paginas } después de analizar()
   let _pdfBuffer = null;  // ArrayBuffer del PDF (copia para la subida)
   let _publicando = false;
@@ -26,10 +26,9 @@
     const pwd = $('#loginPassword').value;
     if (!pwd) { alertErr('Ingresá la contraseña.'); return; }
     try {
-      const r = await fetch(BACKEND_URL + '?action=adminLogin&password=' + encodeURIComponent(pwd));
-      const j = await r.json();
+      const j = await CA.api({ action: 'adminLogin', password: pwd });
       if (!j.ok) { alertErr('Contraseña incorrecta.'); return; }
-      _password = pwd;
+      _token = j.token;
       $('#loginPassword').value = '';
       showView('view-carga');
     } catch (e) {
@@ -154,7 +153,7 @@
       // 1) ecIniciarCarga: crea pestaña en Sheet + carpeta en Drive
       var ini = await post({
         action: 'ecIniciarCarga',
-        password: _password,
+        token: _token,
         periodo: pc.periodo,
         nombrePestana: pc.nombrePestana,
         fechaCorte: pc.fechaCorte,
@@ -180,7 +179,7 @@
           }
           ini = await post({
             action: 'ecIniciarCarga',
-            password: _password,
+            token: _token,
             periodo: pc.periodo,
             nombrePestana: pc.nombrePestana,
             fechaCorte: pc.fechaCorte,
@@ -206,14 +205,14 @@
       }
 
       // 2) ecSubirFacturas en lotes de 10 (3 reintentos, manejados por subirFacturas)
-      await subirFacturas(_pdfBuffer, grupos, ini.idCarga, _password, post, function (hechos, total) {
+      await subirFacturas(_pdfBuffer, grupos, ini.idCarga, _token, post, function (hechos, total) {
         $('#progreso').classList.remove('hidden');
         $('#progresoTexto').textContent = 'Subidas: ' + hechos + '/' + total + ' (' + Math.round(100 * hechos / total) + '%)';
         $('#progresoBarra').value = 100 * hechos / total;
       });
 
       // 3) ecFinalizarCarga: valida count + cambia estados
-      var fin = await post({ action: 'ecFinalizarCarga', password: _password, idCarga: ini.idCarga });
+      var fin = await post({ action: 'ecFinalizarCarga', token: _token, idCarga: ini.idCarga });
       if (!fin.ok) throw new Error(fin.error);
 
       alertOk('Publicado: ' + fin.pestana + ', ' + fin.facturas + ' facturas.');
@@ -230,7 +229,7 @@
 
   // ==================== SALIR =====================================
   function salir() {
-    _password = null;
+    _token = null;
     _analisis = null;
     _pdfBuffer = null;
     $('#loginPassword').value = '';

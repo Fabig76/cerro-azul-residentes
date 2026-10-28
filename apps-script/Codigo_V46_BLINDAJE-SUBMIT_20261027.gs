@@ -3927,17 +3927,13 @@ function adminCancelarReservaSalon(data) {
   try {
     const reservaId = String(data.reservaId || '').trim();
     const motivo = String(data.motivo || '').trim();
-    const adminPassword = String(data.adminPassword || '').trim();
 
-    if (!reservaId || !motivo || !adminPassword) {
-      return { ok: false, error: 'Faltan datos requeridos (reservaId, motivo, adminPassword)' };
+    if (!reservaId || !motivo) {
+      return { ok: false, error: 'Faltan datos requeridos (reservaId, motivo)' };
     }
 
-    // Verificar admin password
-    const adminPwdStored = getConfigValue('admin_password');
-    if (adminPassword !== adminPwdStored) {
-      return { ok: false, error: 'Contraseña de administrador incorrecta.' };
-    }
+    // AUD-T13: la autenticación del admin ya la valida doPost (ACTIONS_ADMIN).
+    // Ya no se exige contraseña adicional en cada llamada.
 
     const sheet = ensureSalonSocialSheet();
     const dataSheet = sheet.getDataRange().getValues();
