@@ -20,6 +20,7 @@ Entorno de pruebas:
 | T3 | neutralizar fórmulas y fijar formato de texto | `4799b02` | ✅ =HYPERLINK → '=HYPERLINK (texto literal); +57 → '+57; cc 0012345678 preserva cero inicial tras aplicar formato @ | safeCell_ en buildRowFromPayload/adminGuardar/mudanzas/salón; setupFormatoTexto_() manual. |
 | T2 | login por POST, cierre de sesión y límite de intentos | `8d2ad0d` | ✅ 6 intentos admin: 5 'Contrasena incorrecta' → 6ª 'Demasiados intentos'; vigilanteLogin POST ok + token; logout ok; token revocado → 'Sesión no válida' | rateLimit_ con CacheService; ecAdminOk pasa a token; rutas GET de login se conservan hasta T13. |
 | T4 | subirComprobanteSalon valida antes de tocar Drive | `03e6526` | ✅ reservaId inexistente → 'Reserva no encontrada' ANTES de crear archivo (orden verificado en código) | (b) magic-bytes y (c) PDF real quedan pendientes: requieren carpeta de comprobantes de la copia (no configurada). Adaptación: columnas de escritura no contiguas → 5 setValue dentro del lock. |
+| T5 | límites en verificaciones y en el asistente | `4dd9b4b` | ✅ 11 llamadas lookup apto 9999: 10 'No se encontró' → 11ª 'Demasiados intentos' | chatAsistente: límite diario (500) + por origen (20/h); timeout 50→25. La prueba del chat (b/c) requiere MiniMax. |
 
 ## Observaciones fuera de alcance (anotadas, no ejecutadas)
 
