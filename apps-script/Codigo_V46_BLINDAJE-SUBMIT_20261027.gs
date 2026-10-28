@@ -2268,8 +2268,9 @@ function vigilanteCheckMudanza(data) {
 
 function vigilanteBuscarPorPlaca(placa) {
   placa = String(placa || '').trim().toUpperCase();
-  if (!placa || placa.length < 1) {
-    return { ok: false, error: 'Ingrese la placa (o parte de ella)' };
+  // AUD-T1: mínimo 3 caracteres para evitar volcados masivos
+  if (!placa || placa.length < 3) {
+    return { ok: false, error: 'Ingrese al menos 3 caracteres de la placa.' };
   }
   const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
   if (!sheet) return { ok: false, error: 'Sheet no encontrado' };
@@ -2280,11 +2281,9 @@ function vigilanteBuscarPorPlaca(placa) {
   const resultados = [];
   for (let i = 0; i < data.length; i++) {
     const row = data[i];
-    const numForm = String(row[COL_NUM_FORM] || '');
     const apto = String(row[COL_APTO] || '');
     const diligencia = String(row[4] || '');
     const nombreProp = String(row[5] || '');
-    const ccProp = String(row[6] || '');
 
     // Buscar en vehiculos (cols 61-72) y motos (cols 73-84)
     const matches = [];
@@ -2322,11 +2321,9 @@ function vigilanteBuscarPorPlaca(placa) {
     }
     if (matches.length > 0) {
       resultados.push({
-        numForm: numForm,
         apto: apto,
         diligencia: diligencia,
         nombreProp: nombreProp,
-        ccProp: ccProp,
         vehiculos: matches,
         rowNumber: HEADER_ROW + 1 + i
       });
