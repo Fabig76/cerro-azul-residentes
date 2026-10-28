@@ -15,6 +15,7 @@ Entorno de pruebas:
 |---|---|---|---|---|
 | T6 | Bloqueo en submitRecord y adminGuardar | `b2393ad` | ✅ 5 POST simultáneos → 5 filas, 5 CA distintos (CA-0284..0288), 0 duplicados; editMode actualiza la fila correcta; yaBloqueado no auto-bloquea | El BLINDAJE V46 no eliminaba la carrera; el lock sí. |
 | T1 | vigilanteBuscarPorPlaca deja de entregar credenciales | `fa10e36` | ✅ placa de 1 char → "Ingrese al menos 3 caracteres"; placa de 3+ → ok con claves [apto, diligencia, nombreProp, vehiculos, rowNumber] (sin numForm ni ccProp) | Se verificó end-to-end con token de vigilante real contra la copia. |
+| T12 | escape HTML en vigilantes y admin (XSS) | `1406051` | ✅ sintaxis OK; escapeHtml neutraliza `<img onerror>`; sin onclick inline restantes | Adaptación: `CA` no existe aún (Tarea 11), se corrigió el cuerpo de escapeHtml directo; migración a CA queda en T16. |
 
 ## Observaciones fuera de alcance (anotadas, no ejecutadas)
 
