@@ -287,20 +287,9 @@
     this.registrarMensaje();
 
     var self = this;
-    var ctl = new AbortController();
-    // Timeout de 60s por cold start de Apps Script
-    var timeoutId = setTimeout(function () { ctl.abort(); }, 60000);
 
-    fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-      body: JSON.stringify({ action: 'chatAsistente', mensaje: texto }),
-      redirect: 'follow',
-      signal: ctl.signal
-    })
-    .then(function (r) { return r.json(); })
+    CA.api({ action: 'chatAsistente', mensaje: texto }, { method: 'POST', timeoutMs: 60000 })
     .then(function (j) {
-      clearTimeout(timeoutId);
       btn.disabled = false;
       input.disabled = false;
       input.focus();
@@ -315,7 +304,6 @@
       self.agregarMensaje(resp || '(sin respuesta)', 'bot', { fuera: fuera });
     })
     .catch(function (err) {
-      clearTimeout(timeoutId);
       btn.disabled = false;
       input.disabled = false;
       var esAbort = err && err.name === 'AbortError';
