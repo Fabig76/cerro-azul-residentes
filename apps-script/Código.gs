@@ -296,7 +296,12 @@ function doPost(e) {
 // ---------------------------------------------------------------------
 // Crea o actualiza una fila en el Sheet
 // ---------------------------------------------------------------------
-function submitRecord(data) {
+function submitRecord(data, opts) {
+  // AUD-T6: opts.yaBloqueado=true lo usan registrarResidente y
+  // actualizarResidente, que YA toman el lock y llamarían a submitRecord
+  // (que también lo toma) produciría un auto-bloqueo.
+  opts = opts || {};
+  const yaBloqueado = opts.yaBloqueado === true;
   // Validaciones mínimas del lado servidor
   const apto = String(data.apto || '').trim();
   if (!apto) return { ok: false, error: 'Falta N° de apartamento.' };
@@ -334,54 +339,69 @@ function submitRecord(data) {
   let targetRow;       // número de fila en Sheets (1-based)
   let assignedNumForm; // número de formulario que se va a guardar
   let fechaRegistroOriginal = null;
+  let row = null;
 
-  if (editMode) {
-    // Modo edición: verificar que numForm+apto coincidan con una fila existente
-    const found = findRowByNumFormAndApto(submittedNumForm, apto);
-    if (!found) {
-      return { ok: false, error: 'N° de formulario o N° de apartamento no coinciden con un registro existente. No se puede editar.' };
-    }
-    // BUGFIX-020: verificar cédula del propietario antes de escribir
-    if (normalizarCC(data.ccProp) !== normalizarCC(found.values[6])) {
-      return { ok: false, error: 'La cédula no coincide con el propietario registrado. No se puede editar.' };
-    }
-    targetRow = found.rowNumber;
-    assignedNumForm = submittedNumForm;
-    fechaRegistroOriginal = found.values[COL_FECHA_REG];
-  } else {
-    // Modo creación: validar que NO exista ya un registro con ese N° Apto
-    const existing = findRowByApto(apto);
-    if (existing) {
-      return { ok: false, error: 'Ya existe un registro para el apartamento ' + apto + '. Si eres el propietario o encargado, usa la opción "Editar mi registro" con el N° de formulario que se te entregó al crear el registro. Si no lo tienes, contacta a la administración (urb.cerroazul@gmail.com).' };
-    }
-    // Buscar siguiente fila vacía
-    const last = sheet.getLastRow();
-    targetRow = Math.max(last + 1, HEADER_ROW + 1);
-    assignedNumForm = getNextFormId();
+  // AUD-T6: la búsqueda, el número CA y la escritura son una sola sección crítica.
+  // Sin este lock, dos envíos simultáneos (doble clic, reintento del móvil,
+  // o propietario y residente a la vez) leen la misma getLastRow() y el mismo
+  // max(CA-*)+1, y el segundo setValues PISA completo al primero: un registro
+  // desaparece sin rastro y ambos clientes reciben ok:true. El BLINDAJE de la
+  // V46 valida el payload pero no elimina esa carrera.
+  const lock = yaBloqueado ? null : LockService.getScriptLock();
+  if (lock && !lock.tryLock(20000)) {
+    return { ok: false, error: 'El sistema está ocupado. Espere unos segundos y vuelva a enviar.' };
   }
+  try {
+    if (editMode) {
+      // Modo edición: verificar que numForm+apto coincidan con una fila existente
+      const found = findRowByNumFormAndApto(submittedNumForm, apto);
+      if (!found) {
+        return { ok: false, error: 'N° de formulario o N° de apartamento no coinciden con un registro existente. No se puede editar.' };
+      }
+      // BUGFIX-020: verificar cédula del propietario antes de escribir
+      if (normalizarCC(data.ccProp) !== normalizarCC(found.values[6])) {
+        return { ok: false, error: 'La cédula no coincide con el propietario registrado. No se puede editar.' };
+      }
+      targetRow = found.rowNumber;
+      assignedNumForm = submittedNumForm;
+      fechaRegistroOriginal = found.values[COL_FECHA_REG];
+    } else {
+      // Modo creación: validar que NO exista ya un registro con ese N° Apto
+      const existing = findRowByApto(apto);
+      if (existing) {
+        return { ok: false, error: 'Ya existe un registro para el apartamento ' + apto + '. Si eres el propietario o encargado, usa la opción "Editar mi registro" con el N° de formulario que se te entregó al crear el registro. Si no lo tienes, contacte a la administración (urb.cerroazul@gmail.com).' };
+      }
+      // Buscar siguiente fila vacía
+      const last = sheet.getLastRow();
+      targetRow = Math.max(last + 1, HEADER_ROW + 1);
+      assignedNumForm = getNextFormId();
+    }
 
-  // Construir el array de valores
-  const row = buildRowFromPayload(data, assignedNumForm, fechaRegistroOriginal);
+    // Construir el array de valores
+    row = buildRowFromPayload(data, assignedNumForm, fechaRegistroOriginal);
 
-  // 🔴 BLINDAJE (V46, 27-Oct-2026): nunca escribir una fila a medias.
-  // Las validaciones de arriba miran el payload de entrada, pero el payload
-  // puede llegar incompleto por desincronización de claves entre el frontend
-  // y buildRowFromPayload. Aquí se verifica el ROW FINAL (lo que de verdad se
-  // va a escribir al Sheet): si el propietario no tiene nombre, cédula ni
-  // celular, se ABORTA sin escribir. Esto corta la hemorragia de filas basura
-  // (CA-0234, 0235, 0246, 0248, 0249, 0265, 0266, 0271, 0277...) que quedaban
-  // solo con N° Formulario + fechas + apto y bloqueaban el apartamento.
-  const _bNombre = String(row[5] || '').trim();
-  const _bCc     = String(row[6] || '').trim();
-  const _bCel    = String(row[8] || '').trim();
-  if (!_bNombre || !_bCc || !_bCel) {
-    Logger.log('[submitRecord][BLINDAJE] ABORTADO apto=' + String(row[3] || '') +
-               ' nombre=' + !!_bNombre + ' cc=' + !!_bCc + ' cel=' + !!_bCel +
-               ' — payload incompleto, no se escribió la fila.');
-    return { ok: false, error: 'Faltan datos obligatorios del propietario (nombre, cédula o celular). El registro no se guardó. Revise el formulario y reenvíe.' };
+    // 🔴 BLINDAJE (V46, 27-Oct-2026): nunca escribir una fila a medias.
+    // Las validaciones de arriba miran el payload de entrada, pero el payload
+    // puede llegar incompleto por desincronización de claves entre el frontend
+    // y buildRowFromPayload. Aquí se verifica el ROW FINAL (lo que de verdad se
+    // va a escribir al Sheet): si el propietario no tiene nombre, cédula ni
+    // celular, se ABORTA sin escribir. Esto corta la hemorragia de filas basura
+    // (CA-0234, 0235, 0246, 0248, 0249, 0265, 0266, 0271, 0277...) que quedaban
+    // solo con N° Formulario + fechas + apto y bloqueaban el apartamento.
+    const _bNombre = String(row[5] || '').trim();
+    const _bCc     = String(row[6] || '').trim();
+    const _bCel    = String(row[8] || '').trim();
+    if (!_bNombre || !_bCc || !_bCel) {
+      Logger.log('[submitRecord][BLINDAJE] ABORTADO apto=' + String(row[3] || '') +
+                 ' nombre=' + !!_bNombre + ' cc=' + !!_bCc + ' cel=' + !!_bCel +
+                 ' — payload incompleto, no se escribió la fila.');
+      return { ok: false, error: 'Faltan datos obligatorios del propietario (nombre, cédula o celular). El registro no se guardó. Revise el formulario y reenvíe.' };
+    }
+
+    sheet.getRange(targetRow, 1, 1, NUM_COLS).setValues([row]);
+  } finally {
+    if (lock) lock.releaseLock();
   }
-
-  sheet.getRange(targetRow, 1, 1, NUM_COLS).setValues([row]);
 
   // BUGFIX-028: enviar el codigo CA-XXXX al correo del propietario.
   //
@@ -1748,173 +1768,188 @@ function adminGuardar(data) {
   if (!correo || correo.indexOf('@') === -1) return { ok: false, error: 'Correo del propietario invalido' };
 
   // Leer fila actual como base
-  const currentRow = sheet.getRange(targetRow, 1, 1, NUM_COLS).getValues()[0];
-  const newRow = currentRow.slice();
-
-  // Helper para aplicar campo solo si viene en el payload
-  function set(idx, val) {
-    if (val !== undefined) newRow[idx] = val;
+  // AUD-T6: leer la fila, modificarla y escribirla son una sola sección
+  // crítica. Sin lock, un adminGuardar y un submitRecord simultáneos se
+  // pisan (lost update) sobre las 143 columnas de la fila.
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(20000)) {
+    return { ok: false, error: 'El sistema está ocupado. Espere unos segundos y vuelva a intentar.' };
   }
-  function setStr(idx, val) {
-    if (val !== undefined) newRow[idx] = String(val || '');
-  }
-
-  // ====== CAMPOS BASICOS (0-16) ======
-  set(COL_APTO, apto);
-  set(4, String(data.diligencia || currentRow[4] || ''));
-  set(5, nombre);
-  set(6, cc);
-  set(7, correo.toLowerCase());
-  setStr(8, data.celProp);
-  setStr(9, data.telFijoProp);
-  setStr(10, data.parq1Celda);
-  setStr(11, data.parq1Mat);
-  setStr(12, data.parq2Celda);
-  setStr(13, data.parq2Mat);
-  setStr(14, data.matriculaApto);
-  if (data.requiereRevision !== undefined) {
-    newRow[15] = (data.requiereRevision === 'Si' || data.requiereRevision === true || data.requiereRevision === 'Sí') ? 'Sí' : 'No';
-  }
-  setStr(16, data.observMatriculas);
-
-  // ====== ENCARGADO/ADMINISTRADOR (17-20) ======
-  setStr(17, data.nombreArr); setStr(18, data.ccArr); setStr(19, data.correoArr); setStr(20, data.celArr);
-
-  // ====== PARQUEADERO TERCERO (21-23) ======
-  setStr(21, data.parqTerNom); setStr(22, data.parqTerApto); setStr(23, data.parqTerCel);
-
-  // ====== INMOBILIARIA (24-28) ======
-  setStr(24, data.inmobRazon); setStr(25, data.inmobNit); setStr(26, data.inmobContacto); setStr(27, data.inmobTel); setStr(28, data.inmobCorreo);
-
-  // ====== RESIDENTES (29-48, 4 × 5 cols) ======
-  if (Array.isArray(data.residentes)) {
-    for (let i = 0; i < 4; i++) {
-      const r = data.residentes[i] || {};
-      const base = 29 + i * 5;
-      setStr(base + 0, r.nombre);
-      setStr(base + 1, r.cc);
-      if (r.correo !== undefined) set(base + 2, String(r.correo || '').toLowerCase());
-      setStr(base + 3, r.cel);
-      setStr(base + 4, r.parent);
+  try {
+    const currentRow = sheet.getRange(targetRow, 1, 1, NUM_COLS).getValues()[0];
+    const newRow = currentRow.slice();
+    // AUD-T6: bloqueo optimista. El cliente manda la fechaEdicion que leyó.
+    if (data.fechaEdicionVista && String(currentRow[COL_FECHA_EDIT] || '') !== String(data.fechaEdicionVista)) {
+      return { ok: false, error: 'El registro fue modificado por otra persona. Recargue y vuelva a intentar.', code: 'CONFLICTO' };
     }
-  }
 
-  // ====== MENORES (49-60, 4 × 3 cols) ======
-  if (Array.isArray(data.menores)) {
-    for (let i = 0; i < 4; i++) {
-      const m = data.menores[i] || {};
-      const base = 49 + i * 3;
-      setStr(base + 0, m.nombre);
-      if (m.edad !== undefined) {
-        newRow[base + 1] = (m.edad !== null && m.edad !== '') ? String(m.edad) : '';
+    // Helper para aplicar campo solo si viene en el payload
+    function set(idx, val) {
+      if (val !== undefined) newRow[idx] = val;
+    }
+    function setStr(idx, val) {
+      if (val !== undefined) newRow[idx] = String(val || '');
+    }
+
+    // ====== CAMPOS BASICOS (0-16) ======
+    set(COL_APTO, apto);
+    set(4, String(data.diligencia || currentRow[4] || ''));
+    set(5, nombre);
+    set(6, cc);
+    set(7, correo.toLowerCase());
+    setStr(8, data.celProp);
+    setStr(9, data.telFijoProp);
+    setStr(10, data.parq1Celda);
+    setStr(11, data.parq1Mat);
+    setStr(12, data.parq2Celda);
+    setStr(13, data.parq2Mat);
+    setStr(14, data.matriculaApto);
+    if (data.requiereRevision !== undefined) {
+      newRow[15] = (data.requiereRevision === 'Si' || data.requiereRevision === true || data.requiereRevision === 'Sí') ? 'Sí' : 'No';
+    }
+    setStr(16, data.observMatriculas);
+
+    // ====== ENCARGADO/ADMINISTRADOR (17-20) ======
+    setStr(17, data.nombreArr); setStr(18, data.ccArr); setStr(19, data.correoArr); setStr(20, data.celArr);
+
+    // ====== PARQUEADERO TERCERO (21-23) ======
+    setStr(21, data.parqTerNom); setStr(22, data.parqTerApto); setStr(23, data.parqTerCel);
+
+    // ====== INMOBILIARIA (24-28) ======
+    setStr(24, data.inmobRazon); setStr(25, data.inmobNit); setStr(26, data.inmobContacto); setStr(27, data.inmobTel); setStr(28, data.inmobCorreo);
+
+    // ====== RESIDENTES (29-48, 4 × 5 cols) ======
+    if (Array.isArray(data.residentes)) {
+      for (let i = 0; i < 4; i++) {
+        const r = data.residentes[i] || {};
+        const base = 29 + i * 5;
+        setStr(base + 0, r.nombre);
+        setStr(base + 1, r.cc);
+        if (r.correo !== undefined) set(base + 2, String(r.correo || '').toLowerCase());
+        setStr(base + 3, r.cel);
+        setStr(base + 4, r.parent);
       }
-      setStr(base + 2, m.parent);
     }
-  }
 
-  // ====== VEHICULOS (61-72, 2 × 6 cols) ======
-  if (Array.isArray(data.vehiculos)) {
-    for (let i = 0; i < 2; i++) {
-      const v = data.vehiculos[i] || {};
-      const base = 61 + i * 6;
-      setStr(base + 0, v.marca);
-      setStr(base + 1, v.tipo);
-      setStr(base + 2, v.color);
-      if (v.placa !== undefined) set(base + 3, String(v.placa || '').toUpperCase());
-      setStr(base + 4, v.modelo);
-      setStr(base + 5, v.tag);
-    }
-  }
-
-  // ====== MOTOS (73-84, 2 × 6 cols) ======
-  if (Array.isArray(data.motos)) {
-    for (let i = 0; i < 2; i++) {
-      const v = data.motos[i] || {};
-      const base = 73 + i * 6;
-      setStr(base + 0, v.marca);
-      setStr(base + 1, v.tipo);
-      setStr(base + 2, v.color);
-      if (v.placa !== undefined) set(base + 3, String(v.placa || '').toUpperCase());
-      setStr(base + 4, v.modelo);
-      setStr(base + 5, v.tag);
-    }
-  }
-
-  // ====== BICICLETAS (85-92, 2 × 4 cols) ======
-  if (Array.isArray(data.bicis)) {
-    for (let i = 0; i < 2; i++) {
-      const b = data.bicis[i] || {};
-      const base = 85 + i * 4;
-      setStr(base + 0, b.marca);
-      setStr(base + 1, b.color);
-      setStr(base + 2, b.clase);
-      setStr(base + 3, b.serial);
-    }
-  }
-
-  // ====== LLAVEROS/TAGS (93-94) ======
-  if (data.llaverosAut !== undefined) setStr(93, data.llaverosAut);
-  if (data.tagsAut !== undefined) setStr(94, data.tagsAut);
-
-  // ====== DISPOSITIVOS (95-109, 3 × 5 cols) ======
-  if (Array.isArray(data.dispositivos)) {
-    for (let i = 0; i < 3; i++) {
-      const d = data.dispositivos[i] || {};
-      const base = 95 + i * 5;
-      setStr(base + 0, d.tipo);
-      setStr(base + 1, d.codigo);
-      if (d.placa !== undefined) set(base + 2, String(d.placa || '').toUpperCase());
-      setStr(base + 3, d.fecha);
-      setStr(base + 4, d.recibe);
-    }
-  }
-
-  // ====== MASCOTAS (110-129, 2 × 10 cols) ======
-  if (Array.isArray(data.mascotas)) {
-    for (let i = 0; i < 2; i++) {
-      const m = data.mascotas[i] || {};
-      const base = 110 + i * 10;
-      setStr(base + 0, m.tipo);
-      setStr(base + 1, m.nombre);
-      setStr(base + 2, m.raza);
-      setStr(base + 3, m.color);
-      setStr(base + 4, m.sexo);
-      setStr(base + 5, m.vacuna);
-      if (m.manejoEspecial !== undefined) {
-        newRow[base + 6] = (m.manejoEspecial === true || m.manejoEspecial === 'Sí') ? 'Sí' : 'No';
+    // ====== MENORES (49-60, 4 × 3 cols) ======
+    if (Array.isArray(data.menores)) {
+      for (let i = 0; i < 4; i++) {
+        const m = data.menores[i] || {};
+        const base = 49 + i * 3;
+        setStr(base + 0, m.nombre);
+        if (m.edad !== undefined) {
+          newRow[base + 1] = (m.edad !== null && m.edad !== '') ? String(m.edad) : '';
+        }
+        setStr(base + 2, m.parent);
       }
-      setStr(base + 7, m.registro);
-      setStr(base + 8, m.aseguradora);
-      setStr(base + 9, m.poliza);
     }
-  }
 
-  // ====== EMERGENCIAS (130-135, 2 × 3 cols) ======
-  if (Array.isArray(data.emergencias)) {
-    for (let i = 0; i < 2; i++) {
-      const e = data.emergencias[i] || {};
-      const base = 130 + i * 3;
-      setStr(base + 0, e.nombre);
-      setStr(base + 1, e.parent);
-      setStr(base + 2, e.tel);
+    // ====== VEHICULOS (61-72, 2 × 6 cols) ======
+    if (Array.isArray(data.vehiculos)) {
+      for (let i = 0; i < 2; i++) {
+        const v = data.vehiculos[i] || {};
+        const base = 61 + i * 6;
+        setStr(base + 0, v.marca);
+        setStr(base + 1, v.tipo);
+        setStr(base + 2, v.color);
+        if (v.placa !== undefined) set(base + 3, String(v.placa || '').toUpperCase());
+        setStr(base + 4, v.modelo);
+        setStr(base + 5, v.tag);
+      }
     }
+
+    // ====== MOTOS (73-84, 2 × 6 cols) ======
+    if (Array.isArray(data.motos)) {
+      for (let i = 0; i < 2; i++) {
+        const v = data.motos[i] || {};
+        const base = 73 + i * 6;
+        setStr(base + 0, v.marca);
+        setStr(base + 1, v.tipo);
+        setStr(base + 2, v.color);
+        if (v.placa !== undefined) set(base + 3, String(v.placa || '').toUpperCase());
+        setStr(base + 4, v.modelo);
+        setStr(base + 5, v.tag);
+      }
+    }
+
+    // ====== BICICLETAS (85-92, 2 × 4 cols) ======
+    if (Array.isArray(data.bicis)) {
+      for (let i = 0; i < 2; i++) {
+        const b = data.bicis[i] || {};
+        const base = 85 + i * 4;
+        setStr(base + 0, b.marca);
+        setStr(base + 1, b.color);
+        setStr(base + 2, b.clase);
+        setStr(base + 3, b.serial);
+      }
+    }
+
+    // ====== LLAVEROS/TAGS (93-94) ======
+    if (data.llaverosAut !== undefined) setStr(93, data.llaverosAut);
+    if (data.tagsAut !== undefined) setStr(94, data.tagsAut);
+
+    // ====== DISPOSITIVOS (95-109, 3 × 5 cols) ======
+    if (Array.isArray(data.dispositivos)) {
+      for (let i = 0; i < 3; i++) {
+        const d = data.dispositivos[i] || {};
+        const base = 95 + i * 5;
+        setStr(base + 0, d.tipo);
+        setStr(base + 1, d.codigo);
+        if (d.placa !== undefined) set(base + 2, String(d.placa || '').toUpperCase());
+        setStr(base + 3, d.fecha);
+        setStr(base + 4, d.recibe);
+      }
+    }
+
+    // ====== MASCOTAS (110-129, 2 × 10 cols) ======
+    if (Array.isArray(data.mascotas)) {
+      for (let i = 0; i < 2; i++) {
+        const m = data.mascotas[i] || {};
+        const base = 110 + i * 10;
+        setStr(base + 0, m.tipo);
+        setStr(base + 1, m.nombre);
+        setStr(base + 2, m.raza);
+        setStr(base + 3, m.color);
+        setStr(base + 4, m.sexo);
+        setStr(base + 5, m.vacuna);
+        if (m.manejoEspecial !== undefined) {
+          newRow[base + 6] = (m.manejoEspecial === true || m.manejoEspecial === 'Sí') ? 'Sí' : 'No';
+        }
+        setStr(base + 7, m.registro);
+        setStr(base + 8, m.aseguradora);
+        setStr(base + 9, m.poliza);
+      }
+    }
+
+    // ====== EMERGENCIAS (130-135, 2 × 3 cols) ======
+    if (Array.isArray(data.emergencias)) {
+      for (let i = 0; i < 2; i++) {
+        const e = data.emergencias[i] || {};
+        const base = 130 + i * 3;
+        setStr(base + 0, e.nombre);
+        setStr(base + 1, e.parent);
+        setStr(base + 2, e.tel);
+      }
+    }
+
+    // ====== AUTORIZACIONES (136-138) ======
+    if (data.autDatos !== undefined) newRow[136] = data.autDatos ? 'Sí' : 'No';
+    if (data.autMenores !== undefined) newRow[137] = data.autMenores ? 'Sí' : 'No';
+    if (data.autCom !== undefined) newRow[138] = data.autCom ? 'Sí' : 'No';
+
+    // ====== FIRMA (139-141) ======
+    setStr(139, data.firmaNom);
+    setStr(140, data.firmaCC);
+    if (data.firmaFecha !== undefined) set(141, String(data.firmaFecha || ''));
+
+    // Actualizar fecha de edicion
+    newRow[COL_FECHA_EDIT] = Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss');
+
+    // Guardar
+    sheet.getRange(targetRow, 1, 1, NUM_COLS).setValues([newRow]);
+  } finally {
+    lock.releaseLock();
   }
-
-  // ====== AUTORIZACIONES (136-138) ======
-  if (data.autDatos !== undefined) newRow[136] = data.autDatos ? 'Sí' : 'No';
-  if (data.autMenores !== undefined) newRow[137] = data.autMenores ? 'Sí' : 'No';
-  if (data.autCom !== undefined) newRow[138] = data.autCom ? 'Sí' : 'No';
-
-  // ====== FIRMA (139-141) ======
-  setStr(139, data.firmaNom);
-  setStr(140, data.firmaCC);
-  if (data.firmaFecha !== undefined) set(141, String(data.firmaFecha || ''));
-
-  // Actualizar fecha de edicion
-  newRow[COL_FECHA_EDIT] = Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss');
-
-  // Guardar
-  sheet.getRange(targetRow, 1, 1, NUM_COLS).setValues([newRow]);
 
   Logger.log('adminGuardar: ' + numForm + ' (fila ' + targetRow + ') a las ' + newRow[COL_FECHA_EDIT]);
 
@@ -2756,7 +2791,7 @@ function registrarResidente(data) {
       firmaFecha: String(row.values[141] || ''),
     };
 
-    const result = submitRecord(payload);
+    const result = submitRecord(payload, { yaBloqueado: true });
     if (result.ok) {
       return {
         ok: true,
@@ -2872,7 +2907,7 @@ function actualizarResidente(data) {
       firmaFecha: String(row.values[141] || ''),
     };
 
-    const result = submitRecord(payload);
+    const result = submitRecord(payload, { yaBloqueado: true });
     if (result.ok) {
       return { ok: true, slotActualizado: slot, message: 'Datos actualizados correctamente.' };
     }
