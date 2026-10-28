@@ -101,28 +101,32 @@ $$('.mode-tab').forEach(t => t.addEventListener('click', () => setMode(t.dataset
 // ============================================================
 // MODO EDICIÓN: BUSCAR REGISTRO POR N° FORMULARIO + N° APTO
 // ============================================================
-async function buscarRegistro() {
+async function buscarRegistro(opts) {
+  opts = opts || {};
+  const silencioso = opts.silencioso === true;
   hideAlert('alert-edit');
   const numForm = val('#lookupNumForm');
   const apto    = val('#lookupApto');
   const ccProp  = (val('#lookupCcProp') || '').replace(/[^0-9]/g, '');
-  if (!numForm) { showAlert('alert-edit', 'Ingresa tu N° de formulario.', 'err'); return; }
-  if (!apto)    { showAlert('alert-edit', 'Ingresa el N° de apartamento.', 'err'); return; }
-  if (!ccProp)  { showAlert('alert-edit', 'Ingresa la cédula del propietario.', 'err'); return; }
+  if (!numForm) { if (!silencioso) showAlert('alert-edit', 'Ingresa tu N° de formulario.', 'err'); return; }
+  if (!apto)    { if (!silencioso) showAlert('alert-edit', 'Ingresa el N° de apartamento.', 'err'); return; }
+  if (!ccProp)  { if (!silencioso) showAlert('alert-edit', 'Ingresa la cédula del propietario.', 'err'); return; }
   if (!APPS_SCRIPT_URL) {
-    showAlert('alert-edit', 'El formulario aún no está conectado al servidor (falta URL del Apps Script). Avisa a la administración.', 'err');
+    if (!silencioso) showAlert('alert-edit', 'El formulario aún no está conectado al servidor (falta URL del Apps Script). Avisa a la administración.', 'err');
     return;
   }
 
-  $('#btnBuscar').disabled = true;
-  $('#btnBuscar').textContent = 'Buscando...';
+  if (!silencioso) {
+    $('#btnBuscar').disabled = true;
+    $('#btnBuscar').textContent = 'Buscando...';
+  }
 
   try {
     const url = APPS_SCRIPT_URL + '?action=lookup&numForm=' + encodeURIComponent(numForm) + '&apto=' + encodeURIComponent(apto) + '&ccProp=' + encodeURIComponent(ccProp);
     const resp = await fetch(url, { method: 'GET', redirect: 'follow' });
     const data = await resp.json();
     if (!data.ok) {
-      showAlert('alert-edit', data.error || 'No se encontró el registro.', 'err');
+      if (!silencioso) showAlert('alert-edit', data.error || 'No se encontró el registro.', 'err');
       return;
     }
     state.editLookup = data.row;
@@ -137,16 +141,18 @@ async function buscarRegistro() {
     // Mostrar la zona de borrado solo en modo edición
     const zb = $('#zona-borrado');
     if (zb) zb.classList.remove('hidden');
-    showAlert('alert-create', 'Registro cargado. Modifica los campos que necesites y haz clic en "Guardar cambios".', 'info');
+    if (!silencioso) showAlert('alert-create', 'Registro cargado. Modifica los campos que necesites y haz clic en "Guardar cambios".', 'info');
     // Marca el formulario como "modo edición"
     state.mode = 'edit';
     // Resalta el indicador de modo
     $('#editIndicator').classList.remove('hidden');
   } catch (err) {
-    showAlert('alert-edit', 'Error al buscar: ' + err.message, 'err');
+    if (!silencioso) showAlert('alert-edit', 'Error al buscar: ' + err.message, 'err');
   } finally {
-    $('#btnBuscar').disabled = false;
-    $('#btnBuscar').textContent = '🔍 Buscar mi registro';
+    if (!silencioso) {
+      $('#btnBuscar').disabled = false;
+      $('#btnBuscar').textContent = '🔍 Buscar mi registro';
+    }
   }
 }
 $('#btnBuscar').addEventListener('click', buscarRegistro);
@@ -689,6 +695,9 @@ async function lookupMatApto() {
     if (data.encontrado) {
       // Autocompletar SOLO si el campo está vacío (respetar edición manual)
       if (!manualMat) setVal(matField, data.matricula);
+      // AUD-T15: si el apto sí aparece, ya no se exige matrícula manual
+      const f2 = $(matField);
+      if (f2) f2.removeAttribute('data-required-porque-no-encontrado');
       setLookupMsg(msgTarget,
         '<strong>✓ Matrícula encontrada:</strong> ' + data.matricula +
         ' (fuente: ' + (data.fuente === 'torre3' ? 'Torre 3 - Etapa 1' : 'Torre 1 - Etapa 2') + '). ' +
@@ -705,7 +714,7 @@ async function lookupMatApto() {
         'warn');
       // Marcar el campo de matrícula como requerido para forzar la escritura
       const f = $(matField);
-      if (f) f.setAttribute('data-required-porque-no-en-contrado', '1');
+      if (f) f.setAttribute('data-required-porque-no-encontrado', '1'); // AUD-T15: typo corregido
     }
   } catch (err) {
     setLookupMsg(msgTarget, 'Error de red al consultar la base de matrículas: ' + err.message, 'err');
@@ -870,8 +879,8 @@ async function clearResidenteForm() {
     // Éxito
     $('#modalClearResidente').classList.add('hidden');
     alert(`✅ Se borraron ${data.celdasLimpiadas} celdas. El registro del propietario se mantiene intacto.`);
-    // Recargar el formulario para reflejar el cambio
-    if (state.editLookup) poblarFormulario(state.editLookup);
+    // Recargar el formulario desde el servidor (no desde la copia vieja)
+    await buscarRegistro({ silencioso: true }); // AUD-T15
     btn.disabled = false;
     btn.textContent = '🗑️ Sí, borrar';
   } catch (e) {

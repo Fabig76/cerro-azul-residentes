@@ -474,6 +474,7 @@ async function cargarMisReservas() {
     }
 
     const reservas = r.reservas || [];
+    state.misReservas = reservas; // AUD-T15: para el listener delegado único
     if (reservas.length === 0) {
       list.innerHTML = '<p style="text-align:center; color:var(--gris-med); padding:20px;">'
         + 'No tienes reservas todavía. Usa el calendario para crear la primera.'
@@ -519,25 +520,6 @@ async function cargarMisReservas() {
         + '</div>';
 
       list.appendChild(li);
-    });
-
-    // Event delegation: un solo listener para todos los botones
-    list.addEventListener('click', function (e) {
-      const btn = e.target.closest('button[data-accion]');
-      if (!btn) return;
-      const accion = btn.dataset.accion;
-      const id = btn.dataset.id;
-      const reserva = reservas.find(function (x) { return x.id === id; });
-      if (!reserva) return;
-
-      if (accion === 'retomar') {
-        abrirReservaExistente(reserva);
-      } else if (accion === 'cancelar') {
-        state.reservaIdActual = id;
-        state.fechaSeleccionada = reserva.fechaReserva;
-        state.slotSeleccionado = reserva.slot;
-        flujoCancelarReserva();
-      }
     });
 
   } catch (e) {
@@ -627,6 +609,26 @@ function flujoVolverInicio() {
 
 // ============ INIT / EVENT HANDLERS ============
 document.addEventListener('DOMContentLoaded', () => {
+  // AUD-T15: listener delegado ÚNICO para los botones de "Mis reservas".
+  // Antes estaba dentro de cargarMisReservas y se acumulaba en cada visita
+  // (3 visitas = 3 confirm al cancelar). Ahora lee de state.misReservas.
+  document.getElementById('misReservasList').addEventListener('click', function (e) {
+    const btn = e.target.closest('button[data-accion]');
+    if (!btn) return;
+    const accion = btn.dataset.accion;
+    const id = btn.dataset.id;
+    const reserva = (state.misReservas || []).find(function (x) { return x.id === id; });
+    if (!reserva) return;
+    if (accion === 'retomar') {
+      abrirReservaExistente(reserva);
+    } else if (accion === 'cancelar') {
+      state.reservaIdActual = id;
+      state.fechaSeleccionada = reserva.fechaReserva;
+      state.slotSeleccionado = reserva.slot;
+      flujoCancelarReserva();
+    }
+  });
+
   // Login
   document.getElementById('btnIngresar').addEventListener('click', flujoLogin);
   document.getElementById('aptoInput').addEventListener('keypress', e => {

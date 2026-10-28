@@ -186,15 +186,24 @@ const A = {
   // DETALLE COMPLETO
   // ============================================================
   async seleccionar(numForm) {
+    // AUD-T15: descartar respuestas obsoletas si el usuario hace clic rápido
+    A._reqSeq = (A._reqSeq || 0) + 1;
+    const req = A._reqSeq;
     A.hideAlert();
     A.state.selectedNumForm = numForm;
     A.state.editMode = false;
+    const cont = document.getElementById('resultsContainer');
+    if (cont) { cont.style.pointerEvents = 'none'; cont.style.opacity = '0.6'; }
     try {
       const r = await fetch(APPS_SCRIPT_URL + '?action=adminObtener&numForm=' + encodeURIComponent(numForm)).then(x=>x.json());
+      if (req !== A._reqSeq) return; // AUD-T15: respuesta obsoleta
       if (!r.ok) { A.showAlert(r.error || 'Error al obtener el registro.', 'err'); return; }
       A.state.selectedRow = r.row;
       A.renderDetail(r.row, r.rowNumber);
     } catch (e) { A.showAlert('Error de red: ' + e.message, 'err'); }
+    finally {
+      if (cont) { cont.style.pointerEvents = ''; cont.style.opacity = ''; }
+    }
   },
 
   renderDetail(row, rowNumber) {
@@ -530,6 +539,10 @@ const A = {
     A.hideAlert();
     const payload = A.recolectarPayload();
     payload.action = 'adminGuardar';
+    // AUD-T15: bloqueo optimista (T6) — el servidor compara esta fecha
+    if (A.state.selectedRow && A.state.selectedRow.fechaEdicion) {
+      payload.fechaEdicionVista = A.state.selectedRow.fechaEdicion;
+    }
 
     // Validacion basica cliente
     if (!payload.apto || !payload.apto.trim()) {
@@ -543,6 +556,12 @@ const A = {
     }
     if (!payload.correoProp || payload.correoProp.indexOf('@') === -1) {
       A.showAlert('Correo del propietario inválido.', 'err'); return;
+    }
+
+    // AUD-T15: el registro mostrado debe coincidir con el seleccionado
+    if (A.state.selectedRow && payload.numForm !== A.state.selectedRow.numForm) {
+      A.showAlert('El registro mostrado no coincide con el seleccionado. Recargue.', 'err');
+      return;
     }
 
     const btn = document.getElementById('btnSave');

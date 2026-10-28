@@ -171,9 +171,24 @@ function initFormularioRegistro() {
   renderContactosForm(0);
 }
 
+// AUD-T15: preserva los valores de los inputs al regenerar un formulario
+// (el botón '+ Agregar' regeneraba el DOM y borraba lo ya escrito).
+function preservarValores(cont) {
+  const mapa = {};
+  cont.querySelectorAll('input, select, textarea').forEach(function (el) {
+    if (el.id) mapa[el.id] = el.value;
+  });
+  return function () {
+    cont.querySelectorAll('input, select, textarea').forEach(function (el) {
+      if (el.id && mapa[el.id] !== undefined) el.value = mapa[el.id];
+    });
+  };
+}
+
 function renderResidentesForm(n) {
   state.numResidentesForm = Math.min(Math.max(n, 1), 4);
   const cont = document.getElementById('regResidentes');
+  const _rest = preservarValores(cont); // AUD-T15
   cont.innerHTML = '';
   for (let i = 1; i <= state.numResidentesForm; i++) {
     const div = document.createElement('div');
@@ -216,11 +231,13 @@ function renderResidentesForm(n) {
     `;
     cont.appendChild(div);
   }
+  _rest();
 }
 
 function renderMenoresForm(n) {
   state.numMenoresForm = Math.min(Math.max(n, 0), 4);
   const cont = document.getElementById('regMenores');
+  const _rest = preservarValores(cont); // AUD-T15
   cont.innerHTML = '';
   for (let i = 1; i <= state.numMenoresForm; i++) {
     const div = document.createElement('div');
@@ -244,11 +261,13 @@ function renderMenoresForm(n) {
     `;
     cont.appendChild(div);
   }
+  _rest();
 }
 
 function renderVehiculosForm(n) {
   state.numVehiculosForm = Math.min(Math.max(n, 0), 2);
   const cont = document.getElementById('regVehiculos');
+  const _rest = preservarValores(cont); // AUD-T15
   cont.innerHTML = '';
   for (let i = 1; i <= state.numVehiculosForm; i++) {
     const div = document.createElement('div');
@@ -278,11 +297,13 @@ function renderVehiculosForm(n) {
     `;
     cont.appendChild(div);
   }
+  _rest();
 }
 
 function renderMotosForm(n) {
   state.numMotosForm = Math.min(Math.max(n, 0), 2);
   const cont = document.getElementById('regMotos');
+  const _rest = preservarValores(cont); // AUD-T15
   cont.innerHTML = '';
   for (let i = 1; i <= state.numMotosForm; i++) {
     const div = document.createElement('div');
@@ -312,11 +333,13 @@ function renderMotosForm(n) {
     `;
     cont.appendChild(div);
   }
+  _rest();
 }
 
 function renderBicisForm(n) {
   state.numBicisForm = Math.min(Math.max(n, 0), 2);
   const cont = document.getElementById('regBicis');
+  const _rest = preservarValores(cont); // AUD-T15
   cont.innerHTML = '';
   for (let i = 1; i <= state.numBicisForm; i++) {
     const div = document.createElement('div');
@@ -346,11 +369,13 @@ function renderBicisForm(n) {
     `;
     cont.appendChild(div);
   }
+  _rest();
 }
 
 function renderMascotasForm(n) {
   state.numMascotasForm = Math.min(Math.max(n, 0), 2);
   const cont = document.getElementById('regMascotas');
+  const _rest = preservarValores(cont); // AUD-T15
   cont.innerHTML = '';
   for (let i = 1; i <= state.numMascotasForm; i++) {
     const div = document.createElement('div');
@@ -398,11 +423,13 @@ function renderMascotasForm(n) {
     `;
     cont.appendChild(div);
   }
+  _rest();
 }
 
 function renderContactosForm(n) {
   state.numContactosForm = Math.min(Math.max(n, 0), 2);
   const cont = document.getElementById('regContactos');
+  const _rest = preservarValores(cont); // AUD-T15
   cont.innerHTML = '';
   for (let i = 1; i <= state.numContactosForm; i++) {
     const div = document.createElement('div');
@@ -426,6 +453,7 @@ function renderContactosForm(n) {
     `;
     cont.appendChild(div);
   }
+  _rest();
 }
 
 function val(id) {
