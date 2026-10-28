@@ -160,20 +160,8 @@
 
   // ==================== HELPERS ==================================
   async function post(payload) {
-    const r = await fetch(APP_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-      body: JSON.stringify(payload),
-    });
-    const texto = await r.text();
-    try {
-      return JSON.parse(texto);
-    } catch (e) {
-      // El servidor devolvió algo que no es JSON (p. ej. HTML de error).
-      // Mostrar un mensaje claro en vez de "Unexpected token '<'".
-      console.error('[estado-cuenta] Respuesta no-JSON (HTTP ' + r.status + '):', texto.slice(0, 300));
-      throw new Error('El servidor respondió con un error (HTTP ' + r.status + '). Intente de nuevo.');
-    }
+    // CA.api ya maneja la respuesta no-JSON con un error claro
+    return CA.api(payload, { method: 'POST' });
   }
 
   function $(s) { return document.querySelector(s); }
