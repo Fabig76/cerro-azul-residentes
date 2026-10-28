@@ -38,6 +38,17 @@ const COL_FECHA_EDIT = 2;
 const COL_APTO = 3;
 // Col 142 (última) = Hash Dedupe
 
+// AUD-T7: cabeceras centinela. Si la hoja cambia, se aborta antes de escribir.
+const CABECERAS_CENTINELA = { 0: 'N° Formulario', 3: 'N° Apto', 6: 'CC Propietario', 29: 'R1 Nombre', 110: 'Masc1 Tipo', 142: 'Hash Dedupe' };
+function verificarEsquema_(sheet) {
+  const hdr = sheet.getRange(HEADER_ROW, 1, 1, NUM_COLS).getValues()[0];
+  for (const idx in CABECERAS_CENTINELA) {
+    if (String(hdr[idx]).trim() !== CABECERAS_CENTINELA[idx]) {
+      throw new Error('Esquema de Registros alterado en la columna ' + (Number(idx) + 1) + '. Escritura cancelada. Avise al administrador.');
+    }
+  }
+}
+
 // ---------------------------------------------------------------------
 // BUGFIX-019: Autenticación por token de sesión para endpoints admin/vigilante.
 // El login devuelve un token que se guarda en CacheService (TTL). Cada consulta
@@ -310,9 +321,9 @@ function doPost(e) {
     if (action === 'adminLogin')     return jsonOut(adminLogin(payload.password));
     if (action === 'vigilanteLogin') return jsonOut(vigilanteLogin(payload.password));
     if (action === 'logout')         return jsonOut(logout_(payload.rol, payload.token));
-    // Comportamiento por defecto (compatibilidad): submit del formulario principal
-    const result = submitRecord(payload);
-    return jsonOut(result);
+    // AUD-T7: solo el formulario principal entra sin action (o con action='submit')
+    if (action === '' || action === 'submit') return jsonOut(submitRecord(payload));
+    return jsonOut({ ok: false, error: 'Acción no reconocida: ' + action });
   } catch (err) {
     return jsonOut({ ok: false, error: String(err && err.message || err) });
   }
@@ -377,6 +388,7 @@ function submitRecord(data, opts) {
     return { ok: false, error: 'El sistema está ocupado. Espere unos segundos y vuelva a enviar.' };
   }
   try {
+    verificarEsquema_(sheet); // AUD-T7: aborta si la hoja cambió de esquema
     if (editMode) {
       // Modo edición: verificar que numForm+apto coincidan con una fila existente
       const found = findRowByNumFormAndApto(submittedNumForm, apto);
@@ -887,7 +899,7 @@ function jsonOut(obj) {
 // =====================================================================
 
 const MUDANZAS_SHEET_NAME     = 'Mudanzas';
-const MUDANZAS_NUM_COLS       = 23  // V37: 19 + 3 check + 1 descripcion;
+const MUDANZAS_NUM_COLS       = 23;  // V37: 19 + 3 check + 1 descripcion
 const MUDANZAS_HEADER_ROW     = 1;
 const MUDANZAS_TORRES         = ['1', '2', '3'];
 const MUDANZAS_ASCENSOR       = 'A';
@@ -943,7 +955,10 @@ const COL_MUD_OBS      = 15; // P
 const COL_MUD_FECHARES = 16; // Q
 const COL_MUD_ESTADO   = 17; // R
 const COL_MUD_HASH     = 18;
-const COL_MUD_DESCRIPCION = 22;  // V37: descripcion de elementos // S
+const COL_MUD_REALIZADA   = 19; // T
+const COL_MUD_FECHA_CHECK = 20; // U
+const COL_MUD_VIGILANTE   = 21; // V
+const COL_MUD_DESCRIPCION = 22;  // V37: descripcion de elementos // W
 
 // ---------------------------------------------------------------------
 // Helpers
@@ -1829,6 +1844,7 @@ function adminGuardar(data) {
     return { ok: false, error: 'El sistema está ocupado. Espere unos segundos y vuelva a intentar.' };
   }
   try {
+    verificarEsquema_(sheet); // AUD-T7: aborta si la hoja cambió de esquema
     const currentRow = sheet.getRange(targetRow, 1, 1, NUM_COLS).getValues()[0];
     const newRow = currentRow.slice();
     // AUD-T6: bloqueo optimista. El cliente manda la fechaEdicion que leyó.
@@ -2197,7 +2213,7 @@ function vigilanteVerMudanzas(fecha) {
   if (last < 2) return { ok: true, reservas: [] };
 
   // Leer todas las columnas (necesitamos las nuevas T/U/V tambien)
-  const data = sheet.getRange(2, 1, last - 1, 22).getValues();
+  const data = sheet.getRange(2, 1, last - 1, MUDANZAS_NUM_COLS).getValues();
 
   // Calcular fecha limite (30 dias atras)
   const hoy = new Date();
@@ -2218,9 +2234,9 @@ function vigilanteVerMudanzas(fecha) {
     const horaFin = normalizarHora(row[8]);      // V37: fix R-23
     const nombre = String(row[9] || '');
     const estado = String(row[17] || '');
-    const realizada = String(row[19] || ''); // T
-    const fechaCheck = String(row[20] || ''); // U
-    const vigilante = String(row[21] || ''); // V
+    const realizada = String(row[COL_MUD_REALIZADA] || ''); // T
+    const fechaCheck = String(row[COL_MUD_FECHA_CHECK] || ''); // U
+    const vigilante = String(row[COL_MUD_VIGILANTE] || ''); // V
     const descripcionElementos = String(row[COL_MUD_DESCRIPCION] || '');  // V37 W
 
     if (!idReserva) continue;
@@ -2314,9 +2330,9 @@ function vigilanteCheckMudanza(data) {
     return { ok: false, error: 'Otro vigilante esta marcando. Intenta en unos segundos.' };
   }
   try {
-    sheet.getRange(targetRow, 20).setValue(status === 'realizada' ? 'Sí' : 'No'); // T
-    sheet.getRange(targetRow, 21).setValue(Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss')); // U
-    sheet.getRange(targetRow, 22).setValue(vigilante); // V
+    sheet.getRange(targetRow, COL_MUD_REALIZADA + 1).setValue(status === 'realizada' ? 'Sí' : 'No'); // T
+    sheet.getRange(targetRow, COL_MUD_FECHA_CHECK + 1).setValue(Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss')); // U
+    sheet.getRange(targetRow, COL_MUD_VIGILANTE + 1).setValue(vigilante); // V
     Logger.log('vigilanteCheck: ' + idReserva + ' = ' + status + ' por ' + vigilante);
     return { ok: true, message: 'Check registrado correctamente', rowNumber: targetRow };
   } finally {
@@ -3110,6 +3126,8 @@ function clearResidente(data) {
 
     const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
     const rowNumber = row.rowNumber;
+
+    verificarEsquema_(sheet); // AUD-T7: aborta si la hoja cambió de esquema
 
     // Limpiar v[29..92] (índices 0-based) = columnas AD..CO (1-based 30..93)
     // AD (30) a CO (93) = 64 columnas: residentes(20) + menores(12) + vehiculos(12) + motos(12) + bicis(8)
