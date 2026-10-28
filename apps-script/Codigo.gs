@@ -61,11 +61,29 @@ function selfTest_() {
   try { verificarEsquema_(ss.getSheetByName(SHEET_NAME)); } catch (e) { fallos.push(String(e.message)); }
   if (Session.getScriptTimeZone() !== 'America/Bogota') fallos.push('Zona horaria del proyecto: ' + Session.getScriptTimeZone());
   if (MailApp.getRemainingDailyQuota() < 50) fallos.push('Cuota de correo restante: ' + MailApp.getRemainingDailyQuota());
-  ['admin_password', 'vigilante_password', 'cartera_sheet_id', 'facturas_folder_id', 'plantilla_pys_id', 'link_pago'].forEach(function (k) { if (!getConfigValue(k)) fallos.push('Config sin ' + k); });
+  ['admin_password', 'vigilante_password', 'cartera_sheet_id', 'facturas_folder_id', 'plantilla_pys_id', 'link_pago', 'respaldos_folder_id'].forEach(function (k) { if (!getConfigValue(k)) fallos.push('Config sin ' + k); });
   if (!PropertiesService.getScriptProperties().getProperty('MINIMAX_API_KEY')) fallos.push('Falta MINIMAX_API_KEY');
   try { DriveApp.getFolderById(COMPROBANTES_FOLDER_ID); } catch (e) { fallos.push('Carpeta de comprobantes inaccesible'); }
   if (fallos.length) throw new Error('selfTest: ' + fallos.join(' | '));
   Logger.log('selfTest OK ' + VERSION_BACKEND);
+}
+
+// AUD-T19: copia diaria de la hoja a la carpeta de respaldos; conserva 30.
+function respaldoDiario_() {
+  const carpetaId = getConfigValue('respaldos_folder_id');
+  if (!carpetaId) { Logger.log('respaldo: falta respaldos_folder_id en Config'); return; }
+  const carpeta = DriveApp.getFolderById(carpetaId);
+  const nombre = 'Respaldo Cerro Azul ' + Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HHmm');
+  DriveApp.getFileById(SHEET_ID).makeCopy(nombre, carpeta);
+  const copias = [];
+  const it = carpeta.getFiles();
+  while (it.hasNext()) { const f = it.next(); if (f.getName().indexOf('Respaldo Cerro Azul ') === 0) copias.push(f); }
+  copias.sort(function (a, b) { return a.getDateCreated() - b.getDateCreated(); });
+  while (copias.length > 30) copias.shift().setTrashed(true);
+}
+function configurarRespaldoDiario_() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'respaldoDiario_') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('respaldoDiario_').timeBased().everyDays(1).atHour(3).create();
 }
 
 // ---------------------------------------------------------------------
