@@ -48,7 +48,8 @@ const A = {
   showAlert(msg, kind) {
     const el = document.getElementById('alert');
     el.className = 'alert alert-' + (kind || 'info');
-    el.innerHTML = msg;
+    // AUD-T16: textContent salvo HTML del propio código (evita XSS con datos del servidor)
+    if (String(msg).trim().indexOf('<') === 0) el.innerHTML = msg; else el.textContent = msg;
     el.classList.remove('hidden');
     if (kind === 'ok') setTimeout(() => el.classList.add('hidden'), 5000);
   },

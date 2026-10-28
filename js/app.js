@@ -634,7 +634,8 @@ function showAlert(id, msg, type) {
   const el = $('#' + id);
   if (!el) return;
   el.className = 'alert alert-' + (type || 'info');
-  el.innerHTML = msg;
+  // AUD-T16: textContent salvo HTML del propio código
+  if (String(msg).trim().indexOf('<') === 0) el.innerHTML = msg; else el.textContent = msg;
   el.classList.remove('hidden');
 }
 function hideAlert(id) {
@@ -652,7 +653,8 @@ function setLookupMsg(targetId, msg, kind) {
   if (!el) return;
   if (!msg) { el.classList.add('hidden'); el.innerHTML = ''; return; }
   el.className = 'lookup-msg ' + (kind || 'info');
-  el.innerHTML = msg;
+  // AUD-T16: textContent salvo HTML del propio código
+  if (String(msg).trim().indexOf('<') === 0) el.innerHTML = msg; else el.textContent = msg;
   el.classList.remove('hidden');
 }
 
