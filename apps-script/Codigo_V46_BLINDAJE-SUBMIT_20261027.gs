@@ -92,6 +92,23 @@ function limpiarTokensExpirados(rol) {
   });
 }
 
+// AUD-T2: contador por clave en CacheService. Devuelve true si se superó el máximo.
+function rateLimit_(clave, max, ttlSeg) {
+  const cache = CacheService.getScriptCache();
+  const k = 'rl_' + clave;
+  const n = parseInt(cache.get(k) || '0', 10) + 1;
+  cache.put(k, String(n), ttlSeg);
+  return n > max;
+}
+
+// AUD-T2: revoca el token de la sesión actual
+function logout_(rol, token) {
+  rol = String(rol || ''); token = String(token || '');
+  if (rol !== 'admin' && rol !== 'vigilante') return { ok: false, error: 'Rol inválido' };
+  PropertiesService.getScriptProperties().deleteProperty('tok_' + rol + '_' + token);
+  return { ok: true };
+}
+
 // ---------------------------------------------------------------------
 // doGet: lookup / nextId / lookupMatApto / lookupMatParq
 // ---------------------------------------------------------------------
@@ -285,6 +302,10 @@ function doPost(e) {
     if (action === 'configurarTriggerExpiracion') return jsonOut(configurarTriggerExpiracion());
     // --- ASISTENTE IA (MiniMax-M3) para los 7 portales (feature 04-Oct-2026) ---
     if (action === 'chatAsistente') return jsonOut(chatAsistente(payload));
+    // AUD-T2: login y logout por POST (la contraseña nunca viaja en la URL)
+    if (action === 'adminLogin')     return jsonOut(adminLogin(payload.password));
+    if (action === 'vigilanteLogin') return jsonOut(vigilanteLogin(payload.password));
+    if (action === 'logout')         return jsonOut(logout_(payload.rol, payload.token));
     // Comportamiento por defecto (compatibilidad): submit del formulario principal
     const result = submitRecord(payload);
     return jsonOut(result);
@@ -1688,6 +1709,10 @@ function adminLeerContrasena() {
 }
 
 function adminLogin(password) {
+  // AUD-T2: 5 intentos fallidos = 15 minutos de espera
+  if (rateLimit_('login_admin', 5, 900)) {
+    return { ok: false, error: 'Demasiados intentos. Espere 15 minutos.' };
+  }
   password = String(password || '');
   const stored = adminLeerContrasena();
   if (!stored) {
@@ -1696,6 +1721,7 @@ function adminLogin(password) {
   if (password === stored) {
     const token = generarToken();
     guardarToken('admin', token);
+    CacheService.getScriptCache().remove('rl_login_admin'); // AUD-T2: reinicia el contador
     return { ok: true, message: 'Login correcto', token: token };
   }
   return { ok: false, error: 'Contrasena incorrecta' };
@@ -1994,6 +2020,10 @@ function vigilanteLeerContrasena() {
 }
 
 function vigilanteLogin(password) {
+  // AUD-T2: 5 intentos fallidos = 15 minutos de espera
+  if (rateLimit_('login_vigilante', 5, 900)) {
+    return { ok: false, error: 'Demasiados intentos. Espere 15 minutos.' };
+  }
   password = String(password || '');
   const stored = vigilanteLeerContrasena();
   if (!stored) {
@@ -2002,6 +2032,7 @@ function vigilanteLogin(password) {
   if (password === stored) {
     const token = generarToken();
     guardarToken('vigilante', token);
+    CacheService.getScriptCache().remove('rl_login_vigilante'); // AUD-T2: reinicia el contador
     return { ok: true, message: 'Login correcto', token: token };
   }
   return { ok: false, error: 'Contrasena incorrecta' };
@@ -5118,8 +5149,9 @@ function ecTolerancia() {
   return isNaN(t) ? 1000 : t;
 }
 
-function ecAdminOk(password) {
-  return adminLogin(password).ok === true;   // reutiliza la función existente
+// AUD-T2: el cargador de cartera usa el token de sesión del admin
+function ecAdminOk(payload) {
+  return validarToken('admin', payload && payload.token);
 }
 
 // ---------------------------------------------------------------------
@@ -5344,7 +5376,7 @@ function ecPazYSalvo(data) {
 // ENDPOINTS DE CARGA MENSUAL (POST, requieren password de admin)
 // ---------------------------------------------------------------------
 function ecIniciarCarga(data) {
-  if (!ecAdminOk(data.password)) return { ok: false, error: 'Contraseña de administrador incorrecta.' };
+  if (!ecAdminOk(data)) return { ok: false, error: 'Sesión de administrador no válida o expirada.' };
   const periodo = String(data.periodo || '');
   const pestana = String(data.nombrePestana || '');
   const fechaCorte = String(data.fechaCorte || '');
@@ -5432,7 +5464,7 @@ function ecIniciarCarga(data) {
 }
 
 function ecSubirFacturas(data) {
-  if (!ecAdminOk(data.password)) return { ok: false, error: 'Contraseña de administrador incorrecta.' };
+  if (!ecAdminOk(data)) return { ok: false, error: 'Sesión de administrador no válida o expirada.' };
   const carga = ecLeerControl().find(c => c.idCarga === String(data.idCarga || ''));
   if (!carga) return { ok: false, error: 'Carga no encontrada.' };
   if (carga.estado !== 'CARGANDO') return { ok: false, error: 'La carga ya no está en estado CARGANDO (' + carga.estado + ').' };
@@ -5457,7 +5489,7 @@ function ecSubirFacturas(data) {
 }
 
 function ecFinalizarCarga(data) {
-  if (!ecAdminOk(data.password)) return { ok: false, error: 'Contraseña de administrador incorrecta.' };
+  if (!ecAdminOk(data)) return { ok: false, error: 'Sesión de administrador no válida o expirada.' };
   const control = ecLeerControl();
   const carga = control.find(c => c.idCarga === String(data.idCarga || ''));
   if (!carga) return { ok: false, error: 'Carga no encontrada.' };
