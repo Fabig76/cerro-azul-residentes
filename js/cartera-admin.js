@@ -267,7 +267,7 @@
 
   // escapeHtml: misma firma que js/admin.js (usada para inyectar HTML del resumen)
   function escapeHtml(s) {
-    return String(s == null ? '' : s)
+    return String(s === null || s === undefined ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }

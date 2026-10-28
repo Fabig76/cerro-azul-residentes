@@ -9,3 +9,6 @@
 
 # Credenciales de clasp (Apps Script) — nunca subir
 .clasprc.json
+
+# Dependencias de Node (T18) — nunca subir
+node_modules/

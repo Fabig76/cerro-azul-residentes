@@ -36,7 +36,7 @@ function val(field) {
 }
 function setVal(field, v) {
   const el = $(field);
-  if (el) el.value = v == null ? '' : v;
+  if (el) el.value = v === null || v === undefined ? '' : v;
 }
 function checked(name) {
   return $(`[name="${name}"]`) ? $(`[name="${name}"]`).checked : false;
@@ -1247,7 +1247,7 @@ const M = {
     container.innerHTML = '<p style="color:var(--gris-med);">Cargando tus reservas...</p>';
     this.showVista('mis');
 
-    const safe = (s) => String(s == null ? '' : s)
+    const safe = (s) => String(s === null || s === undefined ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
     try {
@@ -1317,7 +1317,7 @@ const M = {
     // V41 BUGFIX-026: reusa el endpoint `cancelarMudanza` (POST), que ya valida
     // numForm+apto+ccProp y la regla 24h. Tras éxito, refresca la lista.
     hideAlert('alert-mud-form');
-    const safe = (s) => String(s == null ? '' : s)
+    const safe = (s) => String(s === null || s === undefined ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const card = $$('#mudMisReservas .reserva-card').find((el) => {
       const code = el.querySelector('code');

@@ -37,7 +37,7 @@ function extraerDatosPagina(items) {
 const MESES_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 const COLS_REQUERIDAS = ['numero','nombre','anticip','valor admon','total cartera','meses prom'];
 
-function normAptoJs(s) { return String(s == null ? '' : s).replace(/[.,\s]/g, '').trim(); }
+function normAptoJs(s) { return String(s === null || s === undefined ? '' : s).replace(/[.,\s]/g, '').trim(); }
 
 // filas = XLSX.utils.sheet_to_json(ws, {header:1, defval:''})
 function parsearCartera(filas) {
@@ -148,3 +148,6 @@ async function subirFacturas(arrayBuffer, grupos, idCarga, token, postFn, onProg
     if (onProgreso) onProgreso(Math.min(i + LOTE_FACTURAS, grupos.length), grupos.length);
   }
 }
+
+// AUD-T18: exportable para las pruebas unitarias (no afecta el runtime del navegador)
+if (typeof module !== "undefined") module.exports = { extraerDatosPagina, agruparFacturas };

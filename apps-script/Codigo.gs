@@ -53,6 +53,21 @@ function verificarEsquema_(sheet) {
 const VERSION_BACKEND = '2026-10-28-aud1';
 function ping_() { return { ok: true, version: VERSION_BACKEND, tz: Session.getScriptTimeZone(), hora: Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss') }; }
 
+// AUD-T18: ejecutar desde el editor antes de cada despliegue. Lanza si algo falta.
+function selfTest_() {
+  const fallos = [];
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  ['Registros', 'Mudanzas', 'Config', 'salon social'].forEach(function (n) { if (!ss.getSheetByName(n)) fallos.push('Falta pestaña ' + n); });
+  try { verificarEsquema_(ss.getSheetByName(SHEET_NAME)); } catch (e) { fallos.push(String(e.message)); }
+  if (Session.getScriptTimeZone() !== 'America/Bogota') fallos.push('Zona horaria del proyecto: ' + Session.getScriptTimeZone());
+  if (MailApp.getRemainingDailyQuota() < 50) fallos.push('Cuota de correo restante: ' + MailApp.getRemainingDailyQuota());
+  ['admin_password', 'vigilante_password', 'cartera_sheet_id', 'facturas_folder_id', 'plantilla_pys_id', 'link_pago'].forEach(function (k) { if (!getConfigValue(k)) fallos.push('Config sin ' + k); });
+  if (!PropertiesService.getScriptProperties().getProperty('MINIMAX_API_KEY')) fallos.push('Falta MINIMAX_API_KEY');
+  try { DriveApp.getFolderById(COMPROBANTES_FOLDER_ID); } catch (e) { fallos.push('Carpeta de comprobantes inaccesible'); }
+  if (fallos.length) throw new Error('selfTest: ' + fallos.join(' | '));
+  Logger.log('selfTest OK ' + VERSION_BACKEND);
+}
+
 // ---------------------------------------------------------------------
 // BUGFIX-019: Autenticación por token de sesión para endpoints admin/vigilante.
 // El login devuelve un token que se guarda en CacheService (TTL). Cada consulta
