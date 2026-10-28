@@ -28,6 +28,7 @@ Entorno de pruebas:
 | T13 | login por POST y sesión expirada (frontend) | `3655c1d` | ✅ grep 'password=' en URLs=0; prompt()=0; sintaxis OK | admin/vigilante/cartera login por POST; logout revoca token; loginAt 11h; _password→_token en cartera; backend adminCancelarReservaSalon sin contraseña adicional. |
 | T14 | fecha local con CA.hoyLocal() | `006f1b4` | ✅ grep toISOString().slice(0,10)=0; CA.hoyLocal()=7; sintaxis OK | 7 sustituciones (app.js x3, vigilantes.js x4). Corrige desfase de fecha por UTC tras las 19:00. |
 | T15 | cuatro bugs de lógica | `879bc64` | ✅ sintaxis OK en 4 archivos | 15a recarga desde servidor; 15b preservarValores (7 forms); 15c _reqSeq + fechaEdicionVista; 15d typo matrícula + listener único. Pruebas visuales (a-e) requieren desplegar frontend. |
+| T16 | migrar llamadas a CA.api y retirar parche de fetch | `2ab4bb6`..`27e1b25` (T16a-j) | ✅ grep fetch( en js/ solo en common.js; node --check OK en los 8 archivos | 8 archivos migrados a CA.api; parche window.fetch eliminado; token explícito en apiGet/apiPost; showAlert/setLookupMsg con textContent. |
 
 ## Observaciones fuera de alcance (anotadas, no ejecutadas)
 
