@@ -26,6 +26,7 @@ Entorno de pruebas:
 | T9 | registrarResidente preserva dispositivos del propietario | `bef8559` | ✅ harness: _preservarDispositivos conserva Disp1.codigo='LLV-001' ignorando lo que envíe el residente | Cambio único: dispositivosFinal = _preservarDispositivos(row.values). Sin validaciones de identidad (decisión del admin). |
 | T10 | idempotencia de creaciones y borrado lógico | `631e302` | ✅ 2 POST submitRecord con mismo clientRequestId → 1 fila (CA-0292), respuestas idénticas | idempotente_ en 4 rutas; adminBorrarReservaMudanza borrado lógico 'Borrada'; cancelarMudanza/vigilanteCheckMudanza búsqueda dentro del lock; clientRequestId en app/salon/residente.js. (b)/(c) end-to-end requieren reserva válida. |
 | T13 | login por POST y sesión expirada (frontend) | `3655c1d` | ✅ grep 'password=' en URLs=0; prompt()=0; sintaxis OK | admin/vigilante/cartera login por POST; logout revoca token; loginAt 11h; _password→_token en cartera; backend adminCancelarReservaSalon sin contraseña adicional. |
+| T14 | fecha local con CA.hoyLocal() | `006f1b4` | ✅ grep toISOString().slice(0,10)=0; CA.hoyLocal()=7; sintaxis OK | 7 sustituciones (app.js x3, vigilantes.js x4). Corrige desfase de fecha por UTC tras las 19:00. |
 
 ## Observaciones fuera de alcance (anotadas, no ejecutadas)
 
