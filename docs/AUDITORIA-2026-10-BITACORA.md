@@ -18,6 +18,7 @@ Entorno de pruebas:
 | T12 | escape HTML en vigilantes y admin (XSS) | `1406051` | ✅ sintaxis OK; escapeHtml neutraliza `<img onerror>`; sin onclick inline restantes | Adaptación: `CA` no existía aún, se corrigió el cuerpo de escapeHtml directo; migración a CA queda en T16. |
 | T11 | js/config.js y js/common.js | `ac37fce` | ✅ grep AKfycb solo en config.js; CA.escapeHtml neutraliza; CA.hoyLocal correcto; sintaxis OK | Configura la URL en una sola fuente y crea el objeto CA (requisito de T12/T16). |
 | T3 | neutralizar fórmulas y fijar formato de texto | `4799b02` | ✅ =HYPERLINK → '=HYPERLINK (texto literal); +57 → '+57; cc 0012345678 preserva cero inicial tras aplicar formato @ | safeCell_ en buildRowFromPayload/adminGuardar/mudanzas/salón; setupFormatoTexto_() manual. |
+| T2 | login por POST, cierre de sesión y límite de intentos | `8d2ad0d` | ✅ 6 intentos admin: 5 'Contrasena incorrecta' → 6ª 'Demasiados intentos'; vigilanteLogin POST ok + token; logout ok; token revocado → 'Sesión no válida' | rateLimit_ con CacheService; ecAdminOk pasa a token; rutas GET de login se conservan hasta T13. |
 
 ## Observaciones fuera de alcance (anotadas, no ejecutadas)
 
