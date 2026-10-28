@@ -25,6 +25,7 @@ Entorno de pruebas:
 | T8 | correo que nunca rompe la operación | `1b689f0` | ✅ harness: GmailApp lanza → {enviado:false}; cuota baja → {enviado:false}; OK → {enviado:true} | enviarEmailSeguro_ en las 5 llamadas de Salón; 4 respuestas añaden correoEnviado. La prueba end-to-end (alias noexiste) requiere reserva válida de salón en la copia. |
 | T9 | registrarResidente preserva dispositivos del propietario | `bef8559` | ✅ harness: _preservarDispositivos conserva Disp1.codigo='LLV-001' ignorando lo que envíe el residente | Cambio único: dispositivosFinal = _preservarDispositivos(row.values). Sin validaciones de identidad (decisión del admin). |
 | T10 | idempotencia de creaciones y borrado lógico | `631e302` | ✅ 2 POST submitRecord con mismo clientRequestId → 1 fila (CA-0292), respuestas idénticas | idempotente_ en 4 rutas; adminBorrarReservaMudanza borrado lógico 'Borrada'; cancelarMudanza/vigilanteCheckMudanza búsqueda dentro del lock; clientRequestId en app/salon/residente.js. (b)/(c) end-to-end requieren reserva válida. |
+| T13 | login por POST y sesión expirada (frontend) | `3655c1d` | ✅ grep 'password=' en URLs=0; prompt()=0; sintaxis OK | admin/vigilante/cartera login por POST; logout revoca token; loginAt 11h; _password→_token en cartera; backend adminCancelarReservaSalon sin contraseña adicional. |
 
 ## Observaciones fuera de alcance (anotadas, no ejecutadas)
 
