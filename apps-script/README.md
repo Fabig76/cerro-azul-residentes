@@ -1,463 +1,77 @@
-# Cerro Azul — Apps Script (Backend del Formulario)
-
-Este es el código del backend que conecta el formulario público
-(`https://fabig76.github.io/cerro-azul-residentes/`) con el Google Sheet
-(`https://docs.google.com/spreadsheets/d/16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc`).
-
-## ✅ V47 — BUGFIX-028 + H-17 + H-13/H-14 (25-Oct-2026) — DESPLEGADA Y VERIFICADA
-
-**Archivo:** `Codigo_V47_BUGFIX-028_FIXEMAIL_20261025.gs`
-**Drive:** https://drive.google.com/file/d/16jVhaU-wGF2NaS3_ZxfcIH_QaYuEBB7P/view
-**Drive ID:** `16jVhaU-wGF2NaS3_ZxfcIH_QaYuEBB7P`
-**md5:** `9855d2dc09967c26a3ee8ef79bfbea55` (verificado en Drive)
-**Tamaño:** 248.532 bytes / 5.422 líneas
-**Apps Script "Versión 45"** (deploy library `/45`)
-
-**Qué incluye (acumulado desde V42):**
-
-1. **BUGFIX-028 — envío del código CA-XXXX al correo del propietario.**
-   Solo al **crear** un registro con `diligencia = "Propietario"`.
-   Regla de 3 condiciones: `!editMode` AND `__origen === 'formulario-publico'`
-   AND `diligencia === 'Propietario'`. Envío **después** de `setValues()`.
-2. **H-17 — off-by-one en `clearResidente`** (corregido: `getRange(...,111,...)`).
-3. **H-13/H-14 — portal del residente** (repara "Editar mis datos" + evita
-   borrado de datos del propietario).
-
-**⚡ Sobre el envío de correo (resuelto 25-Oct-2026):** usa `GmailApp` con
-remitente `urb.cerroazul@gmail.com` (no `admin@urbcerroazul.com`, que no
-entregaba por ser dominio nuevo sin DKIM/DMARC). **Requiere** que en
-`admin@urbcerroazul.com` esté configurado el alias "Enviar como"
-`urb.cerroazul@gmail.com` y re-autorizado el scope de Gmail.
-
-**Verificado en producción (25-Oct-2026):** correo entregado a propietario
-y admin en los 3 flujos (registro CA-XXXX, salón social RS-0023, mudanza
-MD-0039).
-
-**Frontend (GitHub Pages, ya desplegado):** `js/app.js` (`__origen` +
-`mostrarAvisoCorreo()`), `index.html` (`#success-correo-aviso` +
-cache-buster `?v=20261026`), `assets/styles.css` (`.num-form-inline`).
-
-**Lo que NO se tocó:** `NUM_COLS` (143), `MUDANZAS_NUM_COLS` (23), el
-routing de `doPost` (44 rutas), `MANUAL_CERRO`, los módulos de mudanzas /
-salón / estado de cuenta / vigilantes.
-
-### Deploy manual (referencia para futuras versiones)
-
-1. Descargar el `.gs` del link de arriba.
-2. Abrir https://script.google.com/d/17nuyzVYK2yN_TABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy/edit
-   (sesión `admin@urbcerroazul.com`).
-3. `Código.gs` → Ctrl+A → borrar → pegar → Ctrl+S.
-4. **Implementar → Nueva implementación → Aplicación web → Yo / Cualquier persona.**
-5. ⚠️ Re-autorizar el scope de Gmail (`mail.google.com` / `gmail.send`).
-6. Verificar que la URL `/exec` no cambió.
-
-## Historial de versiones del backend (referencia)
-
-> La versión vigente desplegada es **V47** (ver cabecera arriba).
-> El historial completo en `docs/CHANGELOG-BUGFIXES.md`.
-
-**Backend Apps Script:** V41 (230.026 bytes, 5.026 líneas) = V40 (BUGFIX-025 límite 1 mudanza/torre/día) + BUGFIX-026 (listar y cancelar reservas propias del módulo mudanzas).
-
-> BUGFIX-026 (20-Oct-2026): nuevo endpoint `listarReservasMudanzasPorNumForm` +
-> frontend `M.showMisReservas()` real (ya no placeholder) + `M.cancelarMiReserva()`.
-> Cierra la asimetría con Salón Social (BUGFIX-015 V22). Ver
-> `docs/CHANGELOG-BUGFIXES.md` BUGFIX-026 y `docs/sesion-2026-10-20.md`.
-
-> Nota: V39 (primer intento) tuvo un bug de declaración duplicada de
-> `MUDANZAS_EMAIL_ADMIN`. Se re-generó como V40 sin ese bug.
-> Ver CHANGELOG-BUGFIXES.md BUGFIX-025.
-
-### V42 — BUGFIX-027 (25-Oct-2026) — ✅ desplegada (superada por V47)
-
-**Archivo:** `Codigo_V42_H13_H14_RESIDENTE_20261025.gs`
-**Drive:** https://drive.google.com/file/d/19t7jhMbpocvopP57fIfJCKoNXdqNSBHd/view
-**Drive ID:** `19t7jhMbpocvopP57fIfJCKoNXdqNSBHd`
-**md5:** `0b269bbc4cbf7fe44d3e2eeb2fbf5262` (verificado en Drive)
-**Tamaño:** 242.137 bytes / 5.286 líneas
-**Base:** V41 descargada de Drive (md5 `a708d11897ff137c2a5efdcf090a8cef`)
-
-**Qué arregla:**
-
-1. **H-13:** `actualizarResidente` no mandaba `editMode: true` → el flujo
-   "Editar mis datos" del portal del residente **siempre fallaba** con
-   "Ya existe un registro".
-2. **H-14 + 3 causas raíz más:** el payload de `registrarResidente` y
-   `actualizarResidente` estaba desincronizado de `buildRowFromPayload`
-   y **borraba datos del propietario** (autorizaciones legales,
-   emergencias, mascotas, vehículos, llaveros/tags).
-
-**Verificación (banco de pruebas contra las 274 filas reales del Sheet):**
-
-| Métrica | V41 | V42 |
-|---|---:|---:|
-| `actualizarResidente` — filas con pérdida | 200/274 | **0/274** |
-| `registrarResidente` — filas con pérdida | 36/74 | **0/74** |
-
-**Lo que NO se tocó:** `submitRecord`, `buildRowFromPayload`, `doPost`,
-`MANUAL_CERRO`, `NUM_COLS` (143), `MUDANZAS_NUM_COLS` (23), los 9
-`MailApp.sendEmail` existentes, y los módulos de mudanzas / salón /
-estado de cuenta.
-
-Ver `docs/sesion-2026-10-25.md` y `docs/CHANGELOG-BUGFIXES.md`
-(BUGFIX-027).
-
-### Deploy manual de V42 (5 pasos)
-
-1. Descargar `Codigo_V42_H13_H14_RESIDENTE_20261025.gs` del link de arriba.
-2. Abrir https://script.google.com/d/17nuyzVYK2y_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy/edit
-   (sesión `urb.cerroazul@gmail.com`).
-3. Panel izquierdo → `Código.gs` → Ctrl+A → **borrar** → Ctrl+V → Ctrl+S.
-4. **Implementar → Nueva implementación → Aplicación web** →
-   Ejecutar como "Yo" → Acceso "Cualquier persona".
-5. Verificar que la URL `/exec` **no cambió**.
-
-**Frontend GitHub Pages:** V28 (lógica) — módulo mudanzas actualizado
-20-Oct-2026 con BUGFIX-026 (cache-buster `js/app.js?v=20261023`).
-
-**URL del Web App (preservada entre versiones):**
-`https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec`
-
-**MD5 del V40 listo para deploy:** `57f6d8c069c6423c08c44e79c831f774`
-**Drive:** `Codigo_V40_TORREDIA-20261009.gs` (ID `191y-m0PScv9rsEoWz3Ek0Jo75_RXHZSr`)
-**Link:** https://drive.google.com/file/d/191y-m0PScv9rsEoWz3Ek0Jo75_RXHZSr/view
-
-Historial de deploys recientes (sesión 09-Oct-2026 — BUGFIX-024):
-
-| Versión | Hora | MD5 | Descripción |
-|---------|------|-----|-------------|
-| **V47** | 25-Oct-2026 (DESPLEGADO ✓) | `9855d2dc09967c26a3ee8ef79bfbea55` | **BUGFIX-028: envío del código CA-XXXX al correo del propietario (GmailApp + from: urb.cerroazul@gmail.com) + H-17 off-by-one clearResidente.** Verificado en producción en los 3 flujos (registro, salón social, mudanza). Archivo `Codigo_V47_BUGFIX-028_FIXEMAIL_20261025.gs` (248.532 bytes, 5.422 líneas), Drive ID `16jVhaU-wGF2NaS3_ZxfcIH_QaYuEBB7P`. |
-| **V42** | 25-Oct-2026 (DESPLEGADO ✓) | `0b269bbc4cbf7fe44d3e2eeb2fbf5262` | **BUGFIX-027: repara el portal del residente (H-13: "Editar mis datos" roto) + elimina la destrucción de datos del propietario (H-14 y 3 causas raíz más). Verificado con banco de pruebas: 0 pérdidas en 274 filas reales.** |
-| **V41** | 20-Oct-2026 (DESPLEGADO ✓) | `a708d11897ff137c2a5efdcf090a8cef` | **BUGFIX-026: listarReservasMudanzasPorNumForm + frontend cards + botón Cancelar en `js/app.js:M.showMisReservas()`. Cierra la asimetría con Salón Social (BUGFIX-015 V22)**. Archivo `Codigo_V41_BUGFIX-026_MISRESERVASMUDANZAS_20261020.gs` (230.026 bytes, 5.026 líneas) en Drive ID `1Ft3WHmWPdizK_hptkBKI12CDz45NMRUJ`. |
-| V38 | 09-Oct-2026 20:31 | `f2f0cad52a343bb65c43d1853e473c66` | Endpoint admin `adminBorrarReservaMudanza` (borrar físico de reservas de prueba) |
-| V37 | 09-Oct-2026 20:12 | `0747a256a29b62dfd66b071ecd14c3a2` | MUDANZAS_ELEMENTOS: 4 tipos (Salida/Ingreso + Salida/IngresoElementos) + descripción obligatoria |
-| V36_ENCARGADO | 09-Oct-2026 04:05 | `0f872b7218b96295ed79986fd6ab9320` | Valor "Encargado" como opción válida de diligencia (mismos privilegios que Propietario) |
-| V36 | 08-Oct-2026 | `e207271873ff91365dd1559fb66ad150` | **BUGFIX-023: agregar MATRICULAS_TORRE_2 al lookup de matrículas (Torre 2 — 185 aptos)** |
-| **V35** | 05-Oct-2026 (Deploy "33") | `3af70d3f8298f900c4407470131cbb45` | BUGFIX-022: restaurar módulo de Estado de Cuenta (478 líneas) |
-| **V34** | 05-Oct-2026 (Deploy "32") | `7e4f7a0a` (estimado) | BUGFIX-021: adminVerComprobanteSalon devuelve tieneComprobante: true |
-| **V33** | 05-Oct-2026 (Deploy "31") | — | BUGFIX-020: cédula del propietario en "Editar mi registro" |
-| **V32** | 05-Oct-2026 (Deploy "30") | — | BUGFIX-019 v2: token con PropertiesService |
-| **V31** | 05-Oct-2026 | — | BUGFIX-019: token de sesión admin/vigilante (CacheService, luego migrado a PropertiesService) |
-| **V30** | 05-Oct-2026 | — | BUGFIX-018: getEstadoResidente sin numForm/nombres/propietario (fuga de datos) |
-| **V29** | 05-Oct-2026 | — | BUGFIX-017: quitar CA-XXXX del error de duplicado (fuga de credencial) |
-
-**Estructura del Sheet público de matrículas** (`1ceGtZDUJHX4yxs5_ydDwLwtrkOcZwYh09WUG0st_b0Y`, 5 pestañas):
-- Resumen de Copropiedad (control + totales — 954/979 = 97,4%)
-- Torre 3 - Etapa 1 (198 aptos, mat 5377499-5377696)
-- Torre 1 - Etapa 2 (234 aptos, mat 5428477-5428710)
-- Parqueaderos - Etapa 3 (337 celdas privadas, mat 5397790-5398117)
-- Torre 2 - Etapa 4 (185 aptos, mat 5461642-5461826) — **NUEVA 08-Oct-2026**
-
-Historial de deploys anteriores (sesión 26-Sept):
-
-| Versión | Hora | MD5 | Descripción |
-|---------|------|-----|-------------|
-| **V22.1** | 03-Oct-2026 | `d7aea73812e06d2f6bef99fd17511e56` (js) | BUGFIX-015b/c V22.1: handler "Volver al calendario" + optimistic UI (frontend only) |
-| **V22** | 02-Oct-2026 17:14 | `300ab4d7dfa1e06599f022f5329ae353` | BUGFIX-015: listarReservasPorApto + vista "Mis reservas" en salon-social.html |
-| **V21.1** | 02-Oct-2026 18:55 | `c180a1e330eb61ac2d13c1ca1a9e2df4` | BUGFIX-013: parentesco del residente se pierde (mismatch `parentesco`/`parent`) |
-| **V21** | 02-Oct-2026 18:30 | `e4aa773022db26b8bd339960c56dca52` | BUGFIX-012: registrarResidente cae al branch de CREACIÓN de submitRecord |
-| **V20** | 13:10 | `70ca1033084c9dc27fdf0aefa562f2c9` | BUGFIX-011: admin mudanzas filtro "Próximos N días" |
-| V19 | 12:37 | `40e224f2d0071388fc46aff72e6910f4` | BUGFIX-010 / SEG-001: backend vigilante sin credenciales |
-| V18 | 12:15 | `691a6f3adc3224fc38170fcc72200e71` | BUGFIX-009: routing 6 endpoints `ec*` |
-| V17 | 25-Sept | — | Salón social: auditoría W1 + B3 |
-| V14 | 25-Sept | — | Salón social: deploy inicial |
-| V13 | 25-Sept | — | Portal del residente (auto-registro) |
-| V12 | 25-Sept | — | Módulo de estado de cuenta (deploy inicial) |
-
-BUGFIX-013 (V21.1): bug de V13 — `residente.js` envía el campo `parentesco` pero `buildRowFromPayload` (Código.gs línea 336) lee `r.parent` → col 33 (parentesco del residente) quedaba VACÍA en el Sheet. Fix: 14 líneas en `registrarResidente` que normalizan `parentesco || parent` antes de pasar al payload. El normalizador acepta ambos nombres (compatibilidad con `index.html` que usa `parent`). Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-013.
-
-BUGFIX-015 (V22) — listarReservasPorApto: nuevo endpoint SAL-12 que devuelve todas las reservas del apto del solicitante autenticado. Materializa el fix del BUG #1 del análisis del portal salón-social: la vista `view-mis-reservas` quedó como placeholder HTML desde F4 (26-Sept-2026) sin handler JS ni endpoint backend. Cuando un residente recargaba la página o navegaba atrás desde view-pago, perdía acceso a sus reservas pendientes. Incidente detonante: Elkin Santa (apto 504, CC 8061369) hizo una reserva el 02-Oct-2026 06:01 y no pudo subir comprobante ni cancelarla al refrescar. Fix: 73 líneas en backend (listarReservasPorApto en Código.gs) + botón "📋 Mis reservas" en vista-calendario (HTML) + flujo cargarMisReservas() en JS (165 líneas) con event delegation que permite retomar/cancelar cada reserva. NO modifica funciones existentes. Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-015 y `docs/sesion-2026-10-02.md`.
-
-BUGFIX-015b (V22.1) — frontend only, NO requiere re-deploy Apps Script. El botón "↩️ Volver al calendario" en la vista `view-mis-reservas` (`id="btnVolverCalDesdeMis"`) no tenía handler JS — al hacer click no pasaba nada. Fix: 11 líneas en `js/salon-social.js` que agregan el binding, restauran el header del calendario (`userNombre/userTipo/userApto`), recargan la grilla (`cargarCalendario()`) y muestran la vista calendario. Operador reportó "el boton volver al calendario no funciona" el 03-Oct-2026. Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-015b.
-
-BUGFIX-015c (V22.1) — frontend only. UX subóptima: `showView('mis-reservas')` se llamaba DESPUÉS del `await cargarMisReservas()`. Durante el cold start de Apps Script (30-60s) el usuario miraba el calendario sin feedback — parecía que la app estaba rota. Fix: invertir el orden — `showView` ANTES del `await` para que el usuario vea inmediatamente la vista con "Cargando..." y la lista se actualice cuando llega la respuesta. Patrón "optimistic UI". Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-015c.
-
-**Nota sobre V22.1:** V22.1 es **frontend only** (solo cambia `js/salon-social.js`). El backend (Apps Script) NO requiere re-deploy — el `md5 Codigo.gs` sigue siendo `300ab4d7dfa1e06599f022f5329ae353` de V22. Los 2 cambios de UX ya están en producción en GitHub Pages (commit `3f08c2e`, md5 js `d7aea73812e06d2f6bef99fd17511e56`).
-
-BUGFIX-012 (V21): `registrarResidente` construía un payload SIN `editMode: true` al reusar `submitRecord()`. `submitRecord` entraba al branch de CREACIÓN, encontraba CA-XXXX por apto y retornaba `'Ya existe un registro... Usa la opción "EDITAR MI REGISTRO" para modificarlo.'` — un error del formulario principal siendo mostrado en el portal residente. Fix: agregar `editMode: true` al payload + preservar `autDatos` original del propietario + copiar `dispositivos` originales del propietario (FIX REAL para evitar que `setValues` borre los slots 95-109) + sanitizar mensaje de error para que NUNCA llegue al residente la referencia al formulario principal. Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-012.
-
-BUGFIX-009 (V18): desde V12 hasta V17, los 6 endpoints `ec*` existían en el
-módulo pero NO estaban enrutados en `doPost`. El fix V18 agrega 7 líneas en
-`doPost` (justo después de `const action = String(payload.action || '').trim();`)
-para enrutar `ecConsultar`, `ecDescargarFactura`, `ecPazYSalvo`, `ecIniciarCarga`,
-`ecSubirFacturas`, `ecFinalizarCarga`. Ver `docs/CHANGELOG-BUGFIXES.md`
-BUGFIX-009 y `docs/sesion-bugfix-009.md` para detalles.
-
-BUGFIX-010 (V19) — SEG-001: el backend `vigilanteVerResidentes` ya NO envía
-`numForm`, `ccProp`, `firmaNom`, `firmaCC` ni `residentes[].cc` (protección
-de datos Ley 1581/2012). Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-010.
-
-BUGFIX-011 (V20): admin mudanzas con filtro "Próximos N días" (paridad
-con vigilante). Ver `docs/CHANGELOG-BUGFIXES.md` BUGFIX-011.
-
-
-
-**Backend V36_ENCARGADO (09-Oct-2026) — Vigente, deployada por el operador:**
-
-V36 = V35 base (4868 líneas) + Torre 2 / BUGFIX-023 (línea 26, 563, 571) + valor "Encargado" como nueva opción de diligencia.
-
-Cambios:
-- Acepta `diligencia: "Encargado"` además de `Propietario`, `Arrendatario`, `Tenedor / Otro` (línea 295)
-- Privilegios de edición idénticos a Propietario / Tenedor / Otro / Inmobiliaria (línea 1039)
-- Registro de 10 con `Tenedor / Otro` sigue funcionando sin cambios (compatibilidad total)
-- Frontend (`index.html`): el radio button "Encargado / Admin" envía `value="Encargado"`
-- Frontend (`js/admin.js`): select de edición muestra la nueva opción
-
-md5 `0f872b7218b96295ed79986fd6ab9320` (222.463 bytes, 4870 líneas).
-
-**Backend V36_TORRE2 (08-Oct-2026) — Predecesor, ya en producción:**
-
-Agrega Torre 2 al lookup de matrículas inmobiliarias (BUGFIX-023). Línea 26: `MATRICULAS_TORRE_2 = 'Torre 2 - Etapa 4'; 185 aptos: 119..2420`. Línea 563: el for loop incluye Torre 2. Línea 571: la fuente reconoce "torre2".
-
-**Frontend V28 con mini-parser markdown (commit `2d17d34`):** para el asistente IA.
-
-
-## ¿Qué hace?
-
-  · Recibe los datos enviados desde la página web (`POST`)
-  · Genera un N° de formulario correlativo tipo `CA-0001`, `CA-0002`, ...
-  · Dedupe por N° de apartamento (un apartamento = un solo registro)
-  · Permite editar un registro existente pidiendo N° de Formulario + N° de Apto
-  · Escribe en la hoja "Registros" del Sheet
-  · Nunca borra filas (los residentes no pueden eliminar su información)
-  · **Módulo de mudanzas** (sept 2026): agendar y cancelar reservas de ascensor
-    para propietarios e inmobiliarias
-
-## Estructura
-
-  · `Código.gs` — El backend completo (un solo archivo, copia y pega)
-  · Sheet ID: `16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc`
-  · Hoja de destino principal: `Registros` (**143 columnas desde v2 / 7-Sep-2026**)
-  · Hoja de mudanzas: `Mudanzas` (**19 columnas, sept 2026**)
-  · Sheet de matrículas (solo lectura): `1ceGtZDUJHX4yxs5_ydDwLwtrkOcZwYh09WUG0st_b0Y`
-
-## Endpoints disponibles
-
-### Formulario principal (submit)
-  · `POST` con payload JSON — crea o actualiza fila en `Registros`
-
-### Búsquedas (GET)
-  · `?action=nextId` — siguiente N° de Formulario correlativo
-  · `?action=lookup&numForm=X&apto=Y` — devuelve fila existente
-    **⚠️ IMPORTANTE:** pasar `numForm` y `apto` como strings. El backend
-    hace `rowToObject(row.values)` donde `row` es el objeto retornado
-    por `findRowByNumFormAndApto({rowNumber, values: array})`. Ver
-    bug C8.12 en `docs/spec-mudanzas.md` §8 — bug latente corregido
-    en commit `fedf2aa` (deploy V6).
-  · `?action=lookupMatApto&apto=X` — autocompleta matrícula del apto
-  · `?action=lookupMatParq&celda=X` — autocompleta matrícula del parqueadero
-
-### Módulo de mudanzas (sept 2026)
-  · `GET ?action=verificarPropietario&numForm=X&apto=Y&ccProp=Z`
-    Valida que el solicitante sea el propietario o la inmobiliaria
-    (rechaza arrendatarios). Devuelve nombre, correo y celular del propietario.
-  · `GET ?action=dispMudanzas&torre=1&ascensor=A&desde=YYYY-MM-DD&hasta=YYYY-MM-DD`
-    Lista slots disponibles vs ocupados para los próximos N días.
-  · `POST action=reservarMudanza`
-    Crea fila en `Mudanzas`. Valida 48h anticipación + ascensor A + LockService.
-    Envía email al admin y al residente.
-  · `POST action=cancelarMudanza`
-    Marca Estado="Cancelada" sin borrar fila. Valida 24h anticipación.
-    Envía email al admin y al residente.
-
-### Vigilancia (sept 2026)
-  · `GET ?action=vigilanteLogin&password=X`
-    Valida contra Config!B2 (contraseña separada del admin).
-  · `GET ?action=vigilanteVerResidentes&q=X`
-    Busca residentes con datos FILTRADOS (sin correos, celulares ni
-    teléfonos). Devuelve nombre, CC, vehículos, mascotas, parqueaderos.
-  · `GET ?action=vigilanteVerMudanzas&fecha=YYYY-MM-DD`
-    Lista mudanzas Confirmadas futuras + Canceladas recientes (últimos
-    30 días) con campos para marcar check.
-  · `GET ?action=vigilanteBuscarPorPlaca&placa=X` (oct 2026)
-    Búsqueda especializada por placa de vehículo/moto (parcial,
-    case-insensitive). Devuelve apartamento, propietario, CC y datos
-    del vehículo. Para casos de incidente vehicular.
-  · `POST action=vigilanteCheckMudanza`
-    Marca check (Sí/No realizado) con LockService y nombre del vigilante.
-    Actualiza columnas T (REALIZADA), U (FECHA_CHECK), V (VIGILANTE) en Sheet Mudanzas.
-
-### Estado de cuenta (sept 2026) — todos POST (la cédula no va en la URL)
-  · `POST action=ecConsultar` — `{numForm, apto, ccProp}`
-    Devuelve periodo, saldo por concepto, factura del mes, últimos 3 pagos,
-    `pazYSalvoHabilitado` (si `total cartera < pys_tolerancia`) y `linkPago`.
-  · `POST action=ecDescargarFactura` — `{numForm, apto, ccProp}`
-    Devuelve `{nombreArchivo, base64}` del PDF de 1 página del apto.
-  · `POST action=ecPazYSalvo` — `{numForm, apto, ccProp}`
-    Genera el paz y salvo (Google Doc → PDF) y registra en `PazYSalvos`.
-    Requiere diligencia `Propietario` (rechaza Arrendatario/Tenedor/Inmobiliaria)
-    y `total cartera < pys_tolerancia`.
-  · `POST action=ecIniciarCarga` — `{password, periodo, nombrePestana, fechaCorte, filas, pagos, reemplazar}`
-    (admin) Crea la pestaña mensual en el Sheet Cartera + carpeta en Drive.
-  · `POST action=ecSubirFacturas` — `{password, idCarga, archivos:[{apto, base64}]}`
-    (admin) Sube facturas en lotes de 1..10. Idempotente (papelera si ya existe).
-  · `POST action=ecFinalizarCarga` — `{password, idCarga}`
-    (admin) Valida el conteo de PDFs y marca ACTIVO/HISTORICO/REEMPLAZADO.
-
-  · Reutiliza: `verificarPropietario`, `adminLogin`, `normApto`, `jsonOut`, `SHEET_ID`.
-  · Config del Sheet principal → 5 claves nuevas: `cartera_sheet_id`,
-    `facturas_folder_id`, `plantilla_pys_id`, `pys_tolerancia`, `link_pago`.
-
-## Despliegue paso a paso (~5 minutos)
-
-### 1. Abre el proyecto Apps Script que ya creé para ti
-
-URL del proyecto (ya está en tu Drive):
-  https://script.google.com/d/17nuyzVYK2yN_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy/edit
-
-### 2. Renombra el proyecto
-
-En la esquina superior izquierda dice "Proyecto sin título". Cámbialo a:
-  `Cerro Azul - Formulario Residentes Backend`
-
-### 3. Pega el código
-
-  · En el panel izquierdo verás un archivo llamado `Código.gs` (con un ícono azul)
-  · Bórralo si está vacío o tiene código de muestra
-  · Abre el archivo `Código.gs` que está en este mismo directorio del repo
-  · Selecciona TODO el contenido (Cmd+A o Ctrl+A) y cópialo (Cmd+C o Ctrl+C)
-  · Vuelve al editor de Apps Script y pega (Cmd+V o Ctrl+V)
-  · Guarda con Ctrl+S (o el ícono del diskette)
-
-### 4. Vincula el proyecto al Sheet
-
-Este paso es necesario para que el script tenga permisos automáticos sobre la hoja:
-
-  · En el menú superior: **Archivo → Mover → Carpeta de Drive del spreadsheet**
-  · O alternativamente: clic en el ícono de "Servicios" (+ al lado de "Bibliotecas")
-     y añade "Google Sheets API"
-
-  Lo más simple: ejecuta la función `getNextFormId` una vez para que autorices los permisos:
-    · Selecciona la función `getNextFormId` en el dropdown de la barra superior
-    · Clic en **Ejecutar** (▶️)
-    · Te pedirá autorizar permisos → "Revisar permisos" → elegir tu cuenta
-       → "Advanced" → "Go to Cerro Azul... (unsafe)" → "Allow"
-    · Si te sale error (porque el sheet está vacío), no importa, solo era para autorizar.
-
-### 5. Desplegar como Web App
-
-  · Menú superior derecho: **Implementar → Nueva implementación**
-  · Ícono del engranaje ⚙️ → selecciona **Aplicación web**
-  · Configurar:
-      · Descripción: `Backend formulario residentes v1`
-      · Ejecutar como: **Yo (tu correo)**
-      · Quién tiene acceso: **Cualquier persona** (porque la página pública debe poder escribir)
-  · Clic en **Implementar**
-  · Google te pedirá autorizar de nuevo (es normal, esta vez para la implementación)
-  · **COPIA LA URL** que aparece (formato: `https://script.google.com/macros/s/AKfyc.../exec`)
-  · Esa URL es la `APPS_SCRIPT_URL` que hay que pegar en `js/app.js` de la página web.
-
-### 6. Conectar la página web al backend
-
-  · Abre el archivo `js/app.js` del repositorio
-  · Línea 6: `const APPS_SCRIPT_URL = window.APPS_SCRIPT_URL || '';`
-  · Cámbiala a:
-    ```js
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/TU_URL_AQUI/exec';
-    ```
-  · Commit y push al repo. La página se actualizará automáticamente en 1 minuto.
-
-### 7. Prueba end-to-end
-
-  · Abre https://fabig76.github.io/cerro-azul-residentes/
-  · Llena el formulario (mínimo los obligatorios)
-  · Envía
-  · Verifica que en el Sheet aparezca una fila nueva con N° Formulario tipo `CA-0001`
-  · Recarga la página, ve a "Editar mi registro", ingresa `CA-0001` y el N° de apto
-  · Verifica que carguen los datos y puedas editarlos
-
-## Solución de problemas
-
-### El botón "Enviar" no hace nada
-
-  · Abre la consola del navegador (F12 → Consola)
-  · Verás el error real. Lo más común: la URL del Apps Script está mal pegada.
-
-### "Acción no reconocida" o error 401/403
-
-  · El Apps Script no está bien desplegado
-  · Vuelve a Implementar → Administrar implementaciones → verifica que dice "Anyone"
-
-### El Sheet no recibe los datos
-
-  · Verifica que el SHEET_ID en `Código.gs` (línea 9) coincide con la URL de tu Sheet
-  · Hoja debe llamarse `Registros` (renombrada de "Hoja 1")
-
-### Los residentes pueden ver/enviar a la URL del script
-
-  · Esto es esperado: cualquier persona con el QR puede intentar enviar
-  · Las validaciones del lado servidor evitan datos vacíos o inválidos
-  · Pero NO impide que alguien con conocimientos técnicos envíe datos falsos
-  · La administración debe validar la información en el Sheet manualmente
-
-## Seguridad
-
-  · El Apps Script se ejecuta como TU usuario (el admin)
-  · Tiene permisos totales sobre el Sheet
-  · Cualquiera que descubra la URL del Web App puede enviar datos al Sheet
-  · MITIGACIÓN: revisa el Sheet periódicamente y borra filas sospechosas manualmente
-  · Para más seguridad, podrías poner un "token compartido" en el payload, pero eso
-    requeriría que los residentes lo conocieran, lo cual es impráctico para QR público.
-
-## Actualizar el backend
-
-Si necesitas cambiar el código del backend:
-  · Edita `Código.gs` en el editor de Apps Script
-  · Implementar → Administrar implementaciones → ícono de lápiz → "Versión: Nueva versión"
-  · Clic en Implementar
-  · La URL NO cambia (los deployments activos se conservan)
-
----
-
-## Agente IA — chatAsistente (FEAT-007 v2 / V26)
-
-Endpoint para responder preguntas de residentes/propietarios sobre los
-portales usando MiniMax-M3 como LLM y el manual oficial como única fuente.
-
-### Endpoint
-
-- **URL:** `/exec` (mismo Web App que el resto)
-- **Método:** `POST`
-- **Action:** `chatAsistente`
-- **Payload:** `{ action: 'chatAsistente', mensaje: 'texto' }`
-- **Response:** `{ ok: true, respuesta: '...' }` o `{ ok: false, error: '...' }`
-
-### Configuración (Script Properties)
-
-| Propiedad | Requerido | Default | Descripción |
-|-----------|-----------|---------|-------------|
-| `MINIMAX_API_KEY` | SÍ | — | Subscription key de MiniMax |
-| `MINIMAX_BASE_URL` | NO | `https://api.minimax.io/anthropic` | Endpoint base del API |
-| `MINIMAX_GROUP_ID` | NO | (vacío) | ID de grupo de facturación Subscription Plan |
-
-### Manual embebido (`MANUAL_CERRO` constante)
-
-- **Tamaño:** 44KB / 815 líneas
-- **Fuente:** Google Doc `1RUMeIXEcZkzFVTBNKe-F1ZbCTl3PRHpCzCeMFQCJD74` (mantenido por el operador)
-- **Ubicación:** línea 3330 de `Codigo.gs`
-- **Actualización:** cuando el operador lo cambie, Hermes regenera V_N+1 con la constante actualizada
-
-### Frontend
-
-- **Archivo:** `js/asistente.js` (306 líneas, autocontenido)
-- **Cargado en:** los 7 HTML antes de `</body>` (`<script src="js/asistente.js?v=1">`)
-- **Cache-buster:** usar `?v=N` en URL de GitHub Pages para invalidar caché del navegador
-
-### Validación
-
-- `mensaje` vacío → `{ok:false, error:'Mensaje vacío.'}`
-- `mensaje` >500 chars → `{ok:false, error:'Mensaje demasiado largo...'}`
-- Sin `MINIMAX_API_KEY` → `{ok:false, error:'Asistente no configurado...'}`
-- HTTP error de MiniMax → `{ok:false, error:'El servicio de IA respondió con error (N)...'}`
-- JSON parse error → `{ok:false, error:'Respuesta inválida del servicio de IA.'}`
-- Respuesta vacía → `{ok:false, error:'El servicio de IA devolvió una respuesta vacía.'}`
-
-### Tests E2E
-
-Ver `docs/spec-asistente-ia.md` §9 y `docs/CHANGELOG-BUGFIXES.md` (sección FEAT-007 v2).
-
-### Documentación adicional
-
-- `docs/spec-asistente-ia.md` — spec completo
-- `docs/proyecto-asistente-ia.md` — resumen ejecutivo
-- `docs/manual-asistente-ia.md` — manual para usuarios finales
-- `docs/sesion-asistente-2026-10-04.md` — bitácora de la sesión
+# Backend — Portal Cerro Azul
+
+Archivo único del backend de Apps Script (`Codigo.gs`) que atiende los 7 portales
+del Conjunto Cerro Azul PH (NIT 900.770.444, Bello/Niquía): formulario público,
+portal del residente, vigilancia, administración, salón social, estado de cuenta
+y cartera.
+
+## Despliegue
+
+El backend se publica como **nueva versión del despliegue existente** (nunca un
+despliegue nuevo, para no cambiar la URL pública que usan los 7 portales):
+
+1. Abrir el editor de Apps Script de producción.
+2. Pegar el contenido de `Codigo.gs`.
+3. Implementar → Administrar implementaciones → editar → **Nueva versión**.
+
+El manifest (`appsscript.json`) define `executeAs: USER_DEPLOYING` y
+`access: ANYONE_ANONYMOUS`.
+
+## Acciones expuestas (48)
+
+- actualizarResidente
+- adminBorrarReservaMudanza
+- adminBuscar
+- adminCancelarReservaSalon
+- adminGuardar
+- adminListarReservasMudanzas
+- adminListarReservasSalon
+- adminLogin
+- adminObtener
+- adminVerComprobanteSalon
+- cancelarMudanza
+- cancelarReservaSalon
+- chatAsistente
+- clearResidente
+- configurarTriggerExpiracion
+- dispMudanzas
+- dispSalon
+- ecConsultar
+- ecDescargarFactura
+- ecFinalizarCarga
+- ecIniciarCarga
+- ecPazYSalvo
+- ecSubirFacturas
+- editarReservaSalon
+- getEstadoResidente
+- listarReservasMudanzasPorNumForm
+- listarReservasPorApto
+- logout
+- lookup
+- lookupMatApto
+- lookupMatParq
+- nextId
+- ping
+- registrarResidente
+- reservarMudanza
+- reservarSalon
+- subirComprobanteSalon
+- submit
+- verificarAccesoSalon
+- verificarPropietario
+- verificarResidente
+- vigilanteBuscarPorPlaca
+- vigilanteCheckMudanza
+- vigilanteLogin
+- vigilanteVerMudanzas
+- vigilanteVerReservasSalon
+- vigilanteVerResidentes
+
+## Diagnóstico
+
+`GET ?action=ping` devuelve `{ ok: true, version, tz, hora }`. La versión se
+cambia con cada despliegue (`VERSION_BACKEND`).
+
+## Historial
+
+Ver `git log -- apps-script/Codigo.gs`.

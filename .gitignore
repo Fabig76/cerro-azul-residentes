@@ -6,3 +6,6 @@
 *.pdf
 *.PDF
 *.docx
+
+# Credenciales de clasp (Apps Script) — nunca subir
+.clasprc.json

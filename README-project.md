@@ -1,3 +1,5 @@
+> Nota (28-oct-2026): la versión vigente del backend es apps-script/Codigo.gs; las referencias a V34…V47 de este documento son históricas.
+
 # Cerro Azul — Formulario Público de Residentes
 
 Aplicación web estática (HTML/CSS/JS) servida desde GitHub Pages, con

@@ -1,3 +1,5 @@
+> Nota (28-oct-2026): la versión vigente del backend es apps-script/Codigo.gs; las referencias a V34…V47 de este documento son históricas.
+
 # Guía de Referencia del Proyecto Formato de Datos PH
 
 > Documento vivo. Cada vez que Hermes trabaje en este proyecto (en esta o

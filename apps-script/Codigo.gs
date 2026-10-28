@@ -38,6 +38,21 @@ const COL_FECHA_EDIT = 2;
 const COL_APTO = 3;
 // Col 142 (última) = Hash Dedupe
 
+// AUD-T7: cabeceras centinela. Si la hoja cambia, se aborta antes de escribir.
+const CABECERAS_CENTINELA = { 0: 'N° Formulario', 3: 'N° Apto', 6: 'CC Propietario', 29: 'R1 Nombre', 110: 'Masc1 Tipo', 142: 'Hash Dedupe' };
+function verificarEsquema_(sheet) {
+  const hdr = sheet.getRange(HEADER_ROW, 1, 1, NUM_COLS).getValues()[0];
+  for (const idx in CABECERAS_CENTINELA) {
+    if (String(hdr[idx]).trim() !== CABECERAS_CENTINELA[idx]) {
+      throw new Error('Esquema de Registros alterado en la columna ' + (Number(idx) + 1) + '. Escritura cancelada. Avise al administrador.');
+    }
+  }
+}
+
+// AUD-T17: permite saber qué versión responde en producción
+const VERSION_BACKEND = '2026-10-28-aud1';
+function ping_() { return { ok: true, version: VERSION_BACKEND, tz: Session.getScriptTimeZone(), hora: Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss') }; }
+
 // ---------------------------------------------------------------------
 // BUGFIX-019: Autenticación por token de sesión para endpoints admin/vigilante.
 // El login devuelve un token que se guarda en CacheService (TTL). Cada consulta
@@ -92,6 +107,35 @@ function limpiarTokensExpirados(rol) {
   });
 }
 
+// AUD-T2: contador por clave en CacheService. Devuelve true si se superó el máximo.
+function rateLimit_(clave, max, ttlSeg) {
+  const cache = CacheService.getScriptCache();
+  const k = 'rl_' + clave;
+  const n = parseInt(cache.get(k) || '0', 10) + 1;
+  cache.put(k, String(n), ttlSeg);
+  return n > max;
+}
+
+// AUD-T10: si el cliente repite el mismo clientRequestId en 10 min, devuelve la respuesta anterior
+function idempotente_(data, fn) {
+  const id = String(data.clientRequestId || '').trim();
+  if (!id || id.length > 64) return fn();
+  const cache = CacheService.getScriptCache();
+  const previa = cache.get('idem_' + id);
+  if (previa) return JSON.parse(previa);
+  const res = fn();
+  if (res && res.ok) cache.put('idem_' + id, JSON.stringify(res), 600);
+  return res;
+}
+
+// AUD-T2: revoca el token de la sesión actual
+function logout_(rol, token) {
+  rol = String(rol || ''); token = String(token || '');
+  if (rol !== 'admin' && rol !== 'vigilante') return { ok: false, error: 'Rol inválido' };
+  PropertiesService.getScriptProperties().deleteProperty('tok_' + rol + '_' + token);
+  return { ok: true };
+}
+
 // ---------------------------------------------------------------------
 // doGet: lookup / nextId / lookupMatApto / lookupMatParq
 // ---------------------------------------------------------------------
@@ -112,10 +156,17 @@ function doGet(e) {
     if (action === 'nextId') {
       return jsonOut({ ok: true, nextId: getNextFormId() });
     }
+    if (action === 'ping') {
+      return jsonOut(ping_());
+    }
     if (action === 'lookup') {
       const numForm = String(e.parameter.numForm || '').trim();
       const apto = String(e.parameter.apto || '').trim();
       const ccProp = normalizarCC(e.parameter.ccProp);
+      // AUD-T5: 10 intentos por apto cada 10 minutos
+      if (rateLimit_('ver_' + String(apto || '').trim(), 10, 600)) {
+        return jsonOut({ ok: false, error: 'Demasiados intentos para este apartamento. Espere 10 minutos.' });
+      }
       // BUGFIX-020: exigir cédula del propietario para leer el registro
       if (!ccProp) return jsonOut({ ok: false, error: 'Falta cédula del propietario.' });
       const row = findRowByNumFormAndApto(numForm, apto);
@@ -252,7 +303,7 @@ function doPost(e) {
     if (action === 'ecSubirFacturas')    return jsonOut(ecSubirFacturas(payload));
     if (action === 'ecFinalizarCarga')   return jsonOut(ecFinalizarCarga(payload));
     if (action === 'reservarMudanza') {
-      return jsonOut(reservarMudanza(payload));
+      return jsonOut(idempotente_(payload, function () { return reservarMudanza(payload); }));
     }
     if (action === 'cancelarMudanza') {
       return jsonOut(cancelarMudanza(payload));
@@ -272,11 +323,11 @@ function doPost(e) {
       return jsonOut(vigilanteCheckMudanza(payload));
     }
     // --- RESIDENTE (portal nuevo residente.html) ---
-    if (action === 'registrarResidente')    return jsonOut(registrarResidente(payload));
+    if (action === 'registrarResidente')    return jsonOut(idempotente_(payload, function () { return registrarResidente(payload); }));
     if (action === 'actualizarResidente')  return jsonOut(actualizarResidente(payload));
     if (action === 'clearResidente')        return jsonOut(clearResidente(payload));
     // --- SALON SOCIAL (portal salon-social.html) ---
-    if (action === 'reservarSalon')              return jsonOut(reservarSalon(payload));
+    if (action === 'reservarSalon')              return jsonOut(idempotente_(payload, function () { return reservarSalon(payload); }));
     if (action === 'subirComprobanteSalon')     return jsonOut(subirComprobanteSalon(payload));
     if (action === 'cancelarReservaSalon')      return jsonOut(cancelarReservaSalon(payload));
     if (action === 'editarReservaSalon')         return jsonOut(editarReservaSalon(payload));
@@ -285,9 +336,13 @@ function doPost(e) {
     if (action === 'configurarTriggerExpiracion') return jsonOut(configurarTriggerExpiracion());
     // --- ASISTENTE IA (MiniMax-M3) para los 7 portales (feature 04-Oct-2026) ---
     if (action === 'chatAsistente') return jsonOut(chatAsistente(payload));
-    // Comportamiento por defecto (compatibilidad): submit del formulario principal
-    const result = submitRecord(payload);
-    return jsonOut(result);
+    // AUD-T2: login y logout por POST (la contraseña nunca viaja en la URL)
+    if (action === 'adminLogin')     return jsonOut(adminLogin(payload.password));
+    if (action === 'vigilanteLogin') return jsonOut(vigilanteLogin(payload.password));
+    if (action === 'logout')         return jsonOut(logout_(payload.rol, payload.token));
+    // AUD-T7: solo el formulario principal entra sin action (o con action='submit')
+    if (action === '' || action === 'submit') return jsonOut(idempotente_(payload, function () { return submitRecord(payload); }));
+    return jsonOut({ ok: false, error: 'Acción no reconocida: ' + action });
   } catch (err) {
     return jsonOut({ ok: false, error: String(err && err.message || err) });
   }
@@ -296,7 +351,12 @@ function doPost(e) {
 // ---------------------------------------------------------------------
 // Crea o actualiza una fila en el Sheet
 // ---------------------------------------------------------------------
-function submitRecord(data) {
+function submitRecord(data, opts) {
+  // AUD-T6: opts.yaBloqueado=true lo usan registrarResidente y
+  // actualizarResidente, que YA toman el lock y llamarían a submitRecord
+  // (que también lo toma) produciría un auto-bloqueo.
+  opts = opts || {};
+  const yaBloqueado = opts.yaBloqueado === true;
   // Validaciones mínimas del lado servidor
   const apto = String(data.apto || '').trim();
   if (!apto) return { ok: false, error: 'Falta N° de apartamento.' };
@@ -334,35 +394,70 @@ function submitRecord(data) {
   let targetRow;       // número de fila en Sheets (1-based)
   let assignedNumForm; // número de formulario que se va a guardar
   let fechaRegistroOriginal = null;
+  let row = null;
 
-  if (editMode) {
-    // Modo edición: verificar que numForm+apto coincidan con una fila existente
-    const found = findRowByNumFormAndApto(submittedNumForm, apto);
-    if (!found) {
-      return { ok: false, error: 'N° de formulario o N° de apartamento no coinciden con un registro existente. No se puede editar.' };
-    }
-    // BUGFIX-020: verificar cédula del propietario antes de escribir
-    if (normalizarCC(data.ccProp) !== normalizarCC(found.values[6])) {
-      return { ok: false, error: 'La cédula no coincide con el propietario registrado. No se puede editar.' };
-    }
-    targetRow = found.rowNumber;
-    assignedNumForm = submittedNumForm;
-    fechaRegistroOriginal = found.values[COL_FECHA_REG];
-  } else {
-    // Modo creación: validar que NO exista ya un registro con ese N° Apto
-    const existing = findRowByApto(apto);
-    if (existing) {
-      return { ok: false, error: 'Ya existe un registro para el apartamento ' + apto + '. Si eres el propietario o encargado, usa la opción "Editar mi registro" con el N° de formulario que se te entregó al crear el registro. Si no lo tienes, contacta a la administración (urb.cerroazul@gmail.com).' };
-    }
-    // Buscar siguiente fila vacía
-    const last = sheet.getLastRow();
-    targetRow = Math.max(last + 1, HEADER_ROW + 1);
-    assignedNumForm = getNextFormId();
+  // AUD-T6: la búsqueda, el número CA y la escritura son una sola sección crítica.
+  // Sin este lock, dos envíos simultáneos (doble clic, reintento del móvil,
+  // o propietario y residente a la vez) leen la misma getLastRow() y el mismo
+  // max(CA-*)+1, y el segundo setValues PISA completo al primero: un registro
+  // desaparece sin rastro y ambos clientes reciben ok:true. El BLINDAJE de la
+  // V46 valida el payload pero no elimina esa carrera.
+  const lock = yaBloqueado ? null : LockService.getScriptLock();
+  if (lock && !lock.tryLock(20000)) {
+    return { ok: false, error: 'El sistema está ocupado. Espere unos segundos y vuelva a enviar.' };
   }
+  try {
+    verificarEsquema_(sheet); // AUD-T7: aborta si la hoja cambió de esquema
+    if (editMode) {
+      // Modo edición: verificar que numForm+apto coincidan con una fila existente
+      const found = findRowByNumFormAndApto(submittedNumForm, apto);
+      if (!found) {
+        return { ok: false, error: 'N° de formulario o N° de apartamento no coinciden con un registro existente. No se puede editar.' };
+      }
+      // BUGFIX-020: verificar cédula del propietario antes de escribir
+      if (normalizarCC(data.ccProp) !== normalizarCC(found.values[6])) {
+        return { ok: false, error: 'La cédula no coincide con el propietario registrado. No se puede editar.' };
+      }
+      targetRow = found.rowNumber;
+      assignedNumForm = submittedNumForm;
+      fechaRegistroOriginal = found.values[COL_FECHA_REG];
+    } else {
+      // Modo creación: validar que NO exista ya un registro con ese N° Apto
+      const existing = findRowByApto(apto);
+      if (existing) {
+        return { ok: false, error: 'Ya existe un registro para el apartamento ' + apto + '. Si eres el propietario o encargado, usa la opción "Editar mi registro" con el N° de formulario que se te entregó al crear el registro. Si no lo tienes, contacte a la administración (urb.cerroazul@gmail.com).' };
+      }
+      // Buscar siguiente fila vacía
+      const last = sheet.getLastRow();
+      targetRow = Math.max(last + 1, HEADER_ROW + 1);
+      assignedNumForm = getNextFormId();
+    }
 
-  // Construir el array de valores
-  const row = buildRowFromPayload(data, assignedNumForm, fechaRegistroOriginal);
-  sheet.getRange(targetRow, 1, 1, NUM_COLS).setValues([row]);
+    // Construir el array de valores
+    row = buildRowFromPayload(data, assignedNumForm, fechaRegistroOriginal);
+
+    // 🔴 BLINDAJE (V46, 27-Oct-2026): nunca escribir una fila a medias.
+    // Las validaciones de arriba miran el payload de entrada, pero el payload
+    // puede llegar incompleto por desincronización de claves entre el frontend
+    // y buildRowFromPayload. Aquí se verifica el ROW FINAL (lo que de verdad se
+    // va a escribir al Sheet): si el propietario no tiene nombre, cédula ni
+    // celular, se ABORTA sin escribir. Esto corta la hemorragia de filas basura
+    // (CA-0234, 0235, 0246, 0248, 0249, 0265, 0266, 0271, 0277...) que quedaban
+    // solo con N° Formulario + fechas + apto y bloqueaban el apartamento.
+    const _bNombre = String(row[5] || '').trim();
+    const _bCc     = String(row[6] || '').trim();
+    const _bCel    = String(row[8] || '').trim();
+    if (!_bNombre || !_bCc || !_bCel) {
+      Logger.log('[submitRecord][BLINDAJE] ABORTADO apto=' + String(row[3] || '') +
+                 ' nombre=' + !!_bNombre + ' cc=' + !!_bCc + ' cel=' + !!_bCel +
+                 ' — payload incompleto, no se escribió la fila.');
+      return { ok: false, error: 'Faltan datos obligatorios del propietario (nombre, cédula o celular). El registro no se guardó. Revise el formulario y reenvíe.' };
+    }
+
+    sheet.getRange(targetRow, 1, 1, NUM_COLS).setValues([row]);
+  } finally {
+    if (lock) lock.releaseLock();
+  }
 
   // BUGFIX-028: enviar el codigo CA-XXXX al correo del propietario.
   //
@@ -557,7 +652,7 @@ function buildRowFromPayload(d, numForm, fechaRegistroOriginal) {
   v[142]            = hashInput ? Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, hashInput)
                                   .map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('').slice(0, 16) : '';
 
-  return v;
+  return v.map(safeCell_); // AUD-T3: neutraliza fórmulas/inyección en cada celda
 }
 
 // ---------------------------------------------------------------------
@@ -823,7 +918,7 @@ function jsonOut(obj) {
 // =====================================================================
 
 const MUDANZAS_SHEET_NAME     = 'Mudanzas';
-const MUDANZAS_NUM_COLS       = 23  // V37: 19 + 3 check + 1 descripcion;
+const MUDANZAS_NUM_COLS       = 23;  // V37: 19 + 3 check + 1 descripcion
 const MUDANZAS_HEADER_ROW     = 1;
 const MUDANZAS_TORRES         = ['1', '2', '3'];
 const MUDANZAS_ASCENSOR       = 'A';
@@ -879,13 +974,35 @@ const COL_MUD_OBS      = 15; // P
 const COL_MUD_FECHARES = 16; // Q
 const COL_MUD_ESTADO   = 17; // R
 const COL_MUD_HASH     = 18;
-const COL_MUD_DESCRIPCION = 22;  // V37: descripcion de elementos // S
+const COL_MUD_REALIZADA   = 19; // T
+const COL_MUD_FECHA_CHECK = 20; // U
+const COL_MUD_VIGILANTE   = 21; // V
+const COL_MUD_DESCRIPCION = 22;  // V37: descripcion de elementos // W
 
 // ---------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------
 function normalizarCC(cc) {
   return String(cc || '').replace(/[^0-9]/g, '').trim();
+}
+
+// AUD-T3: evita que un texto que empiece por = + - @ se interprete como fórmula.
+// Solo actúa sobre strings; fechas y números pasan intactos.
+function safeCell_(v) {
+  if (typeof v !== 'string') return v;
+  const s = v.replace(/[\u200B-\u200F\u202A-\u202E\uFEFF]/g, '').trim();
+  return /^[=+\-@\t\r]/.test(s) ? "'" + s : s;
+}
+
+// AUD-T3: formato texto en columnas de identificadores. Ejecutar UNA vez a mano.
+function setupFormatoTexto_() {
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+  const hdr = sheet.getRange(1, 1, 1, NUM_COLS).getValues()[0].map(String);
+  const objetivo = /(CC|Cédula|Celular|Tel|Placa|Serial|Código|N° Tag|NIT|Fecha Entrega|Firma - Fecha|N° Apto|Parq Tercero - Apto)/i;
+  const maxFilas = Math.max(sheet.getMaxRows() - 1, 1);
+  hdr.forEach(function (h, i) {
+    if (objetivo.test(h)) sheet.getRange(2, i + 1, maxFilas, 1).setNumberFormat('@');
+  });
 }
 
 function getMudanzasSheet() {
@@ -1011,23 +1128,33 @@ function adminBorrarReservaMudanza(idReserva) {
   const idReservaNorm = String(idReserva || '').trim();
   if (!idReservaNorm) return { ok: false, error: 'Falta idReserva.' };
 
-  const last = sheet.getLastRow();
-  if (last < MUDANZAS_HEADER_ROW + 1) return { ok: false, error: 'Sin reservas.' };
-  const data = sheet.getRange(MUDANZAS_HEADER_ROW + 1, 1, last - MUDANZAS_HEADER_ROW, 1).getValues();
-
-  let targetRow = -1;
-  for (let i = 0; i < data.length; i++) {
-    if (String(data[i][0] || '').trim() === idReservaNorm) {
-      targetRow = MUDANZAS_HEADER_ROW + 1 + i;
-      break;
-    }
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(20000)) {
+    return { ok: false, error: 'El sistema está ocupado. Espere unos segundos y vuelva a intentar.' };
   }
-  if (targetRow === -1) return { ok: false, error: 'No se encontró la reserva ' + idReservaNorm + '.' };
+  try {
+    const last = sheet.getLastRow();
+    if (last < MUDANZAS_HEADER_ROW + 1) return { ok: false, error: 'Sin reservas.' };
+    const data = sheet.getRange(MUDANZAS_HEADER_ROW + 1, 1, last - MUDANZAS_HEADER_ROW, 1).getValues();
 
-  sheet.deleteRow(targetRow);
-  Logger.log('[adminBorrarReservaMudanza] Reserva ' + idReservaNorm + ' borrada por admin. Fila=' + targetRow);
+    let targetRow = -1;
+    for (let i = 0; i < data.length; i++) {
+      if (String(data[i][0] || '').trim() === idReservaNorm) {
+        targetRow = MUDANZAS_HEADER_ROW + 1 + i;
+        break;
+      }
+    }
+    if (targetRow === -1) return { ok: false, error: 'No se encontró la reserva ' + idReservaNorm + '.' };
 
-  return { ok: true, message: 'Reserva ' + idReservaNorm + ' borrada correctamente.' };
+    // AUD-T10: borrado lógico, no físico. deleteRow desplazaba las filas y
+    // rompía las escrituras por número de fila de otros endpoints.
+    sheet.getRange(targetRow, COL_MUD_ESTADO + 1).setValue('Borrada');
+    Logger.log('[adminBorrarReservaMudanza] Reserva ' + idReservaNorm + ' marcada Borrada (fila=' + targetRow + ').');
+
+    return { ok: true, message: 'Reserva ' + idReservaNorm + ' borrada correctamente.' };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 // Endpoint MUDANZAS-ADMIN: adminListarReservasMudanzas (GET)
@@ -1103,6 +1230,10 @@ function hashReserva(torre, ascensor, fecha, horaInicio) {
 // Endpoint 4.1: verificarPropietario
 // ---------------------------------------------------------------------
 function verificarPropietario(numForm, apto, ccProp) {
+  // AUD-T5: 10 intentos por apto cada 10 minutos
+  if (rateLimit_('ver_' + String(apto || '').trim(), 10, 600)) {
+    return { ok: false, error: 'Demasiados intentos para este apartamento. Espere 10 minutos.' };
+  }
   numForm = String(numForm || '').trim();
   apto = String(apto || '').trim();
   ccProp = normalizarCC(ccProp);
@@ -1306,7 +1437,7 @@ function reservarMudanza(data) {
 
     const last = sheet.getLastRow();
     const targetRow = Math.max(last + 1, MUDANZAS_HEADER_ROW + 1);
-    sheet.getRange(targetRow, 1, 1, MUDANZAS_NUM_COLS).setValues([row]);
+    sheet.getRange(targetRow, 1, 1, MUDANZAS_NUM_COLS).setValues([row.map(safeCell_)]); // AUD-T3
 
     try { enviarEmailConfirmacionAdmin(row); } catch (e) { console.error('Error email admin:', e); }
     try { enviarEmailConfirmacionResidente(row); } catch (e) { console.error('Error email residente:', e); }
@@ -1363,10 +1494,17 @@ function cancelarMudanza(data) {
 
   try {
     const sheet = getMudanzasSheet();
-    sheet.getRange(found.rowNumber, COL_MUD_ESTADO + 1).setValue('Cancelada');
+    // AUD-T10: re-buscar dentro del lock y re-verificar estado (evita la
+    // carrera con adminBorrarReservaMudanza o un doble envío).
+    const fresca = findReservaById(idReserva);
+    if (!fresca) return { ok: false, error: 'No se encontró la reserva con ese ID.' };
+    if (String(fresca.values[COL_MUD_ESTADO]).trim() !== 'Confirmada') {
+      return { ok: false, error: 'Esta reserva ya no está activa.' };
+    }
+    sheet.getRange(fresca.rowNumber, COL_MUD_ESTADO + 1).setValue('Cancelada');
 
-    try { enviarEmailCancelacionAdmin(found.values); } catch (e) { console.error('Error email cancel admin:', e); }
-    try { enviarEmailCancelacionResidente(found.values); } catch (e) { console.error('Error email cancel residente:', e); }
+    try { enviarEmailCancelacionAdmin(fresca.values); } catch (e) { console.error('Error email cancel admin:', e); }
+    try { enviarEmailCancelacionResidente(fresca.values); } catch (e) { console.error('Error email cancel residente:', e); }
 
     return { ok: true, message: 'Reserva cancelada correctamente.' };
   } finally {
@@ -1491,6 +1629,21 @@ function enviarEmailCerroAzul(to, subject, body) {
     from: 'urb.cerroazul@gmail.com',
     name: 'Cerro Azul'
   });
+}
+
+// AUD-T8: envío que nunca lanza. Devuelve {enviado, error}.
+function enviarEmailSeguro_(to, subject, body) {
+  try {
+    if (MailApp.getRemainingDailyQuota() < 20) {
+      Logger.log('[email] cuota diaria casi agotada; no se envió: ' + subject);
+      return { enviado: false, error: 'cuota' };
+    }
+    enviarEmailCerroAzul(to, subject, body);
+    return { enviado: true, error: '' };
+  } catch (e) {
+    Logger.log('[email] fallo "' + subject + '": ' + String(e && e.message || e));
+    return { enviado: false, error: String(e && e.message || e) };
+  }
 }
 
 function enviarEmailCodigoRegistro(row, numForm) {
@@ -1630,6 +1783,10 @@ function adminLeerContrasena() {
 }
 
 function adminLogin(password) {
+  // AUD-T2: 5 intentos fallidos = 15 minutos de espera
+  if (rateLimit_('login_admin', 5, 900)) {
+    return { ok: false, error: 'Demasiados intentos. Espere 15 minutos.' };
+  }
   password = String(password || '');
   const stored = adminLeerContrasena();
   if (!stored) {
@@ -1638,6 +1795,7 @@ function adminLogin(password) {
   if (password === stored) {
     const token = generarToken();
     guardarToken('admin', token);
+    CacheService.getScriptCache().remove('rl_login_admin'); // AUD-T2: reinicia el contador
     return { ok: true, message: 'Login correcto', token: token };
   }
   return { ok: false, error: 'Contrasena incorrecta' };
@@ -1729,173 +1887,189 @@ function adminGuardar(data) {
   if (!correo || correo.indexOf('@') === -1) return { ok: false, error: 'Correo del propietario invalido' };
 
   // Leer fila actual como base
-  const currentRow = sheet.getRange(targetRow, 1, 1, NUM_COLS).getValues()[0];
-  const newRow = currentRow.slice();
-
-  // Helper para aplicar campo solo si viene en el payload
-  function set(idx, val) {
-    if (val !== undefined) newRow[idx] = val;
+  // AUD-T6: leer la fila, modificarla y escribirla son una sola sección
+  // crítica. Sin lock, un adminGuardar y un submitRecord simultáneos se
+  // pisan (lost update) sobre las 143 columnas de la fila.
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(20000)) {
+    return { ok: false, error: 'El sistema está ocupado. Espere unos segundos y vuelva a intentar.' };
   }
-  function setStr(idx, val) {
-    if (val !== undefined) newRow[idx] = String(val || '');
-  }
-
-  // ====== CAMPOS BASICOS (0-16) ======
-  set(COL_APTO, apto);
-  set(4, String(data.diligencia || currentRow[4] || ''));
-  set(5, nombre);
-  set(6, cc);
-  set(7, correo.toLowerCase());
-  setStr(8, data.celProp);
-  setStr(9, data.telFijoProp);
-  setStr(10, data.parq1Celda);
-  setStr(11, data.parq1Mat);
-  setStr(12, data.parq2Celda);
-  setStr(13, data.parq2Mat);
-  setStr(14, data.matriculaApto);
-  if (data.requiereRevision !== undefined) {
-    newRow[15] = (data.requiereRevision === 'Si' || data.requiereRevision === true || data.requiereRevision === 'Sí') ? 'Sí' : 'No';
-  }
-  setStr(16, data.observMatriculas);
-
-  // ====== ENCARGADO/ADMINISTRADOR (17-20) ======
-  setStr(17, data.nombreArr); setStr(18, data.ccArr); setStr(19, data.correoArr); setStr(20, data.celArr);
-
-  // ====== PARQUEADERO TERCERO (21-23) ======
-  setStr(21, data.parqTerNom); setStr(22, data.parqTerApto); setStr(23, data.parqTerCel);
-
-  // ====== INMOBILIARIA (24-28) ======
-  setStr(24, data.inmobRazon); setStr(25, data.inmobNit); setStr(26, data.inmobContacto); setStr(27, data.inmobTel); setStr(28, data.inmobCorreo);
-
-  // ====== RESIDENTES (29-48, 4 × 5 cols) ======
-  if (Array.isArray(data.residentes)) {
-    for (let i = 0; i < 4; i++) {
-      const r = data.residentes[i] || {};
-      const base = 29 + i * 5;
-      setStr(base + 0, r.nombre);
-      setStr(base + 1, r.cc);
-      if (r.correo !== undefined) set(base + 2, String(r.correo || '').toLowerCase());
-      setStr(base + 3, r.cel);
-      setStr(base + 4, r.parent);
+  try {
+    verificarEsquema_(sheet); // AUD-T7: aborta si la hoja cambió de esquema
+    const currentRow = sheet.getRange(targetRow, 1, 1, NUM_COLS).getValues()[0];
+    const newRow = currentRow.slice();
+    // AUD-T6: bloqueo optimista. El cliente manda la fechaEdicion que leyó.
+    if (data.fechaEdicionVista && String(currentRow[COL_FECHA_EDIT] || '') !== String(data.fechaEdicionVista)) {
+      return { ok: false, error: 'El registro fue modificado por otra persona. Recargue y vuelva a intentar.', code: 'CONFLICTO' };
     }
-  }
 
-  // ====== MENORES (49-60, 4 × 3 cols) ======
-  if (Array.isArray(data.menores)) {
-    for (let i = 0; i < 4; i++) {
-      const m = data.menores[i] || {};
-      const base = 49 + i * 3;
-      setStr(base + 0, m.nombre);
-      if (m.edad !== undefined) {
-        newRow[base + 1] = (m.edad !== null && m.edad !== '') ? String(m.edad) : '';
+    // Helper para aplicar campo solo si viene en el payload
+    function set(idx, val) {
+      if (val !== undefined) newRow[idx] = val;
+    }
+    function setStr(idx, val) {
+      if (val !== undefined) newRow[idx] = safeCell_(String(val || '')); // AUD-T3
+    }
+
+    // ====== CAMPOS BASICOS (0-16) ======
+    set(COL_APTO, apto);
+    set(4, String(data.diligencia || currentRow[4] || ''));
+    set(5, nombre);
+    set(6, cc);
+    set(7, correo.toLowerCase());
+    setStr(8, data.celProp);
+    setStr(9, data.telFijoProp);
+    setStr(10, data.parq1Celda);
+    setStr(11, data.parq1Mat);
+    setStr(12, data.parq2Celda);
+    setStr(13, data.parq2Mat);
+    setStr(14, data.matriculaApto);
+    if (data.requiereRevision !== undefined) {
+      newRow[15] = (data.requiereRevision === 'Si' || data.requiereRevision === true || data.requiereRevision === 'Sí') ? 'Sí' : 'No';
+    }
+    setStr(16, data.observMatriculas);
+
+    // ====== ENCARGADO/ADMINISTRADOR (17-20) ======
+    setStr(17, data.nombreArr); setStr(18, data.ccArr); setStr(19, data.correoArr); setStr(20, data.celArr);
+
+    // ====== PARQUEADERO TERCERO (21-23) ======
+    setStr(21, data.parqTerNom); setStr(22, data.parqTerApto); setStr(23, data.parqTerCel);
+
+    // ====== INMOBILIARIA (24-28) ======
+    setStr(24, data.inmobRazon); setStr(25, data.inmobNit); setStr(26, data.inmobContacto); setStr(27, data.inmobTel); setStr(28, data.inmobCorreo);
+
+    // ====== RESIDENTES (29-48, 4 × 5 cols) ======
+    if (Array.isArray(data.residentes)) {
+      for (let i = 0; i < 4; i++) {
+        const r = data.residentes[i] || {};
+        const base = 29 + i * 5;
+        setStr(base + 0, r.nombre);
+        setStr(base + 1, r.cc);
+        if (r.correo !== undefined) set(base + 2, String(r.correo || '').toLowerCase());
+        setStr(base + 3, r.cel);
+        setStr(base + 4, r.parent);
       }
-      setStr(base + 2, m.parent);
     }
-  }
 
-  // ====== VEHICULOS (61-72, 2 × 6 cols) ======
-  if (Array.isArray(data.vehiculos)) {
-    for (let i = 0; i < 2; i++) {
-      const v = data.vehiculos[i] || {};
-      const base = 61 + i * 6;
-      setStr(base + 0, v.marca);
-      setStr(base + 1, v.tipo);
-      setStr(base + 2, v.color);
-      if (v.placa !== undefined) set(base + 3, String(v.placa || '').toUpperCase());
-      setStr(base + 4, v.modelo);
-      setStr(base + 5, v.tag);
-    }
-  }
-
-  // ====== MOTOS (73-84, 2 × 6 cols) ======
-  if (Array.isArray(data.motos)) {
-    for (let i = 0; i < 2; i++) {
-      const v = data.motos[i] || {};
-      const base = 73 + i * 6;
-      setStr(base + 0, v.marca);
-      setStr(base + 1, v.tipo);
-      setStr(base + 2, v.color);
-      if (v.placa !== undefined) set(base + 3, String(v.placa || '').toUpperCase());
-      setStr(base + 4, v.modelo);
-      setStr(base + 5, v.tag);
-    }
-  }
-
-  // ====== BICICLETAS (85-92, 2 × 4 cols) ======
-  if (Array.isArray(data.bicis)) {
-    for (let i = 0; i < 2; i++) {
-      const b = data.bicis[i] || {};
-      const base = 85 + i * 4;
-      setStr(base + 0, b.marca);
-      setStr(base + 1, b.color);
-      setStr(base + 2, b.clase);
-      setStr(base + 3, b.serial);
-    }
-  }
-
-  // ====== LLAVEROS/TAGS (93-94) ======
-  if (data.llaverosAut !== undefined) setStr(93, data.llaverosAut);
-  if (data.tagsAut !== undefined) setStr(94, data.tagsAut);
-
-  // ====== DISPOSITIVOS (95-109, 3 × 5 cols) ======
-  if (Array.isArray(data.dispositivos)) {
-    for (let i = 0; i < 3; i++) {
-      const d = data.dispositivos[i] || {};
-      const base = 95 + i * 5;
-      setStr(base + 0, d.tipo);
-      setStr(base + 1, d.codigo);
-      if (d.placa !== undefined) set(base + 2, String(d.placa || '').toUpperCase());
-      setStr(base + 3, d.fecha);
-      setStr(base + 4, d.recibe);
-    }
-  }
-
-  // ====== MASCOTAS (110-129, 2 × 10 cols) ======
-  if (Array.isArray(data.mascotas)) {
-    for (let i = 0; i < 2; i++) {
-      const m = data.mascotas[i] || {};
-      const base = 110 + i * 10;
-      setStr(base + 0, m.tipo);
-      setStr(base + 1, m.nombre);
-      setStr(base + 2, m.raza);
-      setStr(base + 3, m.color);
-      setStr(base + 4, m.sexo);
-      setStr(base + 5, m.vacuna);
-      if (m.manejoEspecial !== undefined) {
-        newRow[base + 6] = (m.manejoEspecial === true || m.manejoEspecial === 'Sí') ? 'Sí' : 'No';
+    // ====== MENORES (49-60, 4 × 3 cols) ======
+    if (Array.isArray(data.menores)) {
+      for (let i = 0; i < 4; i++) {
+        const m = data.menores[i] || {};
+        const base = 49 + i * 3;
+        setStr(base + 0, m.nombre);
+        if (m.edad !== undefined) {
+          newRow[base + 1] = (m.edad !== null && m.edad !== '') ? String(m.edad) : '';
+        }
+        setStr(base + 2, m.parent);
       }
-      setStr(base + 7, m.registro);
-      setStr(base + 8, m.aseguradora);
-      setStr(base + 9, m.poliza);
     }
-  }
 
-  // ====== EMERGENCIAS (130-135, 2 × 3 cols) ======
-  if (Array.isArray(data.emergencias)) {
-    for (let i = 0; i < 2; i++) {
-      const e = data.emergencias[i] || {};
-      const base = 130 + i * 3;
-      setStr(base + 0, e.nombre);
-      setStr(base + 1, e.parent);
-      setStr(base + 2, e.tel);
+    // ====== VEHICULOS (61-72, 2 × 6 cols) ======
+    if (Array.isArray(data.vehiculos)) {
+      for (let i = 0; i < 2; i++) {
+        const v = data.vehiculos[i] || {};
+        const base = 61 + i * 6;
+        setStr(base + 0, v.marca);
+        setStr(base + 1, v.tipo);
+        setStr(base + 2, v.color);
+        if (v.placa !== undefined) set(base + 3, String(v.placa || '').toUpperCase());
+        setStr(base + 4, v.modelo);
+        setStr(base + 5, v.tag);
+      }
     }
+
+    // ====== MOTOS (73-84, 2 × 6 cols) ======
+    if (Array.isArray(data.motos)) {
+      for (let i = 0; i < 2; i++) {
+        const v = data.motos[i] || {};
+        const base = 73 + i * 6;
+        setStr(base + 0, v.marca);
+        setStr(base + 1, v.tipo);
+        setStr(base + 2, v.color);
+        if (v.placa !== undefined) set(base + 3, String(v.placa || '').toUpperCase());
+        setStr(base + 4, v.modelo);
+        setStr(base + 5, v.tag);
+      }
+    }
+
+    // ====== BICICLETAS (85-92, 2 × 4 cols) ======
+    if (Array.isArray(data.bicis)) {
+      for (let i = 0; i < 2; i++) {
+        const b = data.bicis[i] || {};
+        const base = 85 + i * 4;
+        setStr(base + 0, b.marca);
+        setStr(base + 1, b.color);
+        setStr(base + 2, b.clase);
+        setStr(base + 3, b.serial);
+      }
+    }
+
+    // ====== LLAVEROS/TAGS (93-94) ======
+    if (data.llaverosAut !== undefined) setStr(93, data.llaverosAut);
+    if (data.tagsAut !== undefined) setStr(94, data.tagsAut);
+
+    // ====== DISPOSITIVOS (95-109, 3 × 5 cols) ======
+    if (Array.isArray(data.dispositivos)) {
+      for (let i = 0; i < 3; i++) {
+        const d = data.dispositivos[i] || {};
+        const base = 95 + i * 5;
+        setStr(base + 0, d.tipo);
+        setStr(base + 1, d.codigo);
+        if (d.placa !== undefined) set(base + 2, String(d.placa || '').toUpperCase());
+        setStr(base + 3, d.fecha);
+        setStr(base + 4, d.recibe);
+      }
+    }
+
+    // ====== MASCOTAS (110-129, 2 × 10 cols) ======
+    if (Array.isArray(data.mascotas)) {
+      for (let i = 0; i < 2; i++) {
+        const m = data.mascotas[i] || {};
+        const base = 110 + i * 10;
+        setStr(base + 0, m.tipo);
+        setStr(base + 1, m.nombre);
+        setStr(base + 2, m.raza);
+        setStr(base + 3, m.color);
+        setStr(base + 4, m.sexo);
+        setStr(base + 5, m.vacuna);
+        if (m.manejoEspecial !== undefined) {
+          newRow[base + 6] = (m.manejoEspecial === true || m.manejoEspecial === 'Sí') ? 'Sí' : 'No';
+        }
+        setStr(base + 7, m.registro);
+        setStr(base + 8, m.aseguradora);
+        setStr(base + 9, m.poliza);
+      }
+    }
+
+    // ====== EMERGENCIAS (130-135, 2 × 3 cols) ======
+    if (Array.isArray(data.emergencias)) {
+      for (let i = 0; i < 2; i++) {
+        const e = data.emergencias[i] || {};
+        const base = 130 + i * 3;
+        setStr(base + 0, e.nombre);
+        setStr(base + 1, e.parent);
+        setStr(base + 2, e.tel);
+      }
+    }
+
+    // ====== AUTORIZACIONES (136-138) ======
+    if (data.autDatos !== undefined) newRow[136] = data.autDatos ? 'Sí' : 'No';
+    if (data.autMenores !== undefined) newRow[137] = data.autMenores ? 'Sí' : 'No';
+    if (data.autCom !== undefined) newRow[138] = data.autCom ? 'Sí' : 'No';
+
+    // ====== FIRMA (139-141) ======
+    setStr(139, data.firmaNom);
+    setStr(140, data.firmaCC);
+    if (data.firmaFecha !== undefined) set(141, String(data.firmaFecha || ''));
+
+    // Actualizar fecha de edicion
+    newRow[COL_FECHA_EDIT] = Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss');
+
+    // Guardar
+    sheet.getRange(targetRow, 1, 1, NUM_COLS).setValues([newRow]);
+  } finally {
+    lock.releaseLock();
   }
-
-  // ====== AUTORIZACIONES (136-138) ======
-  if (data.autDatos !== undefined) newRow[136] = data.autDatos ? 'Sí' : 'No';
-  if (data.autMenores !== undefined) newRow[137] = data.autMenores ? 'Sí' : 'No';
-  if (data.autCom !== undefined) newRow[138] = data.autCom ? 'Sí' : 'No';
-
-  // ====== FIRMA (139-141) ======
-  setStr(139, data.firmaNom);
-  setStr(140, data.firmaCC);
-  if (data.firmaFecha !== undefined) set(141, String(data.firmaFecha || ''));
-
-  // Actualizar fecha de edicion
-  newRow[COL_FECHA_EDIT] = Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss');
-
-  // Guardar
-  sheet.getRange(targetRow, 1, 1, NUM_COLS).setValues([newRow]);
 
   Logger.log('adminGuardar: ' + numForm + ' (fila ' + targetRow + ') a las ' + newRow[COL_FECHA_EDIT]);
 
@@ -1921,6 +2095,10 @@ function vigilanteLeerContrasena() {
 }
 
 function vigilanteLogin(password) {
+  // AUD-T2: 5 intentos fallidos = 15 minutos de espera
+  if (rateLimit_('login_vigilante', 5, 900)) {
+    return { ok: false, error: 'Demasiados intentos. Espere 15 minutos.' };
+  }
   password = String(password || '');
   const stored = vigilanteLeerContrasena();
   if (!stored) {
@@ -1929,6 +2107,7 @@ function vigilanteLogin(password) {
   if (password === stored) {
     const token = generarToken();
     guardarToken('vigilante', token);
+    CacheService.getScriptCache().remove('rl_login_vigilante'); // AUD-T2: reinicia el contador
     return { ok: true, message: 'Login correcto', token: token };
   }
   return { ok: false, error: 'Contrasena incorrecta' };
@@ -2085,7 +2264,7 @@ function vigilanteVerMudanzas(fecha) {
   if (last < 2) return { ok: true, reservas: [] };
 
   // Leer todas las columnas (necesitamos las nuevas T/U/V tambien)
-  const data = sheet.getRange(2, 1, last - 1, 22).getValues();
+  const data = sheet.getRange(2, 1, last - 1, MUDANZAS_NUM_COLS).getValues();
 
   // Calcular fecha limite (30 dias atras)
   const hoy = new Date();
@@ -2106,9 +2285,9 @@ function vigilanteVerMudanzas(fecha) {
     const horaFin = normalizarHora(row[8]);      // V37: fix R-23
     const nombre = String(row[9] || '');
     const estado = String(row[17] || '');
-    const realizada = String(row[19] || ''); // T
-    const fechaCheck = String(row[20] || ''); // U
-    const vigilante = String(row[21] || ''); // V
+    const realizada = String(row[COL_MUD_REALIZADA] || ''); // T
+    const fechaCheck = String(row[COL_MUD_FECHA_CHECK] || ''); // U
+    const vigilante = String(row[COL_MUD_VIGILANTE] || ''); // V
     const descripcionElementos = String(row[COL_MUD_DESCRIPCION] || '');  // V37 W
 
     if (!idReserva) continue;
@@ -2181,30 +2360,31 @@ function vigilanteCheckMudanza(data) {
   }
   const vigilante = String(data.vigilante || '').trim().substring(0, 100);
 
-  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('Mudanzas');
-  if (!sheet) return { ok: false, error: 'Pestana Mudanzas no encontrada' };
-  const last = sheet.getLastRow();
-  if (last < 2) return { ok: false, error: 'Sin reservas' };
-
-  const idCol = sheet.getRange(2, 1, last - 1, 1).getValues();
-  let targetRow = -1;
-  for (let i = 0; i < idCol.length; i++) {
-    if (String(idCol[i][0] || '').trim() === idReserva) {
-      targetRow = i + 2;
-      break;
-    }
-  }
-  if (targetRow === -1) return { ok: false, error: 'No se encontro la reserva ' + idReserva };
-
   // Lock para evitar race conditions entre vigilantes
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(30000)) {
     return { ok: false, error: 'Otro vigilante esta marcando. Intenta en unos segundos.' };
   }
   try {
-    sheet.getRange(targetRow, 20).setValue(status === 'realizada' ? 'Sí' : 'No'); // T
-    sheet.getRange(targetRow, 21).setValue(Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss')); // U
-    sheet.getRange(targetRow, 22).setValue(vigilante); // V
+    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('Mudanzas');
+    if (!sheet) return { ok: false, error: 'Pestana Mudanzas no encontrada' };
+    const last = sheet.getLastRow();
+    if (last < 2) return { ok: false, error: 'Sin reservas' };
+
+    // AUD-T10: la búsqueda de la fila va dentro del lock, justo antes de escribir.
+    const idCol = sheet.getRange(2, 1, last - 1, 1).getValues();
+    let targetRow = -1;
+    for (let i = 0; i < idCol.length; i++) {
+      if (String(idCol[i][0] || '').trim() === idReserva) {
+        targetRow = i + 2;
+        break;
+      }
+    }
+    if (targetRow === -1) return { ok: false, error: 'No se encontro la reserva ' + idReserva };
+
+    sheet.getRange(targetRow, COL_MUD_REALIZADA + 1).setValue(status === 'realizada' ? 'Sí' : 'No'); // T
+    sheet.getRange(targetRow, COL_MUD_FECHA_CHECK + 1).setValue(Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss')); // U
+    sheet.getRange(targetRow, COL_MUD_VIGILANTE + 1).setValue(vigilante); // V
     Logger.log('vigilanteCheck: ' + idReserva + ' = ' + status + ' por ' + vigilante);
     return { ok: true, message: 'Check registrado correctamente', rowNumber: targetRow };
   } finally {
@@ -2214,8 +2394,9 @@ function vigilanteCheckMudanza(data) {
 
 function vigilanteBuscarPorPlaca(placa) {
   placa = String(placa || '').trim().toUpperCase();
-  if (!placa || placa.length < 1) {
-    return { ok: false, error: 'Ingrese la placa (o parte de ella)' };
+  // AUD-T1: mínimo 3 caracteres para evitar volcados masivos
+  if (!placa || placa.length < 3) {
+    return { ok: false, error: 'Ingrese al menos 3 caracteres de la placa.' };
   }
   const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
   if (!sheet) return { ok: false, error: 'Sheet no encontrado' };
@@ -2226,11 +2407,9 @@ function vigilanteBuscarPorPlaca(placa) {
   const resultados = [];
   for (let i = 0; i < data.length; i++) {
     const row = data[i];
-    const numForm = String(row[COL_NUM_FORM] || '');
     const apto = String(row[COL_APTO] || '');
     const diligencia = String(row[4] || '');
     const nombreProp = String(row[5] || '');
-    const ccProp = String(row[6] || '');
 
     // Buscar en vehiculos (cols 61-72) y motos (cols 73-84)
     const matches = [];
@@ -2268,11 +2447,9 @@ function vigilanteBuscarPorPlaca(placa) {
     }
     if (matches.length > 0) {
       resultados.push({
-        numForm: numForm,
         apto: apto,
         diligencia: diligencia,
         nombreProp: nombreProp,
-        ccProp: ccProp,
         vehiculos: matches,
         rowNumber: HEADER_ROW + 1 + i
       });
@@ -2328,6 +2505,10 @@ function getEstadoResidente(apto) {
 // Devuelve el slot que matchea + datos básicos del residente.
 // ---------------------------------------------------------------------
 function verificarResidente(apto, cc) {
+  // AUD-T5: 10 intentos por apto cada 10 minutos
+  if (rateLimit_('ver_' + String(apto || '').trim(), 10, 600)) {
+    return { ok: false, error: 'Demasiados intentos para este apartamento. Espere 10 minutos.' };
+  }
   apto = String(apto || '').trim();
   cc = normCc(cc);
 
@@ -2659,20 +2840,9 @@ function registrarResidente(data) {
     // vacío los borraría. El residente NO puede autorizar dispositivos en el
     // portal — solo el propietario lo hace desde la Sección 8 del formulario
     // principal o desde el portal admin.
-    const _dispOrig = [];
-    for (let _i = 0; _i < 3; _i++) {
-      const _base = 95 + _i * 5;
-      _dispOrig.push({
-        tipo: String(row.values[_base + 0] || '').trim(),
-        codigo: String(row.values[_base + 1] || '').trim(),
-        placa: String(row.values[_base + 2] || '').trim(),
-        fecha: String(row.values[_base + 3] || '').trim(),
-        recibe: String(row.values[_base + 4] || '').trim()
-      });
-    }
-    const _dispConDatos = _dispOrig.filter(function (d) { return d.tipo || d.codigo; });
-    const _dispResidente = Array.isArray(data.dispositivos) ? data.dispositivos : [];
-    const dispositivosFinal = _dispResidente.length > 0 ? _dispResidente : _dispConDatos;
+    // AUD-T9: los dispositivos solo los cambia el propietario. El residente
+    // NO puede sobrescribir llaveros/tags autorizados desde el portal.
+    const dispositivosFinal = _preservarDispositivos(row.values);
 
     // BUGFIX-027 · 25-Oct-2026 — Reconstrucción fiel del payload.
     //
@@ -2737,7 +2907,7 @@ function registrarResidente(data) {
       firmaFecha: String(row.values[141] || ''),
     };
 
-    const result = submitRecord(payload);
+    const result = submitRecord(payload, { yaBloqueado: true });
     if (result.ok) {
       return {
         ok: true,
@@ -2853,7 +3023,7 @@ function actualizarResidente(data) {
       firmaFecha: String(row.values[141] || ''),
     };
 
-    const result = submitRecord(payload);
+    const result = submitRecord(payload, { yaBloqueado: true });
     if (result.ok) {
       return { ok: true, slotActualizado: slot, message: 'Datos actualizados correctamente.' };
     }
@@ -2997,6 +3167,8 @@ function clearResidente(data) {
 
     const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
     const rowNumber = row.rowNumber;
+
+    verificarEsquema_(sheet); // AUD-T7: aborta si la hoja cambió de esquema
 
     // Limpiar v[29..92] (índices 0-based) = columnas AD..CO (1-based 30..93)
     // AD (30) a CO (93) = 64 columnas: residentes(20) + menores(12) + vehiculos(12) + motos(12) + bicis(8)
@@ -3185,6 +3357,10 @@ function hashReservaDedupe(apto, fecha, slot) {
 // Login (apto+CC) + validación de mora
 // ---------------------------------------------------------------------
 function verificarAccesoSalon(apto, cc) {
+  // AUD-T5: 10 intentos por apto cada 10 minutos
+  if (rateLimit_('ver_' + String(apto || '').trim(), 10, 600)) {
+    return { ok: false, error: 'Demasiados intentos para este apartamento. Espere 10 minutos.' };
+  }
   apto = String(apto || '').trim();
   cc = String(cc || '').trim();
   if (!apto || !cc) return { ok: false, error: 'Falta N° de apartamento o cédula' };
@@ -3364,10 +3540,10 @@ function reservarSalon(data) {
       '',                                    // O
       hash,                                  // P
       now                                    // Q
-    ]);
+    ].map(safeCell_)); // AUD-T3
 
     // Notificar al admin
-    enviarEmailCerroAzul(
+    const _mail = enviarEmailSeguro_(
       'urb.cerroazul@gmail.com',
       'Nueva reserva salón social — ' + id,
       'Reserva creada:\n' +
@@ -3383,6 +3559,7 @@ function reservarSalon(data) {
 
     return {
       ok: true,
+      correoEnviado: _mail.enviado,
       reservaId: id,
       fechaLimitePago: Utilities.formatDate(fechaLimite, 'America/Bogota', "yyyy-MM-dd'T'HH:mm:ss"),
       monto: VALOR_POR_SLOT,
@@ -3399,93 +3576,107 @@ function reservarSalon(data) {
 // Sube el archivo a Drive y marca Pagado
 // ---------------------------------------------------------------------
 function subirComprobanteSalon(data) {
+  // AUD-T4: validar reserva/cc/apto/tamaño/magic-bytes ANTES de tocar Drive.
+  // Antes se creaba el archivo en Drive y luego se validaba la reserva: un
+  // archivo inválido quedaba huérfano y cualquiera podía llenar el Drive.
+
+  // 1. Validaciones de payload (sin tocar Drive ni tomar lock)
+  const reservaId = String(data.reservaId || '').trim();
+  const cc = String(data.cc || '').trim();
+  const apto = String(data.apto || '').trim();
+  const base64 = String(data.comprobanteBase64 || '');
+  const nombreArchivo = String(data.comprobanteNombre || 'comprobante.pdf');
+  const mime = String(data.comprobanteMime || 'application/pdf');
+
+  if (!reservaId || !cc || !apto || !base64) {
+    return { ok: false, error: 'Faltan datos requeridos' };
+  }
+  if (mime !== 'application/pdf' && mime !== 'image/jpeg' && mime !== 'image/png') {
+    return { ok: false, error: 'Tipo de archivo inválido. Use PDF, JPG o PNG.' };
+  }
+
+  // 2. AUD-T4: tamaño sin decodificar (base64 → ~0.75 bytes por carácter)
+  if (base64.length * 0.75 > 10 * 1024 * 1024) {
+    return { ok: false, error: 'Archivo demasiado grande. Máximo 10MB.' };
+  }
+
+  // 3. AUD-T4: buscar y validar la reserva ANTES de crear el archivo
+  const sheet = ensureSalonSocialSheet();
+  const dataSheet = sheet.getDataRange().getValues();
+  let rowFound = -1;
+  for (let i = 1; i < dataSheet.length; i++) {
+    if (String(dataSheet[i][0]).trim() === reservaId) {
+      if (normCc(String(dataSheet[i][3])) !== normCc(cc)) {
+        return { ok: false, error: 'La cédula no corresponde al solicitante de esta reserva.' };
+      }
+      if (String(dataSheet[i][2]).trim() !== apto) {
+        return { ok: false, error: 'El apartamento no corresponde.' };
+      }
+      const estado = String(dataSheet[i][10]).trim();
+      if (estado !== 'PendientePago') {
+        return { ok: false, error: 'Esta reserva no está pendiente de pago (' + estado + ').' };
+      }
+      rowFound = i + 1;
+      break;
+    }
+  }
+  if (rowFound < 0) return { ok: false, error: 'Reserva no encontrada.' };
+
+  // 4. AUD-T4: el tipo lo dicen los bytes, no el cliente
+  const bytes = Utilities.base64Decode(base64);
+  const b0 = bytes[0] & 255, b1 = bytes[1] & 255, b2 = bytes[2] & 255, b3 = bytes[3] & 255;
+  const esPdf = b0 === 0x25 && b1 === 0x50 && b2 === 0x44 && b3 === 0x46;
+  const esJpg = b0 === 0xFF && b1 === 0xD8 && b2 === 0xFF;
+  const esPng = b0 === 0x89 && b1 === 0x50 && b2 === 0x4E && b3 === 0x47;
+  if (!(esPdf || esJpg || esPng)) {
+    return { ok: false, error: 'El archivo no es un PDF, JPG o PNG válido.' };
+  }
+
+  // 5. AUD-T4: crear el archivo directamente en la carpeta (fuera del lock)
+  const blob = Utilities.newBlob(bytes, mime, nombreArchivo);
+  const folder = DriveApp.getFolderById(COMPROBANTES_FOLDER_ID);
+  const file = folder.createFile(blob);
+  file.setName('RS-' + reservaId.replace('RS-', '') + '_' + nombreArchivo);
+
+  // 6. AUD-T4: el lock envuelve solo releer la fila y escribir
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(30000)) {
     return { ok: false, error: 'Otra operación está en curso.' };
   }
   try {
-    const reservaId = String(data.reservaId || '').trim();
-    const cc = String(data.cc || '').trim();
-    const apto = String(data.apto || '').trim();
-    const base64 = String(data.comprobanteBase64 || '');
-    const nombreArchivo = String(data.comprobanteNombre || 'comprobante.pdf');
-    const mime = String(data.comprobanteMime || 'application/pdf');
-
-    if (!reservaId || !cc || !apto || !base64) {
-      return { ok: false, error: 'Faltan datos requeridos' };
+    const filaActual = sheet.getRange(rowFound, 1, 1, 19).getValues()[0];
+    const estadoActual = String(filaActual[10]).trim();
+    if (estadoActual !== 'PendientePago') {
+      return { ok: false, error: 'La reserva ya no está pendiente de pago (' + estadoActual + ').' };
     }
-    if (mime !== 'application/pdf' && mime !== 'image/jpeg' && mime !== 'image/png') {
-      return { ok: false, error: 'Tipo de archivo inválido. Use PDF, JPG o PNG.' };
-    }
-
-    // Decodificar base64
-    const bytes = Utilities.base64Decode(base64);
-    if (bytes.length > 10 * 1024 * 1024) {
-      return { ok: false, error: 'Archivo demasiado grande. Máximo 10MB.' };
-    }
-
-    // Crear blob y subir a Drive
-    const blob = Utilities.newBlob(bytes, mime, nombreArchivo);
-    const file = DriveApp.createFile(blob);
-    file.setName('RS-' + reservaId.replace('RS-', '') + '_' + nombreArchivo);
-    // Mover a carpeta de comprobantes
-    try {
-      const folder = DriveApp.getFolderById(COMPROBANTES_FOLDER_ID);
-      file.moveTo(folder);
-    } catch (e) {
-      Logger.log('No se pudo mover a carpeta: ' + e.message);
-    }
-
-    // Actualizar reserva
-    const sheet = ensureSalonSocialSheet();
-    const dataSheet = sheet.getDataRange().getValues();
-    let rowFound = -1;
-    for (let i = 1; i < dataSheet.length; i++) {
-      if (String(dataSheet[i][0]).trim() === reservaId) {
-        // Verificar CC matchea
-        if (normCc(String(dataSheet[i][3])) !== normCc(cc)) {
-          return { ok: false, error: 'La cédula no corresponde al solicitante de esta reserva.' };
-        }
-        if (String(dataSheet[i][2]).trim() !== apto) {
-          return { ok: false, error: 'El apartamento no corresponde.' };
-        }
-        const estado = String(dataSheet[i][10]).trim();
-        if (estado === 'Cancelado' || estado === 'Expirado' || estado === 'CanceladoPorAdmin') {
-          return { ok: false, error: 'Esta reserva ya no está activa (' + estado + ').' };
-        }
-        rowFound = i + 1;
-        break;
-      }
-    }
-    if (rowFound < 0) return { ok: false, error: 'Reserva no encontrada.' };
-
     const now = new Date();
-    sheet.getRange(rowFound, 11).setValue('Pagado');           // K
-    sheet.getRange(rowFound, 14).setValue(now);               // N (FECHA PAGO)
-    sheet.getRange(rowFound, 15).setValue(file.getId());       // O (COMPROBANTE ID)
-    sheet.getRange(rowFound, 17).setValue(now);               // Q (MODIFICADO POR)
-    sheet.getRange(rowFound, 18).setValue(cc);                // R (B3: SUBIDO POR)
-
-    // Notificar al admin
-    enviarEmailCerroAzul(
-      'urb.cerroazul@gmail.com',
-      'Comprobante subido — ' + reservaId,
-      'El residente ' + cc + ' subió un comprobante para la reserva ' + reservaId + '.\n\n' +
-      'Verificar legitimidad del archivo:\n' +
-      file.getUrl() + '\n\n' +
-      'Si el comprobante es legítimo, no haga nada.\n' +
-      'Si es falso, cancele la reserva desde el portal admin.'
-    );
-
-    return {
-      ok: true,
-      comprobanteId: file.getId(),
-      estado: 'Pagado',
-      mensaje: 'Comprobante subido. El administrador verificará la legitimidad.'
-    };
+    sheet.getRange(rowFound, 11).setValue('Pagado');      // K
+    sheet.getRange(rowFound, 14).setValue(now);           // N (fecha pago)
+    sheet.getRange(rowFound, 15).setValue(file.getId());  // O (comprobante id)
+    sheet.getRange(rowFound, 17).setValue(now);           // Q (modificado)
+    sheet.getRange(rowFound, 18).setValue(cc);            // R (subido por)
   } finally {
     lock.releaseLock();
   }
+
+  // 7. AUD-T8: el correo al final, sin romper la operación
+  const _mail = enviarEmailSeguro_(
+    'urb.cerroazul@gmail.com',
+    'Comprobante subido — ' + reservaId,
+    'El residente ' + cc + ' subió un comprobante para la reserva ' + reservaId + '.\n\n' +
+    'Verificar legitimidad del archivo:\n' +
+    file.getUrl() + '\n\n' +
+    'Si el comprobante es legítimo, no haga nada.\n' +
+    'Si es falso, cancele la reserva desde el portal admin.'
+  );
+
+  return {
+    ok: true,
+    correoEnviado: _mail.enviado,
+    comprobanteId: file.getId(),
+    estado: 'Pagado',
+    mensaje: 'Comprobante subido. El administrador verificará la legitimidad.'
+  };
 }
 
 // ---------------------------------------------------------------------
@@ -3535,14 +3726,14 @@ function cancelarReservaSalon(data) {
 
     Logger.log('[cancelarReservaSalon] ' + reservaId + ' por CC ' + cc + ' apto ' + apto);
 
-    enviarEmailCerroAzul(
+    const _mail = enviarEmailSeguro_(
       'urb.cerroazul@gmail.com',
       'Reserva cancelada — ' + reservaId,
       'El solicitante CC ' + cc + ' canceló la reserva ' + reservaId +
       ' del apto ' + apto + '. Slot liberado.'
     );
 
-    return { ok: true, estado: 'Cancelado', mensaje: 'Reserva cancelada. Slot liberado.' };
+    return { ok: true, correoEnviado: _mail.enviado, estado: 'Cancelado', mensaje: 'Reserva cancelada. Slot liberado.' };
   } finally {
     lock.releaseLock();
   }
@@ -3743,17 +3934,13 @@ function adminCancelarReservaSalon(data) {
   try {
     const reservaId = String(data.reservaId || '').trim();
     const motivo = String(data.motivo || '').trim();
-    const adminPassword = String(data.adminPassword || '').trim();
 
-    if (!reservaId || !motivo || !adminPassword) {
-      return { ok: false, error: 'Faltan datos requeridos (reservaId, motivo, adminPassword)' };
+    if (!reservaId || !motivo) {
+      return { ok: false, error: 'Faltan datos requeridos (reservaId, motivo)' };
     }
 
-    // Verificar admin password
-    const adminPwdStored = getConfigValue('admin_password');
-    if (adminPassword !== adminPwdStored) {
-      return { ok: false, error: 'Contraseña de administrador incorrecta.' };
-    }
+    // AUD-T13: la autenticación del admin ya la valida doPost (ACTIONS_ADMIN).
+    // Ya no se exige contraseña adicional en cada llamada.
 
     const sheet = ensureSalonSocialSheet();
     const dataSheet = sheet.getDataRange().getValues();
@@ -3781,7 +3968,7 @@ function adminCancelarReservaSalon(data) {
 
     Logger.log('[adminCancelarReservaSalon] ' + reservaId + ' motivo: ' + motivo + ' estadoOriginal: ' + estadoOriginal);
 
-    enviarEmailCerroAzul(
+    const _mail = enviarEmailSeguro_(
       'urb.cerroazul@gmail.com',
       'Reserva cancelada por admin — ' + reservaId,
       'El administrador canceló la reserva ' + reservaId + '.\n\n' +
@@ -3792,7 +3979,7 @@ function adminCancelarReservaSalon(data) {
       'Fecha: ' + Utilities.formatDate(new Date(rowData[8]), 'America/Bogota', 'yyyy-MM-dd') + ' (' + String(rowData[9]) + ')'
     );
 
-    return { ok: true, estado: estadoNuevo, mensaje: 'Reserva cancelada por administrador. Slot liberado.' };
+    return { ok: true, correoEnviado: _mail.enviado, estado: estadoNuevo, mensaje: 'Reserva cancelada por administrador. Slot liberado.' };
   } finally {
     lock.releaseLock();
   }
@@ -3847,7 +4034,7 @@ function expirarReservasSalon() {
     Logger.log('[expirarReservasSalon] RS-' + String(row[0]).replace('RS-', '') + ' apto ' + String(row[2]) + ' expirada');
   }
   if (count > 0) {
-    enviarEmailCerroAzul(
+    enviarEmailSeguro_(
       'urb.cerroazul@gmail.com',
       count + ' reservas de salón social expiradas',
       'El trigger automático canceló ' + count + ' reservas PendientePago que superaron las 48 horas sin subir comprobante.\n\nLos slots han sido liberados.'
@@ -4826,6 +5013,16 @@ function chatAsistente(payload) {
       return { ok: false, error: 'Mensaje demasiado largo (máximo 500 caracteres).' };
     }
 
+    // AUD-T5: límite global diario y por origen
+    const hoyKey = Utilities.formatDate(new Date(), 'America/Bogota', 'yyyyMMdd');
+    if (rateLimit_('chat_total_' + hoyKey, 500, 86400)) {
+      return { ok: false, error: 'El asistente alcanzó su límite diario. Intente mañana.' };
+    }
+    const origen = String(payload.apto || payload.token || payload.sesion || 'anon').slice(0, 40);
+    if (rateLimit_('chat_' + origen, 20, 3600)) {
+      return { ok: false, error: 'Demasiadas consultas al asistente. Espere una hora.' };
+    }
+
     const props = PropertiesService.getScriptProperties();
     const apiKey = props.getProperty('MINIMAX_API_KEY');
     if (!apiKey) {
@@ -4895,7 +5092,7 @@ function chatAsistente(payload) {
       headers: headers,
       payload: JSON.stringify(body),
       muteHttpExceptions: true,
-      timeout: 50  // segundos
+      timeout: 25  // AUD-T5: 25 segundos (antes 50)
     });
 
     const code = respHttp.getResponseCode();
@@ -5048,8 +5245,9 @@ function ecTolerancia() {
   return isNaN(t) ? 1000 : t;
 }
 
-function ecAdminOk(password) {
-  return adminLogin(password).ok === true;   // reutiliza la función existente
+// AUD-T2: el cargador de cartera usa el token de sesión del admin
+function ecAdminOk(payload) {
+  return validarToken('admin', payload && payload.token);
 }
 
 // ---------------------------------------------------------------------
@@ -5274,7 +5472,7 @@ function ecPazYSalvo(data) {
 // ENDPOINTS DE CARGA MENSUAL (POST, requieren password de admin)
 // ---------------------------------------------------------------------
 function ecIniciarCarga(data) {
-  if (!ecAdminOk(data.password)) return { ok: false, error: 'Contraseña de administrador incorrecta.' };
+  if (!ecAdminOk(data)) return { ok: false, error: 'Sesión de administrador no válida o expirada.' };
   const periodo = String(data.periodo || '');
   const pestana = String(data.nombrePestana || '');
   const fechaCorte = String(data.fechaCorte || '');
@@ -5362,7 +5560,7 @@ function ecIniciarCarga(data) {
 }
 
 function ecSubirFacturas(data) {
-  if (!ecAdminOk(data.password)) return { ok: false, error: 'Contraseña de administrador incorrecta.' };
+  if (!ecAdminOk(data)) return { ok: false, error: 'Sesión de administrador no válida o expirada.' };
   const carga = ecLeerControl().find(c => c.idCarga === String(data.idCarga || ''));
   if (!carga) return { ok: false, error: 'Carga no encontrada.' };
   if (carga.estado !== 'CARGANDO') return { ok: false, error: 'La carga ya no está en estado CARGANDO (' + carga.estado + ').' };
@@ -5387,7 +5585,7 @@ function ecSubirFacturas(data) {
 }
 
 function ecFinalizarCarga(data) {
-  if (!ecAdminOk(data.password)) return { ok: false, error: 'Contraseña de administrador incorrecta.' };
+  if (!ecAdminOk(data)) return { ok: false, error: 'Sesión de administrador no válida o expirada.' };
   const control = ecLeerControl();
   const carga = control.find(c => c.idCarga === String(data.idCarga || ''));
   if (!carga) return { ok: false, error: 'Carga no encontrada.' };
