@@ -3500,74 +3500,91 @@ function reservarSalon(data) {
 // Sube el archivo a Drive y marca Pagado
 // ---------------------------------------------------------------------
 function subirComprobanteSalon(data) {
+  // AUD-T4: validar reserva/cc/apto/tamaño/magic-bytes ANTES de tocar Drive.
+  // Antes se creaba el archivo en Drive y luego se validaba la reserva: un
+  // archivo inválido quedaba huérfano y cualquiera podía llenar el Drive.
+
+  // 1. Validaciones de payload (sin tocar Drive ni tomar lock)
+  const reservaId = String(data.reservaId || '').trim();
+  const cc = String(data.cc || '').trim();
+  const apto = String(data.apto || '').trim();
+  const base64 = String(data.comprobanteBase64 || '');
+  const nombreArchivo = String(data.comprobanteNombre || 'comprobante.pdf');
+  const mime = String(data.comprobanteMime || 'application/pdf');
+
+  if (!reservaId || !cc || !apto || !base64) {
+    return { ok: false, error: 'Faltan datos requeridos' };
+  }
+  if (mime !== 'application/pdf' && mime !== 'image/jpeg' && mime !== 'image/png') {
+    return { ok: false, error: 'Tipo de archivo inválido. Use PDF, JPG o PNG.' };
+  }
+
+  // 2. AUD-T4: tamaño sin decodificar (base64 → ~0.75 bytes por carácter)
+  if (base64.length * 0.75 > 10 * 1024 * 1024) {
+    return { ok: false, error: 'Archivo demasiado grande. Máximo 10MB.' };
+  }
+
+  // 3. AUD-T4: buscar y validar la reserva ANTES de crear el archivo
+  const sheet = ensureSalonSocialSheet();
+  const dataSheet = sheet.getDataRange().getValues();
+  let rowFound = -1;
+  for (let i = 1; i < dataSheet.length; i++) {
+    if (String(dataSheet[i][0]).trim() === reservaId) {
+      if (normCc(String(dataSheet[i][3])) !== normCc(cc)) {
+        return { ok: false, error: 'La cédula no corresponde al solicitante de esta reserva.' };
+      }
+      if (String(dataSheet[i][2]).trim() !== apto) {
+        return { ok: false, error: 'El apartamento no corresponde.' };
+      }
+      const estado = String(dataSheet[i][10]).trim();
+      if (estado !== 'PendientePago') {
+        return { ok: false, error: 'Esta reserva no está pendiente de pago (' + estado + ').' };
+      }
+      rowFound = i + 1;
+      break;
+    }
+  }
+  if (rowFound < 0) return { ok: false, error: 'Reserva no encontrada.' };
+
+  // 4. AUD-T4: el tipo lo dicen los bytes, no el cliente
+  const bytes = Utilities.base64Decode(base64);
+  const b0 = bytes[0] & 255, b1 = bytes[1] & 255, b2 = bytes[2] & 255, b3 = bytes[3] & 255;
+  const esPdf = b0 === 0x25 && b1 === 0x50 && b2 === 0x44 && b3 === 0x46;
+  const esJpg = b0 === 0xFF && b1 === 0xD8 && b2 === 0xFF;
+  const esPng = b0 === 0x89 && b1 === 0x50 && b2 === 0x4E && b3 === 0x47;
+  if (!(esPdf || esJpg || esPng)) {
+    return { ok: false, error: 'El archivo no es un PDF, JPG o PNG válido.' };
+  }
+
+  // 5. AUD-T4: crear el archivo directamente en la carpeta (fuera del lock)
+  const blob = Utilities.newBlob(bytes, mime, nombreArchivo);
+  const folder = DriveApp.getFolderById(COMPROBANTES_FOLDER_ID);
+  const file = folder.createFile(blob);
+  file.setName('RS-' + reservaId.replace('RS-', '') + '_' + nombreArchivo);
+
+  // 6. AUD-T4: el lock envuelve solo releer la fila y escribir
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(30000)) {
     return { ok: false, error: 'Otra operación está en curso.' };
   }
   try {
-    const reservaId = String(data.reservaId || '').trim();
-    const cc = String(data.cc || '').trim();
-    const apto = String(data.apto || '').trim();
-    const base64 = String(data.comprobanteBase64 || '');
-    const nombreArchivo = String(data.comprobanteNombre || 'comprobante.pdf');
-    const mime = String(data.comprobanteMime || 'application/pdf');
-
-    if (!reservaId || !cc || !apto || !base64) {
-      return { ok: false, error: 'Faltan datos requeridos' };
+    const filaActual = sheet.getRange(rowFound, 1, 1, 19).getValues()[0];
+    const estadoActual = String(filaActual[10]).trim();
+    if (estadoActual !== 'PendientePago') {
+      return { ok: false, error: 'La reserva ya no está pendiente de pago (' + estadoActual + ').' };
     }
-    if (mime !== 'application/pdf' && mime !== 'image/jpeg' && mime !== 'image/png') {
-      return { ok: false, error: 'Tipo de archivo inválido. Use PDF, JPG o PNG.' };
-    }
-
-    // Decodificar base64
-    const bytes = Utilities.base64Decode(base64);
-    if (bytes.length > 10 * 1024 * 1024) {
-      return { ok: false, error: 'Archivo demasiado grande. Máximo 10MB.' };
-    }
-
-    // Crear blob y subir a Drive
-    const blob = Utilities.newBlob(bytes, mime, nombreArchivo);
-    const file = DriveApp.createFile(blob);
-    file.setName('RS-' + reservaId.replace('RS-', '') + '_' + nombreArchivo);
-    // Mover a carpeta de comprobantes
-    try {
-      const folder = DriveApp.getFolderById(COMPROBANTES_FOLDER_ID);
-      file.moveTo(folder);
-    } catch (e) {
-      Logger.log('No se pudo mover a carpeta: ' + e.message);
-    }
-
-    // Actualizar reserva
-    const sheet = ensureSalonSocialSheet();
-    const dataSheet = sheet.getDataRange().getValues();
-    let rowFound = -1;
-    for (let i = 1; i < dataSheet.length; i++) {
-      if (String(dataSheet[i][0]).trim() === reservaId) {
-        // Verificar CC matchea
-        if (normCc(String(dataSheet[i][3])) !== normCc(cc)) {
-          return { ok: false, error: 'La cédula no corresponde al solicitante de esta reserva.' };
-        }
-        if (String(dataSheet[i][2]).trim() !== apto) {
-          return { ok: false, error: 'El apartamento no corresponde.' };
-        }
-        const estado = String(dataSheet[i][10]).trim();
-        if (estado === 'Cancelado' || estado === 'Expirado' || estado === 'CanceladoPorAdmin') {
-          return { ok: false, error: 'Esta reserva ya no está activa (' + estado + ').' };
-        }
-        rowFound = i + 1;
-        break;
-      }
-    }
-    if (rowFound < 0) return { ok: false, error: 'Reserva no encontrada.' };
-
     const now = new Date();
-    sheet.getRange(rowFound, 11).setValue('Pagado');           // K
-    sheet.getRange(rowFound, 14).setValue(now);               // N (FECHA PAGO)
-    sheet.getRange(rowFound, 15).setValue(file.getId());       // O (COMPROBANTE ID)
-    sheet.getRange(rowFound, 17).setValue(now);               // Q (MODIFICADO POR)
-    sheet.getRange(rowFound, 18).setValue(cc);                // R (B3: SUBIDO POR)
+    sheet.getRange(rowFound, 11).setValue('Pagado');      // K
+    sheet.getRange(rowFound, 14).setValue(now);           // N (fecha pago)
+    sheet.getRange(rowFound, 15).setValue(file.getId());  // O (comprobante id)
+    sheet.getRange(rowFound, 17).setValue(now);           // Q (modificado)
+    sheet.getRange(rowFound, 18).setValue(cc);            // R (subido por)
+  } finally {
+    lock.releaseLock();
+  }
 
-    // Notificar al admin
+  // 7. AUD-T4: el correo al final, sin romper la operación (T8 lo sustituirá)
+  try {
     enviarEmailCerroAzul(
       'urb.cerroazul@gmail.com',
       'Comprobante subido — ' + reservaId,
@@ -3577,16 +3594,16 @@ function subirComprobanteSalon(data) {
       'Si el comprobante es legítimo, no haga nada.\n' +
       'Si es falso, cancele la reserva desde el portal admin.'
     );
-
-    return {
-      ok: true,
-      comprobanteId: file.getId(),
-      estado: 'Pagado',
-      mensaje: 'Comprobante subido. El administrador verificará la legitimidad.'
-    };
-  } finally {
-    lock.releaseLock();
+  } catch (e) {
+    Logger.log('No se pudo enviar correo de comprobante: ' + e.message);
   }
+
+  return {
+    ok: true,
+    comprobanteId: file.getId(),
+    estado: 'Pagado',
+    mensaje: 'Comprobante subido. El administrador verificará la legitimidad.'
+  };
 }
 
 // ---------------------------------------------------------------------
