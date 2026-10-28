@@ -33,22 +33,11 @@ const state = {
 
 // ============ FETCH HELPERS ============
 async function apiGet(params) {
-  const url = new URL(APP_URL);
-  Object.entries(params).forEach(([k, v]) => {
-    if (v != null) url.searchParams.set(k, v);
-  });
-  const r = await fetch(url.toString(), { method: 'GET', redirect: 'follow' });
-  return r.json();
+  return CA.api(params, { method: 'GET' });
 }
 
 async function apiPost(payload) {
-  const r = await fetch(APP_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-    body: JSON.stringify(payload),
-    redirect: 'follow'
-  });
-  return r.json();
+  return CA.api(payload, { method: 'POST' });
 }
 
 // ============ UI HELPERS ============
