@@ -1595,6 +1595,21 @@ function enviarEmailCerroAzul(to, subject, body) {
   });
 }
 
+// AUD-T8: envío que nunca lanza. Devuelve {enviado, error}.
+function enviarEmailSeguro_(to, subject, body) {
+  try {
+    if (MailApp.getRemainingDailyQuota() < 20) {
+      Logger.log('[email] cuota diaria casi agotada; no se envió: ' + subject);
+      return { enviado: false, error: 'cuota' };
+    }
+    enviarEmailCerroAzul(to, subject, body);
+    return { enviado: true, error: '' };
+  } catch (e) {
+    Logger.log('[email] fallo "' + subject + '": ' + String(e && e.message || e));
+    return { enviado: false, error: String(e && e.message || e) };
+  }
+}
+
 function enviarEmailCodigoRegistro(row, numForm) {
   const correo = String(row[7] || '').trim();   // col H = Correo Propietario
   if (!correo || correo.indexOf('@') === -1) {
@@ -3502,7 +3517,7 @@ function reservarSalon(data) {
     ].map(safeCell_)); // AUD-T3
 
     // Notificar al admin
-    enviarEmailCerroAzul(
+    const _mail = enviarEmailSeguro_(
       'urb.cerroazul@gmail.com',
       'Nueva reserva salón social — ' + id,
       'Reserva creada:\n' +
@@ -3518,6 +3533,7 @@ function reservarSalon(data) {
 
     return {
       ok: true,
+      correoEnviado: _mail.enviado,
       reservaId: id,
       fechaLimitePago: Utilities.formatDate(fechaLimite, 'America/Bogota', "yyyy-MM-dd'T'HH:mm:ss"),
       monto: VALOR_POR_SLOT,
@@ -3617,23 +3633,20 @@ function subirComprobanteSalon(data) {
     lock.releaseLock();
   }
 
-  // 7. AUD-T4: el correo al final, sin romper la operación (T8 lo sustituirá)
-  try {
-    enviarEmailCerroAzul(
-      'urb.cerroazul@gmail.com',
-      'Comprobante subido — ' + reservaId,
-      'El residente ' + cc + ' subió un comprobante para la reserva ' + reservaId + '.\n\n' +
-      'Verificar legitimidad del archivo:\n' +
-      file.getUrl() + '\n\n' +
-      'Si el comprobante es legítimo, no haga nada.\n' +
-      'Si es falso, cancele la reserva desde el portal admin.'
-    );
-  } catch (e) {
-    Logger.log('No se pudo enviar correo de comprobante: ' + e.message);
-  }
+  // 7. AUD-T8: el correo al final, sin romper la operación
+  const _mail = enviarEmailSeguro_(
+    'urb.cerroazul@gmail.com',
+    'Comprobante subido — ' + reservaId,
+    'El residente ' + cc + ' subió un comprobante para la reserva ' + reservaId + '.\n\n' +
+    'Verificar legitimidad del archivo:\n' +
+    file.getUrl() + '\n\n' +
+    'Si el comprobante es legítimo, no haga nada.\n' +
+    'Si es falso, cancele la reserva desde el portal admin.'
+  );
 
   return {
     ok: true,
+    correoEnviado: _mail.enviado,
     comprobanteId: file.getId(),
     estado: 'Pagado',
     mensaje: 'Comprobante subido. El administrador verificará la legitimidad.'
@@ -3687,14 +3700,14 @@ function cancelarReservaSalon(data) {
 
     Logger.log('[cancelarReservaSalon] ' + reservaId + ' por CC ' + cc + ' apto ' + apto);
 
-    enviarEmailCerroAzul(
+    const _mail = enviarEmailSeguro_(
       'urb.cerroazul@gmail.com',
       'Reserva cancelada — ' + reservaId,
       'El solicitante CC ' + cc + ' canceló la reserva ' + reservaId +
       ' del apto ' + apto + '. Slot liberado.'
     );
 
-    return { ok: true, estado: 'Cancelado', mensaje: 'Reserva cancelada. Slot liberado.' };
+    return { ok: true, correoEnviado: _mail.enviado, estado: 'Cancelado', mensaje: 'Reserva cancelada. Slot liberado.' };
   } finally {
     lock.releaseLock();
   }
@@ -3933,7 +3946,7 @@ function adminCancelarReservaSalon(data) {
 
     Logger.log('[adminCancelarReservaSalon] ' + reservaId + ' motivo: ' + motivo + ' estadoOriginal: ' + estadoOriginal);
 
-    enviarEmailCerroAzul(
+    const _mail = enviarEmailSeguro_(
       'urb.cerroazul@gmail.com',
       'Reserva cancelada por admin — ' + reservaId,
       'El administrador canceló la reserva ' + reservaId + '.\n\n' +
@@ -3944,7 +3957,7 @@ function adminCancelarReservaSalon(data) {
       'Fecha: ' + Utilities.formatDate(new Date(rowData[8]), 'America/Bogota', 'yyyy-MM-dd') + ' (' + String(rowData[9]) + ')'
     );
 
-    return { ok: true, estado: estadoNuevo, mensaje: 'Reserva cancelada por administrador. Slot liberado.' };
+    return { ok: true, correoEnviado: _mail.enviado, estado: estadoNuevo, mensaje: 'Reserva cancelada por administrador. Slot liberado.' };
   } finally {
     lock.releaseLock();
   }
@@ -3999,7 +4012,7 @@ function expirarReservasSalon() {
     Logger.log('[expirarReservasSalon] RS-' + String(row[0]).replace('RS-', '') + ' apto ' + String(row[2]) + ' expirada');
   }
   if (count > 0) {
-    enviarEmailCerroAzul(
+    enviarEmailSeguro_(
       'urb.cerroazul@gmail.com',
       count + ' reservas de salón social expiradas',
       'El trigger automático canceló ' + count + ' reservas PendientePago que superaron las 48 horas sin subir comprobante.\n\nLos slots han sido liberados.'
