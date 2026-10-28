@@ -243,12 +243,7 @@
 
   // ==================== HELPERS ==================================
   async function post(payload) {
-    var r = await fetch(BACKEND_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-      body: JSON.stringify(payload),
-    });
-    return await r.json();
+    return CA.api(payload, { method: 'POST' });
   }
 
   function $(s) { return document.querySelector(s); }
