@@ -23,6 +23,7 @@ Entorno de pruebas:
 | T5 | límites en verificaciones y en el asistente | `4dd9b4b` | ✅ 11 llamadas lookup apto 9999: 10 'No se encontró' → 11ª 'Demasiados intentos' | chatAsistente: límite diario (500) + por origen (20/h); timeout 50→25. La prueba del chat (b/c) requiere MiniMax. |
 | T7 | enrutado seguro y verificación de esquema | `2ea9f8d` | ✅ (a) action 'reservarSalón' → 'Acción no reconocida'; (b) POST sin action crea CA-0291; (c) D1 renombrada → 'Esquema de Registros alterado en la columna 4' (aborta, restaurada) | vigilanteVerMudanzas 22→23 col; constantes COL_MUD_REALIZADA/FECHA_CHECK/VIGILANTE. (d) descripción en mudanzas verificada por código. |
 | T8 | correo que nunca rompe la operación | `1b689f0` | ✅ harness: GmailApp lanza → {enviado:false}; cuota baja → {enviado:false}; OK → {enviado:true} | enviarEmailSeguro_ en las 5 llamadas de Salón; 4 respuestas añaden correoEnviado. La prueba end-to-end (alias noexiste) requiere reserva válida de salón en la copia. |
+| T9 | registrarResidente preserva dispositivos del propietario | `bef8559` | ✅ harness: _preservarDispositivos conserva Disp1.codigo='LLV-001' ignorando lo que envíe el residente | Cambio único: dispositivosFinal = _preservarDispositivos(row.values). Sin validaciones de identidad (decisión del admin). |
 
 ## Observaciones fuera de alcance (anotadas, no ejecutadas)
 
