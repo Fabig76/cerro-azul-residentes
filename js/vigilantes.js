@@ -8,32 +8,28 @@
 
 const APPS_SCRIPT_URL = window.CA_CONFIG.url;
 
-// BUGFIX-019: inyectar el token de sesión en TODAS las llamadas al backend.
-(function () {
-  const _fetch = window.fetch;
-  window.fetch = function (url, opts) {
-    const token = sessionStorage.getItem('vigilanteToken');
-    if (token) {
-      opts = opts || {};
-      if (typeof url === 'string') {
-        url += (url.indexOf('?') !== -1 ? '&' : '?') + 'token=' + encodeURIComponent(token);
-      }
-      if (opts.body) {
-        try {
-          const b = JSON.parse(opts.body);
-          b.token = token;
-          opts = Object.assign({}, opts, { body: JSON.stringify(b) });
-        } catch (e) {}
-      }
-    }
-    return _fetch(url, opts);
-  };
-})();
+// AUD-T16: se eliminó el parche global de window.fetch. El token de sesión se
+// añade explícitamente en apiGet/apiPost.
 
 const V = {
   // Helper para fetch (agregado en F5 del módulo salón social)
   async apiGet(params) {
-    const j = await CA.api(params, { method: 'GET' });
+    const p = Object.assign({}, params);
+    const token = sessionStorage.getItem('vigilanteToken');
+    if (token) p.token = token;
+    const j = await CA.api(p, { method: 'GET' });
+    // AUD-T13: sesión expirada
+    if (j && j.ok === false && String(j.error || '').indexOf('Sesión no válida') === 0) {
+      V.logout();
+      V.showAlert('Su sesión expiró. Ingrese de nuevo.', 'err');
+    }
+    return j;
+  },
+  async apiPost(params) {
+    const p = Object.assign({}, params);
+    const token = sessionStorage.getItem('vigilanteToken');
+    if (token) p.token = token;
+    const j = await CA.api(p, { method: 'POST' });
     // AUD-T13: sesión expirada
     if (j && j.ok === false && String(j.error || '').indexOf('Sesión no válida') === 0) {
       V.logout();
@@ -135,7 +131,7 @@ const V = {
     const btn = document.getElementById('btnSearch');
     btn.disabled = true; btn.textContent = 'Buscando...';
     try {
-      const r = await CA.api({ action: 'vigilanteVerResidentes', q: q }, { method: 'GET' });
+      const r = await V.apiGet({ action: 'vigilanteVerResidentes', q: q });
       if (!r.ok) { V.showAlert(r.error || 'Error.', 'err'); V.clearResults(); return; }
       V.state.lastResults = r.resultados;
       V.renderResults(r.resultados, q);
@@ -283,7 +279,7 @@ const V = {
     const btn = document.getElementById('btnBuscarPlaca');
     btn.disabled = true; btn.textContent = 'Buscando...';
     try {
-      const r = await CA.api({ action: 'vigilanteBuscarPorPlaca', placa: placa }, { method: 'GET' });
+      const r = await V.apiGet({ action: 'vigilanteBuscarPorPlaca', placa: placa });
       if (!r.ok) { V.showAlert(r.error || 'Error.', 'err'); V.clearPlacas(); return; }
       V.renderPlacas(r.resultados, placa);
     } catch (e) { V.showAlert('Error de red: ' + e.message, 'err'); }
@@ -339,7 +335,7 @@ const V = {
     try {
       const q = { action: 'vigilanteVerMudanzas' };
       if (fecha) q.fecha = fecha;
-      const r = await CA.api(q, { method: 'GET' });
+      const r = await V.apiGet(q);
       if (!r.ok) { V.showAlert(r.error || 'Error.', 'err'); cont.innerHTML = ''; return; }
       V.renderMudanzas(r.reservas);
     } catch (e) { V.showAlert('Error de red: ' + e.message, 'err'); cont.innerHTML = ''; }
@@ -417,12 +413,12 @@ const V = {
     btn.disabled = true;
     btn.textContent = 'Registrando...';
     try {
-      const r = await CA.api({
+      const r = await V.apiPost({
         action: 'vigilanteCheckMudanza',
         idReserva: idReserva,
         status: status,
         vigilante: vigilante
-      }, { method: 'POST' });
+      });
 
       if (!r.ok) {
         V.showAlert(r.error || 'Error al registrar check.', 'err');

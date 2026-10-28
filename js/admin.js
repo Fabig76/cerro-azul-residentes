@@ -5,34 +5,16 @@
 
 const APPS_SCRIPT_URL = window.CA_CONFIG.url;
 
-// BUGFIX-019: inyectar el token de sesión en TODAS las llamadas al backend.
-// Si hay token guardado (tras login), se añade a la URL (GET) o al body (POST).
-// El login (adminLogin) no envía token porque aún no hay sesión.
-(function () {
-  const _fetch = window.fetch;
-  window.fetch = function (url, opts) {
-    const token = sessionStorage.getItem('adminToken');
-    if (token) {
-      opts = opts || {};
-      if (typeof url === 'string') {
-        url += (url.indexOf('?') !== -1 ? '&' : '?') + 'token=' + encodeURIComponent(token);
-      }
-      if (opts.body) {
-        try {
-          const b = JSON.parse(opts.body);
-          b.token = token;
-          opts = Object.assign({}, opts, { body: JSON.stringify(b) });
-        } catch (e) {}
-      }
-    }
-    return _fetch(url, opts);
-  };
-})();
+// AUD-T16: se eliminó el parche global de window.fetch. El token de sesión se
+// añade explícitamente en apiGet/apiPost.
 
 const A = {
   // Helpers para fetch (agregados en F5 del módulo salón social)
   async apiGet(params) {
-    const j = await CA.api(params, { method: 'GET' });
+    const p = Object.assign({}, params);
+    const token = sessionStorage.getItem('adminToken');
+    if (token) p.token = token;
+    const j = await CA.api(p, { method: 'GET' });
     // AUD-T13: sesión expirada
     if (j && j.ok === false && String(j.error || '').indexOf('Sesión no válida') === 0) {
       A.logout();
@@ -41,7 +23,10 @@ const A = {
     return j;
   },
   async apiPost(payload) {
-    const j = await CA.api(payload, { method: 'POST' });
+    const p = Object.assign({}, payload);
+    const token = sessionStorage.getItem('adminToken');
+    if (token) p.token = token;
+    const j = await CA.api(p, { method: 'POST' });
     // AUD-T13: sesión expirada
     if (j && j.ok === false && String(j.error || '').indexOf('Sesión no válida') === 0) {
       A.logout();
@@ -130,7 +115,7 @@ const A = {
     const btn = document.getElementById('btnSearch');
     btn.disabled = true; btn.textContent = 'Buscando...';
     try {
-      const r = await CA.api({ action: 'adminBuscar', q: q }, { method: 'GET' });
+      const r = await A.apiGet({ action: 'adminBuscar', q: q });
       if (!r.ok) { A.showAlert(r.error || 'Error.', 'err'); return; }
       A.state.lastSearchResults = r.resultados;
       A.renderResults(r.resultados, q);
@@ -184,7 +169,7 @@ const A = {
     const cont = document.getElementById('resultsContainer');
     if (cont) { cont.style.pointerEvents = 'none'; cont.style.opacity = '0.6'; }
     try {
-      const r = await CA.api({ action: 'adminObtener', numForm: numForm }, { method: 'GET' });
+      const r = await A.apiGet({ action: 'adminObtener', numForm: numForm });
       if (req !== A._reqSeq) return; // AUD-T15: respuesta obsoleta
       if (!r.ok) { A.showAlert(r.error || 'Error al obtener el registro.', 'err'); return; }
       A.state.selectedRow = r.row;
@@ -557,7 +542,7 @@ const A = {
     btn.disabled = true; btn.textContent = 'Guardando...';
 
     try {
-      const r = await CA.api(payload, { method: 'POST' });
+      const r = await A.apiPost(payload);
 
       if (!r.ok) {
         A.showAlert(r.error || 'Error al guardar.', 'err');
