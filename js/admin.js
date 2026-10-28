@@ -32,12 +32,7 @@ const APPS_SCRIPT_URL = window.CA_CONFIG.url;
 const A = {
   // Helpers para fetch (agregados en F5 del módulo salón social)
   async apiGet(params) {
-    const url = new URL(APPS_SCRIPT_URL);
-    Object.entries(params).forEach(([k, v]) => {
-      if (v != null) url.searchParams.set(k, v);
-    });
-    const r = await fetch(url.toString(), { method: 'GET', redirect: 'follow' });
-    const j = await r.json();
+    const j = await CA.api(params, { method: 'GET' });
     // AUD-T13: sesión expirada
     if (j && j.ok === false && String(j.error || '').indexOf('Sesión no válida') === 0) {
       A.logout();
@@ -46,13 +41,7 @@ const A = {
     return j;
   },
   async apiPost(payload) {
-    const r = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-      body: JSON.stringify(payload),
-      redirect: 'follow'
-    });
-    const j = await r.json();
+    const j = await CA.api(payload, { method: 'POST' });
     // AUD-T13: sesión expirada
     if (j && j.ok === false && String(j.error || '').indexOf('Sesión no válida') === 0) {
       A.logout();
@@ -141,7 +130,7 @@ const A = {
     const btn = document.getElementById('btnSearch');
     btn.disabled = true; btn.textContent = 'Buscando...';
     try {
-      const r = await fetch(APPS_SCRIPT_URL + '?action=adminBuscar&q=' + encodeURIComponent(q)).then(x=>x.json());
+      const r = await CA.api({ action: 'adminBuscar', q: q }, { method: 'GET' });
       if (!r.ok) { A.showAlert(r.error || 'Error.', 'err'); return; }
       A.state.lastSearchResults = r.resultados;
       A.renderResults(r.resultados, q);
@@ -195,7 +184,7 @@ const A = {
     const cont = document.getElementById('resultsContainer');
     if (cont) { cont.style.pointerEvents = 'none'; cont.style.opacity = '0.6'; }
     try {
-      const r = await fetch(APPS_SCRIPT_URL + '?action=adminObtener&numForm=' + encodeURIComponent(numForm)).then(x=>x.json());
+      const r = await CA.api({ action: 'adminObtener', numForm: numForm }, { method: 'GET' });
       if (req !== A._reqSeq) return; // AUD-T15: respuesta obsoleta
       if (!r.ok) { A.showAlert(r.error || 'Error al obtener el registro.', 'err'); return; }
       A.state.selectedRow = r.row;
@@ -568,11 +557,7 @@ const A = {
     btn.disabled = true; btn.textContent = 'Guardando...';
 
     try {
-      const r = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
-      }).then(x => x.json());
+      const r = await CA.api(payload, { method: 'POST' });
 
       if (!r.ok) {
         A.showAlert(r.error || 'Error al guardar.', 'err');
