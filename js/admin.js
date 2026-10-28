@@ -635,24 +635,24 @@ const A = {
         const hora = (res.horaInicio && res.horaFin) ? res.horaInicio + ' - ' + res.horaFin : '';
 
         html += '<tr>';
-        html += '<td><code>' + res.id + '</code></td>';
-        html += '<td>' + fecha + '</td>';
-        html += '<td>' + hora + '</td>';
-        html += '<td>Torre ' + res.torre + '</td>';
-        html += '<td>' + res.ascensor + '</td>';
-        html += '<td>' + res.tipoMudanza;
+        html += '<td><code>' + A.escapeHtml(res.id) + '</code></td>';
+        html += '<td>' + A.escapeHtml(fecha) + '</td>';
+        html += '<td>' + A.escapeHtml(hora) + '</td>';
+        html += '<td>Torre ' + A.escapeHtml(res.torre) + '</td>';
+        html += '<td>' + A.escapeHtml(res.ascensor) + '</td>';
+        html += '<td>' + A.escapeHtml(res.tipoMudanza);
         if (res.descripcionElementos) {
           const desc = res.descripcionElementos.length > 40
             ? res.descripcionElementos.substring(0, 40) + '...'
             : res.descripcionElementos;
-          html += '<br><small style="color:var(--gris-med);">📦 ' + desc + '</small>';
+          html += '<br><small style="color:var(--gris-med);">📦 ' + A.escapeHtml(desc) + '</small>';
         }
         html += '</td>';
-        html += '<td>' + res.apto + '</td>';
-        html += '<td>' + res.nombreSolicitante + '<br><small style="color:var(--gris-med);">CC ' + res.ccSolicitante + '</small></td>';
-        html += '<td>' + res.celular + '</td>';
-        html += '<td>' + (res.placa || '-') + '</td>';
-        html += '<td style="color:' + estadoColor + ';">' + res.estado + '</td>';
+        html += '<td>' + A.escapeHtml(res.apto) + '</td>';
+        html += '<td>' + A.escapeHtml(res.nombreSolicitante) + '<br><small style="color:var(--gris-med);">CC ' + A.escapeHtml(res.ccSolicitante) + '</small></td>';
+        html += '<td>' + A.escapeHtml(res.celular) + '</td>';
+        html += '<td>' + A.escapeHtml(res.placa || '-') + '</td>';
+        html += '<td style="color:' + estadoColor + ';">' + A.escapeHtml(res.estado) + '</td>';
         html += '</tr>';
       });
 
@@ -692,21 +692,21 @@ const A = {
                             res.estado === 'CanceladoPorAdmin' ? 'var(--err)' :
                             'var(--gris-med)';
         const comprobanteCell = res.tieneComprobante
-          ? '<button class="btn btn-secondary" style="padding:4px 8px; font-size:0.85em;" onclick="A.verComprobante(\'' + res.id + '\')">📎 Ver</button>'
+          ? '<button class="btn btn-secondary" style="padding:4px 8px; font-size:0.85em;" data-ver="' + A.escapeHtml(res.id) + '">📎 Ver</button>'
           : '<span style="color:var(--gris-med); font-size:0.85em;">Sin comprobante</span>';
 
         html += '<tr>';
-        html += '<td><code>' + res.id + '</code></td>';
-        html += '<td>' + res.apto + '</td>';
-        html += '<td>' + res.nombre + '<br><small style="color:var(--gris-med);">' + res.ccSolicitante + '</small></td>';
-        html += '<td>' + res.fechaReserva + '</td>';
-        html += '<td>' + res.slot + '</td>';
+        html += '<td><code>' + A.escapeHtml(res.id) + '</code></td>';
+        html += '<td>' + A.escapeHtml(res.apto) + '</td>';
+        html += '<td>' + A.escapeHtml(res.nombre) + '<br><small style="color:var(--gris-med);">' + A.escapeHtml(res.ccSolicitante) + '</small></td>';
+        html += '<td>' + A.escapeHtml(res.fechaReserva) + '</td>';
+        html += '<td>' + A.escapeHtml(res.slot) + '</td>';
         html += '<td>' + comprobanteCell + '</td>';
-        html += '<td>' + (res.subidoPor || '<span style="color:var(--gris-med);">-</span>') + '</td>';
-        html += '<td style="color:' + estadoColor + ';">' + res.estado + '</td>';
+        html += '<td>' + A.escapeHtml(res.subidoPor || '') + '</td>';
+        html += '<td style="color:' + estadoColor + ';">' + A.escapeHtml(res.estado) + '</td>';
         html += '<td>';
         if (res.estado === 'Pagado' || res.estado === 'PendientePago') {
-          html += '<button class="btn btn-danger" style="padding:4px 8px; font-size:0.85em;" onclick="A.abrirModalCancelar(\'' + res.id + '\', \'' + res.apto + '\', \'' + res.nombre.replace(/'/g, "\\'") + '\', \'' + res.fechaReserva + '\', \'' + res.slot + '\')">❌ Cancelar</button>';
+          html += '<button class="btn btn-danger" style="padding:4px 8px; font-size:0.85em;" data-cancelar="' + A.escapeHtml(res.id) + '">❌ Cancelar</button>';
         }
         html += '</td>';
         html += '</tr>';
@@ -714,6 +714,18 @@ const A = {
 
       html += '</tbody></table>';
       container.innerHTML = html;
+
+      // AUD-T12: guardar la lista para la delegación de eventos (sin onclick con datos)
+      A.state.salonReservas = reservas;
+      if (!container.dataset.listo) {
+        container.dataset.listo = '1';
+        container.addEventListener('click', (e) => {
+          const bc = e.target.closest('[data-cancelar]');
+          if (bc) { const r = A.state.salonReservas.find(x => x.id === bc.dataset.cancelar); if (r) A.abrirModalCancelar(r.id, r.apto, r.nombre, r.fechaReserva, r.slot); return; }
+          const bv = e.target.closest('[data-ver]');
+          if (bv) A.verComprobante(bv.dataset.ver);
+        });
+      }
     } catch (e) {
       container.innerHTML = '<p style="color:var(--err);">Error de red: ' + e.message + '</p>';
     }
@@ -740,9 +752,9 @@ const A = {
   abrirModalCancelar(reservaId, apto, nombre, fecha, slot) {
     A.salonState.currentReservaId = reservaId;
     document.getElementById('modalSalonDetalle').innerHTML =
-      '<strong>Reserva:</strong> ' + reservaId + '<br>' +
-      '<strong>Solicitante:</strong> ' + nombre + ' (Apto ' + apto + ')<br>' +
-      '<strong>Fecha:</strong> ' + fecha + ' (' + slot + ')';
+      '<strong>Reserva:</strong> ' + A.escapeHtml(reservaId) + '<br>' +
+      '<strong>Solicitante:</strong> ' + A.escapeHtml(nombre) + ' (Apto ' + A.escapeHtml(apto) + ')<br>' +
+      '<strong>Fecha:</strong> ' + A.escapeHtml(fecha) + ' (' + A.escapeHtml(slot) + ')';
     document.getElementById('modalSalonMotivo').value = '';
     document.getElementById('modal-cancelar-salon').classList.remove('hidden');
   },

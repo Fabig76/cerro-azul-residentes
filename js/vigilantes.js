@@ -61,7 +61,10 @@ const V = {
 
   escapeHtml(s) {
     if (s === null || s === undefined) return '';
-    return String(s).replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"').replace(/'/g, '&#039;');
+    // AUD-T12: la versión anterior reemplazaba cada carácter por sí mismo
+    // (& por &, < por <) — era un no-op y permitía XSS almacenado: un residente
+    // escribía '<img onerror=...>' como marca y robaba el token del vigilante.
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
   },
 
   showVista(vista) {
@@ -480,8 +483,8 @@ const V = {
 
     if (isReservado) {
       html += '<div style="margin-top:12px; font-size:0.95em;">';
-      html += '<div><strong>Apto:</strong> ' + slotData.apto + '</div>';
-      html += '<div><strong>Reservado por:</strong> ' + slotData.nombre + '</div>';
+      html += '<div><strong>Apto:</strong> ' + V.escapeHtml(slotData.apto) + '</div>';
+      html += '<div><strong>Reservado por:</strong> ' + V.escapeHtml(slotData.nombre) + '</div>';
       html += '</div>';
     }
 
