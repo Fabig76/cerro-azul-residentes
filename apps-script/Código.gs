@@ -596,7 +596,7 @@ function buildRowFromPayload(d, numForm, fechaRegistroOriginal) {
   v[142]            = hashInput ? Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, hashInput)
                                   .map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('').slice(0, 16) : '';
 
-  return v;
+  return v.map(safeCell_); // AUD-T3: neutraliza fórmulas/inyección en cada celda
 }
 
 // ---------------------------------------------------------------------
@@ -925,6 +925,25 @@ const COL_MUD_DESCRIPCION = 22;  // V37: descripcion de elementos // S
 // ---------------------------------------------------------------------
 function normalizarCC(cc) {
   return String(cc || '').replace(/[^0-9]/g, '').trim();
+}
+
+// AUD-T3: evita que un texto que empiece por = + - @ se interprete como fórmula.
+// Solo actúa sobre strings; fechas y números pasan intactos.
+function safeCell_(v) {
+  if (typeof v !== 'string') return v;
+  const s = v.replace(/[\u200B-\u200F\u202A-\u202E\uFEFF]/g, '').trim();
+  return /^[=+\-@\t\r]/.test(s) ? "'" + s : s;
+}
+
+// AUD-T3: formato texto en columnas de identificadores. Ejecutar UNA vez a mano.
+function setupFormatoTexto_() {
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+  const hdr = sheet.getRange(1, 1, 1, NUM_COLS).getValues()[0].map(String);
+  const objetivo = /(CC|Cédula|Celular|Tel|Placa|Serial|Código|N° Tag|NIT|Fecha Entrega|Firma - Fecha|N° Apto|Parq Tercero - Apto)/i;
+  const maxFilas = Math.max(sheet.getMaxRows() - 1, 1);
+  hdr.forEach(function (h, i) {
+    if (objetivo.test(h)) sheet.getRange(2, i + 1, maxFilas, 1).setNumberFormat('@');
+  });
 }
 
 function getMudanzasSheet() {
@@ -1345,7 +1364,7 @@ function reservarMudanza(data) {
 
     const last = sheet.getLastRow();
     const targetRow = Math.max(last + 1, MUDANZAS_HEADER_ROW + 1);
-    sheet.getRange(targetRow, 1, 1, MUDANZAS_NUM_COLS).setValues([row]);
+    sheet.getRange(targetRow, 1, 1, MUDANZAS_NUM_COLS).setValues([row.map(safeCell_)]); // AUD-T3
 
     try { enviarEmailConfirmacionAdmin(row); } catch (e) { console.error('Error email admin:', e); }
     try { enviarEmailConfirmacionResidente(row); } catch (e) { console.error('Error email residente:', e); }
@@ -1788,7 +1807,7 @@ function adminGuardar(data) {
       if (val !== undefined) newRow[idx] = val;
     }
     function setStr(idx, val) {
-      if (val !== undefined) newRow[idx] = String(val || '');
+      if (val !== undefined) newRow[idx] = safeCell_(String(val || '')); // AUD-T3
     }
 
     // ====== CAMPOS BASICOS (0-16) ======
@@ -3415,7 +3434,7 @@ function reservarSalon(data) {
       '',                                    // O
       hash,                                  // P
       now                                    // Q
-    ]);
+    ].map(safeCell_)); // AUD-T3
 
     // Notificar al admin
     enviarEmailCerroAzul(
