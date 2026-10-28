@@ -29,6 +29,7 @@ Entorno de pruebas:
 | T14 | fecha local con CA.hoyLocal() | `006f1b4` | ✅ grep toISOString().slice(0,10)=0; CA.hoyLocal()=7; sintaxis OK | 7 sustituciones (app.js x3, vigilantes.js x4). Corrige desfase de fecha por UTC tras las 19:00. |
 | T15 | cuatro bugs de lógica | `879bc64` | ✅ sintaxis OK en 4 archivos | 15a recarga desde servidor; 15b preservarValores (7 forms); 15c _reqSeq + fechaEdicionVista; 15d typo matrícula + listener único. Pruebas visuales (a-e) requieren desplegar frontend. |
 | T16 | migrar llamadas a CA.api y retirar parche de fetch | `2ab4bb6`..`27e1b25` (T16a-j) | ✅ grep fetch( en js/ solo en common.js; node --check OK en los 8 archivos | 8 archivos migrados a CA.api; parche window.fetch eliminado; token explícito en apiGet/apiPost; showAlert/setLookupMsg con textContent. |
+| T17 | un solo backend versionado | `1a66302` | ✅ GET ping → {version:'2026-10-28-aud1', tz:'America/Bogota'}; ls apps-script/ = Codigo.gs + appsscript.json + .clasp.json + README.md | Codigo_V46_BLINDAJE → Codigo.gs (git mv); 15 .gs históricos eliminados; .clasp.json con scriptId PENDIENTE; VERSION_BACKEND + ping_. |
 
 ## Observaciones fuera de alcance (anotadas, no ejecutadas)
 
