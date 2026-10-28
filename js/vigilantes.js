@@ -33,12 +33,7 @@ const APPS_SCRIPT_URL = window.CA_CONFIG.url;
 const V = {
   // Helper para fetch (agregado en F5 del módulo salón social)
   async apiGet(params) {
-    const url = new URL(APPS_SCRIPT_URL);
-    Object.entries(params).forEach(([k, v]) => {
-      if (v != null) url.searchParams.set(k, v);
-    });
-    const r = await fetch(url.toString(), { method: 'GET', redirect: 'follow' });
-    const j = await r.json();
+    const j = await CA.api(params, { method: 'GET' });
     // AUD-T13: sesión expirada
     if (j && j.ok === false && String(j.error || '').indexOf('Sesión no válida') === 0) {
       V.logout();
@@ -140,7 +135,7 @@ const V = {
     const btn = document.getElementById('btnSearch');
     btn.disabled = true; btn.textContent = 'Buscando...';
     try {
-      const r = await fetch(APPS_SCRIPT_URL + '?action=vigilanteVerResidentes&q=' + encodeURIComponent(q)).then(x=>x.json());
+      const r = await CA.api({ action: 'vigilanteVerResidentes', q: q }, { method: 'GET' });
       if (!r.ok) { V.showAlert(r.error || 'Error.', 'err'); V.clearResults(); return; }
       V.state.lastResults = r.resultados;
       V.renderResults(r.resultados, q);
@@ -288,7 +283,7 @@ const V = {
     const btn = document.getElementById('btnBuscarPlaca');
     btn.disabled = true; btn.textContent = 'Buscando...';
     try {
-      const r = await fetch(APPS_SCRIPT_URL + '?action=vigilanteBuscarPorPlaca&placa=' + encodeURIComponent(placa)).then(x=>x.json());
+      const r = await CA.api({ action: 'vigilanteBuscarPorPlaca', placa: placa }, { method: 'GET' });
       if (!r.ok) { V.showAlert(r.error || 'Error.', 'err'); V.clearPlacas(); return; }
       V.renderPlacas(r.resultados, placa);
     } catch (e) { V.showAlert('Error de red: ' + e.message, 'err'); }
@@ -342,8 +337,9 @@ const V = {
     const cont = document.getElementById('mudList');
     cont.innerHTML = '<p style="color:var(--gris-med);">Cargando mudanzas...</p>';
     try {
-      const params = fecha ? '&fecha=' + encodeURIComponent(fecha) : '';
-      const r = await fetch(APPS_SCRIPT_URL + '?action=vigilanteVerMudanzas' + params).then(x=>x.json());
+      const q = { action: 'vigilanteVerMudanzas' };
+      if (fecha) q.fecha = fecha;
+      const r = await CA.api(q, { method: 'GET' });
       if (!r.ok) { V.showAlert(r.error || 'Error.', 'err'); cont.innerHTML = ''; return; }
       V.renderMudanzas(r.reservas);
     } catch (e) { V.showAlert('Error de red: ' + e.message, 'err'); cont.innerHTML = ''; }
@@ -421,16 +417,12 @@ const V = {
     btn.disabled = true;
     btn.textContent = 'Registrando...';
     try {
-      const r = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'vigilanteCheckMudanza',
-          idReserva: idReserva,
-          status: status,
-          vigilante: vigilante
-        })
-      }).then(x => x.json());
+      const r = await CA.api({
+        action: 'vigilanteCheckMudanza',
+        idReserva: idReserva,
+        status: status,
+        vigilante: vigilante
+      }, { method: 'POST' });
 
       if (!r.ok) {
         V.showAlert(r.error || 'Error al registrar check.', 'err');
