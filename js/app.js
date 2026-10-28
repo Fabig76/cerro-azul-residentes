@@ -490,6 +490,10 @@ function mostrar(msg) {
 // ============================================================
 // ENVIAR FORMULARIO
 // ============================================================
+// AUD-T10: clientRequestId por intento. Se reutiliza si el usuario reintenta
+// tras un error de red sin cambiar datos; se limpia al tener ok:true.
+let _clientRequestId = null;
+
 async function enviarFormulario() {
   hideAlert('alert-create');
   if (!validar()) {
@@ -511,6 +515,9 @@ async function enviarFormulario() {
   state.submitting = true;
 
   const payload = recolectar();
+  // AUD-T10: idempotencia — mismo id en reintentos sin cambio de datos
+  if (!_clientRequestId) _clientRequestId = crypto.randomUUID();
+  payload.clientRequestId = _clientRequestId;
 
   const btn = $('#btnEnviar');
   btn.disabled = true;
@@ -531,6 +538,7 @@ async function enviarFormulario() {
       return;
     }
     // Éxito
+    _clientRequestId = null; // AUD-T10
     mostrarExito(data);
   } catch (err) {
     showAlert('alert-create', 'Error de red al enviar: ' + err.message, 'err');
@@ -1206,6 +1214,7 @@ const M = {
         empresa: $('#mudEmpresa').value.trim(),
         placa: $('#mudPlaca').value.trim().toUpperCase(),
         observaciones: $('#mudObservaciones').value.trim(),
+        clientRequestId: this.state.clientRequestId || (this.state.clientRequestId = crypto.randomUUID()),
       };
       const resp = await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
@@ -1218,6 +1227,7 @@ const M = {
         this.checkFormCompleto();
         return;
       }
+      this.state.clientRequestId = null; // AUD-T10
       this.state.lastReserva = data;
       this.showConfirmacion(data);
     } catch (e) {

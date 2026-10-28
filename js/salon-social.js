@@ -266,7 +266,8 @@ async function flujoSeleccionarSlot(slot) {
     cc: state.cc,
     fechaReserva: state.fechaSeleccionada,
     slot: slot,
-    numForm: state.numForm
+    numForm: state.numForm,
+    clientRequestId: state.clientRequestId || (state.clientRequestId = crypto.randomUUID())
   };
 
   const btn = slot === 'Mañana' ? document.getElementById('btnSlotManana') : document.getElementById('btnSlotTarde');
@@ -283,6 +284,7 @@ async function flujoSeleccionarSlot(slot) {
       return;
     }
 
+    state.clientRequestId = null; // AUD-T10
     state.reservaIdActual = r.reservaId;
     state.linkPago = r.linkPago;
 

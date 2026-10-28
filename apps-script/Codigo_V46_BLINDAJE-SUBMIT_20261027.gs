@@ -112,6 +112,18 @@ function rateLimit_(clave, max, ttlSeg) {
   return n > max;
 }
 
+// AUD-T10: si el cliente repite el mismo clientRequestId en 10 min, devuelve la respuesta anterior
+function idempotente_(data, fn) {
+  const id = String(data.clientRequestId || '').trim();
+  if (!id || id.length > 64) return fn();
+  const cache = CacheService.getScriptCache();
+  const previa = cache.get('idem_' + id);
+  if (previa) return JSON.parse(previa);
+  const res = fn();
+  if (res && res.ok) cache.put('idem_' + id, JSON.stringify(res), 600);
+  return res;
+}
+
 // AUD-T2: revoca el token de la sesión actual
 function logout_(rol, token) {
   rol = String(rol || ''); token = String(token || '');
@@ -284,7 +296,7 @@ function doPost(e) {
     if (action === 'ecSubirFacturas')    return jsonOut(ecSubirFacturas(payload));
     if (action === 'ecFinalizarCarga')   return jsonOut(ecFinalizarCarga(payload));
     if (action === 'reservarMudanza') {
-      return jsonOut(reservarMudanza(payload));
+      return jsonOut(idempotente_(payload, function () { return reservarMudanza(payload); }));
     }
     if (action === 'cancelarMudanza') {
       return jsonOut(cancelarMudanza(payload));
@@ -304,11 +316,11 @@ function doPost(e) {
       return jsonOut(vigilanteCheckMudanza(payload));
     }
     // --- RESIDENTE (portal nuevo residente.html) ---
-    if (action === 'registrarResidente')    return jsonOut(registrarResidente(payload));
+    if (action === 'registrarResidente')    return jsonOut(idempotente_(payload, function () { return registrarResidente(payload); }));
     if (action === 'actualizarResidente')  return jsonOut(actualizarResidente(payload));
     if (action === 'clearResidente')        return jsonOut(clearResidente(payload));
     // --- SALON SOCIAL (portal salon-social.html) ---
-    if (action === 'reservarSalon')              return jsonOut(reservarSalon(payload));
+    if (action === 'reservarSalon')              return jsonOut(idempotente_(payload, function () { return reservarSalon(payload); }));
     if (action === 'subirComprobanteSalon')     return jsonOut(subirComprobanteSalon(payload));
     if (action === 'cancelarReservaSalon')      return jsonOut(cancelarReservaSalon(payload));
     if (action === 'editarReservaSalon')         return jsonOut(editarReservaSalon(payload));
@@ -322,7 +334,7 @@ function doPost(e) {
     if (action === 'vigilanteLogin') return jsonOut(vigilanteLogin(payload.password));
     if (action === 'logout')         return jsonOut(logout_(payload.rol, payload.token));
     // AUD-T7: solo el formulario principal entra sin action (o con action='submit')
-    if (action === '' || action === 'submit') return jsonOut(submitRecord(payload));
+    if (action === '' || action === 'submit') return jsonOut(idempotente_(payload, function () { return submitRecord(payload); }));
     return jsonOut({ ok: false, error: 'Acción no reconocida: ' + action });
   } catch (err) {
     return jsonOut({ ok: false, error: String(err && err.message || err) });
@@ -1109,23 +1121,33 @@ function adminBorrarReservaMudanza(idReserva) {
   const idReservaNorm = String(idReserva || '').trim();
   if (!idReservaNorm) return { ok: false, error: 'Falta idReserva.' };
 
-  const last = sheet.getLastRow();
-  if (last < MUDANZAS_HEADER_ROW + 1) return { ok: false, error: 'Sin reservas.' };
-  const data = sheet.getRange(MUDANZAS_HEADER_ROW + 1, 1, last - MUDANZAS_HEADER_ROW, 1).getValues();
-
-  let targetRow = -1;
-  for (let i = 0; i < data.length; i++) {
-    if (String(data[i][0] || '').trim() === idReservaNorm) {
-      targetRow = MUDANZAS_HEADER_ROW + 1 + i;
-      break;
-    }
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(20000)) {
+    return { ok: false, error: 'El sistema está ocupado. Espere unos segundos y vuelva a intentar.' };
   }
-  if (targetRow === -1) return { ok: false, error: 'No se encontró la reserva ' + idReservaNorm + '.' };
+  try {
+    const last = sheet.getLastRow();
+    if (last < MUDANZAS_HEADER_ROW + 1) return { ok: false, error: 'Sin reservas.' };
+    const data = sheet.getRange(MUDANZAS_HEADER_ROW + 1, 1, last - MUDANZAS_HEADER_ROW, 1).getValues();
 
-  sheet.deleteRow(targetRow);
-  Logger.log('[adminBorrarReservaMudanza] Reserva ' + idReservaNorm + ' borrada por admin. Fila=' + targetRow);
+    let targetRow = -1;
+    for (let i = 0; i < data.length; i++) {
+      if (String(data[i][0] || '').trim() === idReservaNorm) {
+        targetRow = MUDANZAS_HEADER_ROW + 1 + i;
+        break;
+      }
+    }
+    if (targetRow === -1) return { ok: false, error: 'No se encontró la reserva ' + idReservaNorm + '.' };
 
-  return { ok: true, message: 'Reserva ' + idReservaNorm + ' borrada correctamente.' };
+    // AUD-T10: borrado lógico, no físico. deleteRow desplazaba las filas y
+    // rompía las escrituras por número de fila de otros endpoints.
+    sheet.getRange(targetRow, COL_MUD_ESTADO + 1).setValue('Borrada');
+    Logger.log('[adminBorrarReservaMudanza] Reserva ' + idReservaNorm + ' marcada Borrada (fila=' + targetRow + ').');
+
+    return { ok: true, message: 'Reserva ' + idReservaNorm + ' borrada correctamente.' };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 // Endpoint MUDANZAS-ADMIN: adminListarReservasMudanzas (GET)
@@ -1465,10 +1487,17 @@ function cancelarMudanza(data) {
 
   try {
     const sheet = getMudanzasSheet();
-    sheet.getRange(found.rowNumber, COL_MUD_ESTADO + 1).setValue('Cancelada');
+    // AUD-T10: re-buscar dentro del lock y re-verificar estado (evita la
+    // carrera con adminBorrarReservaMudanza o un doble envío).
+    const fresca = findReservaById(idReserva);
+    if (!fresca) return { ok: false, error: 'No se encontró la reserva con ese ID.' };
+    if (String(fresca.values[COL_MUD_ESTADO]).trim() !== 'Confirmada') {
+      return { ok: false, error: 'Esta reserva ya no está activa.' };
+    }
+    sheet.getRange(fresca.rowNumber, COL_MUD_ESTADO + 1).setValue('Cancelada');
 
-    try { enviarEmailCancelacionAdmin(found.values); } catch (e) { console.error('Error email cancel admin:', e); }
-    try { enviarEmailCancelacionResidente(found.values); } catch (e) { console.error('Error email cancel residente:', e); }
+    try { enviarEmailCancelacionAdmin(fresca.values); } catch (e) { console.error('Error email cancel admin:', e); }
+    try { enviarEmailCancelacionResidente(fresca.values); } catch (e) { console.error('Error email cancel residente:', e); }
 
     return { ok: true, message: 'Reserva cancelada correctamente.' };
   } finally {
@@ -2324,27 +2353,28 @@ function vigilanteCheckMudanza(data) {
   }
   const vigilante = String(data.vigilante || '').trim().substring(0, 100);
 
-  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('Mudanzas');
-  if (!sheet) return { ok: false, error: 'Pestana Mudanzas no encontrada' };
-  const last = sheet.getLastRow();
-  if (last < 2) return { ok: false, error: 'Sin reservas' };
-
-  const idCol = sheet.getRange(2, 1, last - 1, 1).getValues();
-  let targetRow = -1;
-  for (let i = 0; i < idCol.length; i++) {
-    if (String(idCol[i][0] || '').trim() === idReserva) {
-      targetRow = i + 2;
-      break;
-    }
-  }
-  if (targetRow === -1) return { ok: false, error: 'No se encontro la reserva ' + idReserva };
-
   // Lock para evitar race conditions entre vigilantes
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(30000)) {
     return { ok: false, error: 'Otro vigilante esta marcando. Intenta en unos segundos.' };
   }
   try {
+    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName('Mudanzas');
+    if (!sheet) return { ok: false, error: 'Pestana Mudanzas no encontrada' };
+    const last = sheet.getLastRow();
+    if (last < 2) return { ok: false, error: 'Sin reservas' };
+
+    // AUD-T10: la búsqueda de la fila va dentro del lock, justo antes de escribir.
+    const idCol = sheet.getRange(2, 1, last - 1, 1).getValues();
+    let targetRow = -1;
+    for (let i = 0; i < idCol.length; i++) {
+      if (String(idCol[i][0] || '').trim() === idReserva) {
+        targetRow = i + 2;
+        break;
+      }
+    }
+    if (targetRow === -1) return { ok: false, error: 'No se encontro la reserva ' + idReserva };
+
     sheet.getRange(targetRow, COL_MUD_REALIZADA + 1).setValue(status === 'realizada' ? 'Sí' : 'No'); // T
     sheet.getRange(targetRow, COL_MUD_FECHA_CHECK + 1).setValue(Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss')); // U
     sheet.getRange(targetRow, COL_MUD_VIGILANTE + 1).setValue(vigilante); // V

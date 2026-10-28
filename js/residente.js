@@ -544,7 +544,8 @@ async function flujoRegistrar() {
     motos,
     bicis,
     mascotas,
-    contactos
+    contactos,
+    clientRequestId: state.clientRequestId || (state.clientRequestId = crypto.randomUUID())
   };
 
   const btn = document.getElementById('btnRegistrar');
@@ -558,6 +559,7 @@ async function flujoRegistrar() {
       return;
     }
     // Éxito
+    state.clientRequestId = null; // AUD-T10
     document.getElementById('alert-exito').textContent =
       `✅ Registro exitoso. Su información ha sido guardada.`;
     showView('exito');
