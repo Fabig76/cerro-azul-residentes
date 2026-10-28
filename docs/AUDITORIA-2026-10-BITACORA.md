@@ -30,6 +30,8 @@ Entorno de pruebas:
 | T15 | cuatro bugs de lógica | `879bc64` | ✅ sintaxis OK en 4 archivos | 15a recarga desde servidor; 15b preservarValores (7 forms); 15c _reqSeq + fechaEdicionVista; 15d typo matrícula + listener único. Pruebas visuales (a-e) requieren desplegar frontend. |
 | T16 | migrar llamadas a CA.api y retirar parche de fetch | `2ab4bb6`..`27e1b25` (T16a-j) | ✅ grep fetch( en js/ solo en common.js; node --check OK en los 8 archivos | 8 archivos migrados a CA.api; parche window.fetch eliminado; token explícito en apiGet/apiPost; showAlert/setLookupMsg con textContent. |
 | T17 | un solo backend versionado | `1a66302` | ✅ GET ping → {version:'2026-10-28-aud1', tz:'America/Bogota'}; ls apps-script/ = Codigo.gs + appsscript.json + .clasp.json + README.md | Codigo_V46_BLINDAJE → Codigo.gs (git mv); 15 .gs históricos eliminados; .clasp.json con scriptId PENDIENTE; VERSION_BACKEND + ping_. |
+| T18 | pruebas mínimas y autodiagnóstico | `3933170` | ✅ npm run lint = 0 errores (18 avisos permitidos); npm test = 6/6 | package.json + eslint.config.js + vitest + jsdom; tests common/cartera-procesador; selfTest_(); corregidos eqeqeq y no-undef. |
+| T19 | limpieza de datos y copia de seguridad | `689ba15` | ✅ grep '@' en LIMPIEZA-DATOS.md = 0; Codigo.gs sintaxis OK | docs/AUDITORIA-2026-10-LIMPIEZA-DATOS.md (7 pasos); respaldoDiario_() + configurarRespaldoDiario_(). |
 
 ## Observaciones fuera de alcance (anotadas, no ejecutadas)
 
