@@ -17,6 +17,7 @@ Entorno de pruebas:
 | T1 | vigilanteBuscarPorPlaca deja de entregar credenciales | `fa10e36` | ✅ placa de 1 char → "Ingrese al menos 3 caracteres"; placa de 3+ → ok con claves [apto, diligencia, nombreProp, vehiculos, rowNumber] (sin numForm ni ccProp) | Se verificó end-to-end con token de vigilante real contra la copia. |
 | T12 | escape HTML en vigilantes y admin (XSS) | `1406051` | ✅ sintaxis OK; escapeHtml neutraliza `<img onerror>`; sin onclick inline restantes | Adaptación: `CA` no existía aún, se corrigió el cuerpo de escapeHtml directo; migración a CA queda en T16. |
 | T11 | js/config.js y js/common.js | `ac37fce` | ✅ grep AKfycb solo en config.js; CA.escapeHtml neutraliza; CA.hoyLocal correcto; sintaxis OK | Configura la URL en una sola fuente y crea el objeto CA (requisito de T12/T16). |
+| T3 | neutralizar fórmulas y fijar formato de texto | `4799b02` | ✅ =HYPERLINK → '=HYPERLINK (texto literal); +57 → '+57; cc 0012345678 preserva cero inicial tras aplicar formato @ | safeCell_ en buildRowFromPayload/adminGuardar/mudanzas/salón; setupFormatoTexto_() manual. |
 
 ## Observaciones fuera de alcance (anotadas, no ejecutadas)
 
