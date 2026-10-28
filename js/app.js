@@ -122,9 +122,7 @@ async function buscarRegistro(opts) {
   }
 
   try {
-    const url = APPS_SCRIPT_URL + '?action=lookup&numForm=' + encodeURIComponent(numForm) + '&apto=' + encodeURIComponent(apto) + '&ccProp=' + encodeURIComponent(ccProp);
-    const resp = await fetch(url, { method: 'GET', redirect: 'follow' });
-    const data = await resp.json();
+    const data = await CA.api({ action: 'lookup', numForm: numForm, apto: apto, ccProp: ccProp }, { method: 'GET' });
     if (!data.ok) {
       if (!silencioso) showAlert('alert-edit', data.error || 'No se encontró el registro.', 'err');
       return;
@@ -531,12 +529,7 @@ async function enviarFormulario() {
   btn.textContent = 'Enviando...';
 
   try {
-    const resp = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      // Sin headers custom: Apps Script Web App requiere preflight CORS simple
-      body: JSON.stringify(payload),
-    });
-    const data = await resp.json();
+    const data = await CA.api(payload, { method: 'POST' });
     if (!data.ok) {
       showAlert('alert-create', data.error || 'Error desconocido al guardar.', 'err');
       btn.disabled = false;
@@ -685,9 +678,7 @@ async function lookupMatApto() {
   setLookupMsg(msgTarget, '<strong>Buscando matrícula del apartamento ' + apto + '...</strong>', 'warn');
 
   try {
-    const url = APPS_SCRIPT_URL + '?action=lookupMatApto&apto=' + encodeURIComponent(apto);
-    const resp = await fetch(url, { method: 'GET', redirect: 'follow' });
-    const data = await resp.json();
+    const data = await CA.api({ action: 'lookupMatApto', apto: apto }, { method: 'GET' });
     if (!data.ok) {
       setLookupMsg(msgTarget, 'Error al consultar la base: ' + (data.error || 'desconocido'), 'err');
       return;
@@ -741,9 +732,7 @@ async function lookupMatParq(n) {
   setLookupMsg(msgTarget, '<strong>Buscando matrícula de la celda ' + celda + '...</strong>', 'warn');
 
   try {
-    const url = APPS_SCRIPT_URL + '?action=lookupMatParq&celda=' + encodeURIComponent(celda);
-    const resp = await fetch(url, { method: 'GET', redirect: 'follow' });
-    const data = await resp.json();
+    const data = await CA.api({ action: 'lookupMatParq', celda: celda }, { method: 'GET' });
     if (!data.ok) {
       setLookupMsg(msgTarget, 'Error: ' + (data.error || 'desconocido'), 'err');
       return;
@@ -861,13 +850,7 @@ async function clearResidenteForm() {
   btn.textContent = 'Borrando...';
 
   try {
-    const resp = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-      body: JSON.stringify(payload),
-      redirect: 'follow'
-    });
-    const data = await resp.json();
+    const data = await CA.api(payload, { method: 'POST' });
 
     if (!data.ok) {
       alert('Error: ' + (data.error || 'No se pudo borrar.'));
@@ -1022,12 +1005,12 @@ const M = {
     $('#btnMudVerificar').textContent = 'Verificando...';
 
     try {
-      const url = APPS_SCRIPT_URL + '?action=verificarPropietario'
-        + '&numForm=' + encodeURIComponent(numForm)
-        + '&apto=' + encodeURIComponent(apto)
-        + '&ccProp=' + encodeURIComponent(ccProp);
-      const resp = await fetch(url, { method: 'GET' });
-      const data = await resp.json();
+      const data = await CA.api({
+        action: 'verificarPropietario',
+        numForm: numForm,
+        apto: apto,
+        ccProp: ccProp
+      }, { method: 'GET' });
 
       if (!data.ok) {
         showAlert('alert-mud-login', data.error || 'No se pudo verificar.', 'err');
@@ -1143,13 +1126,13 @@ const M = {
     $('#mudSlots').innerHTML = '<p style="color:var(--gris-med);">Cargando horarios...</p>';
 
     try {
-      const url = APPS_SCRIPT_URL + '?action=dispMudanzas'
-        + '&torre=' + encodeURIComponent(this.state.torre)
-        + '&ascensor=A'
-        + '&desde=' + encodeURIComponent(fecha)
-        + '&hasta=' + encodeURIComponent(fecha);
-      const resp = await fetch(url);
-      const data = await resp.json();
+      const data = await CA.api({
+        action: 'dispMudanzas',
+        torre: this.state.torre,
+        ascensor: 'A',
+        desde: fecha,
+        hasta: fecha
+      }, { method: 'GET' });
 
       if (!data.ok) {
         $('#mudSlots').innerHTML = `<p style="color:var(--err);">${data.error || 'Error al cargar horarios'}</p>`;
@@ -1225,12 +1208,7 @@ const M = {
         observaciones: $('#mudObservaciones').value.trim(),
         clientRequestId: this.state.clientRequestId || (this.state.clientRequestId = crypto.randomUUID()),
       };
-      const resp = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
-      });
-      const data = await resp.json();
+      const data = await CA.api(payload, { method: 'POST' });
       if (!data.ok) {
         showAlert('alert-mud-form', data.error || 'No se pudo reservar.', 'err');
         this.checkFormCompleto();
@@ -1271,17 +1249,12 @@ const M = {
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
     try {
-      const resp = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'listarReservasMudanzasPorNumForm',
-          numForm: this.state.numForm,
-          apto:    this.state.apto,
-          ccProp:  this.state.ccProp
-        })
-      });
-      const data = await resp.json();
+      const data = await CA.api({
+        action: 'listarReservasMudanzasPorNumForm',
+        numForm: this.state.numForm,
+        apto:    this.state.apto,
+        ccProp:  this.state.ccProp
+      }, { method: 'POST' });
       if (!data.ok) {
         container.innerHTML = `<div class="alert alert-err">${safe(data.error || 'Error al cargar tus reservas.')}</div>`;
         return;
@@ -1351,18 +1324,13 @@ const M = {
     const btn = card ? card.querySelector('button[data-action="cancelar-mi-reserva"]') : null;
     if (btn) { btn.disabled = true; btn.textContent = 'Cancelando...'; }
     try {
-      const resp = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'cancelarMudanza',
-          numForm: this.state.numForm,
-          apto:    this.state.apto,
-          ccProp:  this.state.ccProp,
-          idReserva: idReserva
-        })
-      });
-      const data = await resp.json();
+      const data = await CA.api({
+        action: 'cancelarMudanza',
+        numForm: this.state.numForm,
+        apto:    this.state.apto,
+        ccProp:  this.state.ccProp,
+        idReserva: idReserva
+      }, { method: 'POST' });
       if (!data.ok) {
         showAlert('alert-mud-form', safe(data.error || 'No se pudo cancelar la reserva.'), 'err');
         if (btn) { btn.disabled = false; btn.textContent = '🗑️ Cancelar reserva'; }
