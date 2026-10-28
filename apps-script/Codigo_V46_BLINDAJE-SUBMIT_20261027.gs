@@ -133,6 +133,10 @@ function doGet(e) {
       const numForm = String(e.parameter.numForm || '').trim();
       const apto = String(e.parameter.apto || '').trim();
       const ccProp = normalizarCC(e.parameter.ccProp);
+      // AUD-T5: 10 intentos por apto cada 10 minutos
+      if (rateLimit_('ver_' + String(apto || '').trim(), 10, 600)) {
+        return jsonOut({ ok: false, error: 'Demasiados intentos para este apartamento. Espere 10 minutos.' });
+      }
       // BUGFIX-020: exigir cédula del propietario para leer el registro
       if (!ccProp) return jsonOut({ ok: false, error: 'Falta cédula del propietario.' });
       const row = findRowByNumFormAndApto(numForm, apto);
@@ -1182,6 +1186,10 @@ function hashReserva(torre, ascensor, fecha, horaInicio) {
 // Endpoint 4.1: verificarPropietario
 // ---------------------------------------------------------------------
 function verificarPropietario(numForm, apto, ccProp) {
+  // AUD-T5: 10 intentos por apto cada 10 minutos
+  if (rateLimit_('ver_' + String(apto || '').trim(), 10, 600)) {
+    return { ok: false, error: 'Demasiados intentos para este apartamento. Espere 10 minutos.' };
+  }
   numForm = String(numForm || '').trim();
   apto = String(apto || '').trim();
   ccProp = normalizarCC(ccProp);
@@ -2429,6 +2437,10 @@ function getEstadoResidente(apto) {
 // Devuelve el slot que matchea + datos básicos del residente.
 // ---------------------------------------------------------------------
 function verificarResidente(apto, cc) {
+  // AUD-T5: 10 intentos por apto cada 10 minutos
+  if (rateLimit_('ver_' + String(apto || '').trim(), 10, 600)) {
+    return { ok: false, error: 'Demasiados intentos para este apartamento. Espere 10 minutos.' };
+  }
   apto = String(apto || '').trim();
   cc = normCc(cc);
 
@@ -3286,6 +3298,10 @@ function hashReservaDedupe(apto, fecha, slot) {
 // Login (apto+CC) + validación de mora
 // ---------------------------------------------------------------------
 function verificarAccesoSalon(apto, cc) {
+  // AUD-T5: 10 intentos por apto cada 10 minutos
+  if (rateLimit_('ver_' + String(apto || '').trim(), 10, 600)) {
+    return { ok: false, error: 'Demasiados intentos para este apartamento. Espere 10 minutos.' };
+  }
   apto = String(apto || '').trim();
   cc = String(cc || '').trim();
   if (!apto || !cc) return { ok: false, error: 'Falta N° de apartamento o cédula' };
@@ -4944,6 +4960,16 @@ function chatAsistente(payload) {
       return { ok: false, error: 'Mensaje demasiado largo (máximo 500 caracteres).' };
     }
 
+    // AUD-T5: límite global diario y por origen
+    const hoyKey = Utilities.formatDate(new Date(), 'America/Bogota', 'yyyyMMdd');
+    if (rateLimit_('chat_total_' + hoyKey, 500, 86400)) {
+      return { ok: false, error: 'El asistente alcanzó su límite diario. Intente mañana.' };
+    }
+    const origen = String(payload.apto || payload.token || payload.sesion || 'anon').slice(0, 40);
+    if (rateLimit_('chat_' + origen, 20, 3600)) {
+      return { ok: false, error: 'Demasiadas consultas al asistente. Espere una hora.' };
+    }
+
     const props = PropertiesService.getScriptProperties();
     const apiKey = props.getProperty('MINIMAX_API_KEY');
     if (!apiKey) {
@@ -5013,7 +5039,7 @@ function chatAsistente(payload) {
       headers: headers,
       payload: JSON.stringify(body),
       muteHttpExceptions: true,
-      timeout: 50  // segundos
+      timeout: 25  // AUD-T5: 25 segundos (antes 50)
     });
 
     const code = respHttp.getResponseCode();
