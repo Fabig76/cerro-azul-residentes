@@ -2803,20 +2803,9 @@ function registrarResidente(data) {
     // vacío los borraría. El residente NO puede autorizar dispositivos en el
     // portal — solo el propietario lo hace desde la Sección 8 del formulario
     // principal o desde el portal admin.
-    const _dispOrig = [];
-    for (let _i = 0; _i < 3; _i++) {
-      const _base = 95 + _i * 5;
-      _dispOrig.push({
-        tipo: String(row.values[_base + 0] || '').trim(),
-        codigo: String(row.values[_base + 1] || '').trim(),
-        placa: String(row.values[_base + 2] || '').trim(),
-        fecha: String(row.values[_base + 3] || '').trim(),
-        recibe: String(row.values[_base + 4] || '').trim()
-      });
-    }
-    const _dispConDatos = _dispOrig.filter(function (d) { return d.tipo || d.codigo; });
-    const _dispResidente = Array.isArray(data.dispositivos) ? data.dispositivos : [];
-    const dispositivosFinal = _dispResidente.length > 0 ? _dispResidente : _dispConDatos;
+    // AUD-T9: los dispositivos solo los cambia el propietario. El residente
+    // NO puede sobrescribir llaveros/tags autorizados desde el portal.
+    const dispositivosFinal = _preservarDispositivos(row.values);
 
     // BUGFIX-027 · 25-Oct-2026 — Reconstrucción fiel del payload.
     //
