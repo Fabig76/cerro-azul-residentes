@@ -8,7 +8,7 @@
    ============================================================ */
 
 // URL del Web App de Google Apps Script (desplegado por Fabio en urb.cerroazul@gmail.com)
-const APPS_SCRIPT_URL = window.APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec';
+const APPS_SCRIPT_URL = window.CA_CONFIG.url;
 
 // Constantes de mudanzas — sincronizadas con apps-script/Codigo.gs (BUGFIX-026 V41).
 // Backend usa MUDANZAS_CANCELACION_HORAS = 24 (apps-script/Codigo.gs línea ~798).

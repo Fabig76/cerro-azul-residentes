@@ -8,7 +8,7 @@
 //            adminCancelarReservaSalon
 // ============================================================
 
-const APP_URL = 'https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec';
+const APP_URL = window.CA_CONFIG.url;
 
 // ============ ESTADO GLOBAL ============
 const state = {

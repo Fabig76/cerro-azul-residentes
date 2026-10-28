@@ -13,7 +13,7 @@
   'use strict';
 
   // URL del Apps Script (Cerro Azul V23+) - endpoint chatAsistente
-  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec';
+  var APPS_SCRIPT_URL = window.CA_CONFIG.url;
 
   // Frase literal que emite el backend cuando el tema está fuera del alcance
   var FRASE_RECHAZO = 'Solo puedo ayudarte con preguntas sobre el formulario de la Urbanización Cerro Azul.';

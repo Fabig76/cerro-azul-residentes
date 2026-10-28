@@ -6,7 +6,7 @@
 //   vigilanteVerMudanzas, vigilanteCheckMudanza, vigilanteLeerContrasena)
 // ============================================================
 
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec';
+const APPS_SCRIPT_URL = window.CA_CONFIG.url;
 
 // BUGFIX-019: inyectar el token de sesión en TODAS las llamadas al backend.
 (function () {

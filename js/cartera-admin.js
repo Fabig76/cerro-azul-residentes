@@ -18,7 +18,7 @@
   let _publicando = false;
 
   // APPS_SCRIPT_URL: copiar el valor EXACTO de js/admin.js línea 6
-  const URL = 'https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec';
+  const BACKEND_URL = window.CA_CONFIG.url;
 
   // ==================== LOGIN =====================================
   async function login() {
@@ -26,7 +26,7 @@
     const pwd = $('#loginPassword').value;
     if (!pwd) { alertErr('Ingresá la contraseña.'); return; }
     try {
-      const r = await fetch(URL + '?action=adminLogin&password=' + encodeURIComponent(pwd));
+      const r = await fetch(BACKEND_URL + '?action=adminLogin&password=' + encodeURIComponent(pwd));
       const j = await r.json();
       if (!j.ok) { alertErr('Contraseña incorrecta.'); return; }
       _password = pwd;
@@ -244,7 +244,7 @@
 
   // ==================== HELPERS ==================================
   async function post(payload) {
-    var r = await fetch(URL, {
+    var r = await fetch(BACKEND_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
       body: JSON.stringify(payload),
