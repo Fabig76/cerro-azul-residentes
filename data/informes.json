@@ -1,0 +1,487 @@
+{
+  "version": 1,
+  "conjunto": {
+    "nombre": "Cerro Azul Conjunto Residencial P.H.",
+    "apartamentos": 625
+  },
+  "presupuesto": {
+    "anio": 2026,
+    "mensual": 128225585,
+    "anual": 1538707020,
+    "rubros": {
+      "vig": 42782000,
+      "aseo": 22842009,
+      "insAseo": 883073,
+      "dot": 291667,
+      "energia": 17210513,
+      "acueducto": 671389,
+      "otrasEnt": 922735,
+      "telecom": 194067,
+      "asc": 10678317,
+      "mttoGen": 1982042,
+      "zh": 1333333,
+      "motob": 1421444,
+      "rci": 1598833,
+      "tanques": 232309,
+      "accesos": 56667,
+      "elec": 208333,
+      "zverde": 225000,
+      "fumig": 613083,
+      "extCam": 226666,
+      "seguros": 10250000,
+      "admin": 5844112,
+      "contab": 1687505,
+      "revisor": 1672238,
+      "factura": 855600,
+      "sgsst": 213182,
+      "banc": 733333,
+      "asamblea": 441667,
+      "imprev": 37500,
+      "papel": 25000,
+      "eventos": 809712,
+      "reserva": 1282256
+    },
+    "pdf": "https://drive.google.com/drive/folders/13GKvBum0PSqQ_qbmDgfqoLQuavm-wjMW?usp=sharing"
+  },
+  "meses": [
+    {
+      "id": "2026-09",
+      "nombre": "Septiembre 2026",
+      "corto": "septiembre",
+      "publicado": "2026-11-01",
+      "mesesAcum": 9,
+      "cuotasMes": 128485954,
+      "egresosMes": 134116144,
+      "egresosAcum": 1096633938,
+      "cartera": {
+        "total": 261361880,
+        "prejuridico": 190695098
+      },
+      "facturasPendientes": {},
+      "resumen": "Ingresos del mes $132,5 millones y gastos $134,1 millones. En el año el conjunto acumula un excedente de $122,3 millones. La cartera por cobrar bajó 11 %, a $261,4 millones.",
+      "alertaMes": "Septiembre incluye la factura de energía de tres meses ($50,3 millones, julio a septiembre) y un ajuste a favor en seguros. Por eso un solo mes puede engañar; la vista de promedio es la recomendada.",
+      "pdf": "https://drive.google.com/drive/folders/13GKvBum0PSqQ_qbmDgfqoLQuavm-wjMW?usp=sharing",
+      "rubros": {
+        "vig": [
+          359543605,
+          40132212
+        ],
+        "aseo": [
+          208133046,
+          22967607
+        ],
+        "insAseo": [
+          11747341,
+          3152174
+        ],
+        "dot": [
+          73600,
+          0
+        ],
+        "energia": [
+          143367981,
+          50316801
+        ],
+        "acueducto": [
+          15108496,
+          3640038
+        ],
+        "otrasEnt": [
+          5894078,
+          0
+        ],
+        "telecom": [
+          968201,
+          84501
+        ],
+        "asc": [
+          88359619,
+          9680993
+        ],
+        "mttoGen": [
+          21703547,
+          3140800
+        ],
+        "zh": [
+          13109136,
+          201374
+        ],
+        "motob": [
+          9558989,
+          0
+        ],
+        "rci": [
+          8706052,
+          966701
+        ],
+        "tanques": [
+          6049522,
+          0
+        ],
+        "accesos": [
+          3900100,
+          180000
+        ],
+        "elec": [
+          3875890,
+          0
+        ],
+        "zverde": [
+          494801,
+          0
+        ],
+        "fumig": [
+          0,
+          0
+        ],
+        "extCam": [
+          0,
+          0
+        ],
+        "seguros": [
+          80102039,
+          -12119770
+        ],
+        "admin": [
+          52597008,
+          5844112
+        ],
+        "contab": [
+          15887545,
+          1687505
+        ],
+        "revisor": [
+          15050142,
+          1672238
+        ],
+        "factura": [
+          5989200,
+          0
+        ],
+        "sgsst": [
+          1656480,
+          0
+        ],
+        "banc": [
+          4792381,
+          482176
+        ],
+        "asamblea": [
+          4712200,
+          0
+        ],
+        "imprev": [
+          3141301,
+          641300
+        ],
+        "papel": [
+          571334,
+          163126
+        ],
+        "eventos": [
+          0,
+          0
+        ],
+        "reserva": [
+          11540304,
+          1282256
+        ]
+      }
+    },
+    {
+      "id": "2026-08",
+      "nombre": "Agosto 2026",
+      "corto": "agosto",
+      "publicado": "2026-11-01",
+      "mesesAcum": 8,
+      "cuotasMes": 129802200,
+      "egresosMes": 125152046,
+      "egresosAcum": 962517794,
+      "cartera": {
+        "total": 291402278,
+        "prejuridico": 207090184
+      },
+      "facturasPendientes": {
+        "energia": 2,
+        "acueducto": 2
+      },
+      "resumen": "Ingresos del mes $131,8 millones y gastos $125,2 millones, con un excedente de $6,6 millones. En el año el conjunto acumula $124,0 millones de excedente. La cartera por cobrar subió 4 %, a $291,4 millones.",
+      "alertaMes": "Agosto no trae factura de energía ni de acueducto (llegaron en septiembre) y registra $30,1 millones de seguros por el ajuste de la póliza. Por eso un solo mes puede engañar; la vista de promedio es la recomendada.",
+      "pdf": "https://drive.google.com/drive/folders/13GKvBum0PSqQ_qbmDgfqoLQuavm-wjMW?usp=sharing",
+      "rubros": {
+        "vig": [
+          319411393,
+          40132213
+        ],
+        "aseo": [
+          185165439,
+          23535052
+        ],
+        "insAseo": [
+          8595167,
+          1903307
+        ],
+        "dot": [
+          73600,
+          0
+        ],
+        "energia": [
+          93051180,
+          0
+        ],
+        "acueducto": [
+          11468458,
+          0
+        ],
+        "otrasEnt": [
+          5894078,
+          0
+        ],
+        "telecom": [
+          883700,
+          199303
+        ],
+        "asc": [
+          78678626,
+          9680993
+        ],
+        "mttoGen": [
+          18562747,
+          2641325
+        ],
+        "zh": [
+          12907762,
+          402748
+        ],
+        "motob": [
+          9558989,
+          0
+        ],
+        "rci": [
+          7739351,
+          966701
+        ],
+        "tanques": [
+          6049522,
+          3131861
+        ],
+        "accesos": [
+          3720100,
+          0
+        ],
+        "elec": [
+          3875890,
+          0
+        ],
+        "zverde": [
+          494801,
+          0
+        ],
+        "fumig": [
+          0,
+          0
+        ],
+        "extCam": [
+          0,
+          0
+        ],
+        "seguros": [
+          92221809,
+          30068165
+        ],
+        "admin": [
+          46752896,
+          5844112
+        ],
+        "contab": [
+          14200040,
+          1687505
+        ],
+        "revisor": [
+          13377904,
+          1672238
+        ],
+        "factura": [
+          5989200,
+          0
+        ],
+        "sgsst": [
+          1656480,
+          414120
+        ],
+        "banc": [
+          4310205,
+          307891
+        ],
+        "asamblea": [
+          4712200,
+          0
+        ],
+        "imprev": [
+          2500001,
+          0
+        ],
+        "papel": [
+          408208,
+          0
+        ],
+        "eventos": [
+          0,
+          0
+        ],
+        "reserva": [
+          10258048,
+          2564512
+        ]
+      }
+    },
+    {
+      "id": "2026-07",
+      "nombre": "Julio 2026",
+      "corto": "julio",
+      "publicado": "2026-11-01",
+      "mesesAcum": 7,
+      "cuotasMes": 129802200,
+      "egresosMes": 103311402,
+      "egresosAcum": 837365748,
+      "cartera": {
+        "total": 279880693,
+        "prejuridico": 219329277
+      },
+      "facturasPendientes": {
+        "energia": 1,
+        "acueducto": 1
+      },
+      "resumen": "Gastos del mes $103,3 millones, los más bajos del año, porque la energía y el acueducto de julio se facturaron en septiembre. La cartera por cobrar quedó en $279,9 millones, de los cuales $219,3 millones están en cobro prejurídico.",
+      "alertaMes": "Julio no trae facturas de energía ni de acueducto (llegaron en septiembre) y la reserva del fondo de imprevistos se registró en agosto. Por eso un solo mes puede engañar; la vista de promedio es la recomendada.",
+      "pdf": "https://drive.google.com/drive/folders/13GKvBum0PSqQ_qbmDgfqoLQuavm-wjMW?usp=sharing",
+      "rubros": {
+        "vig": [
+          279279180,
+          39472699
+        ],
+        "aseo": [
+          161630387,
+          23488459
+        ],
+        "insAseo": [
+          6691860,
+          983500
+        ],
+        "dot": [
+          73600,
+          0
+        ],
+        "energia": [
+          93051180,
+          0
+        ],
+        "acueducto": [
+          11468458,
+          0
+        ],
+        "otrasEnt": [
+          5894078,
+          0
+        ],
+        "telecom": [
+          684397,
+          0
+        ],
+        "asc": [
+          68997633,
+          9680993
+        ],
+        "mttoGen": [
+          15921422,
+          4694175
+        ],
+        "zh": [
+          12505014,
+          201374
+        ],
+        "motob": [
+          9558989,
+          3455141
+        ],
+        "rci": [
+          6772650,
+          966701
+        ],
+        "tanques": [
+          2917661,
+          0
+        ],
+        "accesos": [
+          3720100,
+          0
+        ],
+        "elec": [
+          3875890,
+          0
+        ],
+        "zverde": [
+          494801,
+          0
+        ],
+        "fumig": [
+          0,
+          0
+        ],
+        "extCam": [
+          0,
+          0
+        ],
+        "seguros": [
+          62153644,
+          8879092
+        ],
+        "admin": [
+          40908784,
+          5844112
+        ],
+        "contab": [
+          12512535,
+          2387505
+        ],
+        "revisor": [
+          11705666,
+          1672238
+        ],
+        "factura": [
+          5989200,
+          855600
+        ],
+        "sgsst": [
+          1242360,
+          0
+        ],
+        "banc": [
+          4002314,
+          729813
+        ],
+        "asamblea": [
+          4712200,
+          0
+        ],
+        "imprev": [
+          2500001,
+          0
+        ],
+        "papel": [
+          408208,
+          0
+        ],
+        "eventos": [
+          0,
+          0
+        ],
+        "reserva": [
+          7693536,
+          0
+        ]
+      }
+    }
+  ],
+  "archivo": []
+}

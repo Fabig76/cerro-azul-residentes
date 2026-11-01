@@ -45,6 +45,24 @@
     } finally { clearTimeout(t); }
   }
 
+  // INF-T1: lee un archivo JSON publicado junto al portal (p. ej. data/informes.json), sin caché.
+  async function getJson(path, opts) {
+    opts = opts || {};
+    const timeoutMs = opts.timeoutMs || 20000;
+    if (navigator.onLine === false) throw new Error('Sin conexión a internet. Revise su red e intente de nuevo.');
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), timeoutMs);
+    try {
+      const r = await fetch(path + (path.indexOf('?') === -1 ? '?' : '&') + 't=' + Date.now(), { cache: 'no-store', signal: ctl.signal });
+      if (!r.ok) throw new Error('No se encontró la información (HTTP ' + r.status + ').');
+      const text = await r.text();
+      try { return JSON.parse(text); } catch (e) { throw new Error('La información publicada no tiene un formato válido.'); }
+    } catch (e) {
+      if (e && e.name === 'AbortError') throw new Error('La información tardó demasiado en cargar. Intente de nuevo.');
+      throw e;
+    } finally { clearTimeout(t); }
+  }
+
   async function withBusy(btn, textoOcupado, fn) {
     if (!btn) return fn();
     const original = btn.textContent;
@@ -53,5 +71,5 @@
     finally { btn.disabled = false; btn.textContent = original; }
   }
 
-  window.CA = Object.freeze({ url: url, escapeHtml: escapeHtml, hoyLocal: hoyLocal, api: api, withBusy: withBusy });
+  window.CA = Object.freeze({ url: url, escapeHtml: escapeHtml, hoyLocal: hoyLocal, api: api, getJson: getJson, withBusy: withBusy });
 })();

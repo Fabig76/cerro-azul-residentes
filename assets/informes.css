@@ -1,0 +1,68 @@
+/* ============================================================
+   Informes contables — estilos propios de informes.html.
+   Usa las variables de assets/styles.css (no define colores de marca nuevos).
+   ============================================================ */
+.inf-wrap { max-width: 1040px; margin: 0 auto; display: grid; gap: 20px; }
+.inf-card { background: var(--fondo-card); border: 1px solid var(--gris-borde); border-radius: var(--r-card); padding: 22px; display: grid; gap: 14px; box-shadow: var(--sombra-1); min-width: 0; }
+.inf-card h2 { margin: 0; font-size: 20px; color: var(--gris-tx); }
+.inf-card > p { margin: 0; color: var(--gris-med); font-size: 14px; }
+.inf-toggle { display: flex; gap: 8px; flex-wrap: wrap; }
+.inf-toggle button { border: 1.5px solid var(--gris-borde); background: var(--fondo-card); color: var(--gris-tx); border-radius: var(--r-pill); padding: 9px 14px; font: 500 14px var(--fuente); cursor: pointer; }
+.inf-toggle button.on { background: var(--gris-tx); border-color: var(--gris-tx); color: #fff; }
+.inf-toggle button:focus-visible, .inf-item:focus-visible { outline: 3px solid var(--naranja); outline-offset: 2px; }
+.inf-hero { display: grid; grid-template-columns: auto 1fr; gap: 26px; align-items: center; }
+.inf-big { font-size: clamp(52px, 9vw, 92px); font-weight: 800; line-height: 1; color: var(--azul); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.inf-big-sub { display: block; font-size: 14px; color: var(--gris-med); margin-top: 6px; }
+.inf-hero-txt { display: grid; gap: 12px; min-width: 0; }
+.inf-hero-txt p { margin: 0; color: var(--gris-med); font-size: 16px; }
+.inf-note { border-left: 4px solid var(--naranja); background: var(--adv-fondo); padding: 10px 14px; border-radius: 0 10px 10px 0; font-size: 14px; color: var(--gris-tx); }
+.inf-note.warn { border-color: var(--err); background: var(--err-fondo); }
+.inf-scroll { overflow-x: auto; }
+#infMapa { display: block; width: 100%; height: auto; }
+.inf-lbl { font: 600 15px var(--fuente); fill: var(--gris-tx); }
+.inf-sub { font: 400 12.5px var(--fuente); fill: var(--gris-med); }
+.inf-amt { font: 800 16px var(--fuente); fill: var(--gris-tx); }
+.inf-blanco { fill: #fff; }
+.inf-amt.inf-blanco { font-size: 22px; }
+@media (max-width: 700px) { .inf-amt.inf-blanco { font-size: 17px; } }
+.inf-rojo { fill: var(--err); }
+.inf-ribbon { opacity: .55; transition: opacity .2s; }
+.inf-ribbon:hover, .inf-ribbon.on { opacity: .9; }
+.inf-node { cursor: pointer; }
+.inf-leyenda { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+.inf-item { display: grid; grid-template-columns: 14px 1fr auto; gap: 10px; align-items: start; text-align: left; border: 1px solid var(--gris-borde); border-radius: 14px; padding: 12px; background: var(--fondo-card); color: var(--gris-tx); font: inherit; cursor: pointer; }
+div.inf-item { cursor: default; }
+.inf-item i { width: 14px; height: 14px; border-radius: 4px; margin-top: 4px; }
+.inf-it-txt { display: grid; gap: 2px; min-width: 0; }
+.inf-it-txt b { font-weight: 600; }
+.inf-it-txt span { font-size: 13px; color: var(--gris-med); }
+.inf-item em { font-style: normal; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.inf-det { grid-column: 1 / -1; display: none; font-size: 13px; color: var(--gris-med); border-top: 1px dashed var(--gris-borde); padding-top: 8px; }
+.inf-item.open .inf-det { display: grid; gap: 4px; }
+.inf-det div { display: flex; justify-content: space-between; gap: 12px; }
+.inf-det div span:last-child { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.inf-ancho { grid-column: 1 / -1; border-style: dashed; }
+.inf-fuente { margin: 0; font-size: 12.5px; color: var(--gris-med); }
+.inf-bars { display: grid; gap: 8px; }
+.inf-brow { display: grid; grid-template-columns: 160px 1fr 96px; gap: 10px; align-items: center; font-size: 14px; }
+.inf-trk { position: relative; height: 22px; background: var(--gris-claro); border-radius: 6px; overflow: hidden; }
+.inf-trk i { position: absolute; left: 0; top: 0; height: 100%; border-radius: 6px; }
+.inf-trk i.p { background: #C3CBD6; }
+.inf-trk i.g { height: 60%; top: 20%; }
+.inf-brow em { font-style: normal; font-variant-numeric: tabular-nums; text-align: right; font-weight: 600; }
+.inf-brow em.up { color: var(--err); }
+.inf-brow em.dn { color: var(--ok); }
+.inf-total { font-weight: 600; }
+.inf-tot-txt { font-size: 13px; color: var(--gris-med); font-weight: 400; }
+.inf-reportes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.inf-rep { border: 1px solid var(--gris-borde); border-radius: 16px; padding: 16px; display: grid; gap: 8px; align-content: start; }
+.inf-rep b { font-size: 17px; }
+.inf-rep p { margin: 0; font-size: 14px; color: var(--gris-med); }
+.inf-rep .btn { justify-self: start; text-decoration: none; }
+.inf-pill { justify-self: start; font-size: 11.5px; font-weight: 600; border-radius: var(--r-pill); padding: 3px 9px; background: var(--ok-fondo); color: var(--ok); }
+@media (max-width: 700px) {
+  .inf-hero { grid-template-columns: 1fr; }
+  .inf-brow { grid-template-columns: 1fr; gap: 4px; }
+  .inf-brow em { text-align: left; }
+}
+@media (prefers-reduced-motion: reduce) { .inf-ribbon { transition: none; } }
