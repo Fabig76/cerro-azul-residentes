@@ -8,7 +8,7 @@
 .inf-card > p { margin: 0; color: var(--gris-med); font-size: 14px; }
 .inf-toggle { display: flex; gap: 8px; flex-wrap: wrap; }
 .inf-toggle button { border: 1.5px solid var(--gris-borde); background: var(--fondo-card); color: var(--gris-tx); border-radius: var(--r-pill); padding: 9px 14px; font: 500 14px var(--fuente); cursor: pointer; }
-.inf-toggle button.on { background: var(--gris-tx); border-color: var(--gris-tx); color: #fff; }
+.inf-toggle button.on { background: var(--gris-tx); border-color: var(--gris-tx); color: var(--fondo-card); }
 .inf-toggle button:focus-visible, .inf-item:focus-visible { outline: 3px solid var(--naranja); outline-offset: 2px; }
 .inf-hero { display: grid; grid-template-columns: auto 1fr; gap: 26px; align-items: center; }
 .inf-big { font-size: clamp(52px, 9vw, 92px); font-weight: 800; line-height: 1; color: var(--azul); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
@@ -65,4 +65,8 @@ div.inf-item { cursor: default; }
   .inf-brow { grid-template-columns: 1fr; gap: 4px; }
   .inf-brow em { text-align: left; }
 }
+/* Tema oscuro: la barra de lo presupuestado no debe encandilar */
+:root[data-tema="oscuro"] .inf-trk i.p { background: #4A5563; }
+:root[data-tema="oscuro"] .inf-ribbon { opacity: .7; }
+:root[data-tema="oscuro"] #view-inf .btn-secondary { background: #1A2A40; color: #9CC8FF; border-color: #2D4A70; }
 @media (prefers-reduced-motion: reduce) { .inf-ribbon { transition: none; } }
