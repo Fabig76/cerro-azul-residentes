@@ -576,6 +576,14 @@ main > .card { max-width: 560px; margin: 12px auto 28px; border-radius: var(--r-
   .portal-link:hover::after { transform: translateX(3px) rotate(-45deg); border-color: var(--acento); }
 }
 
+/* Escritorio y tableta: 3 servicios arriba y 2 accesos de transparencia
+   (informes y mantenimientos) abajo, más anchos. En celular sigue la lista. */
+@media (min-width: 701px) {
+  .portal-links { display: grid; grid-template-columns: repeat(6, 1fr); }
+  .portal-link { grid-column: span 2; }
+  .portal-link:nth-child(4), .portal-link:nth-child(5) { grid-column: span 3; }
+}
+
 /* Barra superior de los paneles de personal */
 .toolbar {
   display: flex;
