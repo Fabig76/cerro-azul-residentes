@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0066CC">
+  <title>Informes contables — Cerro Azul</title>
+  <link rel="icon" href="assets/logo.jpg">
+  <link rel="stylesheet" href="assets/styles.css?v=20261025">
+  <link rel="stylesheet" href="assets/informes.css?v=20261101">
+  <script src="js/config.js?v=20261028"></script>
+  <script src="js/common.js?v=20261101"></script>
+  <script src="js/informes.js?v=20261101"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <img src="assets/logo.jpg" alt="Logo Urbanización Cerro Azul" class="logo">
+      <div class="header-text">
+        <h1>Urbanización Cerro Azul</h1>
+        <p class="sub">Informes contables Cerro Azul</p>
+        <p class="nit">NIT 900770444 · Bello / Niquía</p>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- VISTA INGRESO -->
+    <div id="view-inf-login" class="lookup-box">
+      <h3>📊 Informes contables</h3>
+      <p>Ingresa tu <strong>N° de formulario</strong>, tu <strong>N° de apartamento</strong> y tu <strong>cédula</strong> para ver en qué se gasta la cuota de administración y descargar los informes del contador.</p>
+      <div id="alert-inf-login" class="alert hidden" role="alert" aria-live="polite"></div>
+      <div class="field">
+        <label for="infNumForm">N° de formulario <span class="req">*</span></label>
+        <input type="text" id="infNumForm" placeholder="Ej: CA-0042" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="infApto">N° de apartamento <span class="req">*</span></label>
+        <input type="text" id="infApto" placeholder="Ej: 101, 202B" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="infCc">Cédula del propietario <span class="req">*</span></label>
+        <input type="text" id="infCc" placeholder="Solo números, sin puntos ni guiones" inputmode="numeric" autocomplete="off">
+      </div>
+      <button type="button" class="btn btn-primary btn-block" id="btnInfIngresar">🔍 Ver informes</button>
+      <p class="nota-pie"><strong>¿Perdiste tu N° de formulario?</strong> Escríbenos a urb.cerroazul@gmail.com.</p>
+    </div>
+
+    <!-- VISTA INFORMES -->
+    <div id="view-inf" class="inf-wrap hidden">
+      <div class="inf-toggle" id="infMeses" aria-label="Mes del informe"></div>
+
+      <div class="inf-card">
+        <div class="inf-hero">
+          <div><div class="inf-big" id="infBig">$0</div><span class="inf-big-sub" id="infBigSub"></span></div>
+          <div class="inf-hero-txt">
+            <p id="infHeroP"></p>
+            <div class="inf-toggle" id="infVistas">
+              <button type="button" data-v="prom" id="infVistaProm" class="on">Promedio mensual</button>
+              <button type="button" data-v="pres">Lo presupuestado</button>
+              <button type="button" data-v="mes" id="infVistaMes">Solo el mes, tal cual</button>
+            </div>
+            <div class="inf-note" id="infNota"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="inf-card">
+        <h2 id="infMapTitulo">Así se reparte tu cuota</h2>
+        <div class="inf-scroll"><svg id="infMapa" viewBox="0 0 960 560" role="img" aria-label="Mapa de cómo se reparte la cuota de administración entre los rubros de gasto"></svg></div>
+        <div class="inf-leyenda" id="infLeyenda"></div>
+        <p class="inf-fuente" id="infFuente"></p>
+      </div>
+
+      <div class="inf-card">
+        <h2>Lo presupuestado frente a lo gastado, por apartamento y por mes</h2>
+        <p id="infBarsP"></p>
+        <div class="inf-bars" id="infBars"></div>
+      </div>
+
+      <div class="inf-card">
+        <h2>Informes contables del contador</h2>
+        <p>Cada mes la administración publica aquí el informe del contador: estados financieros, notas, flujo de efectivo y ejecución presupuestal. Por protección de datos personales se omiten la cartera por apartamento y la conciliación bancaria.</p>
+        <div class="inf-reportes" id="infReportes"></div>
+      </div>
+
+      <button type="button" class="btn btn-secondary btn-block" id="btnInfSalir">Salir</button>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>
+      Urbanización Cerro Azul · NIT 900770444 · Bello / Niquía<br>
+      Información contable del conjunto — Ley 675 de 2001 y Ley 1581 de 2012<br>
+      urb.cerroazul@gmail.com
+    </p>
+  </footer>
+<script src="js/asistente.js?v=2"></script>
+</body>
+</html>

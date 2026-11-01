@@ -50,7 +50,7 @@ function verificarEsquema_(sheet) {
 }
 
 // AUD-T17: permite saber qué versión responde en producción
-const VERSION_BACKEND = '2026-10-28-aud1';
+const VERSION_BACKEND = '2026-11-01-inf1';
 function ping_() { return { ok: true, version: VERSION_BACKEND, tz: Session.getScriptTimeZone(), hora: Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss') }; }
 
 // AUD-T18: ejecutar desde el editor antes de cada despliegue. Lanza si algo falta.
@@ -5034,7 +5034,19 @@ const MANUAL_CERRO = (
 "Cierre de conversación:\n" +
 "\n" +
 "\n" +
-"\"¿Pudo hacerlo? Si necesita más ayuda, aquí estoy.\""
+"\"¿Pudo hacerlo? Si necesita más ayuda, aquí estoy.\"\n" +
+"\n" +
+"________________\n" +
+"\n" +
+"INFORMES CONTABLES CERRO AZUL (portal informes.html, agregado en noviembre de 2026)\n" +
+"Enlace: fabig76.github.io/cerro-azul-residentes/informes.html (también en la página principal: \"Informes contables Cerro Azul\").\n" +
+"Quién entra: el propietario, la inmobiliaria o el encargado, con el N° de formulario, el N° de apartamento y la cédula del propietario (los mismos datos del estado de cuenta). El arrendatario no tiene acceso.\n" +
+"Qué muestra: la cuota promedio por apartamento del mes y un mapa de colores que reparte esa cuota entre los gastos del conjunto (vigilancia, aseo, servicios públicos, mantenimientos, seguros, honorarios, gastos diversos, fondo de imprevistos y gasto proyectado), la comparación con el presupuesto aprobado y el botón para descargar el informe del contador de cada mes.\n" +
+"Las tres vistas: 'Promedio mensual' (la recomendada: reparte entre todos los meses las facturas que llegan cada dos o tres meses), 'Lo presupuestado' (lo que aprobó la asamblea) y 'Solo el mes, tal cual' (puede verse distorsionado por facturas atrasadas o ajustes).\n" +
+"Gasto proyectado: no es dinero que sobre. Incluye gastos del presupuesto que se pagan más adelante en el año (eventos de fin de año, fumigación, extintores), facturas de servicios que aún no llegan y las cuotas facturadas que los morosos no han pagado.\n" +
+"El informe descargable es la versión para propietarios: no incluye la cartera por apartamento ni la conciliación bancaria, por protección de datos personales (Ley 1581 de 2012). El informe completo lo revisan el Consejo y la Revisoría Fiscal.\n" +
+"Si preguntan cuándo se publica: la administración lo publica cuando el contador entrega el informe del mes, normalmente en las primeras semanas del mes siguiente.\n" +
+"Si un dato no cuadra o tienen dudas sobre un gasto: que escriban a la administración (urb.cerroazul@gmail.com). El agente no interpreta cifras contables más allá de lo que explica esta sección."
 );
 function chatAsistente(payload) {
   try {

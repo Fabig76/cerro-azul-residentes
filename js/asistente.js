@@ -141,7 +141,7 @@
     // Mensaje de bienvenida
     this.agregarMensaje(
       'Hola, soy el asistente de la Urbanización Cerro Azul. ' +
-      'Puedo ayudarte a llenar el formulario en cualquiera de los 7 portales ' +
+      'Puedo ayudarte a llenar el formulario en cualquiera de los 8 portales ' +
       '(formulario público, salón social, portal del residente, estado de cuenta, admin, vigilantes y cargador de cartera). ' +
       '¿En qué te puedo ayudar?',
       'bot'
