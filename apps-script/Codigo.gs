@@ -1927,10 +1927,11 @@ function adminGuardar(data) {
   if (!lock.tryLock(20000)) {
     return { ok: false, error: 'El sistema está ocupado. Espere unos segundos y vuelva a intentar.' };
   }
+  let newRow; // fuera del try: el Logger.log de después del finally la usa
   try {
     verificarEsquema_(sheet); // AUD-T7: aborta si la hoja cambió de esquema
     const currentRow = sheet.getRange(targetRow, 1, 1, NUM_COLS).getValues()[0];
-    const newRow = currentRow.slice();
+    newRow = currentRow.slice();
     // AUD-T6: bloqueo optimista. El cliente manda la fechaEdicion que leyó.
     if (data.fechaEdicionVista && String(currentRow[COL_FECHA_EDIT] || '') !== String(data.fechaEdicionVista)) {
       return { ok: false, error: 'El registro fue modificado por otra persona. Recargue y vuelva a intentar.', code: 'CONFLICTO' };
