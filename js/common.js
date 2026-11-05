@@ -1,4 +1,4 @@
-// AUD-T11: helpers compartidos por los 7 portales. No depende de ningún otro script.
+// AUD-T11: helpers compartidos por los 8 portales. No depende de ningún otro script.
 (function () {
   const url = window.CA_CONFIG && window.CA_CONFIG.url;
   if (!url) console.error('[CA] Falta js/config.js antes de common.js');

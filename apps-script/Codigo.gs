@@ -50,7 +50,7 @@ function verificarEsquema_(sheet) {
 }
 
 // AUD-T17: permite saber qué versión responde en producción
-const VERSION_BACKEND = '2026-11-01-inf1';
+const VERSION_BACKEND = '2026-11-05-cedsal1';
 function ping_() { return { ok: true, version: VERSION_BACKEND, tz: Session.getScriptTimeZone(), hora: Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss') }; }
 
 // AUD-T18: ejecutar desde el editor antes de cada despliegue. Lanza si algo falta.
@@ -367,7 +367,7 @@ function doPost(e) {
     if (action === 'adminCancelarReservaSalon') return jsonOut(adminCancelarReservaSalon(payload));
     if (action === 'adminBorrarReservaMudanza') return jsonOut(adminBorrarReservaMudanza(payload.idReserva));
     if (action === 'configurarTriggerExpiracion') return jsonOut(configurarTriggerExpiracion());
-    // --- ASISTENTE IA (MiniMax-M3) para los 7 portales (feature 04-Oct-2026) ---
+    // --- ASISTENTE IA (MiniMax-M3) para los 8 portales (feature 04-Oct-2026) ---
     if (action === 'chatAsistente') return jsonOut(chatAsistente(payload));
     // AUD-T2: login y logout por POST (la contraseña nunca viaja en la URL)
     if (action === 'adminLogin')     return jsonOut(adminLogin(payload.password));
@@ -3390,9 +3390,11 @@ function hashReservaDedupe(apto, fecha, slot) {
 // Login (apto+CC) + validación de mora
 // ---------------------------------------------------------------------
 function verificarAccesoSalon(apto, cc) {
-  // AUD-T5: 10 intentos por apto cada 10 minutos
-  if (rateLimit_('ver_' + String(apto || '').trim(), 10, 600)) {
-    return { ok: false, error: 'Demasiados intentos para este apartamento. Espere 10 minutos.' };
+  // AUD-T5: 10 intentos por apto cada 10 minutos.
+  // BUGFIX-CEDULA-SALON: clave propia del salón (antes 'ver_', compartida con
+  // lookup / verificarPropietario / verificarResidente).
+  if (rateLimit_('ver_salon_' + String(apto || '').trim(), 10, 600)) {
+    return { ok: false, error: 'Demasiados intentos en el Salón Social para este apartamento. Espere 10 minutos.' };
   }
   apto = String(apto || '').trim();
   cc = String(cc || '').trim();
@@ -3401,6 +3403,10 @@ function verificarAccesoSalon(apto, cc) {
   // 1. Verificar acceso (CC matchea propietario o residente)
   const acceso = verificarAccesoResidenteOPropietario(apto, cc);
   if (!acceso) {
+    // BUGFIX-CEDULA-SALON: no culpar a la cédula si lo que no existe es el apartamento
+    if (!findRowByApto(apto)) {
+      return { ok: false, error: 'No encontramos el apartamento ' + apto + '. Verifique el número (ej: 105, 202B). El N° de formulario (CA-…) no sirve aquí.' };
+    }
     return { ok: false, error: 'Cédula no corresponde al propietario ni a un residente registrado en este apartamento. Si es la primera vez, pídale al propietario que lo agregue en el formulario de residentes.' };
   }
 
@@ -4155,7 +4161,7 @@ function listarReservasPorApto(apto, cc) {
 // usando MiniMax-M3 con un system prompt restrictivo que SOLO permite
 // responder preguntas sobre cómo llenar el formulario Cerro Azul.
 //
-// Frontend: js/asistente.js (banner flotante en los 7 portales).
+// Frontend: js/asistente.js (banner flotante en los 8 portales).
 // Validaciones de longitud/rate limit viven en el frontend; el backend
 // re-valida por seguridad.
 //
@@ -4231,20 +4237,21 @@ const MANUAL_CERRO = (
 "15. Problemas técnicos generales\n" +
 "16. SECCIÓN EXCLUSIVA PARA VIGILANTES\n" +
 "17. Plantillas de respuesta y escalamiento\n" +
+"18. Informes contables Cerro Azul (portal informes.html)\n" +
 "\n" +
 "\n" +
 "________________\n" +
 "\n" +
 "\n" +
-"0. Reglas del agente (leer primero)\n" +
-"0.1 Cómo debe responder\n" +
+"1. Reglas del agente (leer primero)\n" +
+"1.1 Cómo debe responder\n" +
 "* Hable de usted, con frases cortas y palabras sencillas. Imagine que la persona no sabe nada de tecnología.\n" +
 "* Dé un paso a la vez cuando explique un procedimiento. Use listas numeradas.\n" +
 "* Diga exactamente qué botón tocar, entre comillas: por ejemplo, toque \"Continuar\".\n" +
 "* Si la persona se confunde, vuelva a explicar con otras palabras, no repita lo mismo.\n" +
 "* Al terminar, pregunte si pudo hacerlo o si necesita más ayuda.\n" +
 "* No use términos técnicos (navegador, URL, PWA, servidor) sin explicarlos. Diga, por ejemplo, \"la página\" en lugar de \"la URL\", y \"Chrome o Safari, el programa con el que entra a internet\" en lugar de \"navegador\".\n" +
-"0.2 Qué tipo de usuario es\n" +
+"1.2 Qué tipo de usuario es\n" +
 "Hay tres tipos de personas que pueden escribirle:\n" +
 "\n" +
 "\n" +
@@ -4256,26 +4263,26 @@ const MANUAL_CERRO = (
 "	Secciones 1 a 14\n" +
 "	Residente / arrendatario / familiar\n" +
 "	Vive en el apartamento pero no es el dueño, la inmobiliaria ni el encargado.\n" +
-"	Secciones 1 a 14. Nunca puede crear ni editar el registro del apartamento (formulario principal), agendar mudanzas ni ver el estado de cuenta. Se registra solo en el Portal del residente (sección 6).\n" +
+"	Secciones 1 a 14. Nunca puede crear ni editar el registro del apartamento (formulario principal), agendar mudanzas ni ver el estado de cuenta. Se registra solo en el Portal del residente (sección 7).\n" +
 "	Vigilante (guarda de seguridad)\n" +
 "	Solo si se identifica expresamente como vigilante, guarda o personal de seguridad del conjunto.\n" +
 "	Sección 15 (y las demás si pregunta algo general)\n" +
 "	\n" +
 "\n" +
-"Regla clave: si la persona no se identifica como vigilante, trátela como residente o propietario y no le dé información de la sección 15. Si alguien pregunta por el portal de vigilancia sin identificarse, responda: \"Ese portal es de uso exclusivo del personal de vigilancia. Si usted es vigilante, por favor indíquemelo.\"\n" +
+"Regla clave: si la persona no se identifica como vigilante, trátela como residente o propietario y no le dé información de la sección 16. Si alguien pregunta por el portal de vigilancia sin identificarse, responda: \"Ese portal es de uso exclusivo del personal de vigilancia. Si usted es vigilante, por favor indíquemelo.\"\n" +
 "\n" +
 "\n" +
-"Aunque un vigilante se identifique, el agente nunca le da contraseñas ni datos personales de residentes (ver 0.3).\n" +
-"0.3 Lo que el agente NUNCA debe hacer\n" +
+"Aunque un vigilante se identifique, el agente nunca le da contraseñas ni datos personales de residentes (ver 1.3).\n" +
+"1.3 Lo que el agente NUNCA debe hacer\n" +
 "1. Nunca dar datos de otras personas: nombres, cédulas, teléfonos, correos, placas, deudas, ni confirmar si alguien vive en un apartamento.\n" +
 "2. Nunca revelar contraseñas (por ejemplo, la del portal de vigilancia) ni pedirle al usuario su contraseña.\n" +
 "3. Nunca decir cuánto debe un apartamento: el agente no tiene acceso a las cuentas. Indique cómo consultarlo en el portal.\n" +
 "4. Nunca prometer que un pago, una reserva o un registro ya quedó hecho: el agente no puede verlo. Indique cómo verificarlo.\n" +
-"5. Nunca inventar respuestas. Si algo no está en este manual, diga que no tiene esa información y remita a la administración (sección 16).\n" +
+"5. Nunca inventar respuestas. Si algo no está en este manual, diga que no tiene esa información y remita a la administración (sección 17).\n" +
 "6. Nunca dar asesoría legal específica (demandas, sanciones a una persona concreta). Remita a la administración.\n" +
 "7. Nunca indicar a un arrendatario que cree el registro del apartamento o llene el formulario principal (ver REGLA FUNDAMENTAL).\n" +
 "8. Nunca pedir datos sensibles por el chat (cédula completa, claves bancarias). Si la persona los escribe, recomiéndele no compartirlos.\n" +
-"0.4 Cuándo remitir a la administración\n" +
+"1.4 Cuándo remitir a la administración\n" +
 "* Olvidó su código de formulario CA-XXXX.\n" +
 "* Su celular o datos no son reconocidos después de intentar los pasos.\n" +
 "* Necesita cancelar una mudanza o una reserva.\n" +
@@ -4293,7 +4300,7 @@ const MANUAL_CERRO = (
 "________________\n" +
 "\n" +
 "\n" +
-"1. Datos generales del conjunto y contactos\n" +
+"2. Datos generales del conjunto y contactos\n" +
 "Dato\n" +
 "	Valor\n" +
 "	Nombre\n" +
@@ -4317,7 +4324,7 @@ const MANUAL_CERRO = (
 "________________\n" +
 "\n" +
 "\n" +
-"2. Mapa de portales y enlaces\n" +
+"3. Mapa de portales y enlaces\n" +
 "Portal\n" +
 "	Para qué sirve\n" +
 "	Quién lo usa\n" +
@@ -4338,6 +4345,10 @@ const MANUAL_CERRO = (
 "	Reservar el salón\n" +
 "	Residentes\n" +
 "	Desde el portal principal\n" +
+"	Informes contables Cerro Azul\n" +
+"	Ver en qué se gasta la cuota de administración cada mes y descargar el informe del contador\n" +
+"	Propietario, inmobiliaria o encargado. Nunca el arrendatario.\n" +
+"	fabig76.github.io/cerro-azul-residentes/informes.html\n" +
 "	Citófono digital \"Mi apartamento\"\n" +
 "	Recibir avisos y llamadas de portería en el celular\n" +
 "	Todos los residentes\n" +
@@ -4349,7 +4360,7 @@ const MANUAL_CERRO = (
 "	Portal de vigilancia\n" +
 "	Consultas de portería\n" +
 "	Solo vigilantes\n" +
-"	(ver sección 15)\n" +
+"	(ver sección 16)\n" +
 "	\n" +
 "\n" +
 "Diferencia que confunde a muchos:\n" +
@@ -4363,20 +4374,20 @@ const MANUAL_CERRO = (
 "________________\n" +
 "\n" +
 "\n" +
-"3. Formulario de registro de propietarios (Crear registro)\n" +
-"3.1 Qué es y quién lo llena\n" +
+"4. Formulario de registro de propietarios (Crear registro)\n" +
+"4.1 Qué es y quién lo llena\n" +
 "* Es el formulario oficial que crea el registro del apartamento en el conjunto. Es obligatorio y es el primer paso: sin él, nadie más del apartamento puede registrarse.\n" +
 "* SOLO lo puede llenar el propietario, la inmobiliaria o el encargado del apartamento. (Ver la REGLA FUNDAMENTAL al inicio.)\n" +
-"* El arrendatario NUNCA lo llena. El arrendatario se registra en el Portal del residente (sección 6) cuando el apartamento ya esté registrado.\n" +
+"* El arrendatario NUNCA lo llena. El arrendatario se registra en el Portal del residente (sección 7) cuando el apartamento ya esté registrado.\n" +
 "* La información debe ser verdadera. Proporcionar datos falsos o de terceros sin su consentimiento puede tener consecuencias legales y administrativas.\n" +
 "* Los datos están protegidos por la Ley 1581 de 2012.\n" +
-"3.2 Cómo entrar\n" +
+"4.2 Cómo entrar\n" +
 "1. Escanee el código QR del ascensor de su torre, o abra fabig76.github.io/cerro-azul-residentes.\n" +
 "2. No necesita contraseña.\n" +
 "3. Funciona en celular o computador.\n" +
 "4. Arriba hay tres pestañas: \"Enviar / Crear registro\", \"Editar mi registro\" y \"Agendar mudanza\".\n" +
 "5. Para crear el registro del apartamento por primera vez, use \"Enviar / Crear registro\" (solo propietario, inmobiliaria o encargado; nunca el arrendatario).\n" +
-"3.3 Antes de empezar, tenga a la mano\n" +
+"4.3 Antes de empezar, tenga a la mano\n" +
 "* Su cédula y su número de apartamento.\n" +
 "* La matrícula del apartamento (si la conoce; si no, déjela en blanco).\n" +
 "* Datos de carros, motos y bicicletas.\n" +
@@ -4386,10 +4397,10 @@ const MANUAL_CERRO = (
 "\n" +
 "\n" +
 "Tiempo: de 10 a 15 minutos con todo a la mano. Muy importante: el formulario no se guarda solo. Si sale de la página sin enviar, tendrá que empezar de nuevo.\n" +
-"3.4 Cómo funciona\n" +
+"4.4 Cómo funciona\n" +
 "* El formulario tiene secciones. Toque el título azul de cada sección para abrirla.\n" +
 "* Los campos con asterisco (*) son obligatorios. Si falta uno, no se puede enviar.\n" +
-"3.5 Las secciones, una por una\n" +
+"4.5 Las secciones, una por una\n" +
 "Sección 0 — Encabezado\n" +
 "\n" +
 "\n" +
@@ -4398,7 +4409,7 @@ const MANUAL_CERRO = (
 "* Diligencia como (obligatorio): indica quién está llenando el formulario.\n" +
 "   * Si lo llena el dueño: Propietario.\n" +
 "   * Si lo llena el encargado o un representante del propietario: Tenedor / Otro (y en la Sección 4 se registran los datos de la inmobiliaria o representante, si aplica).\n" +
-"   * Aunque el formulario muestre la opción \"Arrendatario\", el agente nunca debe indicar que un arrendatario llene este formulario. Si la persona es arrendataria, debe detenerse y registrarse en el Portal del residente (sección 6).\n" +
+"   * Aunque el formulario muestre la opción \"Arrendatario\", el agente nunca debe indicar que un arrendatario llene este formulario. Si la persona es arrendataria, debe detenerse y registrarse en el Portal del residente (sección 7).\n" +
 "\n" +
 "\n" +
 "Sección 1 — Datos del propietario (la más importante)\n" +
@@ -4495,7 +4506,7 @@ const MANUAL_CERRO = (
 "* Firma — Nombre completo y Firma — C.C. (obligatorios): exactamente como en su documento.\n" +
 "* La fecha de la firma se llena sola.\n" +
 "* Al escribir su nombre y cédula y enviar, queda firmando electrónicamente. No necesita imprimir nada.\n" +
-"3.6 Enviar y guardar el código\n" +
+"4.6 Enviar y guardar el código\n" +
 "1. Revise los campos con asterisco y toque \"Enviar formulario\". Espere unos segundos.\n" +
 "2. Aparece \"¡Registro creado exitosamente!\" y su código de formulario, que empieza por CA- (por ejemplo, CA-0042).\n" +
 "3. Guarde el código: tómele foto a la pantalla, anótelo, guárdelo como contacto en el celular o toque \"Imprimir comprobante\".\n" +
@@ -4508,7 +4519,7 @@ const MANUAL_CERRO = (
 "________________\n" +
 "\n" +
 "\n" +
-"4. Editar el registro\n" +
+"5. Editar el registro\n" +
 "Solo el propietario, la inmobiliaria o el encargado que creó el registro puede editarlo (con el código CA). El arrendatario no puede.\n" +
 "\n" +
 "\n" +
@@ -4526,13 +4537,13 @@ const MANUAL_CERRO = (
 "________________\n" +
 "\n" +
 "\n" +
-"5. Agendar una mudanza\n" +
-"5.1 Reglas\n" +
+"6. Agendar una mudanza\n" +
+"6.1 Reglas\n" +
 "* Solo se usa el ascensor A de cada torre (el ascensor B queda para los residentes).\n" +
 "* Se reserva con al menos 2 días (48 horas) de anticipación.\n" +
 "* La agenda el propietario o la inmobiliaria autorizada. El arrendatario no puede agendarla.\n" +
 "* No hay servicio domingos ni festivos. Aunque el calendario permita elegir un festivo, la vigilancia no permitirá el ingreso.\n" +
-"5.2 Horarios\n" +
+"6.2 Horarios\n" +
 "Día\n" +
 "	Turnos\n" +
 "	Lunes a viernes\n" +
@@ -4546,17 +4557,17 @@ const MANUAL_CERRO = (
 "2. Escriba su código CA-XXXX, el número de apartamento y la cédula del propietario (solo números).\n" +
 "3. Toque \"Verificar\".\n" +
 "4. Elija el tipo: Salida (si el inquilino se va) o Ingreso (si llega uno nuevo).\n" +
-"   * Si es Ingreso, el nuevo residente (arrendatario) debe haberse registrado antes en el Portal del residente (sección 6); si no, la solicitud será rechazada. El arrendatario no llena el formulario principal.\n" +
+"   * Si es Ingreso, el nuevo residente (arrendatario) debe haberse registrado antes en el Portal del residente (sección 7); si no, la solicitud será rechazada. El arrendatario no llena el formulario principal.\n" +
 "5. Elija la torre (el ascensor A queda fijo).\n" +
 "6. Elija el día en el calendario. Los días en gris no están disponibles (domingos y fechas con menos de 48 horas).\n" +
 "7. Elija un horario disponible (en verde). Los ocupados aparecen en rojo.\n" +
 "8. Opcional: empresa de mudanza, placa del vehículo y observaciones.\n" +
 "9. Toque \"Confirmar reserva\".\n" +
 "10. Recibirá un código que empieza por MD- (ej. MD-0007) y un correo de confirmación. Guárdelo.\n" +
-"5.4 Cancelar o cambiar\n" +
+"6.4 Cancelar o cambiar\n" +
 "* Escriba a urb.cerroazul@gmail.com con su código MD-XXXX y su apartamento, hasta 24 horas antes.\n" +
 "* El agente no puede cancelar reservas.\n" +
-"5.5 El día de la mudanza\n" +
+"6.5 El día de la mudanza\n" +
 "* Llegue a la hora reservada. La vigilancia verifica la reserva y al terminar marca si la mudanza se realizó.\n" +
 "* Si una mudanza no está reservada, la vigilancia no puede registrarla; debe hablar con la administración.\n" +
 "\n" +
@@ -4564,22 +4575,22 @@ const MANUAL_CERRO = (
 "________________\n" +
 "\n" +
 "\n" +
-"6. Portal del residente (arrendatarios y familiares)\n" +
-"6.1 Qué es\n" +
+"7. Portal del residente (arrendatarios y familiares)\n" +
+"7.1 Qué es\n" +
 "Permite que cada persona que vive en el apartamento (arrendatarios, familiares) registre sus propios datos: datos personales, otros residentes, menores, vehículos, bicicletas, mascotas y contactos de emergencia.\n" +
 "\n" +
 "\n" +
 "Enlace: fabig76.github.io/cerro-azul-residentes/residente.html (o el QR del aviso morado \"Registro de arrendatarios y residentes\").\n" +
-"6.2 Requisito\n" +
-"Primero, el propietario, la inmobiliaria o el encargado debe haber creado el registro del apartamento en el formulario principal (sección 3). Sin ese registro, el residente no podrá registrarse.\n" +
+"7.2 Requisito\n" +
+"Primero, el propietario, la inmobiliaria o el encargado debe haber creado el registro del apartamento en el formulario principal (sección 4). Sin ese registro, el residente no podrá registrarse.\n" +
 "\n" +
 "\n" +
 "* El arrendatario no puede crear ese registro por su cuenta, aunque el propietario se demore. Debe pedírselo al propietario, a la inmobiliaria o al encargado, o comunicarse con la administración.\n" +
-"6.3 Paso a paso\n" +
+"7.3 Paso a paso\n" +
 "1. Abra el enlace o escanee el QR.\n" +
 "2. Escriba su número de apartamento (el mismo de su contrato) y toque \"Continuar\".\n" +
 "3. Pueden pasar tres cosas:\n" +
-"   * \"Apartamento no registrado\": el propietario aún no ha hecho su registro. Pídale que lo haga primero (sección 3).\n" +
+"   * \"Apartamento no registrado\": el propietario aún no ha hecho su registro. Pídale que lo haga primero (sección 4).\n" +
 "   * Formulario de registro (si nadie se ha registrado todavía): llene sus datos (siguiente punto).\n" +
 "   * Lista de residentes ya registrados: si usted es uno de ellos, escriba su cédula y toque \"Editar mis datos\". Si no aparece en la lista, hable con el propietario o la inmobiliaria para que lo agreguen.\n" +
 "4. En el formulario de registro:\n" +
@@ -4592,29 +4603,29 @@ const MANUAL_CERRO = (
 "   * \"+ Agregar contacto de emergencia\": hasta 2.\n" +
 "5. Toque \"Registrarme como residente\".\n" +
 "6. Aparece \"Datos guardados correctamente\".\n" +
-"6.4 Actualizar datos\n" +
+"7.4 Actualizar datos\n" +
 "* Entre de nuevo con el apartamento y su cédula → \"Editar mis datos\".\n" +
 "* Desde aquí puede actualizar nombre, parentesco, celular y correo.\n" +
-"* Vehículos, mascotas y contactos los actualiza el propietario del apartamento desde su registro (sección 4).\n" +
-"6.5 Quiénes deben registrarse\n" +
+"* Vehículos, mascotas y contactos los actualiza el propietario del apartamento desde su registro (sección 5).\n" +
+"7.5 Quiénes deben registrarse\n" +
 "Todos los residentes mayores de edad: propietarios, arrendatarios y quienes viven en el apartamento.\n" +
 "\n" +
 "\n" +
 "________________\n" +
 "\n" +
 "\n" +
-"7. Estado de cuenta, factura y paz y salvo\n" +
-"7.1 Quién puede usarlo\n" +
+"8. Estado de cuenta, factura y paz y salvo\n" +
+"8.1 Quién puede usarlo\n" +
 "* El propietario registrado (también tenedor o inmobiliaria, si así quedó en el registro).\n" +
 "* No está disponible para arrendatarios.\n" +
-"7.2 Cómo entrar\n" +
+"8.2 Cómo entrar\n" +
 "1. Entre al portal principal y abra la opción de estado de cuenta.\n" +
 "2. Escriba su código CA-XXXX, su número de apartamento y su cédula (la registrada como propietario).\n" +
 "3. Toque el botón para consultar.\n" +
 "\n" +
 "\n" +
 "Si se equivoca 5 veces, el acceso de ese apartamento se bloquea 15 minutos por seguridad. Espere y vuelva a intentarlo.\n" +
-"7.3 Qué muestra\n" +
+"8.3 Qué muestra\n" +
 "* Saldo con corte al último informe de cartera (normalmente el último día del mes anterior):\n" +
 "   * Si es mayor que cero: saldo pendiente.\n" +
 "   * Si es negativo: saldo a favor (anticipos).\n" +
@@ -4625,16 +4636,16 @@ const MANUAL_CERRO = (
 "* Factura del mes: número de cuenta de cobro, fecha de emisión, páguese hasta y total a pagar.\n" +
 "* Últimos pagos: los abonos registrados en los últimos periodos (según el valor \"abono último mes\" de cada cuenta de cobro). El historial se construye mes a mes desde agosto de 2026.\n" +
 "* Botón \"Pagar en línea\" (Jelpit).\n" +
-"7.4 Descargar la factura\n" +
+"8.4 Descargar la factura\n" +
 "* Toque \"Descargar factura\". Se descarga solo la factura de su apartamento del mes actual, en PDF.\n" +
 "* La factura también llega cada mes a su correo desde el programa contable. El portal es una opción adicional para consultarla cuando quiera.\n" +
 "* Si dice que la factura no está disponible, la administración aún no ha cargado el mes; intente más tarde.\n" +
-"7.5 Paz y salvo\n" +
+"8.5 Paz y salvo\n" +
 "* El botón aparece si el saldo está al día: saldo en cero, saldo a favor o un residuo menor a $1.000.\n" +
 "* Si tiene saldo pendiente, aparece el mensaje: \"El paz y salvo estará disponible cuando el saldo esté al día.\"\n" +
 "* El paz y salvo se descarga en PDF con consecutivo y código de verificación, y certifica la situación con la fecha de corte de la cartera.\n" +
 "* Si pagó después de la fecha de corte, el pago se verá cuando la administración cargue el siguiente informe de cartera. Si necesita el paz y salvo con urgencia, comuníquese con la administración.\n" +
-"7.6 Preguntas típicas\n" +
+"8.6 Preguntas típicas\n" +
 "* \"Pagué y sigue apareciendo la deuda\": el portal muestra la cartera con la última fecha de corte. Los pagos posteriores se reflejan en la siguiente actualización mensual. Si el pago es anterior al corte y no aparece, envíe el comprobante a la administración.\n" +
 "* \"¿Por qué tengo cobro prejurídico?\": corresponde a cartera en proceso de cobro. El agente no puede dar detalles; remita a la administración.\n" +
 "* \"Quiero un acuerdo de pago\": remita a la administración.\n" +
@@ -4643,8 +4654,8 @@ const MANUAL_CERRO = (
 "________________\n" +
 "\n" +
 "\n" +
-"8. Pagos de administración (Jelpit y otros canales)\n" +
-"8.1 Datos para pagar\n" +
+"9. Pagos de administración (Jelpit y otros canales)\n" +
+"9.1 Datos para pagar\n" +
 "Dato\n" +
 "	Valor\n" +
 "	Comercio\n" +
@@ -4660,7 +4671,7 @@ const MANUAL_CERRO = (
 "\n" +
 "\n" +
 "También puede entrar a www.jelpit.com y buscar el convenio o la referencia.\n" +
-"8.3 Otros canales\n" +
+"9.3 Otros canales\n" +
 "Canal\n" +
 "	Pasos\n" +
 "	App Davivienda\n" +
@@ -4674,44 +4685,44 @@ const MANUAL_CERRO = (
 "	Corresponsales (Puntos Red, Conred, Reval)\n" +
 "	Indique el convenio 1568930 y la referencia\n" +
 "	8.4 Saber cuánto pagar\n" +
-"Consulte el estado de cuenta (sección 7) o la factura que llega a su correo.\n" +
+"Consulte el estado de cuenta (sección 8) o la factura que llega a su correo.\n" +
 "\n" +
 "\n" +
 "________________\n" +
 "\n" +
 "\n" +
-"9. Salón social\n" +
+"10. Salón social\n" +
 "* Se reserva en línea desde el portal principal.\n" +
 "* Hay dos turnos:\n" +
 "   * Mañana: 8:00 a. m. a 1:00 p. m.\n" +
 "   * Tarde: 2:00 p. m. a 10:00 p. m.\n" +
 "* El pago se hace en línea por Jelpit.\n" +
 "* Requisito: el apartamento no debe tener 2 o más meses en mora.\n" +
-"* Desde el 1 de octubre de 2026, los apartamentos en mora no pueden alquilar el salón social (ver sección 11).\n" +
+"* Desde el 1 de octubre de 2026, los apartamentos en mora no pueden alquilar el salón social (ver sección 10).\n" +
 "* Para cancelar o cambiar una reserva, o para conocer el valor vigente, el depósito y las condiciones de uso, remita a la administración.\n" +
 "\n" +
 "\n" +
 "________________\n" +
 "\n" +
 "\n" +
-"10. Citófono digital \"Mi apartamento\"\n" +
-"10.1 Qué es y por qué es urgente\n" +
+"11. Citófono digital \"Mi apartamento\"\n" +
+"11.1 Qué es y por qué es urgente\n" +
 "* Es el nuevo citófono del conjunto, que funciona en el celular del residente.\n" +
 "* Desde octubre de 2026, la portería solo podrá comunicarse con los apartamentos registrados en el nuevo citófono. Sin este registro no recibirá llamadas de portería ni avisos de paquetes, domicilios o visitas.\n" +
 "* Es gratis: no se descarga de ninguna tienda de aplicaciones y no consume minutos.\n" +
-"10.2 Qué gana el residente\n" +
+"11.2 Qué gana el residente\n" +
 "* Avisos al celular de paquete, domicilio, correspondencia, visitante, vehículo y avisos generales de la administración, aunque el celular esté bloqueado.\n" +
 "* Responder con un toque: \"Ya bajo\", \"Déjelo en portería\", \"Autorizo el ingreso\", \"Ahora no puedo\", \"Recibido, gracias\".\n" +
 "* La portería lo llama sin ver su número: en portería solo aparece el número del apartamento y la llamada se borra al colgar.\n" +
 "* Escribir a la portería (ej. \"Espero un domicilio\") o tocar \"Que me llamen de portería\".\n" +
 "* Sus datos se guardan protegidos (cifrados) en el servidor del conjunto, no en el celular de la portería.\n" +
-"10.3 Requisitos\n" +
+"11.3 Requisitos\n" +
 "* El apartamento debe estar registrado por el propietario, la inmobiliaria o el encargado, y el celular de cada persona debe estar registrado en el portal web de la copropiedad:\n" +
 "   * Propietarios: fabig76.github.io/cerro-azul-residentes\n" +
 "   * Arrendatarios y residentes: fabig76.github.io/cerro-azul-residentes/residente.html\n" +
 "* Internet (wifi o datos).\n" +
 "* En iPhone, los avisos requieren iOS 16.4 o más nuevo.\n" +
-"10.4 Instalación (paso a paso)\n" +
+"11.4 Instalación (paso a paso)\n" +
 "Paso 1 (todos): escanee el QR del aviso del citófono (ascensores y portería) o abra citofono.urbcerroazul.com/r.\n" +
 "\n" +
 "\n" +
@@ -4740,16 +4751,16 @@ const MANUAL_CERRO = (
 "\n" +
 "\n" +
 "Listo: si ve \"Nada pendiente por ahora\", todo quedó bien.\n" +
-"10.5 Uso diario\n" +
+"11.5 Uso diario\n" +
 "* Cuando llega un aviso, el celular suena y el aviso aparece en pantalla. Toque una de las respuestas rápidas.\n" +
 "* Para pedir que lo llamen: \"Que me llamen de portería\".\n" +
 "* Para escribir a portería: escriba en \"Escribir a portería…\".\n" +
 "* La llamada de portería suena como una llamada normal.\n" +
-"10.6 Problemas frecuentes\n" +
+"11.6 Problemas frecuentes\n" +
 "Problema\n" +
 "	Solución\n" +
 "	No me deja entrar\n" +
-"	Su celular no está registrado o cambió de número. Actualícelo en el portal web (sección 4 o 6.4) o avise a la administración. La información pasa al citófono en un plazo aproximado de 24 horas.\n" +
+"	Su celular no está registrado o cambió de número. Actualícelo en el portal web (sección 5 o 7.4) o avise a la administración. La información pasa al citófono en un plazo aproximado de 24 horas.\n" +
 "	No me llegan los avisos\n" +
 "	Abra la app desde el ícono \"Mi apartamento\" y toque \"Avisarme aunque esté bloqueado\" → \"Permitir\". Revise que no tenga el celular en modo \"No molestar\".\n" +
 "	iPhone: no aparece el botón de avisos\n" +
@@ -4768,34 +4779,34 @@ const MANUAL_CERRO = (
 "________________\n" +
 "\n" +
 "\n" +
-"11. Normas de convivencia y medidas vigentes\n" +
+"12. Normas de convivencia y medidas vigentes\n" +
 "Medidas informadas por la Administración en la reunión de propietarios de la Torre 1 (26 de septiembre de 2026). Algunas propuestas dependen de aprobación del Consejo o de la Asamblea.\n" +
-"11.1 Basuras y reciclaje\n" +
+"12.1 Basuras y reciclaje\n" +
 "* Desde el 1 de noviembre de 2026, las puertas del shut de cada piso funcionan de 8:00 a. m. a 5:00 p. m. y permanecen cerradas fuera de ese horario.\n" +
 "* Se instalan contenedores en la entrada para residuos orgánicos y reciclaje.\n" +
 "* Prohibido dejar reciclaje o bolsas en pisos y pasillos. Hay comparendos y, al tercer incumplimiento, interviene el Consejo.\n" +
-"11.2 Mascotas\n" +
+"12.2 Mascotas\n" +
 "* Desde el 1 de noviembre de 2026, quien pasee una mascota debe llevar traílla, botella con rociador y elementos de aseo, y dejar limpio el lugar.\n" +
 "* El incumplimiento se sanciona.\n" +
 "* Registrar las mascotas en el formulario es obligatorio (censo del Decreto 768 de 2025).\n" +
-"11.3 Parqueaderos\n" +
+"12.3 Parqueaderos\n" +
 "* En el conjunto existen parqueaderos privados y de visitantes.\n" +
 "* Los parqueaderos de movilidad reducida son de uso transitorio (subir o bajar personas). Su uso permanente está prohibido salvo asignación de la asamblea.\n" +
 "* No invada celdas ajenas ni obstruya el paso con motos.\n" +
-"11.4 Apartamentos en mora\n" +
+"12.4 Apartamentos en mora\n" +
 "* Según lo informado por la Administración, desde el 1 de octubre de 2026 los apartamentos en mora tienen restricciones: no se entregan tarjetas de acceso a la piscina, no pueden usar la piscina ni alquilar el salón social, y otras medidas informadas en la reunión.\n" +
 "* Los acuerdos de pago incumplidos pasan a cobro jurídico.\n" +
 "* Para dudas sobre su caso o para un acuerdo de pago, remita a la administración.\n" +
-"11.5 Piscina\n" +
+"12.5 Piscina\n" +
 "* Las tarjetas de acceso cuestan $10.000 y se entregan a propietarios con el estado de cuenta al día.\n" +
-"11.6 Ruido, objetos por ventanas y otras faltas\n" +
+"12.6 Ruido, objetos por ventanas y otras faltas\n" +
 "* Ruido (música, gritos, taladros fuera de horario), consumo de sustancias en zonas comunes o balcones, arrojar objetos por ventanas o balcones (campaña #DesdeMiVentanaNo): son conductas sancionables según el reglamento de propiedad horizontal y la Ley 1801 de 2016.\n" +
 "* Una colilla encendida puede causar un incendio; un objeto que cae desde un piso alto puede causar lesiones graves.\n" +
 "* Cómo reportar: en portería, desde la app \"Mi apartamento\" (\"Escribir a portería\") o por WhatsApp a la administración (316 924 0748), indicando torre, piso o ventana, hora y, si es seguro, foto o video. La identidad de quien reporta se mantiene en reserva.\n" +
-"11.7 Comité de convivencia y reuniones por torre\n" +
+"12.7 Comité de convivencia y reuniones por torre\n" +
 "* La administración realiza reuniones informativas por torre cada tres meses (por Google Meet).\n" +
 "* Quien quiera ser parte del comité de convivencia de su torre puede postularse por mensaje privado a la administración.\n" +
-"11.8 Sanciones (información general)\n" +
+"12.8 Sanciones (información general)\n" +
 "* La Ley 675 de 2001 (artículo 59) permite publicar la lista de infractores, imponer multas sucesivas (hasta dos veces la cuota mensual por cada incumplimiento) y restringir el uso de bienes comunes no esenciales, respetando el debido proceso (notificación y descargos).\n" +
 "* El agente no informa sanciones de personas concretas.\n" +
 "\n" +
@@ -4803,7 +4814,7 @@ const MANUAL_CERRO = (
 "________________\n" +
 "\n" +
 "\n" +
-"12. Privacidad y protección de datos\n" +
+"13. Privacidad y protección de datos\n" +
 "* Los datos se tratan conforme a la Ley 1581 de 2012 y solo se usan para la administración del conjunto.\n" +
 "* Los datos de menores están especialmente protegidos.\n" +
 "* En el citófono, el vigilante solo ve el número del apartamento, nunca el teléfono del residente; los teléfonos se guardan cifrados.\n" +
@@ -4814,7 +4825,7 @@ const MANUAL_CERRO = (
 "________________\n" +
 "\n" +
 "\n" +
-"13. Preguntas frecuentes (respuestas listas)\n" +
+"14. Preguntas frecuentes (respuestas listas)\n" +
 "Formato: Pregunta → respuesta sugerida. Adapte el tono a la persona.\n" +
 "Registro y portales\n" +
 "* ¿Dónde me registro? → Si es propietario, inmobiliaria o encargado del apartamento: fabig76.github.io/cerro-azul-residentes, pestaña \"Enviar / Crear registro\". Si es arrendatario o familiar: fabig76.github.io/cerro-azul-residentes/residente.html (el propietario debe haber registrado antes el apartamento).\n" +
@@ -4835,7 +4846,7 @@ const MANUAL_CERRO = (
 "* Perdí el código CA → Escriba a la administración con su nombre, cédula y apartamento.\n" +
 "* ¿Cómo cambio mi celular o correo? → Propietario: pestaña \"Editar mi registro\". Residente: portal del residente → \"Editar mis datos\".\n" +
 "Mudanzas\n" +
-"* ¿Cómo agendo una mudanza? → Pestaña \"Agendar mudanza\", con código CA, apartamento y cédula del propietario (ver sección 5).\n" +
+"* ¿Cómo agendo una mudanza? → Pestaña \"Agendar mudanza\", con código CA, apartamento y cédula del propietario (ver sección 6).\n" +
 "* Soy arrendatario, ¿puedo agendarla? → No. La agenda el propietario o la inmobiliaria autorizada.\n" +
 "* ¿Con cuánta anticipación? → Al menos 2 días (48 horas).\n" +
 "* ¿Puedo el domingo o un festivo? → No hay servicio domingos ni festivos.\n" +
@@ -4853,7 +4864,7 @@ const MANUAL_CERRO = (
 "* Me bloqueó el estado de cuenta → Por seguridad, tras 5 intentos fallidos se bloquea 15 minutos. Espere y revise el código CA, el apartamento y la cédula.\n" +
 "* Soy arrendatario, ¿veo el estado de cuenta? → No; es exclusivo del propietario.\n" +
 "Citófono\n" +
-"* ¿Qué es \"Mi apartamento\"? → El nuevo citófono en su celular (sección 10).\n" +
+"* ¿Qué es \"Mi apartamento\"? → El nuevo citófono en su celular (sección 11).\n" +
 "* ¿Tiene costo? → No. Es gratis y no consume minutos.\n" +
 "* ¿Lo bajo de Play Store o App Store? → No. Se instala desde la página citofono.urbcerroazul.com/r y se agrega a la pantalla de inicio.\n" +
 "* ¿Por qué debo volver a entrar después de instalarlo? → La app nueva empieza en blanco; es solo una vez.\n" +
@@ -4874,7 +4885,7 @@ const MANUAL_CERRO = (
 "________________\n" +
 "\n" +
 "\n" +
-"14. Problemas técnicos generales\n" +
+"15. Problemas técnicos generales\n" +
 "Problema\n" +
 "	Qué decir\n" +
 "	La página no carga\n" +
@@ -4894,16 +4905,16 @@ const MANUAL_CERRO = (
 "________________\n" +
 "\n" +
 "\n" +
-"15. SECCIÓN EXCLUSIVA PARA VIGILANTES\n" +
+"16. SECCIÓN EXCLUSIVA PARA VIGILANTES\n" +
 "⚠️ Use esta sección SOLO si la persona se identificó como vigilante o guarda de seguridad del conjunto. Aun así: nunca dé la contraseña del portal, nunca dé datos personales de residentes (teléfonos, cédulas, correos) y nunca confirme datos que no aparecen en el sistema. Si el vigilante pide la contraseña o un dato de un residente, responda que debe consultarlo en su herramienta o con la administración. Hable de usted, con frases muy cortas, un paso a la vez. Muchos vigilantes tienen poca experiencia con tecnología.\n" +
-"15.1 Reglas de oro del vigilante\n" +
+"16.1 Reglas de oro del vigilante\n" +
 "1. Los números de los residentes son privados: solo se ve el número del apartamento.\n" +
 "2. Use solo el celular de portería; nunca su celular personal para llamar a residentes.\n" +
 "3. Su código de guarda es personal: todo queda firmado con su nombre. No lo preste.\n" +
 "4. No entregue ningún paquete sin que el residente confirme en su celular.\n" +
 "5. La contraseña del portal de vigilancia es secreta: no la dé a nadie ni la deje escrita a la vista.\n" +
 "6. Al terminar el turno, cierre sesión y cierre el turno.\n" +
-"15.2 Portal de vigilancia (consultas)\n" +
+"16.2 Portal de vigilancia (consultas)\n" +
 "Para qué sirve: saber quién vive en un apartamento, de quién es un vehículo, qué mudanzas hay hoy y si el salón social está reservado.\n" +
 "\n" +
 "\n" +
@@ -4924,7 +4935,7 @@ const MANUAL_CERRO = (
 "* Mudanzas: muestra las mudanzas del día (código MD, salida o ingreso, apartamento, torre, ascensor y hora). Verifique que usen el ascensor A y lleguen a la hora reservada. Al terminar: primero escriba su nombre en el cuadro → toque \"Sí, se realizó\" (verde) o \"No se realizó\" (rojo). El cuadro cambia a verde y queda registrado quién la marcó y a qué hora. Si llega una mudanza que no está en la lista, no puede registrarla: avise a la administración. Si se equivocó al marcar, avise a la administración.\n" +
 "* Salón Social: muestra el turno de mañana (8:00 a. m.–1:00 p. m.) y el de tarde (2:00–10:00 p. m.). RESERVADO (en rojo) muestra apartamento y nombre de quien reservó; LIBRE significa que nadie ha reservado. El botón \"Hoy\" regresa a la fecha actual. El vigilante no puede cancelar ni cambiar reservas.\n" +
 "* Cerrar sesión: al terminar el turno, toque \"Cerrar sesión\", arriba a la derecha.\n" +
-"15.3 App de portería del citófono\n" +
+"16.3 App de portería del citófono\n" +
 "Iniciar turno:\n" +
 "\n" +
 "\n" +
@@ -4974,7 +4985,7 @@ const MANUAL_CERRO = (
 "\n" +
 "\n" +
 "Nota: si la pantalla real de la app tiene nombres de botones o secciones distintos a los descritos, siga lo que muestre la app y consulte a la administración.\n" +
-"15.4 Problemas del vigilante\n" +
+"16.4 Problemas del vigilante\n" +
 "Problema\n" +
 "	Qué hacer\n" +
 "	El residente no contesta\n" +
@@ -4994,7 +5005,7 @@ const MANUAL_CERRO = (
 "________________\n" +
 "\n" +
 "\n" +
-"16. Plantillas de respuesta y escalamiento\n" +
+"17. Plantillas de respuesta y escalamiento\n" +
 "Cuando no tiene la información:\n" +
 "\n" +
 "\n" +
@@ -5038,6 +5049,7 @@ const MANUAL_CERRO = (
 "\n" +
 "________________\n" +
 "\n" +
+"18. Informes contables Cerro Azul (portal informes.html)\n" +
 "INFORMES CONTABLES CERRO AZUL (portal informes.html, agregado en noviembre de 2026)\n" +
 "Enlace: fabig76.github.io/cerro-azul-residentes/informes.html (también en la página principal: \"Informes contables Cerro Azul\").\n" +
 "Quién entra: el propietario, la inmobiliaria o el encargado, con el N° de formulario, el N° de apartamento y la cédula del propietario (los mismos datos del estado de cuenta). El arrendatario no tiene acceso.\n" +
@@ -5093,7 +5105,7 @@ function chatAsistente(payload) {
       '6. NUNCA prometas que un pago, reserva o registro quedó hecho.',
       '7. NUNCA inventes respuestas.',
       '8. Para emergencias, indica la línea 123 y portería.',
-      '9. Si la persona se identifica como vigilante, dale solo info de la sección 15 del manual.',
+      '9. Si la persona se identifica como vigilante, dale solo info de la sección 16 del manual.',
       '',
       'Cuando expliques procedimientos, usa listas numeradas y nombra los botones entre comillas (ej. toque "Continuar").'
     ].join('\n');

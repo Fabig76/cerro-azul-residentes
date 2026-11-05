@@ -1,5 +1,5 @@
 /* =========================================================================
-   Asistente Cerro Azul - MiniMax-M3 chat flotante para los 7 portales
+   Asistente Cerro Azul - MiniMax-M3 chat flotante para los 8 portales
    =========================================================================
    - Autocontenido: inyecta su CSS + HTML, sin dependencias externas
    - Una sola clase, sin estado global fuera de sí misma
@@ -141,8 +141,8 @@
     // Mensaje de bienvenida
     this.agregarMensaje(
       'Hola, soy el asistente de la Urbanización Cerro Azul. ' +
-      'Puedo ayudarte a llenar el formulario en cualquiera de los 8 portales ' +
-      '(formulario público, salón social, portal del residente, estado de cuenta, admin, vigilantes y cargador de cartera). ' +
+      'Puedo ayudarte en cualquiera de los 8 portales ' +
+      '(formulario público, portal del residente, estado de cuenta, salón social, informes contables, admin, vigilantes y cargador de cartera). ' +
       '¿En qué te puedo ayudar?',
       'bot'
     );

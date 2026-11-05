@@ -906,7 +906,7 @@ Y enlace en footer (junto a los otros portales).
 ## §13. Recursos (verificados)
 
 - **Sheet Cartera:** `1IQn1y3AoArQSI4dtwhUsH3PVGm0zsZCom0TEdSAfVb4` (mismo, agregar pestaña)
-- **Apps Script:** mismo proyecto (`17nuyzVYK2yN_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy`)
+- **Apps Script:** mismo proyecto (`1oFGVHJUBxh_MN2m1eZsyGNfP6LbyboPdATx78ZPPTUOvJzd4Ik-5y6mp`)
 - **Web App URL:** misma (`AKfycbxp...Zp/exec`)
 - **Drive para comprobantes:** carpeta nueva `ComprobantesSalon/2026-MM/` (padre: `1RPHtWnVEFwzBKR1DCzBP1to9wLHY2F22`)
 - **Mail admin:** `urb.cerroazul@gmail.com`

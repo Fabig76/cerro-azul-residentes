@@ -243,8 +243,8 @@ el lookup automático de matrículas. Total: 138 → 143 columnas.
 
 ## 5. Google Apps Script
 
-  · **Script ID**: `17nuyzVYK2yN_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy`
-  · **URL editor**: https://script.google.com/d/17nuyzVYK2yN_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy/edit
+  · **Script ID**: `1oFGVHJUBxh_MN2m1eZsyGNfP6LbyboPdATx78ZPPTUOvJzd4Ik-5y6mp`
+  · **URL editor**: https://script.google.com/d/1oFGVHJUBxh_MN2m1eZsyGNfP6LbyboPdATx78ZPPTUOvJzd4Ik-5y6mp/edit
   · **Cuenta dueña**: urb.cerroazul@gmail.com (NO está en Drive de Fabio)
   · **Nombre del proyecto**: "Cerro Azul - Formulario Residentes Backend"
   · **Web App URL**: `https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec`
@@ -561,7 +561,7 @@ revocar el token (rompe correos-pagos-cerro-azul y citofono-cerro-azul).
 #### Procedimiento paso-a-paso (5 pasos, esperar OK entre cada uno)
 
 **PASO 1 — Pegar Código.gs en el editor de Apps Script**
-  · Abrir https://script.google.com/d/17nuyzVYK2yN_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy/edit
+  · Abrir https://script.google.com/d/1oFGVHJUBxh_MN2m1eZsyGNfP6LbyboPdATx78ZPPTUOvJzd4Ik-5y6mp/edit
     (sesión urb.cerroazul@gmail.com)
   · Panel izquierdo → "Código.gs" (ícono azul) → Ctrl+A / Cmd+A → BORRAR
   · Abrir /root/cerro-azul-residentes/apps-script/Código.gs

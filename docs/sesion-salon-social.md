@@ -295,7 +295,7 @@ PASO 6: Si >= 2 → BLOQUEADO, si < 2 → PERMITIDO
 
 - **Sheet Registros:** `16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc`
 - **Sheet Cartera:** `1IQn1y3AoArQSI4dtwhUsH3PVGm0zsZCom0TEdSAfVb4` (solo lectura)
-- **Apps Script ID:** `17nuyzVYK2yN_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy`
+- **Apps Script ID:** `1oFGVHJUBxh_MN2m1eZsyGNfP6LbyboPdATx78ZPPTUOvJzd4Ik-5y6mp`
 - **Web App URL:** `https://script.google.com/macros/s/AKfycbxp...Zp/exec` (preservada)
 - **Carpeta backups proyecto:** `1RPHtWnVEFwzBKR1DCzBP1to9wLHY2F22`
 - **Carpeta comprobantes salón:** nueva carpeta en Drive

@@ -107,7 +107,7 @@ Ver `docs/CHANGELOG-BUGFIXES.md` entrada REDISENO-TEMA-OSCURO.
 > Para la versión vigente, consultar `apps-script/README.md` (cabecera + tabla) y
 > `docs/CHANGELOG-BUGFIXES.md`. Resumen a 25-Oct-2026:
 
-- **Apps Script ID:** `17nuyzVYK2yN_TABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy`
+- **Apps Script ID:** `1oFGVHJUBxh_MN2m1eZsyGNfP6LbyboPdATx78ZPPTUOvJzd4Ik-5y6mp`
 - **URL preservada:** `https://script.google.com/macros/s/AKfycbxpLktKt8PCbVF5UD3oGqcPo-fS2EKG3mGMDrE9xDx51_K-LVEMlISx9dpYuFa_mwZp/exec`
 - **Última versión desplegada: V47 (25-Oct-2026)** — Apps Script "Versión 45"
   · 248.532 bytes, 5.422 líneas

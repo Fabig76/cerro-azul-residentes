@@ -58,7 +58,7 @@ cerro-azul-residentes/
 
 - **Sheet Registros:** `16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc` (pestaña nueva "salon social" sheetId 2030042121)
 - **Sheet Cartera:** `1IQn1y3AoArQSI4dtwhUsH3PVGm0zsZCom0TEdSAfVb4` (lectura solo)
-- **Apps Script ID:** `17nuyzVYK2yN_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy`
+- **Apps Script ID:** `1oFGVHJUBxh_MN2m1eZsyGNfP6LbyboPdATx78ZPPTUOvJzd4Ik-5y6mp`
 - **Web App URL:** `https://script.google.com/macros/s/AKfycbxp...Zp/exec`
 - **Carpeta backups proyecto:** `1RPHtWnVEFwzBKR1DCzBP1to9wLHY2F22`
 - **Mail admin:** `urb.cerroazul@gmail.com`

@@ -2818,3 +2818,24 @@ Mejoras UX aplicadas tras la auditoría:
 **Bitácora completa:** `docs/sesion-2026-10-20.md`.
 
 **Lección aprendida #15 (BUGFIX-025):** ANTES de hacer patch sobre una constante, verificar TODAS sus ubicaciones con `grep -n`. No asumir que por estar adyacente a un anchor la línea no está ya en otro lado del archivo. Apps Script rechaza declaraciones duplicadas con error fatal de sintaxis.
+
+---
+
+## BUGFIX-CEDULA-SALON · Salón Social culpa a la cédula cuando el apto no existe (2026-11-05)
+
+**Síntoma:** el operador escribió el N° de formulario (`CA-0083`) en el campo de
+apartamento del Salón Social y recibió "Cédula no corresponde…" con la cédula correcta.
+
+**Causa:** `verificarAccesoResidenteOPropietario` → `findRowByApto` busca solo por
+`COL_APTO`; apto inexistente devuelve `null` igual que cédula incorrecta, y
+`verificarAccesoSalon` mostraba siempre el mensaje de cédula. Además el rate limit
+usaba la clave `ver_<apto>`, compartida con `lookup`, `verificarPropietario` y
+`verificarResidente`.
+
+**Fix (pendiente de despliegue manual):**
+- `apps-script/Codigo.gs` `verificarAccesoSalon`: si no hay acceso y el apto no
+  existe → "No encontramos el apartamento X…". Rate limit con clave `ver_salon_<apto>`.
+- `js/salon-social.js` `flujoLogin`: rechaza en el cliente valores tipo `CA-0083`.
+- `tests/salon-acceso.test.js`: 6 tests (3 fallan sin el fix).
+
+**Bitácora:** `docs/BITACORA-BUGFIX-CEDULA-SALON.md`.

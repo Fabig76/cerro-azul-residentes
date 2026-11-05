@@ -359,7 +359,7 @@ EA-EF: 2 emergencias × 3 cols (COMPARTIDO)
 
 - **Sheet Registros (143 cols):** `16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc`
 - **Sheet Matrículas:** `1ceGtZDUJHX4yxs5_ydDwLwtrkOcZwYh09WUG0st_b0Y`
-- **Apps Script ID:** `17nuyzVYK2yN_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy`
+- **Apps Script ID:** `1oFGVHJUBxh_MN2m1eZsyGNfP6LbyboPdATx78ZPPTUOvJzd4Ik-5y6mp`
 - **Web App URL:** `https://script.google.com/macros/s/AKfycbxp...Zp/exec`
 
 ### 9.3 Git

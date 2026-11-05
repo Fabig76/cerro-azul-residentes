@@ -100,7 +100,7 @@ Sheet principal (formulario de residentes, sin cambios estructurales):
                         pys_tolerancia, link_pago
 
 Apps Script (mismo proyecto que formulario de residentes):
-  · ID:               `17nuyzVYK2yN_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy`
+  · ID:               `1oFGVHJUBxh_MN2m1eZsyGNfP6LbyboPdATx78ZPPTUOvJzd4Ik-5y6mp`
   · Versión actual:   V18 (26-Sept-2026 12:15, 148.747 bytes, 95 funciones)
   · URL Web App:      `https://script.google.com/macros/s/AKfycbxp...Zp/exec`
 

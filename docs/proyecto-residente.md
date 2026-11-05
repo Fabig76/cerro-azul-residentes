@@ -64,7 +64,7 @@ final).
 ## 4. Recursos
 
 - **Sheet Registros (143 cols):** `16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc`
-- **Apps Script ID:** `17nuyzVYK2yN_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy`
+- **Apps Script ID:** `1oFGVHJUBxh_MN2m1eZsyGNfP6LbyboPdATx78ZPPTUOvJzd4Ik-5y6mp`
 - **Web App URL:** `https://script.google.com/macros/s/AKfycbxp...Zp/exec` (preservada en V13)
 - **Carpeta backup F0 (pre-residente-V0):** `1k0PlMw7CGVHb3dg5H9bNQ-HOajY7vy40` (27 archivos OK, md5 verificado)
 

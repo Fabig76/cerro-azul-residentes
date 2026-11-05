@@ -89,6 +89,9 @@ async function flujoLogin() {
   const cc = val('ccInput').replace(/[.\-\s]/g, '');
 
   if (!apto) return showAlert('login', 'Por favor ingrese el N° de apartamento', 'error');
+  if (/^CA-?\d+$/i.test(apto)) {
+    return showAlert('login', apto + ' es un N° de formulario. Aquí va el N° de apartamento (ej: 105, 202B).', 'error');
+  }
   if (!cc) return showAlert('login', 'Por favor ingrese su cédula', 'error');
 
   const btn = document.getElementById('btnIngresar');

@@ -80,7 +80,7 @@ Y en mensajes anteriores:
 - NO se modifica el Sheet de matrículas
 - NO se modifica ningún otro portal (admin, vigilantes, estado-cuenta, cartera-admin)
 - NO se cambia la URL del Web App /exec (sigue `AKfycbxp...Zp`)
-- NO se crea un nuevo Apps Script (se usa el mismo `17nuyzVYK2yN...`)
+- NO se crea un nuevo Apps Script (se usa el mismo `1oFGVHJUBxh...`)
 - NO se cambia la lógica de dedupe del Sheet Registros
 - NO se agrega captcha ni autenticación de dos factores
 - NO se generan QRs automáticamente (queda como herramienta operativa para Fabio, ver §18)
@@ -1284,7 +1284,7 @@ QRs.
 - **Repo:** `https://github.com/Fabig76/cerro-azul-residentes`
 - **Frontend live:** `https://fabig76.github.io/cerro-azul-residentes/`
 - **Backend /exec URL:** `https://script.google.com/macros/s/AKfycbxp...Zp/exec` (preservada en V13)
-- **Apps Script ID:** `17nuyzVYK2yN_nTABfD00mipVrvixBqA5YzETzuPw2ZSUgx0B3IrsjEVy`
+- **Apps Script ID:** `1oFGVHJUBxh_MN2m1eZsyGNfP6LbyboPdATx78ZPPTUOvJzd4Ik-5y6mp`
 - **Sheet Registros:** `16gxeAkcTIWnuwkBFBaHW7Y-nUHaMdtovNzUBaupytPc` (143 cols)
 - **Sheet Matrículas:** `1ceGtZDUJHX4yxs5_ydDwLwtrkOcZwYh09WUG0st_b0Y`
 - **Carpeta backup proyecto:** `1RPHtWnVEFwzBKR1DCzBP1to9wLHY2F22`
