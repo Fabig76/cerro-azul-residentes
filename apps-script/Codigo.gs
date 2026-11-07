@@ -608,6 +608,7 @@ function submitRecord(data, opts) {
   let assignedNumForm; // número de formulario que se va a guardar
   let fechaRegistroOriginal = null;
   let row = null;
+  let reutiliza = false; // R12: creación sobre la fila vacía del mismo apto
 
   // AUD-T6: la búsqueda, el número CA y la escritura son una sola sección crítica.
   // Sin este lock, dos envíos simultáneos (doble clic, reintento del móvil,
@@ -644,13 +645,23 @@ function submitRecord(data, opts) {
     } else {
       // Modo creación: validar que NO exista ya un registro con ese N° Apto
       const existing = findRowByApto(apto);
-      if (existing) {
+      // R12: la única fila del apto es una fila vacía (solo CA/fechas/apto, de
+      // un envío que el BLINDAJE no dejó completar): se reutiliza CON SU CA, sin
+      // pedir uno nuevo. Cualquier dato en cols 4..141, o más de una fila con
+      // ese apto, sigue siendo "ya existe".
+      if (existing && filaVaciaReutilizable_(existing.values) && contarFilasApto_(sheet, apto) === 1) {
+        reutiliza = true;
+        targetRow = existing.rowNumber;
+        assignedNumForm = String(existing.values[COL_NUM_FORM]).trim();
+        Logger.log('[submitRecord] reutiliza fila vacía ' + targetRow + ' (' + assignedNumForm + ') apto=' + apto);
+      } else if (existing) {
         return { ok: false, error: 'Ya existe un registro para el apartamento ' + apto + '. Si eres el propietario o encargado, usa la opción "Editar mi registro" con el N° de formulario que se te entregó al crear el registro. Si no lo tienes, contacte a la administración (urb.cerroazul@gmail.com).' };
+      } else {
+        // Buscar siguiente fila vacía
+        const last = sheet.getLastRow();
+        targetRow = Math.max(last + 1, HEADER_ROW + 1);
+        assignedNumForm = getNextFormId();
       }
-      // Buscar siguiente fila vacía
-      const last = sheet.getLastRow();
-      targetRow = Math.max(last + 1, HEADER_ROW + 1);
-      assignedNumForm = getNextFormId();
     }
 
     // Construir el array de valores
@@ -674,13 +685,17 @@ function submitRecord(data, opts) {
       return { ok: false, error: 'Faltan datos obligatorios del propietario (nombre, cédula o celular). El registro no se guardó. Revise el formulario y reenvíe.' };
     }
 
-    sheet.getRange(targetRow, 1, 1, NUM_COLS).setValues([row]);
-    // R7: anotar en la Bitácora (dentro del lock, después de escribir; nunca lanza).
+    // R9: escritura por el punto único (re-verifica la fila destino, safeCell_,
+    // blindaje y Bitácora — una sola anotación). Sigue dentro del lock.
     const _bit = opts.bitacora || {
       accion: editMode ? 'editar' : 'crear',
       origen: origenBitacora_(data.__origen, 'desconocido')
     };
-    registrarBitacora_(_bit.accion, assignedNumForm, apto, _bit.origen, contarCeldasConDato_(row));
+    const _esc = escribirFila_(sheet, targetRow, row, {
+      modo: editMode ? 'editar' : (reutiliza ? 'reutilizar' : 'crear'),
+      numForm: assignedNumForm, accion: _bit.accion, origen: _bit.origen
+    });
+    if (!_esc.ok) return _esc;
   } finally {
     if (lock) lock.releaseLock();
   }
@@ -698,6 +713,8 @@ function submitRecord(data, opts) {
   // registro. Se captura el error y se reporta en la respuesta.
   let correoEnviado = false;
   let correoError = '';
+  // R12: al reutilizar la fila vacía también es una CREACIÓN (!editMode): se
+  // envía el correo con el CA reutilizado, que el propietario necesita para editar.
   const debeEnviar = !editMode
     && String(data.__origen || '') === 'formulario-publico'
     && diligencia === 'Propietario';
@@ -1278,6 +1295,109 @@ function safeCell_(v) {
   if (typeof v !== 'string') return v;
   const s = v.replace(/[\u200B-\u200F\u202A-\u202E\uFEFF]/g, '').trim();
   return /^[=+\-@\t\r]/.test(s) ? "'" + s : s;
+}
+
+// =====================================================================
+// R9 · PUNTO ÚNICO de escritura de una fila completa de Registros.
+// submitRecord (y con él registrarResidente/actualizarResidente) y
+// adminGuardar escriben SOLO por aquí. Se llama dentro del lock del que llama,
+// después de sus validaciones y del bloqueo optimista. Nunca lanza por datos:
+// devuelve { ok:true, celdas, aviso? } o { ok:false, error, code }.
+//   ctx.modo: 'crear'      fila destino totalmente vacía (fila nueva)
+//             'reutilizar' R12: la fila vacía del mismo CA (cols 4..141 vacías)
+//             'editar'     fila destino con ese CA (formulario / portal residente)
+//             'admin'      ídem; además puede guardar una fila que YA no tenía
+//                          celular (devuelve aviso), pero nunca borrarlo
+//   ctx.numForm, ctx.accion y ctx.origen: para la verificación y la Bitácora.
+// =====================================================================
+const ESCRIBIR_FILA_MODOS = ['crear', 'reutilizar', 'editar', 'admin'];
+const CORREO_VALIDO_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/; // el mismo de submitRecord
+
+// R12: fila "vacía" reutilizable = tiene CA válido y SOLO CA/fechas/apto:
+// las columnas 4..141 TODAS vacías. Criterio estricto a propósito: una fila
+// con cualquier dato (p.ej. la firma en 136-140) NO se reutiliza.
+function filaVaciaReutilizable_(valores) {
+  if (!/^CA-\d+$/.test(String(valores[COL_NUM_FORM] || '').trim())) return false;
+  for (let j = 4; j <= 141; j++) if (celdaConDato_(valores[j])) return false;
+  return true;
+}
+
+function escribirFila_(sheet, targetRow, fila, ctx) {
+  ctx = ctx || {};
+  const modo = String(ctx.modo || '');
+  const numForm = String(ctx.numForm || '').trim();
+  const falla = function (code, error) {
+    Logger.log('[escribirFila_] ABORTADO ' + code + ' modo=' + modo + ' ca=' + numForm + ' fila=' + targetRow + ' — no se escribió.');
+    return { ok: false, code: code, error: error };
+  };
+
+  // 2. Forma: exactamente NUM_COLS celdas, y todas pasan por safeCell_.
+  if (!Array.isArray(fila) || fila.length !== NUM_COLS) {
+    return falla('FORMA', 'Error interno: la fila a guardar no tiene ' + NUM_COLS + ' columnas. No se guardó nada.');
+  }
+  if (ESCRIBIR_FILA_MODOS.indexOf(modo) === -1 || !numForm || !(targetRow > HEADER_ROW)) {
+    return falla('CTX', 'Error interno: escritura sin modo, CA o fila válidos. No se guardó nada.');
+  }
+  const celdas = fila.map(safeCell_);
+  if (String(celdas[COL_NUM_FORM] || '').trim() !== numForm) {
+    return falla('CA_FILA', 'Error interno: el N° de formulario de la fila no coincide. No se guardó nada.');
+  }
+
+  // 3. La fila destino es la que se espera (se relee aquí, dentro del lock).
+  const actual = sheet.getRange(targetRow, 1, 1, NUM_COLS).getValues()[0];
+  const caActual = String(actual[COL_NUM_FORM] || '').trim();
+  if (modo === 'crear') {
+    for (let j = 0; j < NUM_COLS; j++) {
+      if (celdaConDato_(actual[j])) return falla('FILA_OCUPADA', 'La fila de destino ya no está vacía (otro registro entró a la vez). No se guardó nada: vuelva a enviar.');
+    }
+  } else if (modo === 'reutilizar') {
+    if (caActual !== numForm || !filaVaciaReutilizable_(actual)) {
+      return falla('FILA_AJENA', 'La fila de destino cambió. No se guardó nada: vuelva a enviar.');
+    }
+  } else if (caActual !== numForm) {
+    return falla('FILA_AJENA', 'La fila de destino ya no corresponde al registro ' + numForm + '. No se guardó nada: recargue.');
+  }
+
+  // 1. Blindaje: nunca una fila a medias ni con un correo que luego bloquea
+  // al residente (el portal del residente pasa por submitRecord, que los exige).
+  let aviso = '';
+  if (!celdaConDato_(celdas[5]) || !celdaConDato_(celdas[6])) {
+    return falla('BLINDAJE', 'Faltan datos obligatorios del propietario (nombre o cédula). El registro no se guardó.');
+  }
+  if (!celdaConDato_(celdas[8])) {
+    if (modo === 'admin' && !celdaConDato_(actual[8])) {
+      aviso = 'El registro sigue sin celular del propietario: el residente no podrá usar su portal hasta que se complete.';
+    } else {
+      return falla('BLINDAJE', modo === 'admin'
+        ? 'No se puede borrar el celular del propietario. El registro no se guardó.'
+        : 'Faltan datos obligatorios del propietario (nombre, cédula o celular). El registro no se guardó.');
+    }
+  }
+  if (!CORREO_VALIDO_RE.test(String(celdas[7] || '').trim())) {
+    return falla('BLINDAJE', 'Correo del propietario inválido. El registro no se guardó.');
+  }
+
+  try {
+    sheet.getRange(targetRow, 1, 1, NUM_COLS).setValues([celdas]);
+  } catch (e) {
+    Logger.log('[escribirFila_] fallo setValues ca=' + numForm + ' fila=' + targetRow + ': ' + String(e && e.message || e));
+    return { ok: false, code: 'ESCRITURA', error: 'No se pudo guardar en la hoja. Intente de nuevo en unos segundos.' };
+  }
+  // 4. Bitácora: UNA anotación por escritura (registrarBitacora_ nunca lanza).
+  const n = contarCeldasConDato_(celdas);
+  registrarBitacora_(ctx.accion || modo, numForm, celdas[COL_APTO], ctx.origen, n);
+  if (aviso) Logger.log('[escribirFila_] AVISO ca=' + numForm + ': guardado sin celular del propietario (ya faltaba).');
+  return aviso ? { ok: true, celdas: n, aviso: aviso } : { ok: true, celdas: n };
+}
+
+// R12: cuántas filas tienen exactamente ese N° Apto (como findRowByApto).
+function contarFilasApto_(sheet, apto) {
+  const last = sheet.getLastRow();
+  if (last < HEADER_ROW + 1) return 0;
+  const col = sheet.getRange(HEADER_ROW + 1, COL_APTO + 1, last - HEADER_ROW, 1).getValues();
+  let n = 0;
+  for (let i = 0; i < col.length; i++) if (String(col[i][0]).trim() === String(apto).trim()) n++;
+  return n;
 }
 
 // AUD-T3: formato texto en columnas de identificadores. Ejecutar UNA vez a mano.
@@ -2181,6 +2301,7 @@ function adminGuardar(data) {
     return { ok: false, error: 'El sistema está ocupado. Espere unos segundos y vuelva a intentar.' };
   }
   let newRow; // fuera del try: el Logger.log de después del finally la usa
+  let aviso = '';
   try {
     verificarEsquema_(sheet); // AUD-T7: aborta si la hoja cambió de esquema
     const currentRow = sheet.getRange(targetRow, 1, 1, NUM_COLS).getValues()[0];
@@ -2350,22 +2471,32 @@ function adminGuardar(data) {
     // ====== FIRMA (139-141) ======
     setStr(139, data.firmaNom);
     setStr(140, data.firmaCC);
-    if (data.firmaFecha !== undefined) set(141, String(data.firmaFecha || ''));
+    // R4: la Firma-Fecha (141) es la fecha en que firmó el propietario: el
+    // admin NO la escribe. Se ignora data.firmaFecha aunque llegue (un admin.js
+    // en caché la sigue mandando desde un <input type=date>: sin hora, o ''
+    // si la celda era texto) y la celda se conserva tal cual (Date con su hora).
 
     // Actualizar fecha de edicion
     newRow[COL_FECHA_EDIT] = Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss');
 
-    // Guardar
-    sheet.getRange(targetRow, 1, 1, NUM_COLS).setValues([newRow]);
+    // Guardar — R9: por el punto único (verifica CA de la fila, blindaje,
+    // safeCell_ y anota en la Bitácora). El bloqueo optimista ya pasó arriba.
     // R7: el admin no manda __origen; si llegara, solo se acepta de la lista cerrada.
-    registrarBitacora_('admin', numForm, newRow[COL_APTO], origenBitacora_(data.__origen, 'portal-admin'), contarCeldasConDato_(newRow));
+    const _esc = escribirFila_(sheet, targetRow, newRow, {
+      modo: 'admin', numForm: numForm, accion: 'admin',
+      origen: origenBitacora_(data.__origen, 'portal-admin')
+    });
+    if (!_esc.ok) return _esc;
+    aviso = _esc.aviso || '';
   } finally {
     lock.releaseLock();
   }
 
   Logger.log('adminGuardar: ' + numForm + ' (fila ' + targetRow + ') a las ' + newRow[COL_FECHA_EDIT]);
 
-  return { ok: true, message: 'Registro actualizado correctamente', rowNumber: targetRow };
+  const res = { ok: true, message: 'Registro actualizado correctamente', rowNumber: targetRow };
+  if (aviso) res.aviso = aviso;
+  return res;
 }
 
 // =====================================================================

@@ -194,7 +194,7 @@ const A = {
 
         <details open><summary><strong>0. Encabezado</strong></summary>
           <div class="form-grid">
-            <div><label>Fecha de diligenciamiento</label><input type="date" id="edit-firmaFecha" value="${A.escapeHtml(r.firmaFecha ? String(r.firmaFecha).slice(0,10) : '')}" disabled></div>
+            <div><label>Fecha de diligenciamiento (firma del propietario, solo lectura)</label><input id="edit-firmaFecha" value="${A.escapeHtml(r.firmaFecha || '')}" readonly disabled data-solo-lectura></div>
             <div><label>Diligencia como</label>
               <select id="edit-diligencia" disabled>
                 <option value="">-- Seleccionar --</option>
@@ -421,8 +421,9 @@ const A = {
   editar() {
     A.state.editMode = true;
     // Habilitar todos los inputs del detail
+    // R4: los campos marcados data-solo-lectura (Firma-Fecha) siguen bloqueados.
     document.querySelectorAll('.detail-card input, .detail-card select').forEach(el => {
-      el.disabled = false;
+      if (!el.hasAttribute('data-solo-lectura')) el.disabled = false;
     });
     document.getElementById('btnEdit').classList.add('hidden');
     document.getElementById('btnExpandAll').classList.remove('hidden');
@@ -458,10 +459,22 @@ const A = {
       return arr;
     }
 
+    // R4: una autorización solo viaja si el admin cambió la casilla. Si no, va
+    // undefined (JSON la omite) y el backend conserva la celda tal cual: una
+    // casilla desmarcada no distingue '' de 'No' y antes convertía '' en 'No'.
+    const orig = A.state.selectedRow || {};
+    const aut = k => {
+      const el = document.getElementById('edit-' + k);
+      if (!el) return undefined;
+      return el.checked === (orig[k] === 'Sí') ? undefined : el.checked;
+    };
+
+    // R4: firmaFecha NO se manda: es la fecha de firma del propietario (el
+    // <input type=date> la truncaba a yyyy-MM-dd o la vaciaba). El backend
+    // además la ignora en adminGuardar.
     return {
       numForm: A.state.selectedNumForm,
       apto: v('apto'),
-      firmaFecha: v('firmaFecha'),
       diligencia: v('diligencia'),
       matriculaApto: v('matriculaApto'),
       nombreProp: v('nombreProp'),
@@ -497,9 +510,9 @@ const A = {
       dispositivos: leerArray('dispositivos', 3),
       mascotas: leerArray('mascotas', 2),
       emergencias: leerArray('emergencias', 2),
-      autDatos: document.getElementById('edit-autDatos')?.checked || false,
-      autMenores: document.getElementById('edit-autMenores')?.checked || false,
-      autCom: document.getElementById('edit-autCom')?.checked || false,
+      autDatos: aut('autDatos'),
+      autMenores: aut('autMenores'),
+      autCom: aut('autCom'),
       firmaNom: v('firmaNom'),
       firmaCC: v('firmaCC')
     };
