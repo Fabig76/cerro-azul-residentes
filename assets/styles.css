@@ -33,6 +33,7 @@
   --fondo-card:  #FFFFFF;
   --campo:       #F1F3F7;
   --campo-hover: #E9ECF2;
+  --campo-focus: #FFFFFF;        /* fondo del campo mientras se escribe */
   --linea:       #E4E8EE;
 
   /* Estados */
@@ -108,6 +109,7 @@ body.tema-vigilancia {
   --fondo-card:  #1A2027;
   --campo:       #212A33;
   --campo-hover: #2A3340;
+  --campo-focus: #28313D;        /* más claro que --campo; texto 11.08:1, placeholder 4.59:1 */
   --linea:       #2D3640;
 
   /* Estados (ajustados para mejor contraste en oscuro) */
@@ -755,7 +757,7 @@ input::placeholder, textarea::placeholder { color: #9299A6; }
   input:hover, select:hover, textarea:hover { background: var(--campo-hover); }
 }
 input:focus, select:focus, textarea:focus {
-  background: #FFFFFF;
+  background: var(--campo-focus);
   border-color: var(--acento);
   box-shadow: 0 0 0 4px var(--anillo);
 }
@@ -1501,7 +1503,7 @@ html body #ca-input {
   background: var(--campo);
   font: 15px/1.35 var(--fuente);
 }
-html body #ca-input:focus { background: #FFFFFF; border-color: var(--acento); box-shadow: 0 0 0 4px var(--anillo); }
+html body #ca-input:focus { background: var(--campo-focus); border-color: var(--acento); box-shadow: 0 0 0 4px var(--anillo); }
 html body #ca-enviar {
   flex: 0 0 42px;
   width: 42px; height: 42px;
