@@ -222,6 +222,7 @@ const A = {
             <div><label>Parqueadero 2 (matrícula)</label><input id="edit-parq2Mat" value="${A.escapeHtml(r.parq2Mat)}" disabled></div>
             <div><label>¿Requiere revisión de matrículas?</label>
               <select id="edit-requiereRevision" disabled>
+                <option value=""></option>
                 <option value="Sí" ${r.requiereRevision==='Sí'?'selected':''}>Sí</option>
                 <option value="No" ${r.requiereRevision==='No'?'selected':''}>No</option>
               </select>
@@ -354,13 +355,7 @@ const A = {
                   <option value="Hembra" ${r.mascotas[i]?.sexo==='Hembra'?'selected':''}>Hembra</option>
                 </select>
               </div>
-              <div><label>Vacunado</label>
-                <select data-array="mascotas" data-idx="${i}" data-field="vacuna" disabled>
-                  <option value=""></option>
-                  <option value="Si" ${r.mascotas[i]?.vacuna==='Si'?'selected':''}>Sí</option>
-                  <option value="No" ${r.mascotas[i]?.vacuna==='No'?'selected':''}>No</option>
-                </select>
-              </div>
+              <div><label>Vacuna (fecha última o Sí/No)</label><input data-array="mascotas" data-idx="${i}" data-field="vacuna" value="${A.escapeHtml(r.mascotas[i]?.vacuna)}" placeholder="aaaa-mm-dd" disabled></div>
               <div><label>Manejo especial</label>
                 <select data-array="mascotas" data-idx="${i}" data-field="manejoEspecial" disabled>
                   <option value=""></option>

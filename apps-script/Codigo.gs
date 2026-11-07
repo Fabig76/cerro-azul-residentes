@@ -587,7 +587,8 @@ function submitRecord(data, opts) {
   const celTitular = String(data.celProp || '').trim();
   if (!celTitular) return { ok: false, error: 'Falta celular del titular.' };
 
-  if (!data.autDatos)   return { ok: false, error: 'Debe autorizar el tratamiento de datos personales.' };
+  // R3: el texto 'No' es truthy; se exige un Sí real (true, 'Sí' o 'true').
+  if (triEstadoSiNo_(data.autDatos) !== 'Sí') return { ok: false, error: 'Debe autorizar el tratamiento de datos personales.' };
   if (!data.firmaNom)   return { ok: false, error: 'Falta nombre en la firma.' };
   if (!data.firmaCC)    return { ok: false, error: 'Falta cédula en la firma.' };
 
@@ -629,6 +630,13 @@ function submitRecord(data, opts) {
       // BUGFIX-020: verificar cédula del propietario antes de escribir
       if (normalizarCC(data.ccProp) !== normalizarCC(found.values[6])) {
         return { ok: false, error: 'La cédula no coincide con el propietario registrado. No se puede editar.' };
+      }
+      // R5: bloqueo optimista, igual que adminGuardar. Si alguien (residente,
+      // admin, otra pestaña) guardó la fila después del lookup, no se pisa.
+      // Solo compara si el cliente manda la fecha; compara normalizado porque
+      // la celda llega como Date y el cliente manda texto.
+      if (edicionEnConflicto_(found.values[COL_FECHA_EDIT], data.fechaEdicionVista)) {
+        return { ok: false, error: 'El registro fue modificado por otra persona. Recargue y vuelva a intentar.', code: 'CONFLICTO' };
       }
       targetRow = found.rowNumber;
       assignedNumForm = submittedNumForm;
@@ -743,7 +751,11 @@ function buildRowFromPayload(d, numForm, fechaRegistroOriginal) {
   v[12] = String(d.parq2Celda || '').trim();    // M: N° Parqueadero 2
   v[13] = String(d.parq2Mat   || '').trim();    // N: Matrícula Parqueadero 2
   v[14] = String(d.matriculaApto || '').trim(); // O: Matrícula del Apto
-  v[15] = d.requiereRevision ? 'Sí' : 'No';     // P: Requiere Revisión Matrículas
+  // R3: antes `d.x ? 'Sí' : 'No'`: el texto 'No' es truthy -> 'Sí'. Ahora
+  // 'Sí'/'No'/true/false se respetan y '' (celda vacía que preservan
+  // registrar/actualizarResidente) se queda ''. Clave AUSENTE -> 'No', como
+  // antes (el checkbox de index.html siempre manda booleano).
+  v[15] = d.requiereRevision === undefined ? 'No' : triEstadoSiNo_(d.requiereRevision); // P
   v[16] = String(d.observMatriculas || '').trim(); // Q: Observaciones Matrículas
 
   // v2 — Lo que era M (Nombre Arrendatario) ahora es R (17), CC Arrendatario S (18), etc.
@@ -842,7 +854,9 @@ function buildRowFromPayload(d, numForm, fechaRegistroOriginal) {
     v[110 + i*10 + 3] = String(m.color || '').trim();
     v[110 + i*10 + 4] = String(m.sexo || '').trim();
     v[110 + i*10 + 5] = String(m.vacuna || '').trim();
-    v[110 + i*10 + 6] = m.manejoEspecial === true || String(m.manejoEspecial) === 'true' ? 'Sí' : (m.manejoEspecial === false || String(m.manejoEspecial) === 'false' ? 'No' : '');
+    // R3: index.html manda el TEXTO del radio ('Sí'/'No'); antes solo se
+    // entendía true/false y el 'Sí' se guardaba vacío. Ausente -> '' (no 'No').
+    v[110 + i*10 + 6] = triEstadoSiNo_(m.manejoEspecial);
     v[110 + i*10 + 7] = String(m.registro || '').trim();
     v[110 + i*10 + 8] = String(m.aseguradora || '').trim();
     v[110 + i*10 + 9] = String(m.poliza || '').trim();
@@ -858,9 +872,10 @@ function buildRowFromPayload(d, numForm, fechaRegistroOriginal) {
   }
 
   // 11. Autorizaciones + firma
-  v[136]            = d.autDatos   ? 'Sí' : 'No';
-  v[137]            = d.autMenores ? 'Sí' : 'No';
-  v[138]            = d.autCom     ? 'Sí' : 'No';
+  // R3: binario (no autorizar = 'No'), pero sin la trampa del texto 'No' truthy.
+  v[136]            = triEstadoSiNo_(d.autDatos)   === 'Sí' ? 'Sí' : 'No';
+  v[137]            = triEstadoSiNo_(d.autMenores) === 'Sí' ? 'Sí' : 'No';
+  v[138]            = triEstadoSiNo_(d.autCom)     === 'Sí' ? 'Sí' : 'No';
   v[139]            = String(d.firmaNom || '').trim();
   v[140]            = String(d.firmaCC || '').trim();
   v[141]            = String(d.firmaFecha || today);
@@ -1015,103 +1030,103 @@ function getNextFormId() {
 // Convierte una fila (array de 143) en objeto JS para enviar al cliente en modo edición
 function rowToObject(rowArr) {
   return {
-    numForm: String(rowArr[COL_NUM_FORM] || ''),
-    fechaRegistro: String(rowArr[COL_FECHA_REG] || ''),
-    fechaEdicion: String(rowArr[COL_FECHA_EDIT] || ''),
-    apto: String(rowArr[COL_APTO] || ''),
-    diligencia: String(rowArr[4] || ''),
-    nombreProp: String(rowArr[5] || ''),
-    ccProp: String(rowArr[6] || ''),
-    correoProp: String(rowArr[7] || ''),
-    celProp: String(rowArr[8] || ''),
-    telFijoProp: String(rowArr[9] || ''),
+    numForm: cellStr_(rowArr[COL_NUM_FORM]),
+    fechaRegistro: cellStr_(rowArr[COL_FECHA_REG]),
+    fechaEdicion: cellStr_(rowArr[COL_FECHA_EDIT]),
+    apto: cellStr_(rowArr[COL_APTO]),
+    diligencia: cellStr_(rowArr[4]),
+    nombreProp: cellStr_(rowArr[5]),
+    ccProp: cellStr_(rowArr[6]),
+    correoProp: cellStr_(rowArr[7]),
+    celProp: cellStr_(rowArr[8]),
+    telFijoProp: cellStr_(rowArr[9]),
     // v2 — Parqueaderos y matrículas
-    parq1Celda: String(rowArr[10] || ''),
-    parq1Mat:   String(rowArr[11] || ''),
-    parq2Celda: String(rowArr[12] || ''),
-    parq2Mat:   String(rowArr[13] || ''),
-    matriculaApto: String(rowArr[14] || ''),
-    requiereRevision: String(rowArr[15] || ''),
-    observMatriculas: String(rowArr[16] || ''),
+    parq1Celda: cellStr_(rowArr[10]),
+    parq1Mat:   cellStr_(rowArr[11]),
+    parq2Celda: cellStr_(rowArr[12]),
+    parq2Mat:   cellStr_(rowArr[13]),
+    matriculaApto: cellStr_(rowArr[14]),
+    requiereRevision: cellStr_(rowArr[15]),
+    observMatriculas: cellStr_(rowArr[16]),
     // Resto (desplazado +5 vs v1)
-    nombreArr: String(rowArr[17] || ''),
-    ccArr: String(rowArr[18] || ''),
-    correoArr: String(rowArr[19] || ''),
-    celArr: String(rowArr[20] || ''),
-    parqTerNom: String(rowArr[21] || ''),
-    parqTerApto: String(rowArr[22] || ''),
-    parqTerCel: String(rowArr[23] || ''),
-    inmobRazon: String(rowArr[24] || ''),
-    inmobNit: String(rowArr[25] || ''),
-    inmobContacto: String(rowArr[26] || ''),
-    inmobTel: String(rowArr[27] || ''),
-    inmobCorreo: String(rowArr[28] || ''),
+    nombreArr: cellStr_(rowArr[17]),
+    ccArr: cellStr_(rowArr[18]),
+    correoArr: cellStr_(rowArr[19]),
+    celArr: cellStr_(rowArr[20]),
+    parqTerNom: cellStr_(rowArr[21]),
+    parqTerApto: cellStr_(rowArr[22]),
+    parqTerCel: cellStr_(rowArr[23]),
+    inmobRazon: cellStr_(rowArr[24]),
+    inmobNit: cellStr_(rowArr[25]),
+    inmobContacto: cellStr_(rowArr[26]),
+    inmobTel: cellStr_(rowArr[27]),
+    inmobCorreo: cellStr_(rowArr[28]),
     residentes: [0,1,2,3].map(i => ({
-      nombre: String(rowArr[29 + i*5] || ''),
-      cc:     String(rowArr[30 + i*5] || ''),
-      correo: String(rowArr[31 + i*5] || ''),
-      cel:    String(rowArr[32 + i*5] || ''),
-      parent: String(rowArr[33 + i*5] || ''),
+      nombre: cellStr_(rowArr[29 + i*5]),
+      cc:     cellStr_(rowArr[30 + i*5]),
+      correo: cellStr_(rowArr[31 + i*5]),
+      cel:    cellStr_(rowArr[32 + i*5]),
+      parent: cellStr_(rowArr[33 + i*5]),
     })),
     menores: [0,1,2,3].map(i => ({
-      nombre: String(rowArr[49 + i*3] || ''),
-      edad:   String(rowArr[50 + i*3] || ''),
-      parent: String(rowArr[51 + i*3] || ''),
+      nombre: cellStr_(rowArr[49 + i*3]),
+      edad:   cellStr_(rowArr[50 + i*3]),
+      parent: cellStr_(rowArr[51 + i*3]),
     })),
     vehiculos: [0,1].map(i => ({
-      marca: String(rowArr[61 + i*6] || ''),
-      tipo:  String(rowArr[62 + i*6] || ''),
-      color: String(rowArr[63 + i*6] || ''),
-      placa: String(rowArr[64 + i*6] || ''),
-      modelo:String(rowArr[65 + i*6] || ''),
-      tag:   String(rowArr[66 + i*6] || ''),
+      marca: cellStr_(rowArr[61 + i*6]),
+      tipo:  cellStr_(rowArr[62 + i*6]),
+      color: cellStr_(rowArr[63 + i*6]),
+      placa: cellStr_(rowArr[64 + i*6]),
+      modelo:cellStr_(rowArr[65 + i*6]),
+      tag:   cellStr_(rowArr[66 + i*6]),
     })),
     motos: [0,1].map(i => ({
-      marca: String(rowArr[73 + i*6] || ''),
-      tipo:  String(rowArr[74 + i*6] || ''),
-      color: String(rowArr[75 + i*6] || ''),
-      placa: String(rowArr[76 + i*6] || ''),
-      modelo:String(rowArr[77 + i*6] || ''),
-      tag:   String(rowArr[78 + i*6] || ''),
+      marca: cellStr_(rowArr[73 + i*6]),
+      tipo:  cellStr_(rowArr[74 + i*6]),
+      color: cellStr_(rowArr[75 + i*6]),
+      placa: cellStr_(rowArr[76 + i*6]),
+      modelo:cellStr_(rowArr[77 + i*6]),
+      tag:   cellStr_(rowArr[78 + i*6]),
     })),
     bicis: [0,1].map(i => ({
-      marca: String(rowArr[85 + i*4] || ''),
-      color: String(rowArr[86 + i*4] || ''),
-      clase: String(rowArr[87 + i*4] || ''),
-      serial:String(rowArr[88 + i*4] || ''),
+      marca: cellStr_(rowArr[85 + i*4]),
+      color: cellStr_(rowArr[86 + i*4]),
+      clase: cellStr_(rowArr[87 + i*4]),
+      serial:cellStr_(rowArr[88 + i*4]),
     })),
-    llaverosAut: String(rowArr[93] || ''),
-    tagsAut:     String(rowArr[94] || ''),
+    llaverosAut: cellStr_(rowArr[93]),
+    tagsAut:     cellStr_(rowArr[94]),
     dispositivos: [0,1,2].map(i => ({
-      tipo:  String(rowArr[95 + i*5] || ''),
-      codigo:String(rowArr[96 + i*5] || ''),
-      placa: String(rowArr[97 + i*5] || ''),
-      fecha: String(rowArr[98 + i*5] || ''),
-      recibe:String(rowArr[99 + i*5] || ''),
+      tipo:  cellStr_(rowArr[95 + i*5]),
+      codigo:cellStr_(rowArr[96 + i*5]),
+      placa: cellStr_(rowArr[97 + i*5]),
+      fecha: cellStr_(rowArr[98 + i*5]),
+      recibe:cellStr_(rowArr[99 + i*5]),
     })),
     mascotas: [0,1].map(i => ({
-      tipo: String(rowArr[110 + i*10] || ''),
-      nombre: String(rowArr[111 + i*10] || ''),
-      raza: String(rowArr[112 + i*10] || ''),
-      color: String(rowArr[113 + i*10] || ''),
-      sexo: String(rowArr[114 + i*10] || ''),
-      vacuna: String(rowArr[115 + i*10] || ''),
-      manejoEspecial: String(rowArr[116 + i*10] || ''),
-      registro: String(rowArr[117 + i*10] || ''),
-      aseguradora: String(rowArr[118 + i*10] || ''),
-      poliza: String(rowArr[119 + i*10] || ''),
+      tipo: cellStr_(rowArr[110 + i*10]),
+      nombre: cellStr_(rowArr[111 + i*10]),
+      raza: cellStr_(rowArr[112 + i*10]),
+      color: cellStr_(rowArr[113 + i*10]),
+      sexo: cellStr_(rowArr[114 + i*10]),
+      vacuna: cellStr_(rowArr[115 + i*10]),
+      manejoEspecial: cellStr_(rowArr[116 + i*10]),
+      registro: cellStr_(rowArr[117 + i*10]),
+      aseguradora: cellStr_(rowArr[118 + i*10]),
+      poliza: cellStr_(rowArr[119 + i*10]),
     })),
     emergencias: [0,1].map(i => ({
-      nombre: String(rowArr[130 + i*3] || ''),
-      parent: String(rowArr[131 + i*3] || ''),
-      tel:    String(rowArr[132 + i*3] || ''),
+      nombre: cellStr_(rowArr[130 + i*3]),
+      parent: cellStr_(rowArr[131 + i*3]),
+      tel:    cellStr_(rowArr[132 + i*3]),
     })),
-    autDatos:   String(rowArr[136] || ''),
-    autMenores: String(rowArr[137] || ''),
-    autCom:     String(rowArr[138] || ''),
-    firmaNom:   String(rowArr[139] || ''),
-    firmaCC:    String(rowArr[140] || ''),
-    firmaFecha: String(rowArr[141] || ''),
+    autDatos:   cellStr_(rowArr[136]),
+    autMenores: cellStr_(rowArr[137]),
+    autCom:     cellStr_(rowArr[138]),
+    firmaNom:   cellStr_(rowArr[139]),
+    firmaCC:    cellStr_(rowArr[140]),
+    firmaFecha: cellStr_(rowArr[141]),
   };
 }
 
@@ -1202,6 +1217,59 @@ const COL_MUD_DESCRIPCION = 22;  // V37: descripcion de elementos // W
 // ---------------------------------------------------------------------
 function normalizarCC(cc) {
   return String(cc || '').replace(/[^0-9]/g, '').trim();
+}
+
+// R2 (Tanda 1): texto útil de una celda leída con getValues().
+// `String(x || '')` rompía dos cosas: una celda Fecha llega como objeto Date
+// (String(Date) = "Thu Oct 01 2026 00:00:00 GMT-0500 (...)", que luego se
+// reescribía así en el Sheet) y el número 0 es falsy (0 llaveros -> '').
+//   null/undefined -> ''        número -> String(n) (0 -> '0')
+//   Date           -> fechaCelda_ (yyyy-MM-dd, o yyyy-MM-dd HH:mm:ss si tiene hora)
+//   true/false     -> 'Sí'/'No' (vocabulario de las columnas del Sheet)
+//   texto          -> recortado; si es el texto largo "... GMT-0500" que dejó
+//                     el bug, se convierte de vuelta a fecha.
+// El hash de deduplicación (col 142) no cambia: apto/CC/firmaCC son texto o
+// número entero, y para ambos cellStr_ devuelve lo mismo que String(x).trim().
+function cellStr_(v) {
+  if (v === null || v === undefined) return '';
+  if (Object.prototype.toString.call(v) === '[object Date]') return fechaCelda_(v);
+  if (typeof v === 'number') return isFinite(v) ? String(v) : '';
+  if (typeof v === 'boolean') return v ? 'Sí' : 'No';
+  const s = String(v).trim();
+  if (/^[A-Z][a-z]{2} [A-Z][a-z]{2} \d{2} \d{4} \d{2}:\d{2}:\d{2} GMT[+-]\d{4}/.test(s)) {
+    const d = new Date(s.replace(/\s*\(.*\)\s*$/, ''));
+    if (!isNaN(d.getTime())) return fechaCelda_(d);
+  }
+  return s;
+}
+
+// R2: formato ÚNICO de fecha leída del Sheet, el mismo con que se escribe:
+// solo fecha (yyyy-MM-dd) si la hora es 00:00:00 en Bogotá — Firma-Fecha,
+// vacunas, entregas — y fecha+hora (yyyy-MM-dd HH:mm:ss) si no — Fecha de
+// registro/edición, que necesitan la hora para el bloqueo optimista (R5).
+function fechaCelda_(d) {
+  if (isNaN(d.getTime())) return '';
+  const hora = Utilities.formatDate(d, 'America/Bogota', 'HH:mm:ss');
+  return Utilities.formatDate(d, 'America/Bogota', hora === '00:00:00' ? 'yyyy-MM-dd' : 'yyyy-MM-dd HH:mm:ss');
+}
+
+// R5: marca de tiempo comparable de la "Fecha Edición". La celda puede llegar
+// como Date (getValues) o como texto, y el cliente puede mandar el texto con
+// o sin ceros a la izquierda en la hora, o el texto largo "GMT-0500" de un
+// navegador con la versión anterior. Todo se reduce a yyyyMMddHHmmss.
+function marcaEdicion_(v) {
+  const s = cellStr_(v);
+  const m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (!m) return s.replace(/\D/g, '');
+  const p = function (x) { return String(x || 0).padStart(2, '0'); };
+  return m[1] + p(m[2]) + p(m[3]) + p(m[4]) + p(m[5]) + p(m[6]);
+}
+
+// R5: true si la fila cambió desde que el cliente la leyó. Si el cliente no
+// manda fechaEdicionVista (navegador viejo, flujo sin lookup) NO bloquea.
+function edicionEnConflicto_(fechaEnSheet, fechaEdicionVista) {
+  if (!fechaEdicionVista) return false;
+  return marcaEdicion_(fechaEnSheet) !== marcaEdicion_(fechaEdicionVista);
 }
 
 // AUD-T3: evita que un texto que empiece por = + - @ se interprete como fórmula.
@@ -2118,7 +2186,9 @@ function adminGuardar(data) {
     const currentRow = sheet.getRange(targetRow, 1, 1, NUM_COLS).getValues()[0];
     newRow = currentRow.slice();
     // AUD-T6: bloqueo optimista. El cliente manda la fechaEdicion que leyó.
-    if (data.fechaEdicionVista && String(currentRow[COL_FECHA_EDIT] || '') !== String(data.fechaEdicionVista)) {
+    // R5/R2: comparación normalizada (la celda es Date; rowToObject ya no
+    // devuelve String(Date) sino yyyy-MM-dd HH:mm:ss).
+    if (edicionEnConflicto_(currentRow[COL_FECHA_EDIT], data.fechaEdicionVista)) {
       return { ok: false, error: 'El registro fue modificado por otra persona. Recargue y vuelva a intentar.', code: 'CONFLICTO' };
     }
 
@@ -2144,7 +2214,7 @@ function adminGuardar(data) {
     setStr(13, data.parq2Mat);
     setStr(14, data.matriculaApto);
     if (data.requiereRevision !== undefined) {
-      newRow[15] = (data.requiereRevision === 'Si' || data.requiereRevision === true || data.requiereRevision === 'Sí') ? 'Sí' : 'No';
+      newRow[15] = triEstadoSiNo_(data.requiereRevision); // R3: '' se queda ''
     }
     setStr(16, data.observMatriculas);
 
@@ -2252,7 +2322,8 @@ function adminGuardar(data) {
         setStr(base + 4, m.sexo);
         setStr(base + 5, m.vacuna);
         if (m.manejoEspecial !== undefined) {
-          newRow[base + 6] = (m.manejoEspecial === true || m.manejoEspecial === 'Sí') ? 'Sí' : 'No';
+          // R3: el <select> manda 'true'/'false'/''; antes 'true' -> 'No' y '' -> 'No'.
+          newRow[base + 6] = triEstadoSiNo_(m.manejoEspecial);
         }
         setStr(base + 7, m.registro);
         setStr(base + 8, m.aseguradora);
@@ -2272,9 +2343,9 @@ function adminGuardar(data) {
     }
 
     // ====== AUTORIZACIONES (136-138) ======
-    if (data.autDatos !== undefined) newRow[136] = data.autDatos ? 'Sí' : 'No';
-    if (data.autMenores !== undefined) newRow[137] = data.autMenores ? 'Sí' : 'No';
-    if (data.autCom !== undefined) newRow[138] = data.autCom ? 'Sí' : 'No';
+    if (data.autDatos !== undefined) newRow[136] = triEstadoSiNo_(data.autDatos) === 'Sí' ? 'Sí' : 'No';
+    if (data.autMenores !== undefined) newRow[137] = triEstadoSiNo_(data.autMenores) === 'Sí' ? 'Sí' : 'No';
+    if (data.autCom !== undefined) newRow[138] = triEstadoSiNo_(data.autCom) === 'Sí' ? 'Sí' : 'No';
 
     // ====== FIRMA (139-141) ======
     setStr(139, data.firmaNom);
@@ -2812,18 +2883,29 @@ function verificarResidente(apto, cc) {
 // El string 'No' es truthy en JS, asi que mandar 'No' escribiria 'Sí'.
 // Hay que mandar BOOLEANOS. Se preserva el valor ORIGINAL del Sheet.
 function _preservarAutorizaciones(values) {
-  const b = function (i) { return String(values[i] || '').trim() === 'Sí'; };
+  const b = function (i) { return cellStr_(values[i]) === 'Sí'; }; // R2
   return { autDatos: b(136), autMenores: b(137), autCom: b(138) };
 }
 
 // BUGFIX-027: idem para `requiereRevision` (col 15) y para
 // `manejoEspecial` de mascotas (col 116/126): son tri-estado
 // (Sí / No / vacio) y no pueden representarse con un simple booleano.
+// R3 (Tanda 1): acepta también los booleanos y los textos que mandan los
+// clientes: 'Sí'/'No' (radio de index.html), 'true'/'false' (<select> del
+// admin), 'Si' sin tilde. Lo demás (vacío, no enviado) -> '' (tri-estado).
 function _preservarTriEstado(v) {
-  const s = String(v || '').trim();
-  if (s === 'Sí') return true;
-  if (s === 'No') return false;
+  if (v === true || v === false) return v;
+  const s = cellStr_(v).toLowerCase();
+  if (s === 'sí' || s === 'si' || s === 'true') return true;
+  if (s === 'no' || s === 'false') return false;
   return '';
+}
+
+// R3: valor a ESCRIBIR en una columna tri-estado: 'Sí' / 'No' / ''.
+// '' (no enviado / opción vacía) NUNCA se convierte en 'No'.
+function triEstadoSiNo_(v) {
+  const t = _preservarTriEstado(v);
+  return t === true ? 'Sí' : (t === false ? 'No' : '');
 }
 
 // BUGFIX-027: extrae los dispositivos (llaveros/tags) actuales del Sheet.
@@ -2832,11 +2914,11 @@ function _preservarDispositivos(values) {
   for (let i = 0; i < 3; i++) {
     const b = 95 + i * 5;
     out.push({
-      tipo:   String(values[b + 0] || '').trim(),
-      codigo: String(values[b + 1] || '').trim(),
-      placa:  String(values[b + 2] || '').trim(),
-      fecha:  String(values[b + 3] || '').trim(),
-      recibe: String(values[b + 4] || '').trim()
+      tipo:   cellStr_(values[b + 0]),
+      codigo: cellStr_(values[b + 1]),
+      placa:  cellStr_(values[b + 2]),
+      fecha:  cellStr_(values[b + 3]),
+      recibe: cellStr_(values[b + 4])
     });
   }
   return out;
@@ -2858,7 +2940,7 @@ function _preservarSlotCompartido(values, tipo, baseInicial, anchoSlot, numSlots
   const out = [];
   for (let i = 0; i < numSlots; i++) {
     const b = baseInicial + i * anchoSlot;
-    const cel = function (k) { return String(values[b + k] || '').trim(); };
+    const cel = function (k) { return cellStr_(values[b + k]); };
     if (tipo === 'vehiculos' || tipo === 'motos') {
       out.push({ marca: cel(0), tipo: cel(1), color: cel(2), placa: cel(3), modelo: cel(4), tag: cel(5) });
     } else if (tipo === 'bicis') {
@@ -2956,7 +3038,7 @@ function _combinarSlotsCompartidos(values, tipo, baseInicial, anchoSlot, numSlot
     const b = baseInicial + i * anchoSlot;
     let hayDatos = false;
     for (let k = 0; k < anchoSlot; k++) {
-      if (String(values[b + k] || '').trim()) { hayDatos = true; break; }
+      if (cellStr_(values[b + k])) { hayDatos = true; break; }
     }
     if (hayDatos) {
       out.push(delSheet[i]);                               // el Sheet gana
@@ -2976,9 +3058,9 @@ function _combinarMenores(values, nuevos) {
   const out = [];
   for (let i = 0; i < 4; i++) {
     const b = 49 + i * 3;
-    const nombre = String(values[b + 0] || '').trim();
-    const edad   = String(values[b + 1] || '').trim();
-    const parent = String(values[b + 2] || '').trim();
+    const nombre = cellStr_(values[b + 0]);
+    const edad   = cellStr_(values[b + 1]);
+    const parent = cellStr_(values[b + 2]);
     if (nombre || edad || parent) {
       out.push({ nombre: nombre, edad: edad, parent: parent });
     } else if (i < (Array.isArray(nuevos) ? nuevos.length : 0) && nuevos[i]) {
@@ -3098,7 +3180,7 @@ function registrarResidente(data) {
       // buildRowFromPayload() hace `d.requiereRevision ? 'Sí' : 'No'` y el
       // string 'No' es TRUTHY -> escribiria 'Sí' en 246 filas. Se envia
       // como tri-estado (true / false / '').
-      requiereRevision: _preservarTriEstado(String(row.values[15] || '')),
+      requiereRevision: _preservarTriEstado(row.values[15]),
       // El residente que se registra ocupa el slot asignado; los demas
       // slots de residentes quedan vacios (es un apto sin residentes).
       residentes: residentes,
@@ -3116,16 +3198,16 @@ function registrarResidente(data) {
       emergencias: _combinarSlotsCompartidos(row.values, 'contactos', 130, 3, 2, data.contactos),
       // Dispositivos: solo el propietario los autoriza. Se preservan.
       dispositivos: dispositivosFinal,                       // BUGFIX-012: preserva del propietario
-      llaverosAut: String(row.values[93] || ''),
-      tagsAut:     String(row.values[94] || ''),
+      llaverosAut: cellStr_(row.values[93]),
+      tagsAut:     cellStr_(row.values[94]),
       // Autorizaciones legales: se preservan del propietario.
       autDatos:   _aut.autDatos,
       autMenores: _aut.autMenores,
       autCom:     _aut.autCom,
       // Firma del propietario: se preserva.
-      firmaNom:  String(row.values[139] || ''),
-      firmaCC:   String(row.values[140] || ''),
-      firmaFecha: String(row.values[141] || ''),
+      firmaNom:  cellStr_(row.values[139]),
+      firmaCC:   cellStr_(row.values[140]),
+      firmaFecha: cellStr_(row.values[141]),
     };
 
     const result = submitRecord(payload, { yaBloqueado: true, bitacora: { accion: 'residente', origen: 'portal-residente' } });
@@ -3215,7 +3297,7 @@ function actualizarResidente(data) {
       apto: apto,
       numForm: String(row.values[COL_NUM_FORM] || ''),
       // BUGFIX-027: ver nota en registrarResidente (tri-estado, no string).
-      requiereRevision: _preservarTriEstado(String(row.values[15] || '')),
+      requiereRevision: _preservarTriEstado(row.values[15]),
       // Preservar los otros residentes, solo actualizar el slot N
       residentes: construirResidentesParaActualizar(row.values, slot, nuevosResidentes),
       // Slots compartidos: si el Sheet ya tiene datos, GANA el Sheet
@@ -3232,16 +3314,16 @@ function actualizarResidente(data) {
       emergencias: _combinarSlotsCompartidos(row.values, 'contactos', 130, 3, 2, datos.contactos),
       // Dispositivos: solo el propietario los autoriza. Se preservan.
       dispositivos: _preservarDispositivos(row.values),
-      llaverosAut: String(row.values[93] || ''),
-      tagsAut:     String(row.values[94] || ''),
+      llaverosAut: cellStr_(row.values[93]),
+      tagsAut:     cellStr_(row.values[94]),
       // Autorizaciones legales: se preservan del propietario.
       autDatos:   _aut.autDatos,
       autMenores: _aut.autMenores,
       autCom:     _aut.autCom,
       // Firma del propietario: se preserva.
-      firmaNom:  String(row.values[139] || ''),
-      firmaCC:   String(row.values[140] || ''),
-      firmaFecha: String(row.values[141] || ''),
+      firmaNom:  cellStr_(row.values[139]),
+      firmaCC:   cellStr_(row.values[140]),
+      firmaFecha: cellStr_(row.values[141]),
     };
 
     const result = submitRecord(payload, { yaBloqueado: true, bitacora: { accion: 'residente', origen: 'portal-residente' } });
@@ -3263,20 +3345,20 @@ function construirResidentesParaActualizar(values, slot, nuevos) {
       // Slot a actualizar: tomar del payload del frontend
       const nuevo = (nuevos && nuevos[0]) || {};
       res.push({
-        nombre: nuevo.nombre || String(values[base] || '').trim(),
-        cc: nuevo.cc || String(values[base + 1] || '').trim(),
-        correo: nuevo.correo || String(values[base + 2] || '').trim(),
-        cel: nuevo.cel || String(values[base + 3] || '').trim(),
-        parent: nuevo.parentesco || nuevo.parent || String(values[base + 4] || '').trim()
+        nombre: nuevo.nombre || cellStr_(values[base]),
+        cc: nuevo.cc || cellStr_(values[base + 1]),
+        correo: nuevo.correo || cellStr_(values[base + 2]),
+        cel: nuevo.cel || cellStr_(values[base + 3]),
+        parent: nuevo.parentesco || nuevo.parent || cellStr_(values[base + 4])
       });
     } else {
       // Otros slots: preservar los datos existentes
       res.push({
-        nombre: String(values[base] || '').trim(),
-        cc: String(values[base + 1] || '').trim(),
-        correo: String(values[base + 2] || '').trim(),
-        cel: String(values[base + 3] || '').trim(),
-        parent: String(values[base + 4] || '').trim()
+        nombre: cellStr_(values[base]),
+        cc: cellStr_(values[base + 1]),
+        correo: cellStr_(values[base + 2]),
+        cel: cellStr_(values[base + 3]),
+        parent: cellStr_(values[base + 4])
       });
     }
   }
