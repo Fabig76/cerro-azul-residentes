@@ -194,7 +194,7 @@ const A = {
 
         <details open><summary><strong>0. Encabezado</strong></summary>
           <div class="form-grid">
-            <div><label>Fecha de diligenciamiento</label><input type="date" id="edit-firmaFecha" value="${A.escapeHtml(r.firmaFecha ? String(r.firmaFecha).slice(0,10) : '')}" disabled></div>
+            <div><label>Fecha de diligenciamiento (firma del propietario, solo lectura)</label><input id="edit-firmaFecha" value="${A.escapeHtml(r.firmaFecha || '')}" readonly disabled data-solo-lectura></div>
             <div><label>Diligencia como</label>
               <select id="edit-diligencia" disabled>
                 <option value="">-- Seleccionar --</option>
@@ -222,6 +222,7 @@ const A = {
             <div><label>Parqueadero 2 (matrícula)</label><input id="edit-parq2Mat" value="${A.escapeHtml(r.parq2Mat)}" disabled></div>
             <div><label>¿Requiere revisión de matrículas?</label>
               <select id="edit-requiereRevision" disabled>
+                <option value=""></option>
                 <option value="Sí" ${r.requiereRevision==='Sí'?'selected':''}>Sí</option>
                 <option value="No" ${r.requiereRevision==='No'?'selected':''}>No</option>
               </select>
@@ -354,13 +355,7 @@ const A = {
                   <option value="Hembra" ${r.mascotas[i]?.sexo==='Hembra'?'selected':''}>Hembra</option>
                 </select>
               </div>
-              <div><label>Vacunado</label>
-                <select data-array="mascotas" data-idx="${i}" data-field="vacuna" disabled>
-                  <option value=""></option>
-                  <option value="Si" ${r.mascotas[i]?.vacuna==='Si'?'selected':''}>Sí</option>
-                  <option value="No" ${r.mascotas[i]?.vacuna==='No'?'selected':''}>No</option>
-                </select>
-              </div>
+              <div><label>Vacuna (fecha última o Sí/No)</label><input data-array="mascotas" data-idx="${i}" data-field="vacuna" value="${A.escapeHtml(r.mascotas[i]?.vacuna)}" placeholder="aaaa-mm-dd" disabled></div>
               <div><label>Manejo especial</label>
                 <select data-array="mascotas" data-idx="${i}" data-field="manejoEspecial" disabled>
                   <option value=""></option>
@@ -426,8 +421,9 @@ const A = {
   editar() {
     A.state.editMode = true;
     // Habilitar todos los inputs del detail
+    // R4: los campos marcados data-solo-lectura (Firma-Fecha) siguen bloqueados.
     document.querySelectorAll('.detail-card input, .detail-card select').forEach(el => {
-      el.disabled = false;
+      if (!el.hasAttribute('data-solo-lectura')) el.disabled = false;
     });
     document.getElementById('btnEdit').classList.add('hidden');
     document.getElementById('btnExpandAll').classList.remove('hidden');
@@ -463,10 +459,22 @@ const A = {
       return arr;
     }
 
+    // R4: una autorización solo viaja si el admin cambió la casilla. Si no, va
+    // undefined (JSON la omite) y el backend conserva la celda tal cual: una
+    // casilla desmarcada no distingue '' de 'No' y antes convertía '' en 'No'.
+    const orig = A.state.selectedRow || {};
+    const aut = k => {
+      const el = document.getElementById('edit-' + k);
+      if (!el) return undefined;
+      return el.checked === (orig[k] === 'Sí') ? undefined : el.checked;
+    };
+
+    // R4: firmaFecha NO se manda: es la fecha de firma del propietario (el
+    // <input type=date> la truncaba a yyyy-MM-dd o la vaciaba). El backend
+    // además la ignora en adminGuardar.
     return {
       numForm: A.state.selectedNumForm,
       apto: v('apto'),
-      firmaFecha: v('firmaFecha'),
       diligencia: v('diligencia'),
       matriculaApto: v('matriculaApto'),
       nombreProp: v('nombreProp'),
@@ -502,9 +510,9 @@ const A = {
       dispositivos: leerArray('dispositivos', 3),
       mascotas: leerArray('mascotas', 2),
       emergencias: leerArray('emergencias', 2),
-      autDatos: document.getElementById('edit-autDatos')?.checked || false,
-      autMenores: document.getElementById('edit-autMenores')?.checked || false,
-      autCom: document.getElementById('edit-autCom')?.checked || false,
+      autDatos: aut('autDatos'),
+      autMenores: aut('autMenores'),
+      autCom: aut('autCom'),
       firmaNom: v('firmaNom'),
       firmaCC: v('firmaCC')
     };
@@ -549,8 +557,16 @@ const A = {
         A.showAlert(r.error || 'Error al guardar.', 'err');
         return;
       }
-      A.showAlert('Cambios guardados correctamente. Fila ' + r.rowNumber + '.', 'ok');
+      // El backend puede guardar y aun así devolver un aviso (p. ej. falta el
+      // celular del propietario): se guardó, pero el admin debe enterarse.
+      const msgOk = 'Cambios guardados correctamente. Fila ' + r.rowNumber + '.';
+      const aviso = r.aviso ? String(r.aviso) : '';
+      // seleccionar() oculta la alerta al recargar: el mensaje se muestra
+      // después, salvo que la recarga haya mostrado su propio error.
       await A.seleccionar(A.state.selectedNumForm);
+      if (!document.getElementById('alert').classList.contains('hidden')) return;
+      if (aviso) A.showAlert(msgOk + ' ⚠️ Atención: ' + aviso, 'warn');
+      else A.showAlert(msgOk, 'ok');
     } catch (e) { A.showAlert('Error de red: ' + e.message, 'err'); }
     finally { btn.disabled = false; btn.textContent = '💾 Guardar cambios'; }
   },

@@ -50,14 +50,14 @@ function verificarEsquema_(sheet) {
 }
 
 // AUD-T17: permite saber qué versión responde en producción
-const VERSION_BACKEND = '2026-11-05-cedsal1';
+const VERSION_BACKEND = '2026-11-07-audbit3';
 function ping_() { return { ok: true, version: VERSION_BACKEND, tz: Session.getScriptTimeZone(), hora: Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss') }; }
 
 // AUD-T18: ejecutar desde el editor antes de cada despliegue. Lanza si algo falta.
 function selfTest_() {
   const fallos = [];
   const ss = SpreadsheetApp.openById(SHEET_ID);
-  ['Registros', 'Mudanzas', 'Config', 'salon social'].forEach(function (n) { if (!ss.getSheetByName(n)) fallos.push('Falta pestaña ' + n); });
+  ['Registros', 'Mudanzas', 'Config', 'salon social', BITACORA_SHEET].forEach(function (n) { if (!ss.getSheetByName(n)) fallos.push('Falta pestaña ' + n); });
   try { verificarEsquema_(ss.getSheetByName(SHEET_NAME)); } catch (e) { fallos.push(String(e.message)); }
   if (Session.getScriptTimeZone() !== 'America/Bogota') fallos.push('Zona horaria del proyecto: ' + Session.getScriptTimeZone());
   if (MailApp.getRemainingDailyQuota() < 50) fallos.push('Cuota de correo restante: ' + MailApp.getRemainingDailyQuota());
@@ -81,9 +81,200 @@ function respaldoDiario_() {
   copias.sort(function (a, b) { return a.getDateCreated() - b.getDateCreated(); });
   while (copias.length > 30) copias.shift().setTrashed(true);
 }
+// El trigger apunta a la función PÚBLICA 'respaldoDiario' (sin "_"): no está
+// documentado que un trigger pueda invocar una función privada. Se borran
+// tanto el nombre nuevo como el viejo ('respaldoDiario_') para no dejar dos vivos.
 function configurarRespaldoDiario_() {
-  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'respaldoDiario_') ScriptApp.deleteTrigger(t); });
-  ScriptApp.newTrigger('respaldoDiario_').timeBased().everyDays(1).atHour(3).create();
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    const h = t.getHandlerFunction();
+    if (h === 'respaldoDiario' || h === 'respaldoDiario_') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('respaldoDiario').timeBased().everyDays(1).atHour(3).create();
+}
+
+// =====================================================================
+// R7 · BITÁCORA — rastreabilidad de cada escritura en Registros.
+// Pestaña aparte (NO se tocan las 143 columnas de Registros). Solo se anexa.
+// SIN DATOS PERSONALES: fecha, acción, CA, apto, origen, nº de celdas con
+// dato y versión. Nada de nombres, cédulas, correos ni celulares.
+// Nunca lanza: si la Bitácora falla, la escritura en Registros ya ocurrió y
+// se respeta (solo se deja traza en Logger).
+// =====================================================================
+const BITACORA_SHEET = 'Bitacora';
+const BITACORA_HDR = ['Fecha', 'Acción', 'N° Formulario', 'N° Apto', 'Origen', 'Celdas con dato', 'Versión'];
+const BITACORA_ORIGENES = ['formulario-publico', 'portal-residente', 'portal-admin'];
+
+// Celda "con dato" = no vacía tras trim. 0 y false cuentan (Sheets los guarda).
+function celdaConDato_(v) {
+  return v !== null && v !== undefined && String(v).trim() !== '';
+}
+function contarCeldasConDato_(fila) {
+  let n = 0;
+  for (let j = 0; j < NUM_COLS; j++) if (celdaConDato_(fila[j])) n++;
+  return n;
+}
+// __origen lo manda el cliente: se acepta solo de una lista cerrada para que
+// nunca pueda colarse texto libre (p.ej. datos personales) en la Bitácora.
+function origenBitacora_(valor, porDefecto) {
+  const o = String(valor || '').trim();
+  return BITACORA_ORIGENES.indexOf(o) !== -1 ? o : (porDefecto || 'desconocido');
+}
+// Creación perezosa: solo se busca/crea la pestaña en el momento de anotar.
+function obtenerBitacora_() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sh = ss.getSheetByName(BITACORA_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(BITACORA_SHEET);
+    sh.appendRow(BITACORA_HDR);
+  }
+  return sh;
+}
+// Para que selfTest_ pase antes de la primera escritura: ejecutar una vez a mano.
+function crearBitacora_() { obtenerBitacora_(); Logger.log('Bitacora lista'); }
+
+function registrarBitacora_(accion, numForm, apto, origen, celdas) {
+  try {
+    const fecha = Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss');
+    obtenerBitacora_().appendRow([
+      fecha,
+      String(accion),
+      safeCell_(String(numForm || '').slice(0, 20)),
+      safeCell_(String(apto || '').slice(0, 20)),
+      origenBitacora_(origen),
+      Number(celdas) || 0,
+      VERSION_BACKEND
+    ]);
+    return true;
+  } catch (e) {
+    Logger.log('[bitacora] no se pudo anotar (' + accion + ' ' + numForm + '): ' + String(e && e.message || e));
+    return false;
+  }
+}
+
+// =====================================================================
+// R8 · AUDITORÍA DIARIA — invariantes de Registros. SOLO LEE; nunca escribe.
+//   auditoriaEnFilas_(filas, bitacoraFilas) -> PURA (sin Sheets ni red)
+//   auditoria_()                            -> lee el Sheet, llama a la pura
+//                                              y avisa por correo si hay algo
+// Las listas solo contienen CA / nº de fila / apto: sin datos personales.
+// =====================================================================
+const AUD_I1 = 'I1 fila con datos sin CA';
+const AUD_I2 = 'I2 CA con formato inválido';
+const AUD_I3 = 'I3 fila sin nombre/cc/cel del titular (a medias)';
+const AUD_I4 = 'I4 CA duplicado';
+const AUD_I5 = 'I5 celda con fecha serializada (String(Date))';
+const AUD_I6 = 'I6 vacuna no es fecha ISO';
+const AUD_I7 = 'I7 menores sin autorización de menores';
+const AUD_I8 = 'I8 correo del titular inválido';
+const AUD_I9 = 'I9 apto duplicado (normalizado)';
+const AUD_I10 = 'I10 fila alterada fuera del backend (celdas ≠ Bitácora)';
+
+// filas: filas de datos de Registros (SIN cabecera), como las da getValues().
+// bitacoraFilas: filas de la Bitácora (con o sin cabecera), en orden de anexado.
+// primeraFila: nº de fila del Sheet de filas[0] (por defecto HEADER_ROW + 1).
+function auditoriaEnFilas_(filas, bitacoraFilas, primeraFila) {
+  const base = primeraFila || (HEADER_ROW + 1);
+  const s = function (v) { return v === null || v === undefined ? '' : String(v); };
+  const esFecha = function (v) { return Object.prototype.toString.call(v) === '[object Date]'; };
+  const esISO = function (v) { return esFecha(v) || /^\d{4}-\d\d-\d\d$/.test(s(v).trim()); };
+  const violaciones = {};
+  const add = function (k, x) { (violaciones[k] = violaciones[k] || []).push(x); };
+
+  // Última anotación de la Bitácora por CA (la Bitácora solo se anexa).
+  const ultimaBit = {};
+  (bitacoraFilas || []).forEach(function (b) {
+    const ca = s(b[2]).trim();
+    if (!ca || s(b[0]).trim() === BITACORA_HDR[0]) return;
+    ultimaBit[ca] = { accion: s(b[1]), celdas: Number(b[5]) };
+  });
+
+  const cas = {}, aptos = {};
+  let filasConDato = 0, sinBitacora = 0;
+  (filas || []).forEach(function (r, i) {
+    const n = contarCeldasConDato_(r);
+    if (!n) return;
+    filasConDato++;
+    const ca = s(r[0]).trim();
+    const id = ca || ('fila ' + (base + i));
+    if (!ca) add(AUD_I1, id);
+    else if (!/^CA-\d{4}$/.test(ca)) add(AUD_I2, id);
+    if (ca && (!s(r[5]).trim() || !s(r[6]).trim() || !s(r[8]).trim())) add(AUD_I3, id + ' apto=' + s(r[3]).trim() + ' celdas=' + n);
+    if (ca) cas[ca] = (cas[ca] || 0) + 1;
+    if (s(r[3]).trim()) { const a = normApto(r[3]); (aptos[a] = aptos[a] || []).push(id); }
+    // Solo texto: una celda Date real (getValues) no es una fecha serializada.
+    if (r.some(function (x) { return typeof x === 'string' && /GMT[+-]\d{4}/.test(x); })) add(AUD_I5, id);
+    if ((celdaConDato_(r[115]) && !esISO(r[115])) || (celdaConDato_(r[125]) && !esISO(r[125]))) add(AUD_I6, id);
+    if ([49, 52, 55, 58].some(function (j) { return s(r[j]).trim(); }) && s(r[137]) !== 'Sí') add(AUD_I7, id);
+    if (ca && s(r[5]).trim() && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s(r[7]).trim())) add(AUD_I8, id);
+    if (ca) {
+      const b = ultimaBit[ca];
+      if (!b) sinBitacora++;
+      else if (b.celdas !== n) add(AUD_I10, id + ' bitácora=' + b.celdas + ' (' + b.accion + ') hoy=' + n);
+    }
+  });
+  Object.keys(cas).forEach(function (k) { if (cas[k] > 1) add(AUD_I4, k + ' x' + cas[k]); });
+  Object.keys(aptos).forEach(function (k) { if (aptos[k].length > 1) add(AUD_I9, k + ': ' + aptos[k].join(',')); });
+
+  const conteo = {};
+  let total = 0;
+  Object.keys(violaciones).sort().forEach(function (k) { conteo[k] = violaciones[k].length; total += violaciones[k].length; });
+  return {
+    ok: total === 0,
+    total: total,
+    conteo: conteo,
+    violaciones: violaciones,
+    // Informativo (no cuenta como violación): filas previas a la Bitácora.
+    filasConDato: filasConDato,
+    filasSinBitacora: sinBitacora,
+    version: VERSION_BACKEND
+  };
+}
+
+function cuerpoAuditoria_(inf) {
+  const lineas = ['Auditoría diaria de Registros (' + inf.version + ')', '',
+    'Total de violaciones: ' + inf.total + ' (filas con dato: ' + inf.filasConDato +
+    ', sin anotación en Bitácora: ' + inf.filasSinBitacora + ')', ''];
+  Object.keys(inf.conteo).forEach(function (k) {
+    const l = inf.violaciones[k];
+    lineas.push(k + ': ' + l.length);
+    lineas.push('   ' + l.slice(0, 25).join(' | ') + (l.length > 25 ? ' | …' : ''));
+  });
+  lineas.push('', 'Este correo solo lista N° de formulario, fila y apartamento. La auditoría no modifica datos.');
+  return lineas.join('\n');
+}
+
+// Manual: auditoria_({dryRun:true}) no envía correo. Desde trigger recibe el
+// evento del trigger (sin dryRun) y avisa si hay violaciones; si no, silencio.
+function auditoria_(opts) {
+  const dryRun = !!(opts && opts.dryRun === true);
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const sh = ss.getSheetByName(SHEET_NAME);
+  const last = sh.getLastRow();
+  const filas = last > HEADER_ROW ? sh.getRange(HEADER_ROW + 1, 1, last - HEADER_ROW, NUM_COLS).getValues() : [];
+  let bitFilas = [];
+  const bit = ss.getSheetByName(BITACORA_SHEET); // solo lectura: aquí NO se crea
+  if (bit && bit.getLastRow() > 1) bitFilas = bit.getRange(2, 1, bit.getLastRow() - 1, BITACORA_HDR.length).getValues();
+  const inf = auditoriaEnFilas_(filas, bitFilas, HEADER_ROW + 1);
+  inf.correo = { enviado: false, error: '' };
+  if (inf.total > 0 && !dryRun) {
+    inf.correo = enviarEmailSeguro_(REGISTRO_EMAIL_ADMIN,
+      'Cerro Azul — auditoría: ' + inf.total + ' violaciones en Registros', cuerpoAuditoria_(inf));
+  }
+  Logger.log('[auditoria] total=' + inf.total + ' ' + JSON.stringify(inf.conteo) + ' correo=' + inf.correo.enviado);
+  return inf;
+}
+
+// Ejecutar UNA vez desde el editor (después de configurarRespaldoDiario_).
+// atHour(3).nearMinute(30): Apps Script lo dispara ~03:30 (±15 min), tras el respaldo de las 03:00.
+// El trigger apunta a la función PÚBLICA 'auditoria' (wrapper de auditoria_,
+// SÍ envía correo: recibe el evento del trigger, sin dryRun). Se borran tanto
+// el nombre nuevo como el viejo ('auditoria_') para no dejar dos vivos.
+function configurarAuditoriaDiaria_() {
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    const h = t.getHandlerFunction();
+    if (h === 'auditoria' || h === 'auditoria_') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('auditoria').timeBased().everyDays(1).atHour(3).nearMinute(30).create();
 }
 
 // ---------------------------------------------------------------------
@@ -408,7 +599,8 @@ function submitRecord(data, opts) {
   const celTitular = String(data.celProp || '').trim();
   if (!celTitular) return { ok: false, error: 'Falta celular del titular.' };
 
-  if (!data.autDatos)   return { ok: false, error: 'Debe autorizar el tratamiento de datos personales.' };
+  // R3: el texto 'No' es truthy; se exige un Sí real (true, 'Sí' o 'true').
+  if (triEstadoSiNo_(data.autDatos) !== 'Sí') return { ok: false, error: 'Debe autorizar el tratamiento de datos personales.' };
   if (!data.firmaNom)   return { ok: false, error: 'Falta nombre en la firma.' };
   if (!data.firmaCC)    return { ok: false, error: 'Falta cédula en la firma.' };
 
@@ -428,6 +620,7 @@ function submitRecord(data, opts) {
   let assignedNumForm; // número de formulario que se va a guardar
   let fechaRegistroOriginal = null;
   let row = null;
+  let reutiliza = false; // R12: creación sobre la fila vacía del mismo apto
 
   // AUD-T6: la búsqueda, el número CA y la escritura son una sola sección crítica.
   // Sin este lock, dos envíos simultáneos (doble clic, reintento del móvil,
@@ -451,19 +644,36 @@ function submitRecord(data, opts) {
       if (normalizarCC(data.ccProp) !== normalizarCC(found.values[6])) {
         return { ok: false, error: 'La cédula no coincide con el propietario registrado. No se puede editar.' };
       }
+      // R5: bloqueo optimista, igual que adminGuardar. Si alguien (residente,
+      // admin, otra pestaña) guardó la fila después del lookup, no se pisa.
+      // Solo compara si el cliente manda la fecha; compara normalizado porque
+      // la celda llega como Date y el cliente manda texto.
+      if (edicionEnConflicto_(found.values[COL_FECHA_EDIT], data.fechaEdicionVista)) {
+        return { ok: false, error: 'El registro fue modificado por otra persona. Recargue y vuelva a intentar.', code: 'CONFLICTO' };
+      }
       targetRow = found.rowNumber;
       assignedNumForm = submittedNumForm;
       fechaRegistroOriginal = found.values[COL_FECHA_REG];
     } else {
       // Modo creación: validar que NO exista ya un registro con ese N° Apto
       const existing = findRowByApto(apto);
-      if (existing) {
+      // R12: la única fila del apto es una fila vacía (solo CA/fechas/apto, de
+      // un envío que el BLINDAJE no dejó completar): se reutiliza CON SU CA, sin
+      // pedir uno nuevo. Cualquier dato en cols 4..141, o más de una fila con
+      // ese apto, sigue siendo "ya existe".
+      if (existing && filaVaciaReutilizable_(existing.values) && contarFilasApto_(sheet, apto) === 1) {
+        reutiliza = true;
+        targetRow = existing.rowNumber;
+        assignedNumForm = String(existing.values[COL_NUM_FORM]).trim();
+        Logger.log('[submitRecord] reutiliza fila vacía ' + targetRow + ' (' + assignedNumForm + ') apto=' + apto);
+      } else if (existing) {
         return { ok: false, error: 'Ya existe un registro para el apartamento ' + apto + '. Si eres el propietario o encargado, usa la opción "Editar mi registro" con el N° de formulario que se te entregó al crear el registro. Si no lo tienes, contacte a la administración (urb.cerroazul@gmail.com).' };
+      } else {
+        // Buscar siguiente fila vacía
+        const last = sheet.getLastRow();
+        targetRow = Math.max(last + 1, HEADER_ROW + 1);
+        assignedNumForm = getNextFormId();
       }
-      // Buscar siguiente fila vacía
-      const last = sheet.getLastRow();
-      targetRow = Math.max(last + 1, HEADER_ROW + 1);
-      assignedNumForm = getNextFormId();
     }
 
     // Construir el array de valores
@@ -487,7 +697,17 @@ function submitRecord(data, opts) {
       return { ok: false, error: 'Faltan datos obligatorios del propietario (nombre, cédula o celular). El registro no se guardó. Revise el formulario y reenvíe.' };
     }
 
-    sheet.getRange(targetRow, 1, 1, NUM_COLS).setValues([row]);
+    // R9: escritura por el punto único (re-verifica la fila destino, safeCell_,
+    // blindaje y Bitácora — una sola anotación). Sigue dentro del lock.
+    const _bit = opts.bitacora || {
+      accion: editMode ? 'editar' : 'crear',
+      origen: origenBitacora_(data.__origen, 'desconocido')
+    };
+    const _esc = escribirFila_(sheet, targetRow, row, {
+      modo: editMode ? 'editar' : (reutiliza ? 'reutilizar' : 'crear'),
+      numForm: assignedNumForm, accion: _bit.accion, origen: _bit.origen
+    });
+    if (!_esc.ok) return _esc;
   } finally {
     if (lock) lock.releaseLock();
   }
@@ -505,6 +725,8 @@ function submitRecord(data, opts) {
   // registro. Se captura el error y se reporta en la respuesta.
   let correoEnviado = false;
   let correoError = '';
+  // R12: al reutilizar la fila vacía también es una CREACIÓN (!editMode): se
+  // envía el correo con el CA reutilizado, que el propietario necesita para editar.
   const debeEnviar = !editMode
     && String(data.__origen || '') === 'formulario-publico'
     && diligencia === 'Propietario';
@@ -558,7 +780,11 @@ function buildRowFromPayload(d, numForm, fechaRegistroOriginal) {
   v[12] = String(d.parq2Celda || '').trim();    // M: N° Parqueadero 2
   v[13] = String(d.parq2Mat   || '').trim();    // N: Matrícula Parqueadero 2
   v[14] = String(d.matriculaApto || '').trim(); // O: Matrícula del Apto
-  v[15] = d.requiereRevision ? 'Sí' : 'No';     // P: Requiere Revisión Matrículas
+  // R3: antes `d.x ? 'Sí' : 'No'`: el texto 'No' es truthy -> 'Sí'. Ahora
+  // 'Sí'/'No'/true/false se respetan y '' (celda vacía que preservan
+  // registrar/actualizarResidente) se queda ''. Clave AUSENTE -> 'No', como
+  // antes (el checkbox de index.html siempre manda booleano).
+  v[15] = d.requiereRevision === undefined ? 'No' : triEstadoSiNo_(d.requiereRevision); // P
   v[16] = String(d.observMatriculas || '').trim(); // Q: Observaciones Matrículas
 
   // v2 — Lo que era M (Nombre Arrendatario) ahora es R (17), CC Arrendatario S (18), etc.
@@ -657,7 +883,9 @@ function buildRowFromPayload(d, numForm, fechaRegistroOriginal) {
     v[110 + i*10 + 3] = String(m.color || '').trim();
     v[110 + i*10 + 4] = String(m.sexo || '').trim();
     v[110 + i*10 + 5] = String(m.vacuna || '').trim();
-    v[110 + i*10 + 6] = m.manejoEspecial === true || String(m.manejoEspecial) === 'true' ? 'Sí' : (m.manejoEspecial === false || String(m.manejoEspecial) === 'false' ? 'No' : '');
+    // R3: index.html manda el TEXTO del radio ('Sí'/'No'); antes solo se
+    // entendía true/false y el 'Sí' se guardaba vacío. Ausente -> '' (no 'No').
+    v[110 + i*10 + 6] = triEstadoSiNo_(m.manejoEspecial);
     v[110 + i*10 + 7] = String(m.registro || '').trim();
     v[110 + i*10 + 8] = String(m.aseguradora || '').trim();
     v[110 + i*10 + 9] = String(m.poliza || '').trim();
@@ -673,9 +901,10 @@ function buildRowFromPayload(d, numForm, fechaRegistroOriginal) {
   }
 
   // 11. Autorizaciones + firma
-  v[136]            = d.autDatos   ? 'Sí' : 'No';
-  v[137]            = d.autMenores ? 'Sí' : 'No';
-  v[138]            = d.autCom     ? 'Sí' : 'No';
+  // R3: binario (no autorizar = 'No'), pero sin la trampa del texto 'No' truthy.
+  v[136]            = triEstadoSiNo_(d.autDatos)   === 'Sí' ? 'Sí' : 'No';
+  v[137]            = triEstadoSiNo_(d.autMenores) === 'Sí' ? 'Sí' : 'No';
+  v[138]            = triEstadoSiNo_(d.autCom)     === 'Sí' ? 'Sí' : 'No';
   v[139]            = String(d.firmaNom || '').trim();
   v[140]            = String(d.firmaCC || '').trim();
   v[141]            = String(d.firmaFecha || today);
@@ -830,103 +1059,103 @@ function getNextFormId() {
 // Convierte una fila (array de 143) en objeto JS para enviar al cliente en modo edición
 function rowToObject(rowArr) {
   return {
-    numForm: String(rowArr[COL_NUM_FORM] || ''),
-    fechaRegistro: String(rowArr[COL_FECHA_REG] || ''),
-    fechaEdicion: String(rowArr[COL_FECHA_EDIT] || ''),
-    apto: String(rowArr[COL_APTO] || ''),
-    diligencia: String(rowArr[4] || ''),
-    nombreProp: String(rowArr[5] || ''),
-    ccProp: String(rowArr[6] || ''),
-    correoProp: String(rowArr[7] || ''),
-    celProp: String(rowArr[8] || ''),
-    telFijoProp: String(rowArr[9] || ''),
+    numForm: cellStr_(rowArr[COL_NUM_FORM]),
+    fechaRegistro: cellStr_(rowArr[COL_FECHA_REG]),
+    fechaEdicion: cellStr_(rowArr[COL_FECHA_EDIT]),
+    apto: cellStr_(rowArr[COL_APTO]),
+    diligencia: cellStr_(rowArr[4]),
+    nombreProp: cellStr_(rowArr[5]),
+    ccProp: cellStr_(rowArr[6]),
+    correoProp: cellStr_(rowArr[7]),
+    celProp: cellStr_(rowArr[8]),
+    telFijoProp: cellStr_(rowArr[9]),
     // v2 — Parqueaderos y matrículas
-    parq1Celda: String(rowArr[10] || ''),
-    parq1Mat:   String(rowArr[11] || ''),
-    parq2Celda: String(rowArr[12] || ''),
-    parq2Mat:   String(rowArr[13] || ''),
-    matriculaApto: String(rowArr[14] || ''),
-    requiereRevision: String(rowArr[15] || ''),
-    observMatriculas: String(rowArr[16] || ''),
+    parq1Celda: cellStr_(rowArr[10]),
+    parq1Mat:   cellStr_(rowArr[11]),
+    parq2Celda: cellStr_(rowArr[12]),
+    parq2Mat:   cellStr_(rowArr[13]),
+    matriculaApto: cellStr_(rowArr[14]),
+    requiereRevision: cellStr_(rowArr[15]),
+    observMatriculas: cellStr_(rowArr[16]),
     // Resto (desplazado +5 vs v1)
-    nombreArr: String(rowArr[17] || ''),
-    ccArr: String(rowArr[18] || ''),
-    correoArr: String(rowArr[19] || ''),
-    celArr: String(rowArr[20] || ''),
-    parqTerNom: String(rowArr[21] || ''),
-    parqTerApto: String(rowArr[22] || ''),
-    parqTerCel: String(rowArr[23] || ''),
-    inmobRazon: String(rowArr[24] || ''),
-    inmobNit: String(rowArr[25] || ''),
-    inmobContacto: String(rowArr[26] || ''),
-    inmobTel: String(rowArr[27] || ''),
-    inmobCorreo: String(rowArr[28] || ''),
+    nombreArr: cellStr_(rowArr[17]),
+    ccArr: cellStr_(rowArr[18]),
+    correoArr: cellStr_(rowArr[19]),
+    celArr: cellStr_(rowArr[20]),
+    parqTerNom: cellStr_(rowArr[21]),
+    parqTerApto: cellStr_(rowArr[22]),
+    parqTerCel: cellStr_(rowArr[23]),
+    inmobRazon: cellStr_(rowArr[24]),
+    inmobNit: cellStr_(rowArr[25]),
+    inmobContacto: cellStr_(rowArr[26]),
+    inmobTel: cellStr_(rowArr[27]),
+    inmobCorreo: cellStr_(rowArr[28]),
     residentes: [0,1,2,3].map(i => ({
-      nombre: String(rowArr[29 + i*5] || ''),
-      cc:     String(rowArr[30 + i*5] || ''),
-      correo: String(rowArr[31 + i*5] || ''),
-      cel:    String(rowArr[32 + i*5] || ''),
-      parent: String(rowArr[33 + i*5] || ''),
+      nombre: cellStr_(rowArr[29 + i*5]),
+      cc:     cellStr_(rowArr[30 + i*5]),
+      correo: cellStr_(rowArr[31 + i*5]),
+      cel:    cellStr_(rowArr[32 + i*5]),
+      parent: cellStr_(rowArr[33 + i*5]),
     })),
     menores: [0,1,2,3].map(i => ({
-      nombre: String(rowArr[49 + i*3] || ''),
-      edad:   String(rowArr[50 + i*3] || ''),
-      parent: String(rowArr[51 + i*3] || ''),
+      nombre: cellStr_(rowArr[49 + i*3]),
+      edad:   cellStr_(rowArr[50 + i*3]),
+      parent: cellStr_(rowArr[51 + i*3]),
     })),
     vehiculos: [0,1].map(i => ({
-      marca: String(rowArr[61 + i*6] || ''),
-      tipo:  String(rowArr[62 + i*6] || ''),
-      color: String(rowArr[63 + i*6] || ''),
-      placa: String(rowArr[64 + i*6] || ''),
-      modelo:String(rowArr[65 + i*6] || ''),
-      tag:   String(rowArr[66 + i*6] || ''),
+      marca: cellStr_(rowArr[61 + i*6]),
+      tipo:  cellStr_(rowArr[62 + i*6]),
+      color: cellStr_(rowArr[63 + i*6]),
+      placa: cellStr_(rowArr[64 + i*6]),
+      modelo:cellStr_(rowArr[65 + i*6]),
+      tag:   cellStr_(rowArr[66 + i*6]),
     })),
     motos: [0,1].map(i => ({
-      marca: String(rowArr[73 + i*6] || ''),
-      tipo:  String(rowArr[74 + i*6] || ''),
-      color: String(rowArr[75 + i*6] || ''),
-      placa: String(rowArr[76 + i*6] || ''),
-      modelo:String(rowArr[77 + i*6] || ''),
-      tag:   String(rowArr[78 + i*6] || ''),
+      marca: cellStr_(rowArr[73 + i*6]),
+      tipo:  cellStr_(rowArr[74 + i*6]),
+      color: cellStr_(rowArr[75 + i*6]),
+      placa: cellStr_(rowArr[76 + i*6]),
+      modelo:cellStr_(rowArr[77 + i*6]),
+      tag:   cellStr_(rowArr[78 + i*6]),
     })),
     bicis: [0,1].map(i => ({
-      marca: String(rowArr[85 + i*4] || ''),
-      color: String(rowArr[86 + i*4] || ''),
-      clase: String(rowArr[87 + i*4] || ''),
-      serial:String(rowArr[88 + i*4] || ''),
+      marca: cellStr_(rowArr[85 + i*4]),
+      color: cellStr_(rowArr[86 + i*4]),
+      clase: cellStr_(rowArr[87 + i*4]),
+      serial:cellStr_(rowArr[88 + i*4]),
     })),
-    llaverosAut: String(rowArr[93] || ''),
-    tagsAut:     String(rowArr[94] || ''),
+    llaverosAut: cellStr_(rowArr[93]),
+    tagsAut:     cellStr_(rowArr[94]),
     dispositivos: [0,1,2].map(i => ({
-      tipo:  String(rowArr[95 + i*5] || ''),
-      codigo:String(rowArr[96 + i*5] || ''),
-      placa: String(rowArr[97 + i*5] || ''),
-      fecha: String(rowArr[98 + i*5] || ''),
-      recibe:String(rowArr[99 + i*5] || ''),
+      tipo:  cellStr_(rowArr[95 + i*5]),
+      codigo:cellStr_(rowArr[96 + i*5]),
+      placa: cellStr_(rowArr[97 + i*5]),
+      fecha: cellStr_(rowArr[98 + i*5]),
+      recibe:cellStr_(rowArr[99 + i*5]),
     })),
     mascotas: [0,1].map(i => ({
-      tipo: String(rowArr[110 + i*10] || ''),
-      nombre: String(rowArr[111 + i*10] || ''),
-      raza: String(rowArr[112 + i*10] || ''),
-      color: String(rowArr[113 + i*10] || ''),
-      sexo: String(rowArr[114 + i*10] || ''),
-      vacuna: String(rowArr[115 + i*10] || ''),
-      manejoEspecial: String(rowArr[116 + i*10] || ''),
-      registro: String(rowArr[117 + i*10] || ''),
-      aseguradora: String(rowArr[118 + i*10] || ''),
-      poliza: String(rowArr[119 + i*10] || ''),
+      tipo: cellStr_(rowArr[110 + i*10]),
+      nombre: cellStr_(rowArr[111 + i*10]),
+      raza: cellStr_(rowArr[112 + i*10]),
+      color: cellStr_(rowArr[113 + i*10]),
+      sexo: cellStr_(rowArr[114 + i*10]),
+      vacuna: cellStr_(rowArr[115 + i*10]),
+      manejoEspecial: cellStr_(rowArr[116 + i*10]),
+      registro: cellStr_(rowArr[117 + i*10]),
+      aseguradora: cellStr_(rowArr[118 + i*10]),
+      poliza: cellStr_(rowArr[119 + i*10]),
     })),
     emergencias: [0,1].map(i => ({
-      nombre: String(rowArr[130 + i*3] || ''),
-      parent: String(rowArr[131 + i*3] || ''),
-      tel:    String(rowArr[132 + i*3] || ''),
+      nombre: cellStr_(rowArr[130 + i*3]),
+      parent: cellStr_(rowArr[131 + i*3]),
+      tel:    cellStr_(rowArr[132 + i*3]),
     })),
-    autDatos:   String(rowArr[136] || ''),
-    autMenores: String(rowArr[137] || ''),
-    autCom:     String(rowArr[138] || ''),
-    firmaNom:   String(rowArr[139] || ''),
-    firmaCC:    String(rowArr[140] || ''),
-    firmaFecha: String(rowArr[141] || ''),
+    autDatos:   cellStr_(rowArr[136]),
+    autMenores: cellStr_(rowArr[137]),
+    autCom:     cellStr_(rowArr[138]),
+    firmaNom:   cellStr_(rowArr[139]),
+    firmaCC:    cellStr_(rowArr[140]),
+    firmaFecha: cellStr_(rowArr[141]),
   };
 }
 
@@ -1019,12 +1248,168 @@ function normalizarCC(cc) {
   return String(cc || '').replace(/[^0-9]/g, '').trim();
 }
 
+// R2 (Tanda 1): texto útil de una celda leída con getValues().
+// `String(x || '')` rompía dos cosas: una celda Fecha llega como objeto Date
+// (String(Date) = "Thu Oct 01 2026 00:00:00 GMT-0500 (...)", que luego se
+// reescribía así en el Sheet) y el número 0 es falsy (0 llaveros -> '').
+//   null/undefined -> ''        número -> String(n) (0 -> '0')
+//   Date           -> fechaCelda_ (yyyy-MM-dd, o yyyy-MM-dd HH:mm:ss si tiene hora)
+//   true/false     -> 'Sí'/'No' (vocabulario de las columnas del Sheet)
+//   texto          -> recortado; si es el texto largo "... GMT-0500" que dejó
+//                     el bug, se convierte de vuelta a fecha.
+// El hash de deduplicación (col 142) no cambia: apto/CC/firmaCC son texto o
+// número entero, y para ambos cellStr_ devuelve lo mismo que String(x).trim().
+function cellStr_(v) {
+  if (v === null || v === undefined) return '';
+  if (Object.prototype.toString.call(v) === '[object Date]') return fechaCelda_(v);
+  if (typeof v === 'number') return isFinite(v) ? String(v) : '';
+  if (typeof v === 'boolean') return v ? 'Sí' : 'No';
+  const s = String(v).trim();
+  if (/^[A-Z][a-z]{2} [A-Z][a-z]{2} \d{2} \d{4} \d{2}:\d{2}:\d{2} GMT[+-]\d{4}/.test(s)) {
+    const d = new Date(s.replace(/\s*\(.*\)\s*$/, ''));
+    if (!isNaN(d.getTime())) return fechaCelda_(d);
+  }
+  return s;
+}
+
+// R2: formato ÚNICO de fecha leída del Sheet, el mismo con que se escribe:
+// solo fecha (yyyy-MM-dd) si la hora es 00:00:00 en Bogotá — Firma-Fecha,
+// vacunas, entregas — y fecha+hora (yyyy-MM-dd HH:mm:ss) si no — Fecha de
+// registro/edición, que necesitan la hora para el bloqueo optimista (R5).
+function fechaCelda_(d) {
+  if (isNaN(d.getTime())) return '';
+  const hora = Utilities.formatDate(d, 'America/Bogota', 'HH:mm:ss');
+  return Utilities.formatDate(d, 'America/Bogota', hora === '00:00:00' ? 'yyyy-MM-dd' : 'yyyy-MM-dd HH:mm:ss');
+}
+
+// R5: marca de tiempo comparable de la "Fecha Edición". La celda puede llegar
+// como Date (getValues) o como texto, y el cliente puede mandar el texto con
+// o sin ceros a la izquierda en la hora, o el texto largo "GMT-0500" de un
+// navegador con la versión anterior. Todo se reduce a yyyyMMddHHmmss.
+function marcaEdicion_(v) {
+  const s = cellStr_(v);
+  const m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (!m) return s.replace(/\D/g, '');
+  const p = function (x) { return String(x || 0).padStart(2, '0'); };
+  return m[1] + p(m[2]) + p(m[3]) + p(m[4]) + p(m[5]) + p(m[6]);
+}
+
+// R5: true si la fila cambió desde que el cliente la leyó. Si el cliente no
+// manda fechaEdicionVista (navegador viejo, flujo sin lookup) NO bloquea.
+function edicionEnConflicto_(fechaEnSheet, fechaEdicionVista) {
+  if (!fechaEdicionVista) return false;
+  return marcaEdicion_(fechaEnSheet) !== marcaEdicion_(fechaEdicionVista);
+}
+
 // AUD-T3: evita que un texto que empiece por = + - @ se interprete como fórmula.
 // Solo actúa sobre strings; fechas y números pasan intactos.
 function safeCell_(v) {
   if (typeof v !== 'string') return v;
   const s = v.replace(/[\u200B-\u200F\u202A-\u202E\uFEFF]/g, '').trim();
   return /^[=+\-@\t\r]/.test(s) ? "'" + s : s;
+}
+
+// =====================================================================
+// R9 · PUNTO ÚNICO de escritura de una fila completa de Registros.
+// submitRecord (y con él registrarResidente/actualizarResidente) y
+// adminGuardar escriben SOLO por aquí. Se llama dentro del lock del que llama,
+// después de sus validaciones y del bloqueo optimista. Nunca lanza por datos:
+// devuelve { ok:true, celdas, aviso? } o { ok:false, error, code }.
+//   ctx.modo: 'crear'      fila destino totalmente vacía (fila nueva)
+//             'reutilizar' R12: la fila vacía del mismo CA (cols 4..141 vacías)
+//             'editar'     fila destino con ese CA (formulario / portal residente)
+//             'admin'      ídem; además puede guardar una fila que YA no tenía
+//                          celular (devuelve aviso), pero nunca borrarlo
+//   ctx.numForm, ctx.accion y ctx.origen: para la verificación y la Bitácora.
+// =====================================================================
+const ESCRIBIR_FILA_MODOS = ['crear', 'reutilizar', 'editar', 'admin'];
+const CORREO_VALIDO_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/; // el mismo de submitRecord
+
+// R12: fila "vacía" reutilizable = tiene CA válido y SOLO CA/fechas/apto:
+// las columnas 4..141 TODAS vacías. Criterio estricto a propósito: una fila
+// con cualquier dato (p.ej. la firma en 136-140) NO se reutiliza.
+function filaVaciaReutilizable_(valores) {
+  if (!/^CA-\d+$/.test(String(valores[COL_NUM_FORM] || '').trim())) return false;
+  for (let j = 4; j <= 141; j++) if (celdaConDato_(valores[j])) return false;
+  return true;
+}
+
+function escribirFila_(sheet, targetRow, fila, ctx) {
+  ctx = ctx || {};
+  const modo = String(ctx.modo || '');
+  const numForm = String(ctx.numForm || '').trim();
+  const falla = function (code, error) {
+    Logger.log('[escribirFila_] ABORTADO ' + code + ' modo=' + modo + ' ca=' + numForm + ' fila=' + targetRow + ' — no se escribió.');
+    return { ok: false, code: code, error: error };
+  };
+
+  // 2. Forma: exactamente NUM_COLS celdas, y todas pasan por safeCell_.
+  if (!Array.isArray(fila) || fila.length !== NUM_COLS) {
+    return falla('FORMA', 'Error interno: la fila a guardar no tiene ' + NUM_COLS + ' columnas. No se guardó nada.');
+  }
+  if (ESCRIBIR_FILA_MODOS.indexOf(modo) === -1 || !numForm || !(targetRow > HEADER_ROW)) {
+    return falla('CTX', 'Error interno: escritura sin modo, CA o fila válidos. No se guardó nada.');
+  }
+  const celdas = fila.map(safeCell_);
+  if (String(celdas[COL_NUM_FORM] || '').trim() !== numForm) {
+    return falla('CA_FILA', 'Error interno: el N° de formulario de la fila no coincide. No se guardó nada.');
+  }
+
+  // 3. La fila destino es la que se espera (se relee aquí, dentro del lock).
+  const actual = sheet.getRange(targetRow, 1, 1, NUM_COLS).getValues()[0];
+  const caActual = String(actual[COL_NUM_FORM] || '').trim();
+  if (modo === 'crear') {
+    for (let j = 0; j < NUM_COLS; j++) {
+      if (celdaConDato_(actual[j])) return falla('FILA_OCUPADA', 'La fila de destino ya no está vacía (otro registro entró a la vez). No se guardó nada: vuelva a enviar.');
+    }
+  } else if (modo === 'reutilizar') {
+    if (caActual !== numForm || !filaVaciaReutilizable_(actual)) {
+      return falla('FILA_AJENA', 'La fila de destino cambió. No se guardó nada: vuelva a enviar.');
+    }
+  } else if (caActual !== numForm) {
+    return falla('FILA_AJENA', 'La fila de destino ya no corresponde al registro ' + numForm + '. No se guardó nada: recargue.');
+  }
+
+  // 1. Blindaje: nunca una fila a medias ni con un correo que luego bloquea
+  // al residente (el portal del residente pasa por submitRecord, que los exige).
+  let aviso = '';
+  if (!celdaConDato_(celdas[5]) || !celdaConDato_(celdas[6])) {
+    return falla('BLINDAJE', 'Faltan datos obligatorios del propietario (nombre o cédula). El registro no se guardó.');
+  }
+  if (!celdaConDato_(celdas[8])) {
+    if (modo === 'admin' && !celdaConDato_(actual[8])) {
+      aviso = 'El registro sigue sin celular del propietario: el residente no podrá usar su portal hasta que se complete.';
+    } else {
+      return falla('BLINDAJE', modo === 'admin'
+        ? 'No se puede borrar el celular del propietario. El registro no se guardó.'
+        : 'Faltan datos obligatorios del propietario (nombre, cédula o celular). El registro no se guardó.');
+    }
+  }
+  if (!CORREO_VALIDO_RE.test(String(celdas[7] || '').trim())) {
+    return falla('BLINDAJE', 'Correo del propietario inválido. El registro no se guardó.');
+  }
+
+  try {
+    sheet.getRange(targetRow, 1, 1, NUM_COLS).setValues([celdas]);
+  } catch (e) {
+    Logger.log('[escribirFila_] fallo setValues ca=' + numForm + ' fila=' + targetRow + ': ' + String(e && e.message || e));
+    return { ok: false, code: 'ESCRITURA', error: 'No se pudo guardar en la hoja. Intente de nuevo en unos segundos.' };
+  }
+  // 4. Bitácora: UNA anotación por escritura (registrarBitacora_ nunca lanza).
+  const n = contarCeldasConDato_(celdas);
+  registrarBitacora_(ctx.accion || modo, numForm, celdas[COL_APTO], ctx.origen, n);
+  if (aviso) Logger.log('[escribirFila_] AVISO ca=' + numForm + ': guardado sin celular del propietario (ya faltaba).');
+  return aviso ? { ok: true, celdas: n, aviso: aviso } : { ok: true, celdas: n };
+}
+
+// R12: cuántas filas tienen exactamente ese N° Apto (como findRowByApto).
+function contarFilasApto_(sheet, apto) {
+  const last = sheet.getLastRow();
+  if (last < HEADER_ROW + 1) return 0;
+  const col = sheet.getRange(HEADER_ROW + 1, COL_APTO + 1, last - HEADER_ROW, 1).getValues();
+  let n = 0;
+  for (let i = 0; i < col.length; i++) if (String(col[i][0]).trim() === String(apto).trim()) n++;
+  return n;
 }
 
 // AUD-T3: formato texto en columnas de identificadores. Ejecutar UNA vez a mano.
@@ -1928,12 +2313,15 @@ function adminGuardar(data) {
     return { ok: false, error: 'El sistema está ocupado. Espere unos segundos y vuelva a intentar.' };
   }
   let newRow; // fuera del try: el Logger.log de después del finally la usa
+  let aviso = '';
   try {
     verificarEsquema_(sheet); // AUD-T7: aborta si la hoja cambió de esquema
     const currentRow = sheet.getRange(targetRow, 1, 1, NUM_COLS).getValues()[0];
     newRow = currentRow.slice();
     // AUD-T6: bloqueo optimista. El cliente manda la fechaEdicion que leyó.
-    if (data.fechaEdicionVista && String(currentRow[COL_FECHA_EDIT] || '') !== String(data.fechaEdicionVista)) {
+    // R5/R2: comparación normalizada (la celda es Date; rowToObject ya no
+    // devuelve String(Date) sino yyyy-MM-dd HH:mm:ss).
+    if (edicionEnConflicto_(currentRow[COL_FECHA_EDIT], data.fechaEdicionVista)) {
       return { ok: false, error: 'El registro fue modificado por otra persona. Recargue y vuelva a intentar.', code: 'CONFLICTO' };
     }
 
@@ -1959,7 +2347,7 @@ function adminGuardar(data) {
     setStr(13, data.parq2Mat);
     setStr(14, data.matriculaApto);
     if (data.requiereRevision !== undefined) {
-      newRow[15] = (data.requiereRevision === 'Si' || data.requiereRevision === true || data.requiereRevision === 'Sí') ? 'Sí' : 'No';
+      newRow[15] = triEstadoSiNo_(data.requiereRevision); // R3: '' se queda ''
     }
     setStr(16, data.observMatriculas);
 
@@ -2067,7 +2455,8 @@ function adminGuardar(data) {
         setStr(base + 4, m.sexo);
         setStr(base + 5, m.vacuna);
         if (m.manejoEspecial !== undefined) {
-          newRow[base + 6] = (m.manejoEspecial === true || m.manejoEspecial === 'Sí') ? 'Sí' : 'No';
+          // R3: el <select> manda 'true'/'false'/''; antes 'true' -> 'No' y '' -> 'No'.
+          newRow[base + 6] = triEstadoSiNo_(m.manejoEspecial);
         }
         setStr(base + 7, m.registro);
         setStr(base + 8, m.aseguradora);
@@ -2087,27 +2476,39 @@ function adminGuardar(data) {
     }
 
     // ====== AUTORIZACIONES (136-138) ======
-    if (data.autDatos !== undefined) newRow[136] = data.autDatos ? 'Sí' : 'No';
-    if (data.autMenores !== undefined) newRow[137] = data.autMenores ? 'Sí' : 'No';
-    if (data.autCom !== undefined) newRow[138] = data.autCom ? 'Sí' : 'No';
+    if (data.autDatos !== undefined) newRow[136] = triEstadoSiNo_(data.autDatos) === 'Sí' ? 'Sí' : 'No';
+    if (data.autMenores !== undefined) newRow[137] = triEstadoSiNo_(data.autMenores) === 'Sí' ? 'Sí' : 'No';
+    if (data.autCom !== undefined) newRow[138] = triEstadoSiNo_(data.autCom) === 'Sí' ? 'Sí' : 'No';
 
     // ====== FIRMA (139-141) ======
     setStr(139, data.firmaNom);
     setStr(140, data.firmaCC);
-    if (data.firmaFecha !== undefined) set(141, String(data.firmaFecha || ''));
+    // R4: la Firma-Fecha (141) es la fecha en que firmó el propietario: el
+    // admin NO la escribe. Se ignora data.firmaFecha aunque llegue (un admin.js
+    // en caché la sigue mandando desde un <input type=date>: sin hora, o ''
+    // si la celda era texto) y la celda se conserva tal cual (Date con su hora).
 
     // Actualizar fecha de edicion
     newRow[COL_FECHA_EDIT] = Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss');
 
-    // Guardar
-    sheet.getRange(targetRow, 1, 1, NUM_COLS).setValues([newRow]);
+    // Guardar — R9: por el punto único (verifica CA de la fila, blindaje,
+    // safeCell_ y anota en la Bitácora). El bloqueo optimista ya pasó arriba.
+    // R7: el admin no manda __origen; si llegara, solo se acepta de la lista cerrada.
+    const _esc = escribirFila_(sheet, targetRow, newRow, {
+      modo: 'admin', numForm: numForm, accion: 'admin',
+      origen: origenBitacora_(data.__origen, 'portal-admin')
+    });
+    if (!_esc.ok) return _esc;
+    aviso = _esc.aviso || '';
   } finally {
     lock.releaseLock();
   }
 
   Logger.log('adminGuardar: ' + numForm + ' (fila ' + targetRow + ') a las ' + newRow[COL_FECHA_EDIT]);
 
-  return { ok: true, message: 'Registro actualizado correctamente', rowNumber: targetRow };
+  const res = { ok: true, message: 'Registro actualizado correctamente', rowNumber: targetRow };
+  if (aviso) res.aviso = aviso;
+  return res;
 }
 
 // =====================================================================
@@ -2625,18 +3026,29 @@ function verificarResidente(apto, cc) {
 // El string 'No' es truthy en JS, asi que mandar 'No' escribiria 'Sí'.
 // Hay que mandar BOOLEANOS. Se preserva el valor ORIGINAL del Sheet.
 function _preservarAutorizaciones(values) {
-  const b = function (i) { return String(values[i] || '').trim() === 'Sí'; };
+  const b = function (i) { return cellStr_(values[i]) === 'Sí'; }; // R2
   return { autDatos: b(136), autMenores: b(137), autCom: b(138) };
 }
 
 // BUGFIX-027: idem para `requiereRevision` (col 15) y para
 // `manejoEspecial` de mascotas (col 116/126): son tri-estado
 // (Sí / No / vacio) y no pueden representarse con un simple booleano.
+// R3 (Tanda 1): acepta también los booleanos y los textos que mandan los
+// clientes: 'Sí'/'No' (radio de index.html), 'true'/'false' (<select> del
+// admin), 'Si' sin tilde. Lo demás (vacío, no enviado) -> '' (tri-estado).
 function _preservarTriEstado(v) {
-  const s = String(v || '').trim();
-  if (s === 'Sí') return true;
-  if (s === 'No') return false;
+  if (v === true || v === false) return v;
+  const s = cellStr_(v).toLowerCase();
+  if (s === 'sí' || s === 'si' || s === 'true') return true;
+  if (s === 'no' || s === 'false') return false;
   return '';
+}
+
+// R3: valor a ESCRIBIR en una columna tri-estado: 'Sí' / 'No' / ''.
+// '' (no enviado / opción vacía) NUNCA se convierte en 'No'.
+function triEstadoSiNo_(v) {
+  const t = _preservarTriEstado(v);
+  return t === true ? 'Sí' : (t === false ? 'No' : '');
 }
 
 // BUGFIX-027: extrae los dispositivos (llaveros/tags) actuales del Sheet.
@@ -2645,11 +3057,11 @@ function _preservarDispositivos(values) {
   for (let i = 0; i < 3; i++) {
     const b = 95 + i * 5;
     out.push({
-      tipo:   String(values[b + 0] || '').trim(),
-      codigo: String(values[b + 1] || '').trim(),
-      placa:  String(values[b + 2] || '').trim(),
-      fecha:  String(values[b + 3] || '').trim(),
-      recibe: String(values[b + 4] || '').trim()
+      tipo:   cellStr_(values[b + 0]),
+      codigo: cellStr_(values[b + 1]),
+      placa:  cellStr_(values[b + 2]),
+      fecha:  cellStr_(values[b + 3]),
+      recibe: cellStr_(values[b + 4])
     });
   }
   return out;
@@ -2671,7 +3083,7 @@ function _preservarSlotCompartido(values, tipo, baseInicial, anchoSlot, numSlots
   const out = [];
   for (let i = 0; i < numSlots; i++) {
     const b = baseInicial + i * anchoSlot;
-    const cel = function (k) { return String(values[b + k] || '').trim(); };
+    const cel = function (k) { return cellStr_(values[b + k]); };
     if (tipo === 'vehiculos' || tipo === 'motos') {
       out.push({ marca: cel(0), tipo: cel(1), color: cel(2), placa: cel(3), modelo: cel(4), tag: cel(5) });
     } else if (tipo === 'bicis') {
@@ -2769,7 +3181,7 @@ function _combinarSlotsCompartidos(values, tipo, baseInicial, anchoSlot, numSlot
     const b = baseInicial + i * anchoSlot;
     let hayDatos = false;
     for (let k = 0; k < anchoSlot; k++) {
-      if (String(values[b + k] || '').trim()) { hayDatos = true; break; }
+      if (cellStr_(values[b + k])) { hayDatos = true; break; }
     }
     if (hayDatos) {
       out.push(delSheet[i]);                               // el Sheet gana
@@ -2789,9 +3201,9 @@ function _combinarMenores(values, nuevos) {
   const out = [];
   for (let i = 0; i < 4; i++) {
     const b = 49 + i * 3;
-    const nombre = String(values[b + 0] || '').trim();
-    const edad   = String(values[b + 1] || '').trim();
-    const parent = String(values[b + 2] || '').trim();
+    const nombre = cellStr_(values[b + 0]);
+    const edad   = cellStr_(values[b + 1]);
+    const parent = cellStr_(values[b + 2]);
     if (nombre || edad || parent) {
       out.push({ nombre: nombre, edad: edad, parent: parent });
     } else if (i < (Array.isArray(nuevos) ? nuevos.length : 0) && nuevos[i]) {
@@ -2911,7 +3323,7 @@ function registrarResidente(data) {
       // buildRowFromPayload() hace `d.requiereRevision ? 'Sí' : 'No'` y el
       // string 'No' es TRUTHY -> escribiria 'Sí' en 246 filas. Se envia
       // como tri-estado (true / false / '').
-      requiereRevision: _preservarTriEstado(String(row.values[15] || '')),
+      requiereRevision: _preservarTriEstado(row.values[15]),
       // El residente que se registra ocupa el slot asignado; los demas
       // slots de residentes quedan vacios (es un apto sin residentes).
       residentes: residentes,
@@ -2929,19 +3341,19 @@ function registrarResidente(data) {
       emergencias: _combinarSlotsCompartidos(row.values, 'contactos', 130, 3, 2, data.contactos),
       // Dispositivos: solo el propietario los autoriza. Se preservan.
       dispositivos: dispositivosFinal,                       // BUGFIX-012: preserva del propietario
-      llaverosAut: String(row.values[93] || ''),
-      tagsAut:     String(row.values[94] || ''),
+      llaverosAut: cellStr_(row.values[93]),
+      tagsAut:     cellStr_(row.values[94]),
       // Autorizaciones legales: se preservan del propietario.
       autDatos:   _aut.autDatos,
       autMenores: _aut.autMenores,
       autCom:     _aut.autCom,
       // Firma del propietario: se preserva.
-      firmaNom:  String(row.values[139] || ''),
-      firmaCC:   String(row.values[140] || ''),
-      firmaFecha: String(row.values[141] || ''),
+      firmaNom:  cellStr_(row.values[139]),
+      firmaCC:   cellStr_(row.values[140]),
+      firmaFecha: cellStr_(row.values[141]),
     };
 
-    const result = submitRecord(payload, { yaBloqueado: true });
+    const result = submitRecord(payload, { yaBloqueado: true, bitacora: { accion: 'residente', origen: 'portal-residente' } });
     if (result.ok) {
       return {
         ok: true,
@@ -3028,7 +3440,7 @@ function actualizarResidente(data) {
       apto: apto,
       numForm: String(row.values[COL_NUM_FORM] || ''),
       // BUGFIX-027: ver nota en registrarResidente (tri-estado, no string).
-      requiereRevision: _preservarTriEstado(String(row.values[15] || '')),
+      requiereRevision: _preservarTriEstado(row.values[15]),
       // Preservar los otros residentes, solo actualizar el slot N
       residentes: construirResidentesParaActualizar(row.values, slot, nuevosResidentes),
       // Slots compartidos: si el Sheet ya tiene datos, GANA el Sheet
@@ -3045,19 +3457,19 @@ function actualizarResidente(data) {
       emergencias: _combinarSlotsCompartidos(row.values, 'contactos', 130, 3, 2, datos.contactos),
       // Dispositivos: solo el propietario los autoriza. Se preservan.
       dispositivos: _preservarDispositivos(row.values),
-      llaverosAut: String(row.values[93] || ''),
-      tagsAut:     String(row.values[94] || ''),
+      llaverosAut: cellStr_(row.values[93]),
+      tagsAut:     cellStr_(row.values[94]),
       // Autorizaciones legales: se preservan del propietario.
       autDatos:   _aut.autDatos,
       autMenores: _aut.autMenores,
       autCom:     _aut.autCom,
       // Firma del propietario: se preserva.
-      firmaNom:  String(row.values[139] || ''),
-      firmaCC:   String(row.values[140] || ''),
-      firmaFecha: String(row.values[141] || ''),
+      firmaNom:  cellStr_(row.values[139]),
+      firmaCC:   cellStr_(row.values[140]),
+      firmaFecha: cellStr_(row.values[141]),
     };
 
-    const result = submitRecord(payload, { yaBloqueado: true });
+    const result = submitRecord(payload, { yaBloqueado: true, bitacora: { accion: 'residente', origen: 'portal-residente' } });
     if (result.ok) {
       return { ok: true, slotActualizado: slot, message: 'Datos actualizados correctamente.' };
     }
@@ -3076,20 +3488,20 @@ function construirResidentesParaActualizar(values, slot, nuevos) {
       // Slot a actualizar: tomar del payload del frontend
       const nuevo = (nuevos && nuevos[0]) || {};
       res.push({
-        nombre: nuevo.nombre || String(values[base] || '').trim(),
-        cc: nuevo.cc || String(values[base + 1] || '').trim(),
-        correo: nuevo.correo || String(values[base + 2] || '').trim(),
-        cel: nuevo.cel || String(values[base + 3] || '').trim(),
-        parent: nuevo.parentesco || nuevo.parent || String(values[base + 4] || '').trim()
+        nombre: nuevo.nombre || cellStr_(values[base]),
+        cc: nuevo.cc || cellStr_(values[base + 1]),
+        correo: nuevo.correo || cellStr_(values[base + 2]),
+        cel: nuevo.cel || cellStr_(values[base + 3]),
+        parent: nuevo.parentesco || nuevo.parent || cellStr_(values[base + 4])
       });
     } else {
       // Otros slots: preservar los datos existentes
       res.push({
-        nombre: String(values[base] || '').trim(),
-        cc: String(values[base + 1] || '').trim(),
-        correo: String(values[base + 2] || '').trim(),
-        cel: String(values[base + 3] || '').trim(),
-        parent: String(values[base + 4] || '').trim()
+        nombre: cellStr_(values[base]),
+        cc: cellStr_(values[base + 1]),
+        correo: cellStr_(values[base + 2]),
+        cel: cellStr_(values[base + 3]),
+        parent: cellStr_(values[base + 4])
       });
     }
   }
@@ -3221,6 +3633,13 @@ function clearResidente(data) {
     // El rango correcto en 1-based es 111..136 (idx0 110..135) = Mascotas
     // (20) + Contactos/Emergencias (6) = 26 columnas exactas.
     sheet.getRange(rowNumber, 111, 1, 26).clearContent();
+
+    // R7: celdas que quedan = la fila leída menos los dos rangos limpiados.
+    // Solo lo llama el formulario público (js/app.js), que no manda __origen.
+    const _tras = row.values.slice();
+    for (let j = 29; j <= 92; j++) _tras[j] = '';
+    for (let j = 110; j <= 135; j++) _tras[j] = '';
+    registrarBitacora_('clearResidente', numForm, apto, origenBitacora_(data.__origen, 'formulario-publico'), contarCeldasConDato_(_tras));
 
     Logger.log('[clearResidente] numForm=' + numForm + ' apto=' + apto + ' ts=' + new Date().toISOString() + ' celdasLimpiadas=90');
 
@@ -5674,3 +6093,37 @@ function ecFinalizarCarga(data) {
     lock.releaseLock();
   }
 }
+
+// =====================================================================
+// PUERTAS DE ENTRADA PARA EL EDITOR DE APPS SCRIPT (solo visibilidad)
+//
+// Por qué existen: en Apps Script, un nombre de función terminado en "_"
+// la marca como PRIVADA, y el desplegable "Ejecutar" del editor NO muestra
+// las funciones privadas (docs oficiales, "Function naming": "A final _
+// denotes a private Apps Script function"). Todas las auxiliares de la
+// bitácora/auditoría/respaldo terminan en "_" por convención del proyecto,
+// así que estas funciones públicas (sin "_") son la ÚNICA vía para correrlas
+// a mano desde el editor.
+//
+// Reglas:
+//  - Solo delegan. No añaden lógica, no capturan errores (si selfTest_
+//    lanza, el error tiene que verse en el registro de ejecución) y
+//    devuelven exactamente lo que devuelve la función interna.
+//  - No las llama ningún action= HTTP: doGet/doPost no cambian.
+//  - Los triggers diarios apuntan a 'respaldoDiario' y 'auditoria' (estas
+//    públicas), no a las privadas: no está documentado que un trigger pueda
+//    invocar una función terminada en "_". auditoria() desde el trigger
+//    recibe el evento (sin dryRun) y por tanto SÍ envía el correo diario.
+//  - Ejecutar una de estas SÍ actúa sobre el Sheet de producción
+//    (p.ej. crearBitacora() crea la pestaña Bitacora si no existe).
+// =====================================================================
+function crearBitacora() { return crearBitacora_(); }
+function selfTest() { return selfTest_(); }
+// OJO: sin dryRun, si hay violaciones envía el correo al administrador.
+function auditoria(opts) { return auditoria_(opts); }
+// Igual que auditoria() pero sin enviar correo: para mirar el resultado en el log.
+function auditoriaSinCorreo() { return auditoria_({ dryRun: true }); }
+function configurarRespaldoDiario() { return configurarRespaldoDiario_(); }
+function configurarAuditoriaDiaria() { return configurarAuditoriaDiaria_(); }
+// Destino del trigger diario de respaldo (configurarRespaldoDiario_).
+function respaldoDiario() { return respaldoDiario_(); }

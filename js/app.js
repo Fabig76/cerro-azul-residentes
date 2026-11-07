@@ -279,6 +279,19 @@ function poblarFormulario(r) {
 // ============================================================
 // RECOLECTAR DATOS DEL FORMULARIO
 // ============================================================
+// R2/R3: la columna Vacuna admite una fecha (este formulario) o Sí/No (portal
+// del residente). El <input type="date"> descarta lo que no sea fecha, y al
+// guardar se perdía el 'Sí'. Si el campo quedó vacío y el registro cargado
+// tenía un valor que NO es fecha, se devuelve ese valor tal cual.
+function vacunaParaEnviar(i) {
+  const v = val(`#masc${i}Vacuna`);
+  if (v) return v;
+  const m = state.mode === 'edit' && state.editLookup && Array.isArray(state.editLookup.mascotas)
+    ? state.editLookup.mascotas[i - 1] : null;
+  const orig = m ? String(m.vacuna || '').trim() : '';
+  return /^\d{4}-\d{2}-\d{2}$/.test(orig) ? '' : orig;
+}
+
 function recolectar() {
   const res = [];
   for (let i = 1; i <= 4; i++) {
@@ -347,7 +360,7 @@ function recolectar() {
       raza: val(`#masc${i}Raza`),
       color: val(`#masc${i}Color`),
       sexo: val(`#masc${i}Sexo`),
-      vacuna: val(`#masc${i}Vacuna`),
+      vacuna: vacunaParaEnviar(i),
       manejoEspecial: getRadio(`masc${i}Esp`),
       registro: val(`#masc${i}Registro`),
       aseguradora: val(`#masc${i}Aseguradora`),
@@ -413,6 +426,11 @@ function recolectar() {
     firmaNom: val('#firmaNom'),
     firmaCC: val('#firmaCC'),
     firmaFecha: val('#firmaFecha'),
+    // R5: bloqueo optimista — solo en modo edición, con la fecha de edición
+    // que se vio en el lookup. En creación NO se manda (no hay fila previa).
+    ...(state.mode === 'edit' && state.editLookup && state.editLookup.fechaEdicion
+      ? { fechaEdicionVista: state.editLookup.fechaEdicion }
+      : {}),
   };
 }
 
@@ -531,7 +549,11 @@ async function enviarFormulario() {
   try {
     const data = await CA.api(payload, { method: 'POST' });
     if (!data.ok) {
-      showAlert('alert-create', data.error || 'Error desconocido al guardar.', 'err');
+      // R5: otra persona guardó este registro después de que lo cargaste.
+      const msg = data.code === 'CONFLICTO'
+        ? 'Este registro fue modificado por otra persona (por ejemplo, un residente o la administración) después de que lo abriste, y tus cambios NO se guardaron para no borrar los suyos. Copia aparte lo que cambiaste, vuelve a "Editar mi registro", búscalo de nuevo y repite tus cambios.'
+        : (data.error || 'Error desconocido al guardar.');
+      showAlert('alert-create', msg, 'err');
       btn.disabled = false;
       btn.textContent = oldText;
       return;
