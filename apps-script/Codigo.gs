@@ -50,14 +50,14 @@ function verificarEsquema_(sheet) {
 }
 
 // AUD-T17: permite saber qué versión responde en producción
-const VERSION_BACKEND = '2026-11-05-cedsal1';
+const VERSION_BACKEND = '2026-11-07-audbit1';
 function ping_() { return { ok: true, version: VERSION_BACKEND, tz: Session.getScriptTimeZone(), hora: Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss') }; }
 
 // AUD-T18: ejecutar desde el editor antes de cada despliegue. Lanza si algo falta.
 function selfTest_() {
   const fallos = [];
   const ss = SpreadsheetApp.openById(SHEET_ID);
-  ['Registros', 'Mudanzas', 'Config', 'salon social'].forEach(function (n) { if (!ss.getSheetByName(n)) fallos.push('Falta pestaña ' + n); });
+  ['Registros', 'Mudanzas', 'Config', 'salon social', BITACORA_SHEET].forEach(function (n) { if (!ss.getSheetByName(n)) fallos.push('Falta pestaña ' + n); });
   try { verificarEsquema_(ss.getSheetByName(SHEET_NAME)); } catch (e) { fallos.push(String(e.message)); }
   if (Session.getScriptTimeZone() !== 'America/Bogota') fallos.push('Zona horaria del proyecto: ' + Session.getScriptTimeZone());
   if (MailApp.getRemainingDailyQuota() < 50) fallos.push('Cuota de correo restante: ' + MailApp.getRemainingDailyQuota());
@@ -84,6 +84,185 @@ function respaldoDiario_() {
 function configurarRespaldoDiario_() {
   ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'respaldoDiario_') ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('respaldoDiario_').timeBased().everyDays(1).atHour(3).create();
+}
+
+// =====================================================================
+// R7 · BITÁCORA — rastreabilidad de cada escritura en Registros.
+// Pestaña aparte (NO se tocan las 143 columnas de Registros). Solo se anexa.
+// SIN DATOS PERSONALES: fecha, acción, CA, apto, origen, nº de celdas con
+// dato y versión. Nada de nombres, cédulas, correos ni celulares.
+// Nunca lanza: si la Bitácora falla, la escritura en Registros ya ocurrió y
+// se respeta (solo se deja traza en Logger).
+// =====================================================================
+const BITACORA_SHEET = 'Bitacora';
+const BITACORA_HDR = ['Fecha', 'Acción', 'N° Formulario', 'N° Apto', 'Origen', 'Celdas con dato', 'Versión'];
+const BITACORA_ORIGENES = ['formulario-publico', 'portal-residente', 'portal-admin'];
+
+// Celda "con dato" = no vacía tras trim. 0 y false cuentan (Sheets los guarda).
+function celdaConDato_(v) {
+  return v !== null && v !== undefined && String(v).trim() !== '';
+}
+function contarCeldasConDato_(fila) {
+  let n = 0;
+  for (let j = 0; j < NUM_COLS; j++) if (celdaConDato_(fila[j])) n++;
+  return n;
+}
+// __origen lo manda el cliente: se acepta solo de una lista cerrada para que
+// nunca pueda colarse texto libre (p.ej. datos personales) en la Bitácora.
+function origenBitacora_(valor, porDefecto) {
+  const o = String(valor || '').trim();
+  return BITACORA_ORIGENES.indexOf(o) !== -1 ? o : (porDefecto || 'desconocido');
+}
+// Creación perezosa: solo se busca/crea la pestaña en el momento de anotar.
+function obtenerBitacora_() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sh = ss.getSheetByName(BITACORA_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(BITACORA_SHEET);
+    sh.appendRow(BITACORA_HDR);
+  }
+  return sh;
+}
+// Para que selfTest_ pase antes de la primera escritura: ejecutar una vez a mano.
+function crearBitacora_() { obtenerBitacora_(); Logger.log('Bitacora lista'); }
+
+function registrarBitacora_(accion, numForm, apto, origen, celdas) {
+  try {
+    const fecha = Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss');
+    obtenerBitacora_().appendRow([
+      fecha,
+      String(accion),
+      safeCell_(String(numForm || '').slice(0, 20)),
+      safeCell_(String(apto || '').slice(0, 20)),
+      origenBitacora_(origen),
+      Number(celdas) || 0,
+      VERSION_BACKEND
+    ]);
+    return true;
+  } catch (e) {
+    Logger.log('[bitacora] no se pudo anotar (' + accion + ' ' + numForm + '): ' + String(e && e.message || e));
+    return false;
+  }
+}
+
+// =====================================================================
+// R8 · AUDITORÍA DIARIA — invariantes de Registros. SOLO LEE; nunca escribe.
+//   auditoriaEnFilas_(filas, bitacoraFilas) -> PURA (sin Sheets ni red)
+//   auditoria_()                            -> lee el Sheet, llama a la pura
+//                                              y avisa por correo si hay algo
+// Las listas solo contienen CA / nº de fila / apto: sin datos personales.
+// =====================================================================
+const AUD_I1 = 'I1 fila con datos sin CA';
+const AUD_I2 = 'I2 CA con formato inválido';
+const AUD_I3 = 'I3 fila sin nombre/cc/cel del titular (a medias)';
+const AUD_I4 = 'I4 CA duplicado';
+const AUD_I5 = 'I5 celda con fecha serializada (String(Date))';
+const AUD_I6 = 'I6 vacuna no es fecha ISO';
+const AUD_I7 = 'I7 menores sin autorización de menores';
+const AUD_I8 = 'I8 correo del titular inválido';
+const AUD_I9 = 'I9 apto duplicado (normalizado)';
+const AUD_I10 = 'I10 fila alterada fuera del backend (celdas ≠ Bitácora)';
+
+// filas: filas de datos de Registros (SIN cabecera), como las da getValues().
+// bitacoraFilas: filas de la Bitácora (con o sin cabecera), en orden de anexado.
+// primeraFila: nº de fila del Sheet de filas[0] (por defecto HEADER_ROW + 1).
+function auditoriaEnFilas_(filas, bitacoraFilas, primeraFila) {
+  const base = primeraFila || (HEADER_ROW + 1);
+  const s = function (v) { return v === null || v === undefined ? '' : String(v); };
+  const esFecha = function (v) { return Object.prototype.toString.call(v) === '[object Date]'; };
+  const esISO = function (v) { return esFecha(v) || /^\d{4}-\d\d-\d\d$/.test(s(v).trim()); };
+  const violaciones = {};
+  const add = function (k, x) { (violaciones[k] = violaciones[k] || []).push(x); };
+
+  // Última anotación de la Bitácora por CA (la Bitácora solo se anexa).
+  const ultimaBit = {};
+  (bitacoraFilas || []).forEach(function (b) {
+    const ca = s(b[2]).trim();
+    if (!ca || s(b[0]).trim() === BITACORA_HDR[0]) return;
+    ultimaBit[ca] = { accion: s(b[1]), celdas: Number(b[5]) };
+  });
+
+  const cas = {}, aptos = {};
+  let filasConDato = 0, sinBitacora = 0;
+  (filas || []).forEach(function (r, i) {
+    const n = contarCeldasConDato_(r);
+    if (!n) return;
+    filasConDato++;
+    const ca = s(r[0]).trim();
+    const id = ca || ('fila ' + (base + i));
+    if (!ca) add(AUD_I1, id);
+    else if (!/^CA-\d{4}$/.test(ca)) add(AUD_I2, id);
+    if (ca && (!s(r[5]).trim() || !s(r[6]).trim() || !s(r[8]).trim())) add(AUD_I3, id + ' apto=' + s(r[3]).trim() + ' celdas=' + n);
+    if (ca) cas[ca] = (cas[ca] || 0) + 1;
+    if (s(r[3]).trim()) { const a = normApto(r[3]); (aptos[a] = aptos[a] || []).push(id); }
+    // Solo texto: una celda Date real (getValues) no es una fecha serializada.
+    if (r.some(function (x) { return typeof x === 'string' && /GMT[+-]\d{4}/.test(x); })) add(AUD_I5, id);
+    if ((celdaConDato_(r[115]) && !esISO(r[115])) || (celdaConDato_(r[125]) && !esISO(r[125]))) add(AUD_I6, id);
+    if ([49, 52, 55, 58].some(function (j) { return s(r[j]).trim(); }) && s(r[137]) !== 'Sí') add(AUD_I7, id);
+    if (ca && s(r[5]).trim() && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s(r[7]).trim())) add(AUD_I8, id);
+    if (ca) {
+      const b = ultimaBit[ca];
+      if (!b) sinBitacora++;
+      else if (b.celdas !== n) add(AUD_I10, id + ' bitácora=' + b.celdas + ' (' + b.accion + ') hoy=' + n);
+    }
+  });
+  Object.keys(cas).forEach(function (k) { if (cas[k] > 1) add(AUD_I4, k + ' x' + cas[k]); });
+  Object.keys(aptos).forEach(function (k) { if (aptos[k].length > 1) add(AUD_I9, k + ': ' + aptos[k].join(',')); });
+
+  const conteo = {};
+  let total = 0;
+  Object.keys(violaciones).sort().forEach(function (k) { conteo[k] = violaciones[k].length; total += violaciones[k].length; });
+  return {
+    ok: total === 0,
+    total: total,
+    conteo: conteo,
+    violaciones: violaciones,
+    // Informativo (no cuenta como violación): filas previas a la Bitácora.
+    filasConDato: filasConDato,
+    filasSinBitacora: sinBitacora,
+    version: VERSION_BACKEND
+  };
+}
+
+function cuerpoAuditoria_(inf) {
+  const lineas = ['Auditoría diaria de Registros (' + inf.version + ')', '',
+    'Total de violaciones: ' + inf.total + ' (filas con dato: ' + inf.filasConDato +
+    ', sin anotación en Bitácora: ' + inf.filasSinBitacora + ')', ''];
+  Object.keys(inf.conteo).forEach(function (k) {
+    const l = inf.violaciones[k];
+    lineas.push(k + ': ' + l.length);
+    lineas.push('   ' + l.slice(0, 25).join(' | ') + (l.length > 25 ? ' | …' : ''));
+  });
+  lineas.push('', 'Este correo solo lista N° de formulario, fila y apartamento. La auditoría no modifica datos.');
+  return lineas.join('\n');
+}
+
+// Manual: auditoria_({dryRun:true}) no envía correo. Desde trigger recibe el
+// evento del trigger (sin dryRun) y avisa si hay violaciones; si no, silencio.
+function auditoria_(opts) {
+  const dryRun = !!(opts && opts.dryRun === true);
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const sh = ss.getSheetByName(SHEET_NAME);
+  const last = sh.getLastRow();
+  const filas = last > HEADER_ROW ? sh.getRange(HEADER_ROW + 1, 1, last - HEADER_ROW, NUM_COLS).getValues() : [];
+  let bitFilas = [];
+  const bit = ss.getSheetByName(BITACORA_SHEET); // solo lectura: aquí NO se crea
+  if (bit && bit.getLastRow() > 1) bitFilas = bit.getRange(2, 1, bit.getLastRow() - 1, BITACORA_HDR.length).getValues();
+  const inf = auditoriaEnFilas_(filas, bitFilas, HEADER_ROW + 1);
+  inf.correo = { enviado: false, error: '' };
+  if (inf.total > 0 && !dryRun) {
+    inf.correo = enviarEmailSeguro_(REGISTRO_EMAIL_ADMIN,
+      'Cerro Azul — auditoría: ' + inf.total + ' violaciones en Registros', cuerpoAuditoria_(inf));
+  }
+  Logger.log('[auditoria] total=' + inf.total + ' ' + JSON.stringify(inf.conteo) + ' correo=' + inf.correo.enviado);
+  return inf;
+}
+
+// Ejecutar UNA vez desde el editor (después de configurarRespaldoDiario_).
+// atHour(3).nearMinute(30): Apps Script lo dispara ~03:30 (±15 min), tras el respaldo de las 03:00.
+function configurarAuditoriaDiaria_() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'auditoria_') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('auditoria_').timeBased().everyDays(1).atHour(3).nearMinute(30).create();
 }
 
 // ---------------------------------------------------------------------
@@ -488,6 +667,12 @@ function submitRecord(data, opts) {
     }
 
     sheet.getRange(targetRow, 1, 1, NUM_COLS).setValues([row]);
+    // R7: anotar en la Bitácora (dentro del lock, después de escribir; nunca lanza).
+    const _bit = opts.bitacora || {
+      accion: editMode ? 'editar' : 'crear',
+      origen: origenBitacora_(data.__origen, 'desconocido')
+    };
+    registrarBitacora_(_bit.accion, assignedNumForm, apto, _bit.origen, contarCeldasConDato_(row));
   } finally {
     if (lock) lock.releaseLock();
   }
@@ -2101,6 +2286,8 @@ function adminGuardar(data) {
 
     // Guardar
     sheet.getRange(targetRow, 1, 1, NUM_COLS).setValues([newRow]);
+    // R7: el admin no manda __origen; si llegara, solo se acepta de la lista cerrada.
+    registrarBitacora_('admin', numForm, newRow[COL_APTO], origenBitacora_(data.__origen, 'portal-admin'), contarCeldasConDato_(newRow));
   } finally {
     lock.releaseLock();
   }
@@ -2941,7 +3128,7 @@ function registrarResidente(data) {
       firmaFecha: String(row.values[141] || ''),
     };
 
-    const result = submitRecord(payload, { yaBloqueado: true });
+    const result = submitRecord(payload, { yaBloqueado: true, bitacora: { accion: 'residente', origen: 'portal-residente' } });
     if (result.ok) {
       return {
         ok: true,
@@ -3057,7 +3244,7 @@ function actualizarResidente(data) {
       firmaFecha: String(row.values[141] || ''),
     };
 
-    const result = submitRecord(payload, { yaBloqueado: true });
+    const result = submitRecord(payload, { yaBloqueado: true, bitacora: { accion: 'residente', origen: 'portal-residente' } });
     if (result.ok) {
       return { ok: true, slotActualizado: slot, message: 'Datos actualizados correctamente.' };
     }
@@ -3221,6 +3408,13 @@ function clearResidente(data) {
     // El rango correcto en 1-based es 111..136 (idx0 110..135) = Mascotas
     // (20) + Contactos/Emergencias (6) = 26 columnas exactas.
     sheet.getRange(rowNumber, 111, 1, 26).clearContent();
+
+    // R7: celdas que quedan = la fila leída menos los dos rangos limpiados.
+    // Solo lo llama el formulario público (js/app.js), que no manda __origen.
+    const _tras = row.values.slice();
+    for (let j = 29; j <= 92; j++) _tras[j] = '';
+    for (let j = 110; j <= 135; j++) _tras[j] = '';
+    registrarBitacora_('clearResidente', numForm, apto, origenBitacora_(data.__origen, 'formulario-publico'), contarCeldasConDato_(_tras));
 
     Logger.log('[clearResidente] numForm=' + numForm + ' apto=' + apto + ' ts=' + new Date().toISOString() + ' celdasLimpiadas=90');
 
