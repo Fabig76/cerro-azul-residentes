@@ -237,3 +237,144 @@ describe('R7 Bitácora', () => {
     expect(ctx.auditoria_({ dryRun: true }).conteo[g('AUD_I10')]).toBeUndefined();
   });
 });
+
+// ---------------------------------------------------------------------
+// Puertas de entrada públicas (sin "_") para el desplegable del editor.
+describe('Wrappers públicos del editor', () => {
+  const PARES = [
+    ['crearBitacora', 'crearBitacora_'],
+    ['selfTest', 'selfTest_'],
+    ['auditoria', 'auditoria_'],
+    ['configurarRespaldoDiario', 'configurarRespaldoDiario_'],
+    ['configurarAuditoriaDiaria', 'configurarAuditoriaDiaria_']
+  ];
+
+  it('existen, no terminan en "_" y delegan en la interna correcta (args y retorno tal cual)', () => {
+    for (const [pub, interna] of PARES) {
+      expect(pub.endsWith('_')).toBe(false);
+      expect(typeof ctx[pub]).toBe('function');
+      const llamadas = [];
+      const marca = { soy: interna };
+      ctx[interna] = (...a) => { llamadas.push(a); return marca; };
+      const arg = pub === 'auditoria' ? { dryRun: true } : undefined;
+      expect(ctx[pub](arg)).toBe(marca);
+      expect(llamadas.length).toBe(1);
+      if (pub === 'auditoria') expect(llamadas[0][0]).toBe(arg);
+    }
+  });
+
+  it('auditoriaSinCorreo delega en auditoria_ con dryRun:true y no envía correo', () => {
+    const llamadas = [];
+    ctx.auditoria_ = (o) => { llamadas.push(o); return 'r'; };
+    expect(ctx.auditoriaSinCorreo()).toBe('r');
+    expect(llamadas).toEqual([{ dryRun: true }]);
+  });
+
+  it('auditoria() real devuelve el mismo objeto de informe que auditoria_()', () => {
+    hojas.Registros.grid.push(filaLimpia(1));
+    const a = ctx.auditoria({ dryRun: true });
+    const b = ctx.auditoria_({ dryRun: true });
+    expect(a).toEqual(b);
+    expect(typeof a.total).toBe('number');
+  });
+
+  it('crearBitacora() crea la pestaña Bitacora y devuelve undefined', () => {
+    expect(hojas.Bitacora).toBeUndefined();
+    expect(ctx.crearBitacora()).toBeUndefined();
+    expect(hojas.Bitacora.grid[0]).toEqual(g('BITACORA_HDR'));
+    expect(logs).toContain('Bitacora lista');
+  });
+
+  // selfTest_ real (sin stubs de la función): Sheet completo salvo respaldos_folder_id.
+  function prepararSelfTest(conRespaldos) {
+    const claves = ['admin_password', 'vigilante_password', 'cartera_sheet_id', 'facturas_folder_id', 'plantilla_pys_id', 'link_pago'];
+    if (conRespaldos) claves.push('respaldos_folder_id');
+    const cfg = hoja([['clave', 'valor'], ...claves.map(k => [k, 'x'])]);
+    cfg.getDataRange = () => ({ getValues: () => cfg.grid });
+    hojas.Config = cfg; hojas.Mudanzas = hoja([]); hojas['salon social'] = hoja([]); hojas.Bitacora = hoja([]);
+    ctx.PropertiesService = { getScriptProperties: () => ({ getProperty: () => 'k' }) };
+    ctx.DriveApp = { getFolderById: () => ({}) };
+  }
+
+  it('selfTest() PROPAGA la excepción de selfTest_ (falta respaldos_folder_id)', () => {
+    prepararSelfTest(false);
+    expect(() => ctx.selfTest_()).toThrow('selfTest: Config sin respaldos_folder_id');
+    expect(() => ctx.selfTest()).toThrow('selfTest: Config sin respaldos_folder_id');
+  });
+
+  it('selfTest() pasa cuando selfTest_ pasa', () => {
+    prepararSelfTest(true);
+    expect(ctx.selfTest()).toBeUndefined();
+    expect(logs.some(l => l.startsWith('selfTest OK'))).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------
+// Los triggers diarios deben apuntar a funciones PÚBLICAS (sin "_"). Si un
+// trigger no puede invocar una privada, el fallo sería silencioso: el
+// configurador dice OK y el respaldo/aviso nunca corre.
+describe('Triggers diarios apuntan a funciones públicas', () => {
+  // ScriptApp simulado: triggers previos con el nombre VIEJO y el NUEVO,
+  // más uno ajeno que no se debe tocar.
+  function scriptAppSimulado(handlersPrevios) {
+    const vivos = handlersPrevios.map(h => ({ h, getHandlerFunction: () => h }));
+    const creados = [];
+    const builder = (h) => {
+      const t = { h, getHandlerFunction: () => h };
+      const b = { timeBased: () => b, everyDays: () => b, atHour: () => b, nearMinute: () => b, everyHours: () => b,
+        create: () => { creados.push(h); vivos.push(t); return t; } };
+      return b;
+    };
+    return {
+      vivos, creados,
+      api: {
+        getProjectTriggers: () => vivos.slice(),
+        deleteTrigger: (t) => { const i = vivos.indexOf(t); if (i >= 0) vivos.splice(i, 1); },
+        newTrigger: builder
+      }
+    };
+  }
+
+  const CASOS = [
+    ['configurarRespaldoDiario_', 'respaldoDiario', 'respaldoDiario_'],
+    ['configurarAuditoriaDiaria_', 'auditoria', 'auditoria_']
+  ];
+
+  for (const [config, publico, viejo] of CASOS) {
+    it(`${config} crea el trigger '${publico}' (público) y borra '${viejo}' y '${publico}' previos`, () => {
+      const sa = scriptAppSimulado([viejo, publico, viejo, 'expirarReservasSalon']);
+      ctx.ScriptApp = sa.api;
+      ctx[config]();
+      expect(sa.creados).toEqual([publico]);
+      expect(publico.endsWith('_')).toBe(false);
+      expect(typeof ctx[publico]).toBe('function');
+      const handlers = sa.vivos.map(t => t.h).sort();
+      expect(handlers).toEqual(['expirarReservasSalon', publico].sort());
+      // Idempotente: reconfigurar no deja dos vivos.
+      ctx[config]();
+      expect(sa.vivos.filter(t => t.h === publico).length).toBe(1);
+    });
+  }
+
+  it("solo hay UNA definición de 'auditoria' y de 'respaldoDiario' en Codigo.gs", () => {
+    expect(CODIGO.match(/^function auditoria\s*\(/gm).length).toBe(1);
+    expect(CODIGO.match(/^function respaldoDiario\s*\(/gm).length).toBe(1);
+    expect(CODIGO).not.toMatch(/newTrigger\(\s*'[^']*_'\s*\)/);
+  });
+
+  it('respaldoDiario() delega en respaldoDiario_ y devuelve lo mismo', () => {
+    const marca = {}; const llamadas = [];
+    ctx.respaldoDiario_ = (...a) => { llamadas.push(a); return marca; };
+    expect(ctx.respaldoDiario()).toBe(marca);
+    expect(llamadas.length).toBe(1);
+  });
+
+  it('auditoria(eventoDeTrigger) SÍ envía correo (no es dryRun)', () => {
+    const r = [];
+    ctx.auditoria_ = (o) => { r.push(o); return 'x'; };
+    const evento = { authMode: 'FULL', triggerUid: '123' };
+    ctx.auditoria(evento);
+    expect(r[0]).toBe(evento);
+    expect(!!(r[0] && r[0].dryRun === true)).toBe(false);
+  });
+});

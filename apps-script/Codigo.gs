@@ -50,7 +50,7 @@ function verificarEsquema_(sheet) {
 }
 
 // AUD-T17: permite saber qué versión responde en producción
-const VERSION_BACKEND = '2026-11-07-audbit2';
+const VERSION_BACKEND = '2026-11-07-audbit3';
 function ping_() { return { ok: true, version: VERSION_BACKEND, tz: Session.getScriptTimeZone(), hora: Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss') }; }
 
 // AUD-T18: ejecutar desde el editor antes de cada despliegue. Lanza si algo falta.
@@ -81,9 +81,15 @@ function respaldoDiario_() {
   copias.sort(function (a, b) { return a.getDateCreated() - b.getDateCreated(); });
   while (copias.length > 30) copias.shift().setTrashed(true);
 }
+// El trigger apunta a la función PÚBLICA 'respaldoDiario' (sin "_"): no está
+// documentado que un trigger pueda invocar una función privada. Se borran
+// tanto el nombre nuevo como el viejo ('respaldoDiario_') para no dejar dos vivos.
 function configurarRespaldoDiario_() {
-  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'respaldoDiario_') ScriptApp.deleteTrigger(t); });
-  ScriptApp.newTrigger('respaldoDiario_').timeBased().everyDays(1).atHour(3).create();
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    const h = t.getHandlerFunction();
+    if (h === 'respaldoDiario' || h === 'respaldoDiario_') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('respaldoDiario').timeBased().everyDays(1).atHour(3).create();
 }
 
 // =====================================================================
@@ -260,9 +266,15 @@ function auditoria_(opts) {
 
 // Ejecutar UNA vez desde el editor (después de configurarRespaldoDiario_).
 // atHour(3).nearMinute(30): Apps Script lo dispara ~03:30 (±15 min), tras el respaldo de las 03:00.
+// El trigger apunta a la función PÚBLICA 'auditoria' (wrapper de auditoria_,
+// SÍ envía correo: recibe el evento del trigger, sin dryRun). Se borran tanto
+// el nombre nuevo como el viejo ('auditoria_') para no dejar dos vivos.
 function configurarAuditoriaDiaria_() {
-  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'auditoria_') ScriptApp.deleteTrigger(t); });
-  ScriptApp.newTrigger('auditoria_').timeBased().everyDays(1).atHour(3).nearMinute(30).create();
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    const h = t.getHandlerFunction();
+    if (h === 'auditoria' || h === 'auditoria_') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('auditoria').timeBased().everyDays(1).atHour(3).nearMinute(30).create();
 }
 
 // ---------------------------------------------------------------------
@@ -6081,3 +6093,37 @@ function ecFinalizarCarga(data) {
     lock.releaseLock();
   }
 }
+
+// =====================================================================
+// PUERTAS DE ENTRADA PARA EL EDITOR DE APPS SCRIPT (solo visibilidad)
+//
+// Por qué existen: en Apps Script, un nombre de función terminado en "_"
+// la marca como PRIVADA, y el desplegable "Ejecutar" del editor NO muestra
+// las funciones privadas (docs oficiales, "Function naming": "A final _
+// denotes a private Apps Script function"). Todas las auxiliares de la
+// bitácora/auditoría/respaldo terminan en "_" por convención del proyecto,
+// así que estas funciones públicas (sin "_") son la ÚNICA vía para correrlas
+// a mano desde el editor.
+//
+// Reglas:
+//  - Solo delegan. No añaden lógica, no capturan errores (si selfTest_
+//    lanza, el error tiene que verse en el registro de ejecución) y
+//    devuelven exactamente lo que devuelve la función interna.
+//  - No las llama ningún action= HTTP: doGet/doPost no cambian.
+//  - Los triggers diarios apuntan a 'respaldoDiario' y 'auditoria' (estas
+//    públicas), no a las privadas: no está documentado que un trigger pueda
+//    invocar una función terminada en "_". auditoria() desde el trigger
+//    recibe el evento (sin dryRun) y por tanto SÍ envía el correo diario.
+//  - Ejecutar una de estas SÍ actúa sobre el Sheet de producción
+//    (p.ej. crearBitacora() crea la pestaña Bitacora si no existe).
+// =====================================================================
+function crearBitacora() { return crearBitacora_(); }
+function selfTest() { return selfTest_(); }
+// OJO: sin dryRun, si hay violaciones envía el correo al administrador.
+function auditoria(opts) { return auditoria_(opts); }
+// Igual que auditoria() pero sin enviar correo: para mirar el resultado en el log.
+function auditoriaSinCorreo() { return auditoria_({ dryRun: true }); }
+function configurarRespaldoDiario() { return configurarRespaldoDiario_(); }
+function configurarAuditoriaDiaria() { return configurarAuditoriaDiaria_(); }
+// Destino del trigger diario de respaldo (configurarRespaldoDiario_).
+function respaldoDiario() { return respaldoDiario_(); }
