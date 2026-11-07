@@ -84,3 +84,36 @@ describe('R4 · autorizaciones: solo viajan si el admin las cambió', () => {
     expect(w.A.recolectarPayload().requiereRevision).toBe('');
   });
 });
+
+describe('Aviso de celular faltante al guardar desde el portal admin', () => {
+  function simularGuardado(respuesta) {
+    const r = fila();
+    abrirYEditar(r);
+    w.A.apiPost = async () => respuesta;
+    w.A.apiGet = async () => ({ ok: true, row: r, rowNumber: 2 });
+    return w.A.guardar().then(() => w.document.getElementById('alert'));
+  }
+  const AVISO = 'El registro sigue sin celular del propietario: el residente no podrá usar su portal hasta que se complete.';
+
+  it('si la respuesta trae aviso: lo muestra como advertencia, junto al éxito', async () => {
+    const el = await simularGuardado({ ok: true, rowNumber: 2, aviso: AVISO });
+    expect(el.classList.contains('hidden')).toBe(false);
+    expect(el.classList.contains('alert-warn')).toBe(true);
+    expect(el.classList.contains('alert-err')).toBe(false);
+    expect(el.textContent).toContain('Cambios guardados correctamente');
+    expect(el.textContent).toContain(AVISO);
+  });
+
+  it('sin aviso: éxito normal (alert-ok), sin advertencia', async () => {
+    const el = await simularGuardado({ ok: true, rowNumber: 2 });
+    expect(el.classList.contains('hidden')).toBe(false);
+    expect(el.classList.contains('alert-ok')).toBe(true);
+    expect(el.textContent).toBe('Cambios guardados correctamente. Fila 2.');
+  });
+
+  it('si falla: sigue mostrando el error', async () => {
+    const el = await simularGuardado({ ok: false, error: 'Conflicto de edición.' });
+    expect(el.classList.contains('alert-err')).toBe(true);
+    expect(el.textContent).toBe('Conflicto de edición.');
+  });
+});

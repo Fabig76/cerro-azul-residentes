@@ -557,8 +557,16 @@ const A = {
         A.showAlert(r.error || 'Error al guardar.', 'err');
         return;
       }
-      A.showAlert('Cambios guardados correctamente. Fila ' + r.rowNumber + '.', 'ok');
+      // El backend puede guardar y aun así devolver un aviso (p. ej. falta el
+      // celular del propietario): se guardó, pero el admin debe enterarse.
+      const msgOk = 'Cambios guardados correctamente. Fila ' + r.rowNumber + '.';
+      const aviso = r.aviso ? String(r.aviso) : '';
+      // seleccionar() oculta la alerta al recargar: el mensaje se muestra
+      // después, salvo que la recarga haya mostrado su propio error.
       await A.seleccionar(A.state.selectedNumForm);
+      if (!document.getElementById('alert').classList.contains('hidden')) return;
+      if (aviso) A.showAlert(msgOk + ' ⚠️ Atención: ' + aviso, 'warn');
+      else A.showAlert(msgOk, 'ok');
     } catch (e) { A.showAlert('Error de red: ' + e.message, 'err'); }
     finally { btn.disabled = false; btn.textContent = '💾 Guardar cambios'; }
   },
