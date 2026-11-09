@@ -1311,7 +1311,7 @@ const M = {
         return `
           <div class="reserva-card" style="border:1px solid var(--borde); border-radius:8px; padding:12px; margin:8px 0; background:var(--tarjeta);">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-              <strong>${safe(r.tipo)} de arrendatario</strong>
+              <strong>${safe(({ Salida: 'Salida de arrendatario', Ingreso: 'Ingreso de arrendatario', SalidaElementos: 'Salida de elementos', IngresoElementos: 'Ingreso de elementos' })[r.tipo] || r.tipo)}</strong>
               ${estadoBadge}
             </div>
             <div style="margin-top:6px; font-size:14px;">
