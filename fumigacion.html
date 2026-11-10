@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fumigación de apartamentos · Cerro Azul</title>
-<meta name="description" content="Inscriba su apartamento para la fumigación del sábado 21 de noviembre de 2026 en la Urbanización Cerro Azul.">
+<meta name="description" content="Inscriba su apartamento para la fumigación en la Urbanización Cerro Azul. Inscripciones hasta el sábado 21 de noviembre de 2026.">
 <meta name="theme-color" content="#0A2647">
 <link rel="icon" href="assets/logo.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -219,10 +219,26 @@ td select,td input{font-size:13.5px;padding:7px 9px!important;min-width:118px;bo
 td input{width:190px}
 .badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:700}
 .vacio{text-align:center;color:var(--tx-2);padding:30px}
-.wa{color:var(--menta-osc);font-weight:700;text-decoration:none}
+.wa{color:var(--menta-osc);font-weight:700;text-decoration:none;white-space:nowrap}
 .guardado{color:var(--ok);font-size:12px;margin-left:6px;opacity:0;transition:.3s}
 .guardado.si{opacity:1}
 
+.torres{border:0;padding:0;margin:0 0 18px}
+.torres legend{font-weight:700;font-size:14px;margin-bottom:6px;padding:0}
+.torres-op{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.torres-op label{position:relative;cursor:pointer}
+.torres-op input{position:absolute;opacity:0}
+.torres-op span{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:76px;border-radius:14px;background:var(--campo);border:2px solid transparent;font-size:13px;color:var(--tx-2);transition:.15s}
+.torres-op span b{font-family:"Bricolage Grotesque";font-size:30px;line-height:1;color:var(--tx)}
+.torres-op label:hover span{border-color:var(--linea)}
+.torres-op input:checked + span{background:var(--azul);border-color:var(--azul);color:#fff;transform:translateY(-2px);box-shadow:0 10px 20px -10px rgba(0,102,204,.8)}
+.torres-op input:checked + span b{color:#fff}
+.torres-op input:focus-visible + span{outline:3px solid var(--cielo);outline-offset:2px}
+.torres.error .torres-op span{border-color:var(--err);background:var(--err-bg)}
+.torres .msg{display:none}
+.torres.error .msg{display:block}
+td select.falta{border-color:var(--sol);background:rgba(255,176,32,.15)}
+td input[type=date]{width:150px}
 /* documentos */
 .doc{display:flex;gap:16px;align-items:center;border-radius:18px;padding:18px;background:var(--campo);flex-wrap:wrap}
 .doc.destacado{background:linear-gradient(135deg,var(--noche),#1E5BA8);color:#fff}
@@ -277,7 +293,7 @@ body.modo-prov .heroe .wrap{display:none}
     <div>
       <span class="etiqueta"><i></i>Control integrado de plagas · MAXCONTROL S.A.S.</span>
       <h1>Su apartamento, <em>libre de plagas</em></h1>
-      <p class="lead">El viernes 13 se fumigan las áreas comunes del conjunto. Si también quiere fumigar su apartamento, inscríbalo aquí para el sábado 21 de noviembre. Solo necesita su apartamento, su nombre y su celular.</p>
+      <p class="lead">El viernes 13 se fumigan las áreas comunes del conjunto. Si también quiere fumigar su apartamento, inscríbalo aquí antes del sábado 21 de noviembre. Solo necesita su torre, su apartamento, su nombre y su celular.</p>
       <button class="cta" data-ir="inscribir" data-foco="1">
         Inscribir mi apartamento
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
@@ -297,9 +313,9 @@ body.modo-prov .heroe .wrap{display:none}
         <div><h3>Áreas comunes</h3><p>Desde las 8:00 a. m. Pasillos, zona húmeda, salones, ascensores, parqueaderos, portería y más. No incluye apartamentos.</p></div>
       </div>
       <div class="fecha f2">
-        <span class="pill">Opcional · requiere inscripción</span>
+        <span class="pill">Su apartamento · opcional</span>
         <div class="dia"><div><small>Sáb</small><b>21</b><small>Nov</small></div></div>
-        <div><h3>Su apartamento</h3><p>Único día programado para apartamentos. El costo se paga directamente al proveedor.</p></div>
+        <div><h3>Cierre de inscripciones</h3><p>Después, MAXCONTROL programa la fecha de cada apartamento según su torre. El costo se paga directamente al proveedor.</p></div>
       </div>
     </div>
   </div>
@@ -317,11 +333,20 @@ body.modo-prov .heroe .wrap{display:none}
       <div class="card" id="cardForm">
         <div id="bloqueForm">
           <h2>Inscriba su apartamento</h2>
-          <p class="sub">Fumigación del sábado 21 de noviembre de 2026. Toma menos de un minuto.</p>
+          <p class="sub">Inscripciones abiertas hasta el sábado 21 de noviembre. MAXCONTROL programará la fecha de su visita según la torre. Toma menos de un minuto.</p>
           <div class="aviso info oculto" id="avisoConfig">La inscripción se habilita en unos minutos. Vuelva a intentarlo más tarde.</div>
-          <div class="aviso info oculto" id="avisoCerrado">Las inscripciones para el 21 de noviembre ya cerraron. Si necesita el servicio otro día, consulte la sección Información.</div>
+          <div class="aviso info oculto" id="avisoCerrado">Las inscripciones cerraron el sábado 21 de noviembre. Si necesita el servicio, consulte la sección Información para contactar a MAXCONTROL.</div>
           <div class="aviso err oculto" id="avisoError" role="alert"></div>
           <form id="form" novalidate>
+            <fieldset class="campo torres" data-campo="torre" id="campoTorre">
+              <legend>Torre</legend>
+              <div class="torres-op">
+                <label><input type="radio" name="torre" value="Torre 1"><span><b>1</b>Torre</span></label>
+                <label><input type="radio" name="torre" value="Torre 2"><span><b>2</b>Torre</span></label>
+                <label><input type="radio" name="torre" value="Torre 3"><span><b>3</b>Torre</span></label>
+              </div>
+              <div class="msg">Seleccione su torre.</div>
+            </fieldset>
             <div class="campo" data-campo="apto">
               <label for="apto">Número de apartamento</label>
               <div class="entrada">
@@ -345,14 +370,14 @@ body.modo-prov .heroe .wrap{display:none}
                 <input type="tel" id="celular" name="celular" inputmode="numeric" autocomplete="tel-national" maxlength="12" placeholder="300 000 0000" required>
               </div>
               <div class="msg">El celular debe tener 10 dígitos y empezar por 3.</div>
-              <div class="ayuda">El técnico le escribirá a este número para coordinar la hora y el pago.</div>
+              <div class="ayuda">MAXCONTROL le escribirá a este número para informarle la fecha, la hora y el pago.</div>
             </div>
             <input class="trampa" type="text" id="web" name="web" tabindex="-1" autocomplete="off" aria-hidden="true">
 
             <label class="check" id="chkFecha">
               <input type="checkbox" id="confirma">
               <span class="caja"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>
-              <span class="txt"><b>Confirmo la fumigación de mi apartamento el sábado 21 de noviembre de 2026.</b> Entiendo que el costo lo pago directamente al proveedor, que me informará el valor, y que otro día tiene una tarifa diferente.</span>
+              <span class="txt"><b>Entiendo que el 21 de noviembre es el cierre de inscripciones, no el día de la fumigación.</b> MAXCONTROL me informará la fecha programada según mi torre, y el costo lo pago directamente al proveedor, que me dará el valor.</span>
             </label>
             <label class="check" id="chkPol">
               <input type="checkbox" id="politica">
@@ -367,12 +392,14 @@ body.modo-prov .heroe .wrap{display:none}
         <div class="exito oculto" id="bloqueExito" aria-live="polite">
           <div class="sello"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></div>
           <h2>¡Apartamento <span id="exApto"></span> inscrito!</h2>
+          <p class="sub oculto" id="exCompletado">Encontramos su inscripción anterior y le agregamos la torre. Conserva el mismo código.</p>
           <p class="sub">Guarde este código de inscripción:</p>
           <div class="codigo" id="exCodigo"></div>
           <ol class="pasos">
-            <li>MAXCONTROL le escribirá a su celular para acordar la hora de la visita el sábado 21 de noviembre.</li>
+            <li>Las inscripciones cierran el sábado 21 de noviembre.</li>
+            <li>Después, MAXCONTROL programa las visitas por torre y le escribe a su celular con la fecha y la hora.</li>
             <li>El costo se paga directamente a MAXCONTROL, que le informará el valor y la forma de pago.</li>
-            <li>Ese día, retire las mascotas y siga las recomendaciones de la sección Información.</li>
+            <li>El día de la visita, retire las mascotas y siga las recomendaciones de la sección Información.</li>
           </ol>
           <button class="btn-sec" id="otraVez">Inscribir otro apartamento</button>
         </div>
@@ -390,8 +417,8 @@ body.modo-prov .heroe .wrap{display:none}
           </div>
         </div>
         <div class="precio">
-          <div class="valor">21 nov <small>sábado</small></div>
-          <p>El costo se paga directamente al proveedor, MAXCONTROL S.A.S., que le informará el valor.</p>
+          <div class="valor">21 nov <small>cierre de inscripciones</small></div>
+          <p>La fecha de cada apartamento la programa MAXCONTROL S.A.S. según la torre. El costo se paga directamente al proveedor.</p>
         </div>
         <ul class="lista-ok">
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>Cucarachas, hormigas y roedores</li>
@@ -418,12 +445,12 @@ body.modo-prov .heroe .wrap{display:none}
           </div>
         </div>
         <div class="b">
-          <h3>Sábado 21 de noviembre</h3>
+          <h3>Apartamentos · inscripción hasta el sábado 21 de noviembre</h3>
           <p style="margin:0 0 8px"><b>Su apartamento, si lo inscribe.</b></p>
           <ul>
+            <li>Inscríbase con su torre, apartamento, nombre y celular.</li>
+            <li>Al cierre, MAXCONTROL programa la fecha por torre y le avisa por celular.</li>
             <li>El costo se paga directamente al proveedor, que le informará el valor.</li>
-            <li>Es el único día programado para apartamentos.</li>
-            <li>Otro día: se coordina y se cobra aparte con el proveedor.</li>
           </ul>
         </div>
       </div>
@@ -443,22 +470,23 @@ body.modo-prov .heroe .wrap{display:none}
 
     <div class="card seccion faq">
       <h2>Preguntas frecuentes</h2>
-      <details><summary>¿La fumigación del 13 de noviembre incluye mi apartamento?</summary><p>No. El viernes 13 solo se fumigan las áreas comunes del conjunto. Si quiere fumigar su apartamento, inscríbalo para el sábado 21 de noviembre.</p></details>
+      <details><summary>¿La fumigación del 13 de noviembre incluye mi apartamento?</summary><p>No. El viernes 13 solo se fumigan las áreas comunes del conjunto. Si quiere fumigar su apartamento, inscríbalo en este portal antes del sábado 21 de noviembre.</p></details>
       <details><summary>¿Es obligatorio inscribirme?</summary><p>No. Es un servicio opcional que cada residente contrata por su cuenta con la empresa encargada.</p></details>
-      <details><summary>¿Y si no puedo el 21 de noviembre?</summary><p>Puede contratar el servicio con MAXCONTROL S.A.S. otro día, con la tarifa que el proveedor le indique. Contacto comercial: Juan Pablo Ramírez, 320 940 2819.</p></details>
+      <details><summary>¿Cuándo fumigan mi apartamento?</summary><p>El 21 de noviembre es el cierre de inscripciones, no el día de la fumigación. Después del cierre, MAXCONTROL organiza las visitas por torre y le escribe al celular registrado con la fecha y la hora. Si la fecha no le sirve, coordínelo con ellos. Contacto comercial: Juan Pablo Ramírez, 320 940 2819.</p></details>
+      <details><summary>Ya me inscribí y no puse la torre, ¿qué hago?</summary><p>Vuelva a inscribirse con el mismo apartamento y el mismo celular, y elija su torre. El sistema completa su inscripción anterior sin duplicarla.</p></details>
       <details><summary>¿Cuánto cuesta y cómo pago?</summary><p>El costo se paga directamente al proveedor. MAXCONTROL le escribirá al celular que registró para informarle el valor, la forma de pago y la hora de la visita.</p></details>
       <details><summary>¿Me equivoqué en un dato, qué hago?</summary><p>Escriba a urb.cerroazul@gmail.com con su apartamento y su código de inscripción.</p></details>
     </div>
 
     <div class="card seccion politica" id="textoPolitica">
       <h2>Política de tratamiento de datos</h2>
-      <p class="sub">Inscripción a la fumigación de apartamentos · versión 1, 9 de noviembre de 2026</p>
+      <p class="sub">Inscripción a la fumigación de apartamentos · versión 2, 10 de noviembre de 2026</p>
       <h3>1. Responsable</h3><p>Urbanización Cerro Azul P.H., NIT 900.770.444, Av. 31 #66-29, Bello (Antioquia). Correo: urb.cerroazul@gmail.com.</p>
-      <h3>2. Datos que se recogen</h3><p>Número de apartamento, nombre de quien inscribe y número de celular. No se pide ningún otro dato.</p>
-      <h3>3. Finalidad</h3><p>Inscribir el apartamento para la fumigación del sábado 21 de noviembre de 2026, coordinar la visita del técnico y el pago del servicio. Los datos no se usan para publicidad ni para otros fines.</p>
+      <h3>2. Datos que se recogen</h3><p>Torre, número de apartamento, nombre de quien inscribe y número de celular. No se pide ningún otro dato.</p>
+      <h3>3. Finalidad</h3><p>Inscribir el apartamento para el servicio de fumigación, programar la visita del técnico según la torre, informar la fecha asignada y coordinar el pago con el proveedor. Los datos no se usan para publicidad ni para otros fines.</p>
       <h3>4. Dónde se guardan</h3><p>En las cuentas de Google de la copropiedad, en una hoja de cálculo que administra la administración del conjunto.</p>
-      <h3>5. Con quién se comparten</h3><p>Solo con MAXCONTROL S.A.S., empresa contratada para esta actividad, de forma temporal y únicamente para coordinar y prestar el servicio. El acceso del contratista se cierra el 30 de noviembre de 2026 y no puede usar los datos para otros fines.</p>
-      <h3>6. Conservación</h3><p>Los datos se conservan mientras dura la actividad y su seguimiento, y se eliminan a más tardar el 31 de diciembre de 2026.</p>
+      <h3>5. Con quién se comparten</h3><p>Solo con MAXCONTROL S.A.S., empresa contratada para esta actividad, de forma temporal y únicamente para programar y prestar el servicio. El acceso del contratista se cierra el 31 de diciembre de 2026 y no puede usar los datos para otros fines.</p>
+      <h3>6. Conservación</h3><p>Los datos se conservan mientras dura la actividad y su seguimiento, y se eliminan a más tardar el 31 de enero de 2027.</p>
       <h3>7. Derechos del titular</h3><p>Conforme a la Ley 1581 de 2012, puede conocer, actualizar, rectificar y suprimir sus datos, revocar la autorización y presentar quejas ante la Superintendencia de Industria y Comercio.</p>
       <h3>8. Cómo ejercerlos</h3><p>Escribiendo a urb.cerroazul@gmail.com. Las consultas se responden en máximo 10 días hábiles y los reclamos en máximo 15 días hábiles.</p>
       <h3>9. Autorización</h3><p>Al marcar la casilla de aceptación en este portal, usted autoriza el tratamiento descrito en esta política. Normas aplicables: Ley 1581 de 2012 y Decreto 1377 de 2013 (compilado en el Decreto 1074 de 2015).</p>
@@ -535,23 +563,24 @@ body.modo-prov .heroe .wrap{display:none}
 
     <div class="card oculto" id="bloquePanel">
       <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start">
-        <div><h2>Inscripciones · sábado 21 de noviembre</h2><p class="sub" style="margin:4px 0 0">Los cambios de estado, pago y observaciones se guardan solos en la hoja del conjunto.</p></div>
+        <div><h2>Inscripciones y programación por torre</h2><p class="sub" style="margin:4px 0 0">Asigne la fecha de cada apartamento. Los cambios se guardan solos en la hoja del conjunto.</p></div>
         <div style="display:flex;gap:8px"><button class="btn-sec" id="btnRecargar">Actualizar</button><button class="btn-sec" id="btnCsv">Descargar CSV</button><button class="btn-sec" id="btnSalir">Salir</button></div>
       </div>
       <div class="stats">
         <div class="stat"><b id="sTotal">0</b><span>Inscritos</span></div>
-        <div class="stat"><b id="sFalta">0</b><span>Faltan para 25</span></div>
-        <div class="stat"><b id="sReal">0</b><span>Fumigados</span></div>
-        <div class="stat"><b id="sValor">0</b><span>Pagados</span></div>
+        <div class="stat"><b id="sFalta">0</b><span>Sin torre</span></div>
+        <div class="stat"><b id="sReal">0</b><span>Con fecha</span></div>
+        <div class="stat"><b id="sValor">0</b><span>Fumigados</span></div>
       </div>
       <div class="herr">
         <div class="entrada"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input type="search" id="buscar" placeholder="Buscar apartamento, nombre o celular"></div>
-        <select id="fEstado" aria-label="Filtrar por estado"><option value="">Todos los estados</option><option>Pendiente</option><option>Confirmado</option><option>Realizado</option><option>No atendido</option><option>Cancelado</option></select>
+        <select id="fTorre" aria-label="Filtrar por torre"><option value="">Todas las torres</option><option>Torre 1</option><option>Torre 2</option><option>Torre 3</option><option value="-">Sin torre</option></select>
+        <select id="fEstado" aria-label="Filtrar por estado"><option value="">Todos los estados</option><option>Pendiente</option><option>Programado</option><option>Realizado</option><option>No atendido</option><option>Cancelado</option></select>
         <select id="fPago" aria-label="Filtrar por pago"><option value="">Todos los pagos</option><option>Pendiente</option><option>Pagado</option></select>
       </div>
       <div class="tabla-wrap">
         <table>
-          <thead><tr><th data-orden="apto">Apto</th><th data-orden="nombre">Nombre</th><th data-orden="celular">Celular</th><th data-orden="fecha">Registro</th><th data-orden="estado">Estado</th><th data-orden="pago">Pago</th><th>Observaciones</th><th data-orden="codigo">Código</th></tr></thead>
+          <thead><tr><th data-orden="torre">Torre</th><th data-orden="apto">Apto</th><th data-orden="nombre">Nombre</th><th data-orden="celular">Celular</th><th data-orden="programada">Fecha programada</th><th data-orden="estado">Estado</th><th data-orden="pago">Pago</th><th>Observaciones</th><th data-orden="fecha">Registro</th><th data-orden="codigo">Código</th></tr></thead>
           <tbody id="cuerpo"></tbody>
         </table>
       </div>
@@ -575,7 +604,7 @@ body.modo-prov .heroe .wrap{display:none}
   // URL de la aplicación web de Apps Script (Implementar > Aplicación web).
   var API_URL = 'https://script.google.com/macros/s/AKfycbwkRDehVPj6dGwEs7UPfYngQdiLZW1e2XPqIYhq1YxyUvOE7_dOGQWgY7QKozagRiYsGg/exec';
 
-  var CIERRE = new Date('2026-11-20T23:59:59-05:00');
+  var CIERRE = new Date('2026-11-21T23:59:59-05:00');
   var MINIMO = 25;
 
   var $ = function (s) { return document.querySelector(s); };
@@ -652,6 +681,9 @@ body.modo-prov .heroe .wrap{display:none}
   // ---------- formulario ----------
   var form = $('#form');
   function cerrarForm() { $('#avisoCerrado').classList.remove('oculto'); $$('#form input, #form button').forEach(function (x) { x.disabled = true; }); }
+  function torreElegida() { var r = form.querySelector('input[name=torre]:checked'); return r ? r.value : ''; }
+  function validarTorre(mostrar) { var ok = !!torreElegida(), c = $('#campoTorre'); if (mostrar || c.classList.contains('error')) c.classList.toggle('error', !ok); c.classList.toggle('bien', ok); return ok; }
+  $$('input[name=torre]').forEach(function (r) { r.addEventListener('change', function () { validarTorre(false); }); });
   if (!API_URL) { $('#avisoConfig').classList.remove('oculto'); $('#btnEnviar').disabled = true; }
   if (new Date() > CIERRE) cerrarForm();
 
@@ -683,24 +715,26 @@ body.modo-prov .heroe .wrap{display:none}
   function marcarError(campo, msg) {
     var map = { confirma: '#chkFecha', politica: '#chkPol' };
     if (map[campo]) { $(map[campo]).classList.add('error'); }
+    else if (campo === 'torre') { $('#campoTorre').classList.add('error'); }
     else if (campo) { var c = $('#' + campo).closest('.campo'); c.classList.add('error'); if (msg) c.querySelector('.msg').textContent = msg; $('#' + campo).focus(); }
   }
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     var err = $('#avisoError'); err.classList.add('oculto');
-    var ok = ['apto', 'nombre', 'celular'].map(function (c) { return validar(c, true); }).every(Boolean);
+    var ok = [validarTorre(true)].concat(['apto', 'nombre', 'celular'].map(function (c) { return validar(c, true); })).every(Boolean);
     if (!$('#confirma').checked) { $('#chkFecha').classList.add('error'); ok = false; }
     if (!$('#politica').checked) { $('#chkPol').classList.add('error'); ok = false; }
-    if (!ok) { var primero = form.querySelector('.error input, .check.error'); if (primero) primero.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    if (!ok) { var primero = form.querySelector('.campo.error, .check.error'); if (primero) primero.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
 
     var btn = $('#btnEnviar'); btn.disabled = true; btn.classList.add('cargando'); $('#txtEnviar').textContent = 'Enviando…';
     api('registrar', {
-      apto: $('#apto').value, nombre: $('#nombre').value, celular: $('#celular').value,
+      torre: torreElegida(), apto: $('#apto').value, nombre: $('#nombre').value, celular: $('#celular').value,
       confirmaFecha: $('#confirma').checked, aceptaPolitica: $('#politica').checked, web: $('#web').value
     }).then(function (r) {
       if (!r.ok) { err.textContent = r.error || 'No se pudo inscribir.'; err.classList.remove('oculto'); marcarError(r.campo, r.error); return; }
-      $('#exApto').textContent = r.apto; $('#exCodigo').textContent = r.codigo;
+      $('#exApto').textContent = r.apto + ' de la ' + r.torre; $('#exCodigo').textContent = r.codigo;
+      $('#exCompletado').classList.toggle('oculto', !r.completado);
       $('#bloqueForm').classList.add('oculto'); $('#bloqueExito').classList.remove('oculto');
       if (r.estado) medidor(r.estado.inscritos);
       confeti();
@@ -709,7 +743,7 @@ body.modo-prov .heroe .wrap{display:none}
     }).then(function () { btn.disabled = false; btn.classList.remove('cargando'); $('#txtEnviar').textContent = 'Confirmar inscripción'; });
   });
   $('#otraVez').addEventListener('click', function () {
-    form.reset(); $$('.campo').forEach(function (c) { c.classList.remove('bien', 'error'); });
+    form.reset(); $$('.campo').forEach(function (c) { c.classList.remove('bien', 'error'); }); $('#exCompletado').classList.add('oculto');
     $('#bloqueExito').classList.add('oculto'); $('#bloqueForm').classList.remove('oculto'); $('#apto').focus();
   });
 
@@ -744,7 +778,7 @@ body.modo-prov .heroe .wrap{display:none}
   // ---------- proveedor ----------
   var token = '';
   try { token = sessionStorage.getItem('fumTok') || ''; } catch (e) { token = ''; }
-  var datos = [], orden = { k: 'apto', asc: true };
+  var datos = [], orden = { k: 'torre', asc: true };
 
   function mostrarPanel(si) {
     $('#bloqueLogin').classList.toggle('oculto', si); $('#bloquePanel').classList.toggle('oculto', !si);
@@ -777,34 +811,39 @@ body.modo-prov .heroe .wrap{display:none}
     }).catch(function () { toast('No hay conexión con el servidor.'); });
   }
   function pintar() {
-    var q = $('#buscar').value.trim().toLowerCase(), fe = $('#fEstado').value, fp = $('#fPago').value;
+    var q = $('#buscar').value.trim().toLowerCase(), fe = $('#fEstado').value, fp = $('#fPago').value, ft = $('#fTorre').value;
     var activos = datos.filter(function (d) { return d.estado !== 'Cancelado'; });
     $('#sTotal').textContent = activos.length;
-    $('#sFalta').textContent = Math.max(0, MINIMO - activos.length);
-    $('#sReal').textContent = datos.filter(function (d) { return d.estado === 'Realizado'; }).length;
-    $('#sValor').textContent = datos.filter(function (d) { return d.pago === 'Pagado'; }).length;
+    $('#sFalta').textContent = activos.filter(function (d) { return !d.torre; }).length;
+    $('#sReal').textContent = activos.filter(function (d) { return /^\d{4}-/.test(d.programada); }).length;
+    $('#sValor').textContent = datos.filter(function (d) { return d.estado === 'Realizado'; }).length;
 
     var filas = datos.filter(function (d) {
-      return (!fe || d.estado === fe) && (!fp || d.pago === fp) &&
+      return (!fe || d.estado === fe) && (!fp || d.pago === fp) && (!ft || (ft === '-' ? !d.torre : d.torre === ft)) &&
         (!q || (d.apto + ' ' + d.nombre + ' ' + d.celular).toLowerCase().indexOf(q) >= 0);
     }).sort(function (a, b) {
-      var x = String(a[orden.k]), y = String(b[orden.k]);
-      var r = x.localeCompare(y, 'es', { numeric: true }); return orden.asc ? r : -r;
+      var x = String(a[orden.k] || '~'), y = String(b[orden.k] || '~');
+      var r = x.localeCompare(y, 'es', { numeric: true }) || String(a.apto).localeCompare(String(b.apto), 'es', { numeric: true }); return orden.asc ? r : -r;
     });
     var tb = $('#cuerpo'); tb.textContent = '';
-    if (!filas.length) { var tr0 = tb.insertRow(), td0 = tr0.insertCell(); td0.colSpan = 8; td0.className = 'vacio'; td0.textContent = datos.length ? 'Ningún registro coincide con el filtro.' : 'Todavía no hay inscripciones.'; return; }
+    if (!filas.length) { var tr0 = tb.insertRow(), td0 = tr0.insertCell(); td0.colSpan = 10; td0.className = 'vacio'; td0.textContent = datos.length ? 'Ningún registro coincide con el filtro.' : 'Todavía no hay inscripciones.'; return; }
     filas.forEach(function (d) {
       var tr = tb.insertRow();
+      var ct = tr.insertCell(), st = selector(['', 'Torre 1', 'Torre 2', 'Torre 3'], d, 'torre');
+      st.options[0].textContent = 'Sin torre'; st.options[0].disabled = true; if (!d.torre) st.classList.add('falta'); ct.appendChild(st);
       var c1 = tr.insertCell(); c1.textContent = d.apto; c1.style.fontWeight = '700';
       tr.insertCell().textContent = d.nombre;
       var c3 = tr.insertCell(), a = document.createElement('a');
       a.href = 'https://wa.me/57' + d.celular; a.target = '_blank'; a.rel = 'noopener'; a.className = 'wa';
       a.textContent = d.celular.replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3'); c3.appendChild(a);
-      tr.insertCell().textContent = d.fecha;
-      tr.insertCell().appendChild(selector(['Pendiente', 'Confirmado', 'Realizado', 'No atendido', 'Cancelado'], d, 'estado'));
+      var cf = tr.insertCell(), fi = document.createElement('input'); fi.type = 'date'; fi.min = '2026-11-21'; fi.max = '2026-12-31';
+      fi.value = /^\d{4}-\d{2}-\d{2}$/.test(d.programada) ? d.programada : ''; fi.setAttribute('aria-label', 'Fecha programada');
+      fi.addEventListener('change', function () { guardar(d, { programada: fi.value }, cf); }); cf.appendChild(fi);
+      tr.insertCell().appendChild(selector(['Pendiente', 'Programado', 'Realizado', 'No atendido', 'Cancelado'], d, 'estado'));
       tr.insertCell().appendChild(selector(['Pendiente', 'Pagado'], d, 'pago'));
       var c7 = tr.insertCell(), inp = document.createElement('input'); inp.type = 'text'; inp.value = d.obs; inp.maxLength = 300; inp.placeholder = 'Nota';
       inp.addEventListener('change', function () { guardar(d, { obs: inp.value }, c7); }); c7.appendChild(inp);
+      tr.insertCell().textContent = d.fecha;
       tr.insertCell().textContent = d.codigo;
     });
   }
@@ -818,21 +857,22 @@ body.modo-prov .heroe .wrap{display:none}
     cambios.codigo = d.codigo;
     api('actualizar', cambios, token).then(function (r) {
       if (!r.ok) { if (r.sesion === false) salir(r.error); else toast(r.error); return; }
-      Object.keys(cambios).forEach(function (k) { if (k !== 'codigo') d[k] = cambios[k]; });
+      Object.keys(cambios).forEach(function (k) { if (k !== 'codigo') d[k] = cambios[k] || (k === 'programada' ? 'Por programar' : ''); });
+      if (cambios.programada && d.estado === 'Pendiente') d.estado = 'Programado';
       var m = document.createElement('span'); m.className = 'guardado'; m.textContent = 'Guardado'; celda.appendChild(m);
       requestAnimationFrame(function () { m.classList.add('si'); }); setTimeout(function () { m.remove(); pintar(); }, 1200);
     }).catch(function () { toast('No se pudo guardar. Revise la conexión.'); });
   }
-  ['#buscar', '#fEstado', '#fPago'].forEach(function (s) { $(s).addEventListener('input', pintar); });
+  ['#buscar', '#fEstado', '#fPago', '#fTorre'].forEach(function (s) { $(s).addEventListener('input', pintar); });
   $$('th[data-orden]').forEach(function (th) {
     th.addEventListener('click', function () { var k = th.dataset.orden; orden = { k: k, asc: orden.k === k ? !orden.asc : true }; pintar(); });
   });
   $('#btnCsv').addEventListener('click', function () {
-    var cab = ['Apartamento', 'Nombre', 'Celular', 'Fecha de registro', 'Estado', 'Pago', 'Observaciones', 'Codigo'];
-    var lineas = [cab].concat(datos.map(function (d) { return [d.apto, d.nombre, d.celular, d.fecha, d.estado, d.pago, d.obs, d.codigo]; }))
+    var cab = ['Torre', 'Apartamento', 'Nombre', 'Celular', 'Fecha programada', 'Estado', 'Pago', 'Observaciones', 'Fecha de registro', 'Codigo'];
+    var lineas = [cab].concat(datos.map(function (d) { return [d.torre, d.apto, d.nombre, d.celular, d.programada, d.estado, d.pago, d.obs, d.fecha, d.codigo]; }))
       .map(function (f) { return f.map(function (v) { v = String(v); if (/^[=+\-@]/.test(v)) v = "'" + v; return '"' + v.replace(/"/g, '""') + '"'; }).join(';'); });
     var blob = new Blob(['﻿' + lineas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
-    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'fumigacion-21-nov-cerro-azul.csv'; a.click();
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'fumigacion-apartamentos-cerro-azul.csv'; a.click();
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   });
 
