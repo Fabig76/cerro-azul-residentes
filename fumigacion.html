@@ -250,6 +250,21 @@ td input[type=date]{width:150px}
 .ruta-pasos i{flex:none;width:36px;height:36px;border-radius:50%;background:var(--menta);color:#002B25;display:grid;place-items:center;font-style:normal;font-weight:700;font-family:"Bricolage Grotesque"}
 .ruta-pasos b{display:block;font-size:17px}
 .ruta-pasos span{font-size:14.5px;opacity:.88}
+.propuesta{margin-top:18px;border:3px solid var(--sol);border-radius:20px;padding:22px;background:var(--card)}
+.etq-prop{display:inline-block;background:var(--sol);color:#1B1200;font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:4px 11px;border-radius:999px}
+.prop-cab h3{font-size:24px;margin:10px 0 4px}
+.prop-cab p{margin:0;color:var(--tx-2);font-size:14px}
+.prop-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+@media (max-width:760px){ .prop-grid{grid-template-columns:1fr} }
+.prop-dato{background:var(--campo);border-radius:16px;padding:14px 16px}
+.prop-dato small{display:block;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--tx-2)}
+.prop-dato b{display:block;font-family:"Bricolage Grotesque";font-size:22px;line-height:1.15;margin:6px 0 4px}
+.prop-dato span{font-size:14px;color:var(--tx-2)}
+.prop-dato.prin{background:linear-gradient(135deg,var(--noche),#1E5BA8);color:#fff}
+.prop-dato.prin small,.prop-dato.prin span{color:rgba(255,255,255,.82)}
+.prop-dato.prin b{font-size:36px;color:#FFD27A}
+.prop-lista{margin:16px 0 0;padding-left:20px;font-size:14.5px;display:grid;gap:6px}
+.prop-pie{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--linea);font-size:14px;color:var(--tx-2)}
 /* documentos */
 .doc{display:flex;gap:16px;align-items:center;border-radius:18px;padding:18px;background:var(--campo);flex-wrap:wrap}
 .doc.destacado{background:linear-gradient(135deg,var(--noche),#1E5BA8);color:#fff}
@@ -521,13 +536,36 @@ body.modo-prov .heroe .wrap{display:none}
   <section class="vista" id="v-documentos" role="tabpanel">
     <div class="card">
       <h2>Documentos de la fumigación</h2>
-      <p class="sub">Circular y fichas de los productos que usará MAXCONTROL S.A.S. Puede verlos en línea o descargarlos.</p>
+      <p class="sub">Circular, cotización y fichas de los productos que usará MAXCONTROL S.A.S. Puede verlos en línea o descargarlos.</p>
 
       <div class="doc destacado">
         <div class="doc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></div>
         <div class="doc-txt"><b>Circular informativa · fumigación del 13 de noviembre</b><span>Áreas comunes, horario y recomendaciones · 1 página · PDF</span></div>
         <div class="doc-acc"><a class="btn-doc" href="assets/fumigacion/circular-fumigacion-13-nov-2026.pdf" target="_blank" rel="noopener">Ver</a><a class="btn-doc prim" href="assets/fumigacion/circular-fumigacion-13-nov-2026.pdf" download>Descargar</a></div>
       </div>
+
+      <section class="propuesta" aria-labelledby="propTit">
+        <div class="prop-cab">
+          <span class="etq-prop">Propuesta del contratista</span>
+          <h3 id="propTit">Resumen de la cotización de MAXCONTROL S.A.S.</h3>
+          <p>Fumigación de apartamentos · propuesta comercial del 6 de noviembre de 2026</p>
+        </div>
+        <div class="prop-grid">
+          <div class="prop-dato prin"><small>Valor por apartamento</small><b>$19.320</b><span>El mismo valor de 25 a 300 apartamentos.</span></div>
+          <div class="prop-dato"><small>Condición</small><b>Mínimo 25 apartamentos por día</b><span>Si en un día se atienden menos de 25 apartamentos, el costo es diferente.</span></div>
+          <div class="prop-dato"><small>Forma de pago</small><b>Anticipado</b><span>Directamente al proveedor, porque es un servicio independiente para cada apartamento.</span></div>
+        </div>
+        <ul class="prop-lista">
+          <li><b>Qué incluye:</b> 1 aplicación en el apartamento para el control de insectos rastreros (cucarachas y hormigas) y roedores (ratón doméstico, rata de techo y rata de alcantarilla).</li>
+          <li><b>Productos:</b> de uso profesional en salud pública y de baja toxicidad: geles, polvos y líquidos (piretroides sintéticos).</li>
+          <li><b>Por qué la inscripción previa:</b> al conocer cuántos apartamentos hay por torre, MAXCONTROL puede programar al menos 25 por día y así sostener el valor.</li>
+          <li><b>Contacto comercial:</b> Juan Pablo Ramírez, ejecutivo comercial, 320 940 2819.</li>
+        </ul>
+        <div class="prop-pie">
+          <span>Cotización completa · 3 páginas · PDF</span>
+          <div class="doc-acc"><a class="btn-doc" href="assets/fumigacion/propuesta-comercial-maxcontrol-apartamentos.pdf" target="_blank" rel="noopener">Ver</a><a class="btn-doc prim" href="assets/fumigacion/propuesta-comercial-maxcontrol-apartamentos.pdf" download>Descargar</a></div>
+        </div>
+      </section>
 
       <div class="productos">
         <article class="producto">
