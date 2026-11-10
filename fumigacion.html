@@ -239,6 +239,17 @@ td input{width:190px}
 .torres.error .msg{display:block}
 td select.falta{border-color:var(--sol);background:rgba(255,176,32,.15)}
 td input[type=date]{width:150px}
+.ruta{background:linear-gradient(135deg,var(--noche),#1E5BA8);color:#fff;border:0;display:grid;grid-template-columns:.8fr 1.2fr;gap:28px;align-items:center}
+@media (max-width:900px){ .ruta{grid-template-columns:1fr;gap:18px} }
+.ruta-etq{display:inline-block;background:var(--sol);color:#1B1200;font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;padding:5px 12px;border-radius:999px}
+.ruta-cab h2{font-size:clamp(32px,4vw,44px);margin:12px 0 6px;color:#fff}
+.ruta-cab p{margin:0;font-size:16px;opacity:.92}
+.ruta-cab p b{color:#FFD27A}
+.ruta-pasos{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.ruta-pasos li{display:flex;gap:14px;align-items:flex-start;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:16px;padding:14px 16px}
+.ruta-pasos i{flex:none;width:36px;height:36px;border-radius:50%;background:var(--menta);color:#002B25;display:grid;place-items:center;font-style:normal;font-weight:700;font-family:"Bricolage Grotesque"}
+.ruta-pasos b{display:block;font-size:17px}
+.ruta-pasos span{font-size:14.5px;opacity:.88}
 /* documentos */
 .doc{display:flex;gap:16px;align-items:center;border-radius:18px;padding:18px;background:var(--campo);flex-wrap:wrap}
 .doc.destacado{background:linear-gradient(135deg,var(--noche),#1E5BA8);color:#fff}
@@ -293,7 +304,7 @@ body.modo-prov .heroe .wrap{display:none}
     <div>
       <span class="etiqueta"><i></i>Control integrado de plagas · MAXCONTROL S.A.S.</span>
       <h1>Su apartamento, <em>libre de plagas</em></h1>
-      <p class="lead">El viernes 13 se fumigan las áreas comunes del conjunto. Si también quiere fumigar su apartamento, inscríbalo aquí antes del sábado 21 de noviembre. Solo necesita su torre, su apartamento, su nombre y su celular.</p>
+      <p class="lead">El viernes 13 se fumigan las áreas comunes del conjunto. Si también quiere fumigar su apartamento, inscríbalo aquí: <b>el sábado 21 de noviembre es la fecha límite de inscripción</b>, no el día de la fumigación. Después, según la cantidad de inscritos, MAXCONTROL programa la fumigación por torre.</p>
       <button class="cta" data-ir="inscribir" data-foco="1">
         Inscribir mi apartamento
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
@@ -313,9 +324,9 @@ body.modo-prov .heroe .wrap{display:none}
         <div><h3>Áreas comunes</h3><p>Desde las 8:00 a. m. Pasillos, zona húmeda, salones, ascensores, parqueaderos, portería y más. No incluye apartamentos.</p></div>
       </div>
       <div class="fecha f2">
-        <span class="pill">Su apartamento · opcional</span>
+        <span class="pill">Fecha límite de inscripción</span>
         <div class="dia"><div><small>Sáb</small><b>21</b><small>Nov</small></div></div>
-        <div><h3>Cierre de inscripciones</h3><p>Después, MAXCONTROL programa la fecha de cada apartamento según su torre. El costo se paga directamente al proveedor.</p></div>
+        <div><h3>Último día para inscribirse</h3><p><b>Ese día no se fumiga.</b> Después, según la cantidad de inscritos, MAXCONTROL programa la fumigación por torre y le avisa la fecha.</p></div>
       </div>
     </div>
   </div>
@@ -329,11 +340,23 @@ body.modo-prov .heroe .wrap{display:none}
 
   <!-- ================= INSCRIPCIÓN ================= -->
   <section class="vista activa" id="v-inscribir" role="tabpanel">
-    <div class="grid-2">
+    <div class="card ruta">
+      <div class="ruta-cab">
+        <span class="ruta-etq">Fecha límite de inscripción</span>
+        <h2>Sábado 21 de noviembre</h2>
+        <p>Este día solo cierran las inscripciones. <b>No es el día de la fumigación.</b></p>
+      </div>
+      <ol class="ruta-pasos">
+        <li><i>1</i><div><b>Inscríbase</b><span>Registre su torre, apartamento, nombre y celular hasta el sábado 21 de noviembre.</span></div></li>
+        <li><i>2</i><div><b>Se cuentan los inscritos</b><span>Entre más apartamentos se inscriban, más económica será la tarifa.</span></div></li>
+        <li><i>3</i><div><b>Se programa por torre</b><span>Según la cantidad de inscritos, MAXCONTROL programa la fumigación por torre y le avisa la fecha y la hora por celular.</span></div></li>
+      </ol>
+    </div>
+    <div class="grid-2" style="margin-top:22px">
       <div class="card" id="cardForm">
         <div id="bloqueForm">
           <h2>Inscriba su apartamento</h2>
-          <p class="sub">Inscripciones abiertas hasta el sábado 21 de noviembre. MAXCONTROL programará la fecha de su visita según la torre. Toma menos de un minuto.</p>
+          <p class="sub">Último día para inscribirse: <b>sábado 21 de noviembre</b>. La fecha de la fumigación se programa después, por torre. Toma menos de un minuto.</p>
           <div class="aviso info oculto" id="avisoConfig">La inscripción se habilita en unos minutos. Vuelva a intentarlo más tarde.</div>
           <div class="aviso info oculto" id="avisoCerrado">Las inscripciones cerraron el sábado 21 de noviembre. Si necesita el servicio, consulte la sección Información para contactar a MAXCONTROL.</div>
           <div class="aviso err oculto" id="avisoError" role="alert"></div>
@@ -413,7 +436,7 @@ body.modo-prov .heroe .wrap{display:none}
           </div>
           <div>
             <h3>Apartamentos inscritos</h3>
-            <p class="sub" id="meta" style="margin:6px 0 0">Entre más apartamentos se inscriban, mejor se organiza la jornada.</p>
+            <p class="sub" id="meta" style="margin:6px 0 0">Entre más apartamentos se inscriban, más económica será la tarifa.</p>
           </div>
         </div>
         <div class="precio">
@@ -449,7 +472,8 @@ body.modo-prov .heroe .wrap{display:none}
           <p style="margin:0 0 8px"><b>Su apartamento, si lo inscribe.</b></p>
           <ul>
             <li>Inscríbase con su torre, apartamento, nombre y celular.</li>
-            <li>Al cierre, MAXCONTROL programa la fecha por torre y le avisa por celular.</li>
+            <li>Al cierre, según la cantidad de inscritos, MAXCONTROL programa la fumigación por torre y le avisa por celular.</li>
+            <li>Entre más apartamentos se inscriban, más económica será la tarifa.</li>
             <li>El costo se paga directamente al proveedor, que le informará el valor.</li>
           </ul>
         </div>
@@ -667,8 +691,8 @@ body.modo-prov .heroe .wrap{display:none}
     var frac = Math.min(1, n / MINIMO);
     $('#arco').setAttribute('stroke-dashoffset', String(314.16 * (1 - frac)));
     $('#meta').textContent = n >= MINIMO
-      ? '¡Meta cumplida! Ya hay ' + n + ' apartamentos inscritos.'
-      : 'Faltan ' + (MINIMO - n) + ' apartamentos para llegar a la meta de 25.';
+      ? '¡Ya hay ' + n + ' apartamentos inscritos! Entre más se inscriban, más económica será la tarifa.'
+      : 'Entre más apartamentos se inscriban, más económica será la tarifa. Faltan ' + (MINIMO - n) + ' para llegar a 25.';
   }
   function cargarEstado() {
     api('estado').then(function (r) {
