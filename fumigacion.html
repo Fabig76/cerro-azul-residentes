@@ -223,6 +223,31 @@ td input{width:190px}
 .guardado{color:var(--ok);font-size:12px;margin-left:6px;opacity:0;transition:.3s}
 .guardado.si{opacity:1}
 
+/* documentos */
+.doc{display:flex;gap:16px;align-items:center;border-radius:18px;padding:18px;background:var(--campo);flex-wrap:wrap}
+.doc.destacado{background:linear-gradient(135deg,var(--noche),#1E5BA8);color:#fff}
+.doc-ico{flex:none;width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,.14);display:grid;place-items:center}
+.doc-ico svg{width:28px;height:28px}
+.doc-txt{flex:1;min-width:200px}
+.doc-txt b{display:block;font-size:17px}
+.doc-txt span{font-size:14px;opacity:.8}
+.doc-acc{display:flex;gap:8px}
+.btn-doc{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:8px 14px;border-radius:11px;font-weight:700;font-size:14px;text-decoration:none;border:2px solid var(--linea);color:var(--tx);background:var(--card)}
+.btn-doc:hover{border-color:var(--azul)}
+.btn-doc.prim{background:var(--sol);border-color:var(--sol);color:#1B1200}
+.doc.destacado .btn-doc:not(.prim){background:transparent;color:#fff;border-color:rgba(255,255,255,.4)}
+.productos{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:18px}
+@media (max-width:900px){ .productos{grid-template-columns:1fr} }
+.producto{border:2px solid var(--linea);border-radius:18px;padding:18px;display:flex;flex-direction:column}
+.producto .etq{align-self:flex-start;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;background:rgba(0,194,168,.15);color:var(--menta-osc)}
+@media (prefers-color-scheme: dark){ .producto .etq{color:var(--menta)} }
+.producto h3{font-size:24px;margin:10px 0 6px}
+.producto p{margin:0 0 12px;color:var(--tx-2);font-size:14.5px}
+.docs{list-style:none;padding:0;margin:auto 0 0}
+.docs li{display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--linea)}
+.docs li span{flex:1;font-weight:500;font-size:14.5px}
+.docs li small{display:block;color:var(--tx-2);font-weight:400;font-size:12.5px}
+@media (max-width:480px){ .barra .marca{display:none} .tabs{margin:0 auto} .tab{padding:8px 9px;font-size:12.5px} }
 footer{color:var(--tx-2);font-size:13px;text-align:center;padding:10px 20px 40px}
 #confeti{position:fixed;inset:0;pointer-events:none;z-index:100}
 .toast{position:fixed;left:50%;bottom:24px;visibility:hidden;transform:translateX(-50%) translateY(120px);background:var(--noche);color:#fff;padding:12px 18px;border-radius:12px;font-size:14px;z-index:90;transition:.3s}
@@ -240,6 +265,7 @@ body.modo-prov .heroe .wrap{display:none}
     <nav class="tabs" role="tablist" aria-label="Secciones">
       <button class="tab" role="tab" data-ir="inscribir" aria-selected="true">Inscribirme</button>
       <button class="tab" role="tab" data-ir="info" aria-selected="false">Información</button>
+      <button class="tab" role="tab" data-ir="documentos" aria-selected="false">Documentos</button>
       <button class="tab" role="tab" data-ir="proveedor" aria-selected="false">Proveedor</button>
     </nav>
   </div>
@@ -439,6 +465,52 @@ body.modo-prov .heroe .wrap{display:none}
     </div>
   </section>
 
+  <!-- ================= DOCUMENTOS ================= -->
+  <section class="vista" id="v-documentos" role="tabpanel">
+    <div class="card">
+      <h2>Documentos de la fumigación</h2>
+      <p class="sub">Circular y fichas de los productos que usará MAXCONTROL S.A.S. Puede verlos en línea o descargarlos.</p>
+
+      <div class="doc destacado">
+        <div class="doc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></div>
+        <div class="doc-txt"><b>Circular informativa · fumigación del 13 de noviembre</b><span>Áreas comunes, horario y recomendaciones · 1 página · PDF</span></div>
+        <div class="doc-acc"><a class="btn-doc" href="assets/fumigacion/circular-fumigacion-13-nov-2026.pdf" target="_blank" rel="noopener">Ver</a><a class="btn-doc prim" href="assets/fumigacion/circular-fumigacion-13-nov-2026.pdf" download>Descargar</a></div>
+      </div>
+
+      <div class="productos">
+        <article class="producto">
+          <span class="etq">Cucarachas y hormigas</span>
+          <h3>Gelfipron GW</h3>
+          <p>Insecticida en gel. Ingrediente activo: fipronil. Fabricante: Minagro Industria Química.</p>
+          <ul class="docs">
+            <li><span>Ficha técnica <small>2 págs.</small></span><a class="btn-doc" href="assets/fumigacion/gelfipron-ficha-tecnica.pdf" target="_blank" rel="noopener">Ver</a><a class="btn-doc prim" href="assets/fumigacion/gelfipron-ficha-tecnica.pdf" download>Descargar</a></li>
+            <li><span>Hoja de seguridad <small>12 págs.</small></span><a class="btn-doc" href="assets/fumigacion/gelfipron-hoja-de-seguridad.pdf" target="_blank" rel="noopener">Ver</a><a class="btn-doc prim" href="assets/fumigacion/gelfipron-hoja-de-seguridad.pdf" download>Descargar</a></li>
+            <li><span>Tarjeta de emergencia <small>1 pág.</small></span><a class="btn-doc" href="assets/fumigacion/gelfipron-tarjeta-de-emergencia.pdf" target="_blank" rel="noopener">Ver</a><a class="btn-doc prim" href="assets/fumigacion/gelfipron-tarjeta-de-emergencia.pdf" download>Descargar</a></li>
+          </ul>
+        </article>
+        <article class="producto">
+          <span class="etq">Insectos rastreros</span>
+          <h3>Tenopa SC</h3>
+          <p>Insecticida de amplio espectro. Ingredientes activos: alfacipermetrina y flufenoxurón. Fabricante: BASF.</p>
+          <ul class="docs">
+            <li><span>Ficha técnica <small>2 págs.</small></span><a class="btn-doc" href="assets/fumigacion/tenopa-ficha-tecnica.pdf" target="_blank" rel="noopener">Ver</a><a class="btn-doc prim" href="assets/fumigacion/tenopa-ficha-tecnica.pdf" download>Descargar</a></li>
+            <li><span>Hoja de seguridad <small>17 págs.</small></span><a class="btn-doc" href="assets/fumigacion/tenopa-hoja-de-seguridad.pdf" target="_blank" rel="noopener">Ver</a><a class="btn-doc prim" href="assets/fumigacion/tenopa-hoja-de-seguridad.pdf" download>Descargar</a></li>
+          </ul>
+        </article>
+        <article class="producto">
+          <span class="etq">Roedores</span>
+          <h3>Ratunet</h3>
+          <p>Raticida anticoagulante en bloques y pellets. Ingrediente activo: brodifacouma 0,005 %.</p>
+          <ul class="docs">
+            <li><span>Ficha técnica, bloques <small>2 págs.</small></span><a class="btn-doc" href="assets/fumigacion/ratunet-bloques-ficha-tecnica.pdf" target="_blank" rel="noopener">Ver</a><a class="btn-doc prim" href="assets/fumigacion/ratunet-bloques-ficha-tecnica.pdf" download>Descargar</a></li>
+            <li><span>Hoja de seguridad, pellets <small>12 págs.</small></span><a class="btn-doc" href="assets/fumigacion/ratunet-pellets-hoja-de-seguridad.pdf" target="_blank" rel="noopener">Ver</a><a class="btn-doc prim" href="assets/fumigacion/ratunet-pellets-hoja-de-seguridad.pdf" download>Descargar</a></li>
+          </ul>
+        </article>
+      </div>
+      <p class="sub" style="margin:22px 0 0;font-size:13.5px">Documentos entregados por MAXCONTROL S.A.S. y los fabricantes. En caso de contacto accidental con un producto, consulte la hoja de seguridad y busque atención médica.</p>
+    </div>
+  </section>
+
   <!-- ================= PROVEEDOR ================= -->
   <section class="vista" id="v-proveedor" role="tabpanel">
     <div class="card login" id="bloqueLogin">
@@ -532,7 +604,7 @@ body.modo-prov .heroe .wrap{display:none}
     });
   });
   var inicial = (location.hash || '').replace('#', '');
-  if (['inscribir', 'info', 'proveedor'].indexOf(inicial) >= 0) ir(inicial);
+  if (['inscribir', 'info', 'documentos', 'proveedor'].indexOf(inicial) >= 0) ir(inicial);
 
   // ---------- bichos decorativos ----------
   var svgBicho = '<svg viewBox="0 0 24 24" fill="#fff"><ellipse cx="12" cy="13" rx="5" ry="7"/><circle cx="12" cy="5" r="2.5"/><path d="M7 10L2 7M7 14H1M7 18l-4 3M17 10l5-3M17 14h6M17 18l4 3" stroke="#fff" stroke-width="1.5"/></svg>';
