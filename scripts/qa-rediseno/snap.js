@@ -103,8 +103,14 @@ async function estado(page) {
   });
 }
 
-const PAGINAS = ['index.html', 'residente.html', 'salon-social.html', 'estado-cuenta.html', 'informes.html', 'admin.html', 'vigilantes.html', 'cartera-admin.html', 'fumigacion.html'];
-if (fs.existsSync(path.join(ROOT, 'inicio.html'))) PAGINAS.push('inicio.html');
+// El formulario se llamó index.html hasta el 12-nov-2026; desde entonces es
+// formulario.html y index.html es la portada. Las claves no cambian de nombre
+// para poder comparar una versión con otra.
+const FORM = fs.existsSync(path.join(ROOT, 'formulario.html')) ? 'formulario.html' : 'index.html';
+const PORTADA = FORM === 'formulario.html' ? 'index.html' : 'inicio.html';
+const clave = (p) => (p === FORM ? 'index.html' : p === PORTADA ? 'portada' : p);
+const PAGINAS = [FORM, 'residente.html', 'salon-social.html', 'estado-cuenta.html', 'informes.html', 'admin.html', 'vigilantes.html', 'cartera-admin.html', 'fumigacion.html'];
+if (fs.existsSync(path.join(ROOT, PORTADA))) PAGINAS.push(PORTADA);
 const VPS = { pc: { width: 1280, height: 900 }, cel: { width: 390, height: 844 } };
 
 (async () => {
@@ -120,9 +126,9 @@ const VPS = { pc: { width: 1280, height: 900 }, cel: { width: 390, height: 844 }
     for (const p of PAGINAS) {
       const { ctx, page, errores } = await nuevaPagina(browser, vp);
       await page.goto('http://ca.test/' + p, { waitUntil: 'load' });
-      await guardar(vn + ':' + p, page, errores, true);
+      await guardar(vn + ':' + clave(p), page, errores, true);
 
-      if (p === 'index.html') {
+      if (p === FORM) {
         for (const modo of ['edit', 'mudanzas', 'create']) {
           await page.click('.mode-tab[data-mode="' + modo + '"]');
           await guardar(vn + ':index:modo-' + modo, page, errores, modo !== 'create');

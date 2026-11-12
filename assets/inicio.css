@@ -53,7 +53,7 @@
 /* ---------- Servicios ---------- */
 .vd-servicios { margin-top: 26px; }
 .vd-servicios > h2 { margin: 0 4px 14px; font-size: 22px; letter-spacing: -.02em; color: var(--gris-tx); }
-.vd-rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+.vd-rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
 .vd-ficha {
   display: flex; gap: 14px; align-items: flex-start;
   min-height: 96px; padding: 18px;
@@ -81,6 +81,7 @@
 .vd-i-azul    { --i1: #3D9BFF; --i2: #0058B8; }
 .vd-i-turquesa{ --i1: #35D0C2; --i2: #00857B; }
 .vd-i-indigo  { --i1: #7C8CFF; --i2: #3A45C4; }
+.vd-i-morado  { --i1: #B58CFF; --i2: #6A3FC4; }
 .vd-i-naranja { --i1: #FFB648; --i2: #D97A00; }
 .vd-i-verde   { --i1: #5FCB6B; --i2: #1C8A4A; }
 .vd-i-cielo   { --i1: #49B6F2; --i2: #0B6FB5; }

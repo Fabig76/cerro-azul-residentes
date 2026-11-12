@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0066CC" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0F1419" media="(prefers-color-scheme: dark)">
+  <title>Formulario de Residentes — Urbanización Cerro Azul</title>
+  <meta name="description" content="Formulario oficial para actualización de datos de residentes y propietarios de la Urbanización Cerro Azul. Bello / Niquía.">
+  <link rel="icon" href="assets/logo.jpg" type="image/jpeg">
+  <link rel="stylesheet" href="assets/styles.css?v=20261107">
+  <link rel="stylesheet" href="assets/vidrio.css?v=20261112">
+  <script>
+      // Anti-FOUC: aplica el tema antes de que el CSS termine de cargar.
+      // Sin esto, el usuario vería un flash blanco al cargar la pagina.
+      (function() {
+        try {
+          var guardado = localStorage.getItem('cerro-azul-tema');
+          var prefiSO = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var tema = guardado || (prefiSO ? 'oscuro' : 'claro');
+          document.documentElement.setAttribute('data-tema', tema);
+        } catch (e) { /* sin localStorage: queda en claro */ }
+      })();
+    </script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <img src="assets/logo.jpg" alt="Logo Urbanización Cerro Azul" class="logo">
+    <div class="header-text">
+      <h1>Urbanización Cerro Azul</h1>
+      <p class="sub">Formato de actualización y manejo de datos de residentes</p>
+      <p class="nit">NIT 900770444 · Bello / Niquía</p>
+    </div>
+    <button type="button" class="tema-toggle" id="temaToggle" aria-label="Cambiar tema claro u oscuro" title="Cambiar tema">
+      <svg class="icono-luna" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+      <svg class="icono-sol" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/>
+        <line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/>
+        <line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<div class="page-top">
+
+  <div class="legal-banner">
+    <strong>AVISO IMPORTANTE — Ley 1581 de 2012:</strong>
+    Los datos aquí solicitados corresponden al <strong>dueño real del inmueble</strong>.
+    La administración podrá verificar la información. Proporcionar datos falsos, incompletos
+    o de terceros sin su consentimiento puede tener consecuencias legales y administrativas.
+    Este formulario es de carácter <strong>obligatorio</strong> para todos los residentes.
+  </div>
+
+  <nav class="mode-switcher" aria-label="Qué desea hacer">
+    <div class="mode-tabs" role="tablist">
+      <button type="button" class="mode-tab active" data-mode="create" role="tab">
+        <span class="ico" aria-hidden="true">📝</span><span>Enviar / Crear registro</span>
+      </button>
+      <button type="button" class="mode-tab" data-mode="edit" role="tab">
+        <span class="ico" aria-hidden="true">✏️</span><span>Editar mi registro</span>
+      </button>
+      <button type="button" class="mode-tab" data-mode="mudanzas" role="tab">
+        <span class="ico" aria-hidden="true">🚚</span><span>Agendar mudanza</span>
+      </button>
+    </div>
+    <div class="portal-links">
+      <a href="estado-cuenta.html" class="portal-link">
+        <span class="ico" aria-hidden="true">💳</span><span>Consultar estado de cuenta</span>
+      </a>
+      <a href="residente.html" class="portal-link">
+        <span class="ico" aria-hidden="true">👤</span><span>Portal del residente</span>
+      </a>
+      <a href="salon-social.html" class="portal-link">
+        <span class="ico" aria-hidden="true">🏛️</span><span>Reservar salón social</span>
+      </a>
+      <a href="informes.html" class="portal-link">
+        <span class="ico" aria-hidden="true">📊</span><span>Informes contables Cerro Azul</span>
+      </a>
+      <a href="https://fabig76.github.io/cerro-azul-mantenimiento/" class="portal-link">
+        <span class="ico" aria-hidden="true">🛠️</span><span>Control de mantenimientos</span>
+      </a>
+    </div>
+  </nav>
+
+</div>
+
+<main>
+
+  <!-- ============================================== -->
+  <!-- VISTA: MODO CREAR                               -->
+  <!-- ============================================== -->
+  <div id="view-create">
+    <div class="card" id="form-card">
+      <div class="intro">
+        Bienvenido(a). Por favor completa todos los campos. Los campos marcados con
+        <span class="req">*</span> son obligatorios. Si ya enviaste tu registro y
+        necesitas modificarlo, usa la pestaña <strong>"Editar mi registro"</strong> arriba.
+      </div>
+
+      <div id="alert-create" class="alert hidden" role="alert"></div>
+
+      <div id="editIndicator" class="alert alert-info alert-accion hidden">
+        <span><strong>Modo edición activo.</strong> Estás modificando un registro existente.
+        Tu N° de formulario se conserva.</span>
+        <button type="button" class="btn btn-secondary" id="btnNuevo">
+          Cancelar y crear uno nuevo
+        </button>
+      </div>
+
+      <form id="mainForm" novalidate>
+
+        <!-- ====== ENCABEZADO + DILIGENCIA ====== -->
+        <div class="section">
+          <div class="section-head">
+            <span><span class="section-num">0</span>Encabezado</span>
+            <span class="arrow" aria-hidden="true"></span>
+          </div>
+          <div class="section-body">
+            <div class="row row-1">
+            <div class="field">
+              <label>Conjuntos / Copropiedad</label>
+              <input type="text" value="Urbanización Cerro Azul" disabled>
+            </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label>NIT</label>
+                <input type="text" value="900770444" disabled>
+              </div>
+              <div class="field">
+                <label>Dirección</label>
+                <input type="text" value="Bello / Niquía" disabled>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label>Fecha de diligenciamiento <span class="req">*</span></label>
+                <input type="date" id="firmaFecha" required>
+              </div>
+              <div class="field">
+                <label>Diligencia como <span class="req">*</span></label>
+                <div>
+                  <label class="radio-row"><input type="radio" name="diligencia" value="Propietario" required> Propietario</label>
+                  <label class="radio-row"><input type="radio" name="diligencia" value="Encargado"> Encargado / Admin</label>
+                  <div class="err-msg"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====== 1. DATOS DEL PROPIETARIO ====== -->
+        <div class="section collapsed">
+          <div class="section-head">
+            <span><span class="section-num">1</span>Datos del propietario</span>
+            <span class="arrow" aria-hidden="true"></span>
+          </div>
+          <div class="section-body">
+            <div class="row">
+              <div class="field">
+                <label>Nombres y apellidos <span class="req">*</span></label>
+                <input type="text" id="nombreProp" placeholder="Como aparece en la cédula" required>
+                <div class="err-msg"></div>
+              </div>
+              <div class="field">
+                <label>N° de identificación <span class="req">*</span></label>
+                <input type="text" id="ccProp" placeholder="Cédula de ciudadanía" required>
+                <div class="err-msg"></div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label>Correo electrónico <span class="req">*</span></label>
+                <input type="email" id="correoProp" placeholder="ejemplo@correo.com" required>
+                <div class="err-msg"></div>
+              </div>
+              <div class="field">
+                <label>Celular <span class="req">*</span></label>
+                <input type="tel" id="celProp" placeholder="3001234567" required>
+                <div class="err-msg"></div>
+              </div>
+            </div>
+            <div class="row row-3">
+              <div class="field">
+                <label>Teléfono fijo</label>
+                <input type="tel" id="telFijoProp" placeholder="(604) 123 4567">
+              </div>
+              <div class="field">
+                <label>N° de apartamento <span class="req">*</span></label>
+                <input type="text" id="apto" placeholder="Ej: 101, 202B, 9804" required>
+                <div class="err-msg"></div>
+              </div>
+              <div class="field">
+                <label>Matrícula del apartamento</label>
+                <input type="text" id="matriculaApto" placeholder="Autocompleta al escribir el apto">
+                <div class="err-msg"></div>
+              </div>
+            </div>
+            <div id="apto-lookup-msg" class="lookup-msg hidden"></div>
+
+            <div class="subsection-title">Parqueaderos</div>
+            <div class="row row-2">
+              <div class="field">
+                <label>N° Parqueadero 1</label>
+                <input type="text" id="parq1Celda" placeholder="Ej: 12">
+              </div>
+              <div class="field">
+                <label>Matrícula Parqueadero 1</label>
+                <input type="text" id="parq1Mat" placeholder="Autocompleta al escribir la celda">
+              </div>
+            </div>
+            <div id="parq1-lookup-msg" class="lookup-msg hidden"></div>
+
+            <div class="row row-2">
+              <div class="field">
+                <label>N° Parqueadero 2 (opcional)</label>
+                <input type="text" id="parq2Celda" placeholder="Ej: 15">
+              </div>
+              <div class="field">
+                <label>Matrícula Parqueadero 2</label>
+                <input type="text" id="parq2Mat" placeholder="Autocompleta al escribir la celda">
+              </div>
+            </div>
+            <div id="parq2-lookup-msg" class="lookup-msg hidden"></div>
+
+            <div class="checkbox-row">
+              <label>
+                <input type="checkbox" name="requiereRevision">
+                Alguna matrícula mostrada arriba NO coincide con la real; requiere revisión administrativa.
+              </label>
+            </div>
+            <div class="field" id="observMatriculas-wrap" style="display:none;">
+              <label>Observaciones sobre las matrículas</label>
+              <textarea id="observMatriculas" rows="2" placeholder="Indícanos cuál matrícula es incorrecta y, si la sabes, cuál es la correcta"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====== 2. DATOS DEL ENCARGADO O ADMINISTRADOR DEL INMUEBLE ====== -->
+        <div class="section collapsed">
+          <div class="section-head">
+            <span><span class="section-num">2</span>Datos del encargado o administrador del inmueble (si aplica)</span>
+            <span class="arrow" aria-hidden="true"></span>
+          </div>
+          <div class="section-body">
+            <p class="ayuda-seccion">Esta sección es opcional. Llénala solo si tú eres el encargado o administrador del inmueble y no el propietario.</p>
+            <div class="row">
+              <div class="field">
+                <label>Nombres y apellidos</label>
+                <input type="text" id="nombreArr">
+              </div>
+              <div class="field">
+                <label>N° de identificación</label>
+                <input type="text" id="ccArr">
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label>Correo electrónico</label>
+                <input type="email" id="correArr">
+              </div>
+              <div class="field">
+                <label>Celular</label>
+                <input type="tel" id="celArr">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====== 3. PARQUEADERO A TERCERO ====== -->
+        <div class="section collapsed">
+          <div class="section-head">
+            <span><span class="section-num">3</span>Autorización de uso de parqueadero a tercero (si aplica)</span>
+            <span class="arrow" aria-hidden="true"></span>
+          </div>
+          <div class="section-body">
+            <div class="row row-3">
+              <div class="field">
+                <label>Nombre del autorizado</label>
+                <input type="text" id="parqTerNom">
+              </div>
+              <div class="field">
+                <label>Apto N°</label>
+                <input type="text" id="parqTerApto">
+              </div>
+              <div class="field">
+                <label>Celular</label>
+                <input type="tel" id="parqTerCel">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====== 4. INMOBILIARIA ====== -->
+        <div class="section collapsed">
+          <div class="section-head">
+            <span><span class="section-num">4</span>Inmobiliaria y/o representante del propietario (anexar poder)</span>
+            <span class="arrow" aria-hidden="true"></span>
+          </div>
+          <div class="section-body">
+            <div class="row">
+              <div class="field">
+                <label>Nombre / Razón social</label>
+                <input type="text" id="inmobRazon">
+              </div>
+              <div class="field">
+                <label>NIT</label>
+                <input type="text" id="inmobNit">
+              </div>
+            </div>
+            <div class="row row-3">
+              <div class="field">
+                <label>Persona de contacto</label>
+                <input type="text" id="inmobContacto">
+              </div>
+              <div class="field">
+                <label>Teléfono</label>
+                <input type="tel" id="inmobTel">
+              </div>
+              <div class="field">
+                <label>Correo</label>
+                <input type="email" id="inmobCorreo">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====== 5. RESIDENTES MAYORES ====== -->
+        <div class="section collapsed">
+          <div class="section-head">
+            <span><span class="section-num">5</span>Datos de los residentes del apartamento (mayores de edad)</span>
+            <span class="arrow" aria-hidden="true"></span>
+          </div>
+          <div class="section-body">
+            <p class="ayuda-seccion">Incluye todas las personas mayores de edad que viven en el apartamento (excepto el titular de la sección 1).</p>
+            <div id="residentes-container">
+              <!-- 4 residentes en columnas -->
+            </div>
+          </div>
+        </div>
+
+        <!-- ====== 5.1 MENORES ====== -->
+        <div class="section collapsed">
+          <div class="section-head">
+            <span><span class="section-num">5.1</span>Menores de edad</span>
+            <span class="arrow" aria-hidden="true"></span>
+          </div>
+          <div class="section-body">
+            <p class="ayuda-seccion">
+              El tratamiento de los datos de menores se realiza en su interés superior y bajo la
+              autorización del representante legal que firma este formato (Ley 1581 de 2012).
+            </p>
+            <div id="menores-container"></div>
+          </div>
+        </div>
+
+        <!-- ====== 6. VEHÍCULOS Y MOTOS ====== -->
+        <div class="section collapsed">
+          <div class="section-head">
+            <span><span class="section-num">6</span>Vehículos y motos</span>
+            <span class="arrow" aria-hidden="true"></span>
+          </div>
+          <div class="section-body">
+            <div class="subsection-title">Vehículos (máx. 2)</div>
+            <div id="vehiculos-container"></div>
+            <div class="subsection-title">Motos (máx. 2)</div>
+            <div id="motos-container"></div>
+          </div>
+        </div>
+
+        <!-- ====== 7. BICICLETAS ====== -->
+        <div class="section collapsed">
+          <div class="section-head">
+            <span><span class="section-num">7</span>Bicicletas (máx. 2)</span>
+            <span class="arrow" aria-hidden="true"></span>
+          </div>
+          <div class="section-body">
+            <div id="bicis-container"></div>
+          </div>
+        </div>
+
+        <!-- ====== 8. LLAVEROS Y TAGS ====== -->
+        <div class="section collapsed">
+          <div class="section-head">
+            <span><span class="section-num">8</span>Control de entrega de llaveros y tags electrónicos</span>
+            <span class="arrow" aria-hidden="true"></span>
+          </div>
+          <div class="section-body">
+            <div class="row">
+              <div class="field">
+                <label>N° de llaveros autorizados por apartamento</label>
+                <input type="number" id="llaverosAut" min="0">
+              </div>
+              <div class="field">
+                <label>N° de tags de vehículo autorizados</label>
+                <input type="number" id="tagsAut" min="0">
+              </div>
+            </div>
+            <p class="ayuda-seccion">Datos de los dispositivos (máx. 3):</p>
+            <div id="dispositivos-container"></div>
+            <p class="letra-chica">
+              <em>Devolución / reposición:</em> El residente se compromete a devolver los dispositivos al
+              terminar su ocupación y a reportar de inmediato su pérdida. La reposición tendrá el costo
+              que fije la administración.
+            </p>
+          </div>
+        </div>
+
+        <!-- ====== 9. MASCOTAS ====== -->
+        <div class="section collapsed">
+          <div class="section-head">
+            <span><span class="section-num">9</span>Mascotas / Animales de compañía — Censo (Decreto 768 de 2025)</span>
+            <span class="arrow" aria-hidden="true"></span>
+          </div>
+          <div class="section-body">
+            <div id="mascotas-container"></div>
+            <p class="letra-chica">
+              <em>Solo para caninos de manejo especial (Ley 1801/2016 art. 128 y 134; Decreto 768/2025):</em>
+              deben registrarse a nombre de un mayor de edad y contar con póliza de responsabilidad
+              civil extracontractual vigente.
+            </p>
+          </div>
+        </div>
+
+        <!-- ====== 10. EMERGENCIAS ====== -->
+        <div class="section collapsed">
+          <div class="section-head">
+            <span><span class="section-num">10</span>Contactos en caso de urgencia</span>
+            <span class="arrow" aria-hidden="true"></span>
+          </div>
+          <div class="section-body">
+            <p class="ayuda-seccion">En caso de accidente, novedad o contingencia, comunicarse con:</p>
+            <div id="emergencias-container"></div>
+          </div>
+        </div>
+
+        <!-- ====== 11. AUTORIZACIÓN + FIRMA ====== -->
+        <div class="section">
+          <div class="section-head">
+            <span><span class="section-num">11</span>Autorización de tratamiento de datos personales (Ley 1581 de 2012)</span>
+            <span class="arrow" aria-hidden="true"></span>
+          </div>
+          <div class="section-body">
+            <p class="texto-legal">
+              Con la firma de este formato autorizo de manera libre, previa, expresa e informada a la
+              <strong>Urbanización Cerro Azul (NIT 900770444)</strong>, en su calidad de RESPONSABLE del tratamiento,
+              para recolectar, almacenar, usar, actualizar y suprimir los datos personales aquí consignados
+              —incluidos los de los menores que represento— con las siguientes finalidades:
+              (i) identificar a residentes y visitantes autorizados y controlar el ingreso de personas y vehículos;
+              (ii) administrar la entrega, uso y devolución de llaveros y tags electrónicos;
+              (iii) atender emergencias y contingencias;
+              (iv) enviar comunicaciones de la administración;
+              (v) cumplir el reglamento de propiedad horizontal y las obligaciones legales de la copropiedad,
+              incluido el censo de animales de compañía y demás deberes del Decreto 768 de 2025.
+            </p>
+            <p class="texto-legal">
+              Declaro que conozco mis derechos como titular: conocer, actualizar y rectificar mis datos,
+              solicitar prueba de esta autorización, ser informado sobre su uso, presentar quejas ante la SIC
+              y suprimir los datos o revocar la autorización cuando no exista un deber legal o contractual
+              de conservarlos. Estos derechos pueden ejercerse en el correo <strong>urb.cerroazul@gmail.com</strong>,
+              conforme a la política de tratamiento de datos de la copropiedad, la cual declaro conocer.
+            </p>
+
+            <hr class="sep">
+
+            <div class="checkbox-row">
+              <input type="checkbox" id="autDatos" name="autDatos" required>
+              <label for="autDatos"><strong>Autorizo el tratamiento de mis datos personales.</strong> <span class="req">*</span></label>
+            </div>
+            <div class="checkbox-row">
+              <input type="checkbox" id="autMenores" name="autMenores">
+              <label for="autMenores">Autorizo el tratamiento de datos de los menores que represento (si aplica).</label>
+            </div>
+            <div class="checkbox-row">
+              <input type="checkbox" id="autCom" name="autCom">
+              <label for="autCom">Autorizo el envío de comunicaciones por correo y WhatsApp.</label>
+            </div>
+
+            <hr class="sep">
+
+            <div class="row row-3">
+              <div class="field">
+                <label>Firma — Nombre completo <span class="req">*</span></label>
+                <input type="text" id="firmaNom" placeholder="Tu nombre completo" required>
+                <div class="err-msg"></div>
+              </div>
+              <div class="field">
+                <label>Firma — C.C. N° <span class="req">*</span></label>
+                <input type="text" id="firmaCC" placeholder="Tu cédula" required>
+                <div class="err-msg"></div>
+              </div>
+              <div class="field">
+                <label>Firma — Fecha <span class="req">*</span></label>
+                <input type="date" id="firmaFecha2" disabled>
+              </div>
+            </div>
+            <p class="letra-chica">
+              Al hacer clic en "Enviar", aceptas que tu nombre y cédula digitados en estos campos
+              constituyen tu firma electrónica para efectos del presente formato.
+            </p>
+          </div>
+        </div>
+
+        <div class="actions-bar">
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('mainForm').reset(); document.querySelectorAll('.field.has-error').forEach(f=>f.classList.remove('has-error'));">
+            Limpiar formulario
+          </button>
+          <button type="button" class="btn btn-primary" id="btnEnviar">
+            📤 Enviar formulario
+          </button>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- ZONA DE BORRADO DE DATOS DEL RESIDENTE (solo modo edición) -->
+        <!-- ============================================================ -->
+        <div id="zona-borrado" class="zona-borrado hidden">
+          <h3>⚠️ Zona de borrado</h3>
+          <p>Si hubo cambio de propietario o los residentes anteriores ya no
+             viven en este apartamento, use este botón para limpiar las
+             secciones de residentes, menores, vehículos, motos, bicicletas,
+             mascotas y contactos.</p>
+          <p><strong>Las secciones 1-4 (datos del propietario) y 11 (firma)
+             NO se borran.</strong></p>
+          <button type="button" id="btnClearResidente" class="btn-danger">
+            🗑️ Borrado de datos residente
+          </button>
+        </div>
+
+        <!-- Modal de confirmación de borrado -->
+        <div id="modalClearResidente" class="modal-overlay hidden">
+          <div class="modal-content">
+            <h3>⚠️ Confirmar borrado</h3>
+            <p>Esto borrará los residentes y vehículos del apartamento
+               <strong id="modalApto"></strong>. ¿Confirmas?</p>
+            <p>Se limpiarán las secciones:</p>
+            <ul>
+              <li>Sección 5 — Residentes</li>
+              <li>Sección 5.1 — Menores</li>
+              <li>Sección 6 — Vehículos y motos</li>
+              <li>Sección 7 — Bicicletas</li>
+              <li>Sección 9 — Mascotas</li>
+              <li>Sección 10 — Contactos de emergencia</li>
+            </ul>
+            <p>Los datos del propietario (1-4), firma (11) y llaveros (8) NO se borran.</p>
+            <div>
+              <button type="button" id="btnCancelarClear" class="btn-secondary">❌ Cancelar</button>
+              <button type="button" id="btnConfirmarClear" class="btn-danger">🗑️ Sí, borrar</button>
+            </div>
+          </div>
+        </div>
+
+      </form>
+    </div>
+
+    <!-- ====== TARJETA DE ÉXITO ====== -->
+    <div id="success-card" class="card success-card hidden">
+      <div class="check" aria-hidden="true"></div>
+      <h2 id="success-title">¡Registro creado exitosamente!</h2>
+      <p>Tu N° de formulario es:</p>
+      <div class="num-form" id="success-num-form">CA-0000</div>
+      <div class="advice" id="success-advice"></div>
+      <!-- BUGFIX-028: aviso de correo con el codigo (oculto por defecto) -->
+      <div id="success-correo-aviso" class="alert hidden" role="status"></div>
+      <div class="botones centro">
+        <button type="button" class="btn btn-secondary" onclick="window.print();">🖨️ Imprimir comprobante</button>
+        <button type="button" class="btn btn-primary" id="btnNuevoAfter" onclick="location.reload();">Enviar otro registro</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- VISTA: MODO EDITAR (LOOKUP)                     -->
+  <!-- ============================================== -->
+  <div id="view-edit" class="hidden">
+    <div class="lookup-box">
+      <h3>✏️ Editar mi registro</h3>
+      <p>Ingresa tu <strong>N° de formulario</strong> (recibido al crear tu registro), tu <strong>N° de apartamento</strong> y la <strong>cédula del propietario</strong> para cargar tus datos y modificarlos.</p>
+      <div id="alert-edit" class="alert hidden"></div>
+      <div class="field">
+        <label>N° de formulario <span class="req">*</span></label>
+        <input type="text" id="lookupNumForm" placeholder="Ej: CA-0042">
+      </div>
+      <div class="field">
+        <label>N° de apartamento <span class="req">*</span></label>
+        <input type="text" id="lookupApto" placeholder="Ej: 101, 202B">
+      </div>
+      <div class="field">
+        <label>Cédula del propietario <span class="req">*</span></label>
+        <input type="text" id="lookupCcProp" inputmode="numeric" placeholder="Solo números, sin puntos ni guiones" autocomplete="off">
+      </div>
+      <button type="button" class="btn btn-primary btn-block" id="btnBuscar">
+        🔍 Buscar mi registro
+      </button>
+      <p class="nota-pie">
+        <strong>¿Perdiste tu N° de formulario?</strong> Escríbenos a
+        <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a> con tu nombre, cédula y N° de apartamento
+        para que podamos ayudarte a recuperar tu número.
+      </p>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- VISTA: MODO MUDANZAS (Agendar)                  -->
+  <!-- ============================================== -->
+  <div id="view-mudanzas" class="hidden">
+
+    <!-- ===== VISTA 1: Identificacion ===== -->
+    <div id="mud-vista-login" class="lookup-box">
+      <h3>🚚 Agendar mudanza</h3>
+      <p>Esta autorización debe ser diligenciada por el <strong>propietario del inmueble</strong> o por la <strong>inmobiliaria autorizada</strong>. El propietario es responsable de la mudanza.</p>
+      <div id="alert-mud-login" class="alert hidden"></div>
+      <div class="field">
+        <label>N° de formulario <span class="req">*</span></label>
+        <input type="text" id="mudNumForm" placeholder="Ej: CA-0042" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>N° de apartamento <span class="req">*</span></label>
+        <input type="text" id="mudApto" placeholder="Ej: 101, 202B" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Cédula del propietario <span class="req">*</span></label>
+        <input type="text" id="mudCcProp" placeholder="Solo números, sin puntos ni guiones" inputmode="numeric" autocomplete="off">
+        <small>La cédula debe coincidir con la registrada en el formulario de residentes.</small>
+      </div>
+      <button type="button" class="btn btn-primary btn-block" id="btnMudVerificar">
+        🔍 Verificar
+      </button>
+      <p class="nota-pie">
+        <strong>¿Perdiste tu N° de formulario?</strong> Escríbenos a
+        <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a>.
+      </p>
+    </div>
+
+    <!-- ===== VISTA 2: Formulario de reserva ===== -->
+    <div id="mud-vista-form" class="hidden">
+      <h3>🚚 Agendar mudanza</h3>
+      <div id="alert-mud-form" class="alert hidden"></div>
+
+      <!-- Tipo de autorizacion -->
+      <div class="paso">
+        <div class="paso-head"><span><span class="section-num">1</span>Tipo de autorización</span></div>
+        <div class="paso-body">
+          <div class="field">
+            <label class="radio-row">
+              <input type="radio" name="mudTipo" value="Salida" required>
+              <strong>Salida</strong> del arrendatario actual
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="mudTipo" value="Ingreso" required>
+              <strong>Ingreso</strong> del nuevo arrendatario
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="mudTipo" value="SalidaElementos" required>
+              <strong>Salida de elementos</strong> (muebles, enseres)
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="mudTipo" value="IngresoElementos" required>
+              <strong>Ingreso de elementos</strong> (muebles, enseres)
+            </label>
+          </div>
+          <div id="mudTipoMensaje" class="alert hidden"></div>
+        </div>
+      </div>
+
+      <!-- Descripcion de elementos (solo visible si tipo = elementos) -->
+      <div class="paso" id="pasoDescripcion" style="display:none;">
+        <div class="paso-head"><span><span class="section-num">1.5</span>Descripción de elementos</span></div>
+        <div class="paso-body">
+          <div class="field">
+            <label>Describa los elementos que van a salir/ingresar <span class="req">*</span></label>
+            <textarea id="mudDescripcion" rows="4" maxlength="500"
+              placeholder="Ej: 1 sofá, 2 cajas con ropa, 1 cama matrimonial, 1 nevera..."></textarea>
+            <small class="help">Mínimo 10 caracteres. La portería revisará que lo que salga/ingrese coincida con esta descripción.</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Torre + Ascensor (uno de los dos se habilita para mudanzas) -->
+      <div class="paso">
+        <div class="paso-head"><span><span class="section-num">2</span>Torre y ascensor</span></div>
+        <div class="paso-body">
+          <div class="row">
+            <div class="field">
+              <label>Torre <span class="req">*</span></label>
+              <select id="mudTorre">
+                <option value="1">Torre 1</option>
+                <option value="2">Torre 2</option>
+                <option value="3">Torre 3</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Ascensor</label>
+              <div class="campo-fijo">A (uno de los ascensores se habilita para mudanzas con pijama protectora)</div>
+              <small>El ascensor B queda disponible para la circulación normal de residentes.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Calendario + Slots -->
+      <div class="paso">
+        <div class="paso-head"><span><span class="section-num">3</span>Fecha y horario</span></div>
+        <div class="paso-body">
+          <p class="ayuda-seccion">
+            Click en un día del calendario para ver los horarios disponibles.
+            Recuerde: las mudanzas deben agendarse con al menos <strong>2 días calendario</strong> de anticipación.
+            Domingo y festivos no hay servicio.
+          </p>
+          <div id="mudCalendario"></div>
+          <div id="mudSlots"></div>
+        </div>
+      </div>
+
+      <!-- Datos opcionales -->
+      <div class="paso">
+        <div class="paso-head"><span><span class="section-num">4</span>Datos adicionales (opcionales)</span></div>
+        <div class="paso-body">
+          <div class="row">
+            <div class="field">
+              <label>Empresa de mudanza</label>
+              <input type="text" id="mudEmpresa" placeholder="Ej: Mudanzas XYZ">
+            </div>
+            <div class="field">
+              <label>Placa del vehículo</label>
+              <input type="text" id="mudPlaca" placeholder="Ej: ABC123" maxlength="10">
+            </div>
+          </div>
+          <div class="field">
+            <label>Observaciones</label>
+            <textarea id="mudObservaciones" rows="2" placeholder="Información adicional que considere relevante"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="botones">
+        <button type="button" class="btn btn-secondary" id="btnMudCancelar">← Volver al inicio</button>
+        <button type="button" class="btn btn-secondary" id="btnMudMisReservasForm">📋 Ver mis reservas</button>
+        <button type="button" class="btn btn-primary btn-block" id="btnMudReservar" disabled>📅 Confirmar reserva</button>
+      </div>
+    </div>
+
+    <!-- ===== VISTA 3: Confirmacion ===== -->
+    <div id="mud-vista-ok" class="hidden">
+      <div class="card confirmacion">
+        <div class="check" aria-hidden="true"></div>
+        <h3>Reserva confirmada</h3>
+        <p>ID de reserva</p>
+        <div><span id="mudOkId" class="id-reserva"></span></div>
+        <p id="mudOkDetalle"></p>
+        <div class="alert alert-info">
+          Le enviamos un correo de confirmación a su dirección registrada.
+          <br><br>
+          <strong>Recuerde:</strong> la vigilancia <strong>NO permite ingreso en días festivos</strong>,
+          aunque usted tenga reserva. Verifique que la fecha seleccionada no sea festivo.
+        </div>
+        <div class="botones centro">
+          <button type="button" class="btn btn-secondary" id="btnMudOtra">📅 Agendar otra</button>
+          <button type="button" class="btn btn-primary" id="btnMudMisReservas">📋 Ver mis reservas</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== VISTA 4: Mis reservas ===== -->
+    <div id="mud-vista-mis" class="hidden">
+      <h3>📋 Mis reservas</h3>
+      <div id="mudMisReservas"></div>
+      <div class="botones centro">
+        <button type="button" class="btn btn-secondary" id="btnMudVolver">← Volver al inicio</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  <p>
+    Urbanización Cerro Azul · NIT 900770444 · Bello / Niquía<br>
+    Formulario oficial conforme a la Ley 1581 de 2012 y Decreto 768 de 2025<br>
+    <a href="estado-cuenta.html">Consultar estado de cuenta y paz y salvo</a><br>
+    <a href="residente.html">Portal del residente (auto-registro con QR)</a><br>
+    <a href="salon-social.html">Reservar salón social</a><br>
+    <a href="informes.html">Informes contables Cerro Azul</a><br>
+    <a href="https://fabig76.github.io/cerro-azul-mantenimiento/">Control de mantenimientos</a><br>
+    <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a>
+  </p>
+</footer>
+
+<script src="js/config.js?v=20261028"></script>
+<script src="js/common.js?v=20261028"></script>
+<script src="js/app.js?v=20261109"></script>
+<script>
+  // ============================================================
+  // Generador dinámico de campos repetidos (residentes, vehículos, etc.)
+  // ============================================================
+  function makeRowHTML(prefix, fields) {
+    return '<div class="row row-3">' +
+      fields.map(f => `
+        <div class="field">
+          <label>${f.label}</label>
+          <input type="${f.type || 'text'}" id="${prefix}${f.id}" placeholder="${f.ph || ''}">
+        </div>`).join('') +
+      '</div>';
+  }
+
+  // Residentes (4)
+  const residentesFields = [
+    { id: 'Nombre', label: 'Nombres y apellidos' },
+    { id: 'CC',     label: 'Cédula' },
+    { id: 'Correo', label: 'Correo', type: 'email' },
+    { id: 'Cel',    label: 'Celular', type: 'tel' },
+    { id: 'Parent', label: 'Parentesco' },
+  ];
+  let html = '';
+  for (let i = 1; i <= 4; i++) {
+    html += '<div class="subsection-title">Residente #' + i + '</div>';
+    html += '<div class="row">' +
+      ['Nombre','CC'].map(f => `
+        <div class="field"><label>${i === 1 ? (f === 'Nombre' ? 'Nombres y apellidos' : 'Cédula') : (f === 'Nombre' ? 'Nombres y apellidos' : 'Cédula')}</label>
+        <input type="text" id="r${i}${f}"></div>`).join('') +
+      '</div>' +
+      '<div class="row row-3">' +
+      [
+        { id: 'Correo', label: 'Correo', type: 'email' },
+        { id: 'Cel', label: 'Celular', type: 'tel' },
+        { id: 'Parent', label: 'Parentesco' }
+      ].map(f => `<div class="field"><label>${f.label}</label><input type="${f.type||'text'}" id="r${i}${f.id}"></div>`).join('') +
+      '</div>';
+  }
+  document.getElementById('residentes-container').innerHTML = html;
+
+  // Menores (4)
+  html = '';
+  for (let i = 1; i <= 4; i++) {
+    html += '<div class="subsection-title">Menor #' + i + '</div>' +
+      '<div class="row row-3">' +
+        '<div class="field"><label>Nombres y apellidos</label><input type="text" id="m' + i + 'Nombre"></div>' +
+        '<div class="field"><label>Edad</label><input type="number" id="m' + i + 'Edad" min="0" max="17"></div>' +
+        '<div class="field"><label>Parentesco / representante legal</label><input type="text" id="m' + i + 'Parent"></div>' +
+      '</div>';
+  }
+  document.getElementById('menores-container').innerHTML = html;
+
+  // Vehículos (2)
+  html = '';
+  for (let i = 1; i <= 2; i++) {
+    html += '<div class="subsection-title">Vehículo #' + i + '</div>' +
+      '<div class="row row-3">' +
+        ['Marca','Tipo','Color','Placa','Modelo'].map(f =>
+          '<div class="field"><label>' + f + '</label><input type="text" id="v' + i + f + '"></div>').join('') +
+        '<div class="field"><label>N° Tag</label><input type="text" id="v' + i + 'Tag"></div>' +
+      '</div>';
+  }
+  document.getElementById('vehiculos-container').innerHTML = html;
+
+  // Motos (2)
+  html = '';
+  for (let i = 1; i <= 2; i++) {
+    html += '<div class="subsection-title">Moto #' + i + '</div>' +
+      '<div class="row row-3">' +
+        ['Marca','Tipo','Color','Placa','Modelo'].map(f =>
+          '<div class="field"><label>' + f + '</label><input type="text" id="mo' + i + f + '"></div>').join('') +
+        '<div class="field"><label>N° Tag</label><input type="text" id="mo' + i + 'Tag"></div>' +
+      '</div>';
+  }
+  document.getElementById('motos-container').innerHTML = html;
+
+  // Bicis (2)
+  html = '';
+  for (let i = 1; i <= 2; i++) {
+    html += '<div class="subsection-title">Bicicleta #' + i + '</div>' +
+      '<div class="row">' +
+        ['Marca','Color','Clase','Serial'].map(f =>
+          '<div class="field"><label>' + (f === 'Serial' ? 'N° serial del marco' : f) + '</label><input type="text" id="bici' + i + f + '"></div>').join('') +
+      '</div>';
+  }
+  document.getElementById('bicis-container').innerHTML = html;
+
+  // Dispositivos (3)
+  html = '';
+  for (let i = 1; i <= 3; i++) {
+    html += '<div class="subsection-title">Dispositivo #' + i + '</div>' +
+      '<div class="row">' +
+        '<div class="field"><label>Tipo</label><select id="disp' + i + 'Tipo">' +
+          '<option value="">—</option><option>Llavero</option><option>Tag</option></select></div>' +
+        '<div class="field"><label>N° / código del dispositivo</label><input type="text" id="disp' + i + 'Codigo"></div>' +
+      '</div>' +
+      '<div class="row row-3">' +
+        '<div class="field"><label>Placa asociada</label><input type="text" id="disp' + i + 'Placa"></div>' +
+        '<div class="field"><label>Fecha de entrega</label><input type="date" id="disp' + i + 'Fecha"></div>' +
+        '<div class="field"><label>Recibe (nombre)</label><input type="text" id="disp' + i + 'Recibe"></div>' +
+      '</div>';
+  }
+  document.getElementById('dispositivos-container').innerHTML = html;
+
+  // Mascotas (2)
+  html = '';
+  for (let i = 1; i <= 2; i++) {
+    html += '<div class="subsection-title">Mascota #' + i + '</div>' +
+      '<div class="row row-3">' +
+        '<div class="field"><label>Tipo</label><input type="text" id="masc' + i + 'Tipo" placeholder="Perro, Gato, ..."></div>' +
+        '<div class="field"><label>Nombre</label><input type="text" id="masc' + i + 'Nombre"></div>' +
+        '<div class="field"><label>Raza</label><input type="text" id="masc' + i + 'Raza"></div>' +
+      '</div>' +
+      '<div class="row row-3">' +
+        '<div class="field"><label>Color</label><input type="text" id="masc' + i + 'Color"></div>' +
+        '<div class="field"><label>Sexo</label><select id="masc' + i + 'Sexo"><option value="">—</option><option>Macho</option><option>Hembra</option></select></div>' +
+        '<div class="field"><label>Fecha última vacuna</label><input type="date" id="masc' + i + 'Vacuna"></div>' +
+      '</div>' +
+      '<div class="row">' +
+        '<div class="field"><label>¿Manejo especial?</label>' +
+          '<div>' +
+            '<label class="radio-row"><input type="radio" name="masc' + i + 'Esp" value="Sí"> Sí</label>' +
+            '<label class="radio-row"><input type="radio" name="masc' + i + 'Esp" value="No"> No</label>' +
+          '</div></div>' +
+      '</div>' +
+      '<div class="row row-3">' +
+        '<div class="field"><label>N° de registro del canino</label><input type="text" id="masc' + i + 'Registro"></div>' +
+        '<div class="field"><label>Aseguradora</label><input type="text" id="masc' + i + 'Aseguradora"></div>' +
+        '<div class="field"><label>N° de póliza</label><input type="text" id="masc' + i + 'Poliza"></div>' +
+      '</div>';
+  }
+  document.getElementById('mascotas-container').innerHTML = html;
+
+  // Emergencias (2)
+  html = '';
+  for (let i = 1; i <= 2; i++) {
+    html += '<div class="subsection-title">Contacto #' + i + '</div>' +
+      '<div class="row row-3">' +
+        '<div class="field"><label>Nombre</label><input type="text" id="em' + i + 'Nombre"></div>' +
+        '<div class="field"><label>Parentesco</label><input type="text" id="em' + i + 'Parent"></div>' +
+        '<div class="field"><label>Teléfonos</label><input type="tel" id="em' + i + 'Tel"></div>' +
+      '</div>';
+  }
+  document.getElementById('emergencias-container').innerHTML = html;
+
+  // Las cabeceras de sección se abren también con Enter o la barra espaciadora
+  document.querySelectorAll('.section-head').forEach(function (h) {
+    h.setAttribute('role', 'button');
+    h.setAttribute('tabindex', '0');
+    h.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); h.click(); }
+    });
+  });
+
+  // Sincronizar fecha firma
+  document.getElementById('firmaFecha').addEventListener('change', (e) => {
+    document.getElementById('firmaFecha2').value = e.target.value;
+  });
+  // Inicializar firmaFecha2 con el valor actual de firmaFecha
+  document.getElementById('firmaFecha2').value = document.getElementById('firmaFecha').value;
+</script>
+
+<script src="js/asistente.js?v=3"></script>
+<script>
+      // Toggle de tema claro/oscuro. Sincroniza localStorage con el atributo data-tema en <html>.
+      (function() {
+        var btn = document.getElementById('temaToggle');
+        if (!btn) return;
+        btn.addEventListener('click', function() {
+          var html = document.documentElement;
+          var actual = html.getAttribute('data-tema') === 'oscuro' ? 'oscuro' : 'claro';
+          var nuevo = actual === 'oscuro' ? 'claro' : 'oscuro';
+          html.setAttribute('data-tema', nuevo);
+          try { localStorage.setItem('cerro-azul-tema', nuevo); } catch (e) {}
+          // Anuncia a lectores de pantalla el cambio
+          btn.setAttribute('aria-label', nuevo === 'oscuro' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro');
+        });
+      })();
+    </script>
+<script src="js/vidrio.js?v=20261113"></script>
+</body>
+</html>

@@ -18,7 +18,7 @@ node scripts/qa-rediseno/snap.js . despues
 # 3. Comparar. Debe terminar en "PARIDAD COMPLETA".
 node scripts/qa-rediseno/compara.js
 
-# 4. Flujos de lo nuevo. Debe terminar en "27 comprobaciones correctas, 0 fallidas".
+# 4. Flujos de lo nuevo. Debe terminar en "35 comprobaciones correctas, 0 fallidas".
 node scripts/qa-rediseno/extra.js .
 ```
 
