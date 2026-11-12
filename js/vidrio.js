@@ -35,17 +35,18 @@
     var p = document.createElementNS(ns, 'path'); p.setAttribute('d', d); s.appendChild(p);
     return s;
   }
-  var esPortada = /(^|\/)inicio\.html$/.test(location.pathname);
+  // La portada es index.html (la dirección principal del portal).
+  function esPortada() { return !!document.querySelector('.vd-portada'); }
 
   // ------------------------------------------------------------------
   // 1. Botón "Inicio" en el encabezado de cada portal
   // ------------------------------------------------------------------
   function botonInicio() {
-    if (esPortada) return;
+    if (esPortada()) return;
     var barra = document.querySelector('header.site-header .header-inner');
     if (!barra || barra.querySelector('.vd-inicio')) return;
     var a = crear('a', 'vd-inicio vd-no-imprimir');
-    a.href = 'inicio.html';
+    a.href = 'index.html';
     a.title = 'Inicio del portal';
     a.setAttribute('aria-label', 'Ir al inicio del portal');
     a.appendChild(svg('M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z'));
@@ -272,12 +273,32 @@
     }, 1200);
   }
 
+  // ------------------------------------------------------------------
+  // 7. Formulario: abrir una pestaña desde el enlace
+  //    formulario.html#editar y formulario.html#mudanzas pulsan la
+  //    pestaña correspondiente con el manejador propio de la página
+  //    (el mismo clic que haría la persona). Sin "#" no hace nada.
+  // ------------------------------------------------------------------
+  function pestanaPorEnlace() {
+    var MODOS = { '#crear': 'create', '#editar': 'edit', '#mudanzas': 'mudanzas' };
+    function aplicar() {
+      var modo = MODOS[String(location.hash || '').toLowerCase()];
+      if (!modo) return;
+      var tab = document.querySelector('.mode-tab[data-mode="' + modo + '"]');
+      if (tab && !tab.classList.contains('active')) tab.click();
+    }
+    if (!document.querySelector('.mode-tab[data-mode]')) return;
+    aplicar();
+    window.addEventListener('hashchange', aplicar);
+  }
+
   function iniciar() {
     seguro('botonInicio', botonInicio);
     seguro('torres', torres);
     seguro('tarjetaEstado', tarjetaEstado);
     seguro('avisoConsulta', avisoConsulta);
     seguro('pasos', pasos);
+    seguro('pestanaPorEnlace', pestanaPorEnlace);
     seguro('precalentar', precalentar);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar);

@@ -172,3 +172,82 @@ resuelven con este cambio:
    (anonimizar y limpiar el historial de git).
 2. `listarReservasPorApto` y `actualizarResidente` sin límite de intentos.
 3. Bloqueo global del ingreso de administración y vigilancia.
+
+---
+
+# Segunda entrega (12-nov-2026, tarde) — La portada pasa a la dirección principal
+
+Rama sugerida: `portada-raiz`
+
+## Por qué
+
+Todos los códigos QR y mensajes ya enviados apuntan a
+`https://fabig76.github.io/cerro-azul-residentes/`. Esa dirección abría el
+formulario, así que nadie llegaba a la portada (`inicio.html`). Esto reemplaza
+la tarea T6 de arriba: **no hay que reimprimir ni reenviar nada**.
+
+## Qué cambia
+
+| Dirección | Antes | Ahora |
+|---|---|---|
+| `/` y `/index.html` | Formulario | **Portada** |
+| `/formulario.html` | no existía | **Formulario** (el mismo archivo, renombrado con `git mv`) |
+| `/formulario.html#editar` | — | Formulario, pestaña "Editar mi registro" |
+| `/formulario.html#mudanzas` | — | Formulario, pestaña "Agendar mudanza" |
+| `/inicio.html` | Portada | Redirige a `/` |
+
+- El formulario es **el mismo archivo**: `git mv index.html formulario.html`.
+  Solo cambió la versión del `<script>` de `vidrio.js` (`?v=20261113`).
+- Los correos, manuales y el asistente dicen "entre a …/cerro-azul-residentes
+  y toque la pestaña *Agendar mudanza*" (o *Editar mi registro*, o *Enviar /
+  Crear registro*). Por eso la portada tiene tres fichas con **esos mismos
+  nombres**, que abren el formulario directamente en esa pestaña.
+- `js/vidrio.js` gana una mejora aditiva: si la dirección trae `#editar` o
+  `#mudanzas`, pulsa la pestaña con el manejador propio de la página (el
+  mismo clic que haría la persona). Sin `#` no hace nada.
+- `residente.html` (2 enlaces) y `salon-social.html` (1) apuntaban a
+  `index.html` queriendo decir "el formulario": ahora apuntan a `formulario.html`.
+- **No se tocó** `js/app.js` ni ningún otro script existente, ni `apps-script/`.
+  No hay que redesplegar el backend.
+
+## Tareas
+
+### P1 — Aplicar
+
+```bash
+git checkout main && git pull
+git checkout -b portada-raiz
+git apply --index portada-raiz.patch
+```
+
+**Verificación:** aparece `formulario.html` (idéntico al `index.html` anterior
+salvo la versión de `vidrio.js`: `git diff main:index.html formulario.html`
+muestra una sola línea), `index.html` pasa a ser la portada, `inicio.html`
+queda en unas 15 líneas, y
+`git diff --cached --stat -- js/ ':!js/vidrio.js' apps-script/` sale vacío.
+
+### P2 — Pruebas
+
+`npm run lint` (0 errores) y `npm test` (**147 pasan**, 1 omitida).
+Opcional pero recomendado: `scripts/qa-rediseno` → `PARIDAD COMPLETA` y
+`35 comprobaciones correctas, 0 fallidas` (compara contra `main` actual).
+
+### P3 — Publicar y comprobar en producción (con recarga forzada)
+
+- [ ] `https://fabig76.github.io/cerro-azul-residentes/` abre la portada.
+- [ ] "Enviar / Crear registro" abre el formulario; llenar y enviar con el apto de prueba 9999.
+- [ ] "Editar mi registro" y "Agendar mudanza" abren su pestaña.
+- [ ] El botón de inicio de cada portal vuelve a la portada.
+- [ ] `…/inicio.html` lleva a la portada.
+- [ ] Escanear un QR impreso real y confirmar que llega a la portada.
+
+### P4 — Textos (sin prisa, no bloquea)
+
+Los manuales de `docs/` y la base de conocimiento del asistente en
+`Codigo.gs` hablan de "pestañas" de la página principal. Siguen siendo
+entendibles porque las fichas se llaman igual. Si se quiere afinar el texto
+del asistente, eso **sí** requiere redesplegar Apps Script: hacerlo aparte.
+
+## Cómo deshacerlo
+
+`git revert` del commit. Las direcciones vuelven a ser las de antes.

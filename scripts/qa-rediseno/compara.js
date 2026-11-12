@@ -1,6 +1,7 @@
 const a=require('./out/antes/estado.json'), d=require('./out/'+(process.argv[2]||'despues')+'/estado.json');
 let fallos=0;
 for(const k of Object.keys(a)){
+  if(/:portada$/.test(k)) continue; // la portada cambia de contenido a propósito
   const x=a[k], y=d[k]; if(!y){console.log('FALTA',k);fallos++;continue;}
   const difIds=Object.keys(x.ids).filter(i=>x.ids[i]!==y.ids[i]);
   const faltan=Object.keys(x.ids).filter(i=>!(i in y.ids));

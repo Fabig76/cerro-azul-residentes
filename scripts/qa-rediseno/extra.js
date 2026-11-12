@@ -4,6 +4,8 @@ const fs = require('fs'); const path = require('path');
 const ROOT = path.resolve(process.argv[2]); const OUT = path.join(__dirname, 'out', 'extra'); fs.mkdirSync(OUT, { recursive: true });
 const MIME = { '.html': 'text/html', '.css': 'text/css', '.js': 'application/javascript', '.json': 'application/json', '.jpg': 'image/jpeg', '.png': 'image/png' };
 const EC = {"ok":true,"periodo":"2026-10","pestana":"OCT 2026","fechaCorte":"2026-10-31","apto":"9999","nombrePropietario":"PROPIETARIO DE PRUEBA","cartera":{"apto":"9999","totalCartera":0,"valorAdmon":205000,"conceptos":[{"nombre":"Administración","valor":0}],"anticipos":0,"mesesProm":0},"factura":{"numCuentaCobro":"12345","fechaEmision":"01/11/2026","pagueseHasta":"15/11/2026","totalAPagar":205000},"facturaDisponible":true,"pagos":[{"periodo":"2026-10","abono":205000},{"periodo":"2026-09","abono":205000},{"periodo":"2026-08","abono":0}],"pazYSalvoHabilitado":true,"linkPago":"https://example.com/pago"};
+const FORM = fs.existsSync(path.join(ROOT, 'formulario.html')) ? 'formulario.html' : 'index.html';
+const PORTADA = FORM === 'formulario.html' ? 'index.html' : 'inicio.html';
 let ok = 0, mal = 0;
 const afirmar = (c, m) => { if (c) { ok++; console.log('  ✓', m); } else { mal++; console.log('  ✗', m); } };
 async function abrir(browser, vp, pagina, opt = {}) {
@@ -12,7 +14,7 @@ async function abrir(browser, vp, pagina, opt = {}) {
   page.on('pageerror', (e) => errores.push(e.message));
   await page.route('**/*', async (route) => {
     const u = new URL(route.request().url());
-    if (u.hostname === 'ca.test') { const f = path.join(ROOT, decodeURIComponent(u.pathname)); return fs.existsSync(f) ? route.fulfill({ status: 200, contentType: MIME[path.extname(f)] || 'application/octet-stream', body: fs.readFileSync(f) }) : route.fulfill({ status: 404, body: '' }); }
+    if (u.hostname === 'ca.test') { const f = path.join(ROOT, u.pathname === '/' ? 'index.html' : decodeURIComponent(u.pathname)); return fs.existsSync(f) ? route.fulfill({ status: 200, contentType: MIME[path.extname(f)] || 'application/octet-stream', body: fs.readFileSync(f) }) : route.fulfill({ status: 404, body: '' }); }
     if (u.hostname.endsWith('script.google.com')) {
       let action = u.searchParams.get('action') || ''; try { action = JSON.parse(route.request().postData() || '{}').action || action; } catch (e) {}
       if (action === 'ping') { pings.push(route.request().method()); return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }); }
@@ -22,14 +24,14 @@ async function abrir(browser, vp, pagina, opt = {}) {
     }
     return route.abort();
   });
-  await page.goto('http://ca.test/' + pagina, { waitUntil: 'load' }); await page.waitForTimeout(500);
+  await page.goto('http://ca.test/' + (pagina === '/' ? '' : pagina), { waitUntil: 'load' }); await page.waitForTimeout(500);
   return { ctx, page, errores, pings };
 }
 (async () => {
   const b = await chromium.launch(); const PC = { width: 1280, height: 900 }, CEL = { width: 390, height: 844 };
 
   console.log('Pasos del formulario (celular)');
-  let s = await abrir(b, CEL, 'index.html');
+  let s = await abrir(b, CEL, FORM);
   const n = await s.page.$$eval('#mainForm .section', (x) => x.length);
   afirmar(await s.page.textContent('#vd-pasos b') === 'Paso 1 de ' + n, 'indicador inicial: Paso 1 de ' + n);
   await s.page.click('#mainForm .section:nth-of-type(1) input[type=radio]', { force: true }).catch(() => {});
@@ -89,8 +91,32 @@ async function abrir(browser, vp, pagina, opt = {}) {
   afirmar(await s.page.$eval('#vd-consultando', (e) => e.hidden) === true, 'si el servidor rechaza, el aviso se oculta y queda el error original: «' + al + '»');
   await s.ctx.close();
 
+  if (FORM === 'formulario.html') {
+    console.log('La dirección principal muestra la portada');
+    s = await abrir(b, CEL, '/');
+    afirmar(await s.page.$('.vd-portada') !== null && await s.page.$('#mainForm') === null, 'la dirección de siempre (/) abre la portada');
+    await s.page.click('a.vd-ficha[href="formulario.html#mudanzas"]'); await s.page.waitForSelector('#view-mudanzas', { timeout: 5000 }); await s.page.waitForTimeout(500);
+    afirmar(await s.page.$eval('#view-mudanzas', (e) => !e.classList.contains('hidden')) && await s.page.$eval('#view-create', (e) => e.classList.contains('hidden')), 'la ficha "Agendar mudanza" abre el formulario en la pestaña de mudanzas');
+    await s.page.screenshot({ path: path.join(OUT, 'cel_mudanzas_desde_portada.png') });
+    await s.page.click('.vd-inicio'); await s.page.waitForSelector('.vd-portada', { timeout: 5000 });
+    afirmar(true, 'el botón de inicio del formulario vuelve a la portada');
+    await s.page.click('a.vd-ficha[href="formulario.html#editar"]'); await s.page.waitForSelector('#view-edit', { timeout: 5000 }); await s.page.waitForTimeout(500);
+    afirmar(await s.page.$eval('#view-edit', (e) => !e.classList.contains('hidden')), 'la ficha "Editar mi registro" abre la pestaña de editar');
+    afirmar(s.errores.length === 0, 'sin errores de JavaScript en el recorrido');
+    await s.ctx.close();
+    s = await abrir(b, CEL, 'formulario.html');
+    afirmar(await s.page.$eval('#view-create', (e) => !e.classList.contains('hidden')) && await s.page.$eval('.mode-tab.active', (e) => e.dataset.mode) === 'create', 'formulario.html sin # abre en "Enviar / Crear registro", como siempre');
+    await s.ctx.close();
+    s = await abrir(b, CEL, 'inicio.html'); await s.page.waitForTimeout(600);
+    afirmar(new URL(s.page.url()).pathname === '/' && await s.page.$('.vd-portada') !== null, 'el enlace anterior (inicio.html) lleva a la dirección principal');
+    await s.ctx.close();
+    s = await abrir(b, CEL, 'residente.html');
+    afirmar((await s.page.$$eval('a[href="formulario.html"]', (x) => x.length)) === 2 && (await s.page.$$eval('a[href="index.html"]:not(.vd-inicio)', (x) => x.length)) === 0, 'el portal del residente enlaza al formulario en su nueva dirección');
+    await s.ctx.close();
+  }
+
   console.log('Capturas de pantalla (vista real, no página completa)');
-  for (const [nom, vp, pag, opt] of [['pc_inicio', PC, 'inicio.html', {}], ['pc_inicio_oscuro', PC, 'inicio.html', { oscuro: true }], ['cel_inicio', CEL, 'inicio.html', {}], ['cel_inicio_oscuro', CEL, 'inicio.html', { oscuro: true }], ['pc_index_oscuro', PC, 'index.html', { oscuro: true }], ['cel_index_oscuro', CEL, 'index.html', { oscuro: true }], ['pc_informes_oscuro', PC, 'informes.html', { oscuro: true }], ['cel_residente', CEL, 'residente.html', {}], ['cel_salon', CEL, 'salon-social.html', {}]]) {
+  for (const [nom, vp, pag, opt] of [['pc_inicio', PC, PORTADA, {}], ['pc_inicio_oscuro', PC, PORTADA, { oscuro: true }], ['cel_inicio', CEL, PORTADA, {}], ['cel_inicio_oscuro', CEL, PORTADA, { oscuro: true }], ['pc_index_oscuro', PC, FORM, { oscuro: true }], ['cel_index_oscuro', CEL, FORM, { oscuro: true }], ['pc_informes_oscuro', PC, 'informes.html', { oscuro: true }], ['cel_residente', CEL, 'residente.html', {}], ['cel_salon', CEL, 'salon-social.html', {}]]) {
     s = await abrir(b, vp, pag, opt); await s.page.waitForTimeout(600);
     await s.page.screenshot({ path: path.join(OUT, nom + '.png') });
     afirmar(s.errores.length === 0, nom + ' sin errores'); await s.ctx.close();

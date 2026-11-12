@@ -14,7 +14,7 @@ const leer = (...p) => fs.readFileSync(raiz(...p), 'utf-8');
 
 const CSS = leer('assets', 'vidrio.css');
 const JS = leer('js', 'vidrio.js');
-const PAGINAS = ['index.html', 'residente.html', 'salon-social.html', 'estado-cuenta.html', 'informes.html', 'admin.html', 'vigilantes.html', 'cartera-admin.html'];
+const PAGINAS = ['formulario.html', 'residente.html', 'salon-social.html', 'estado-cuenta.html', 'informes.html', 'admin.html', 'vigilantes.html', 'cartera-admin.html'];
 
 // Reglas hoja de la hoja de estilos: [{ selector, props: [nombres] }]
 function reglas(css) {
@@ -141,5 +141,51 @@ describe('js/vidrio.js en una página simulada', () => {
     document.body.innerHTML = '<main><p>hola</p></main>';
     expect(() => ejecutar()).not.toThrow();
     expect(document.querySelectorAll('[data-vd]').length).toBe(0);
+  });
+});
+
+describe('la dirección principal muestra la portada', () => {
+  it('index.html es la portada y no carga la lógica del formulario', () => {
+    const html = leer('index.html');
+    expect(html).toMatch(/class="vd-portada"/);
+    expect(html).not.toMatch(/js\/app\.js/);
+    expect(html).not.toMatch(/id="mainForm"/);
+  });
+  it('formulario.html conserva el formulario completo y su lógica', () => {
+    const html = leer('formulario.html');
+    expect(html).toMatch(/id="mainForm"/);
+    expect(html).toMatch(/js\/app\.js/);
+    for (const modo of ['create', 'edit', 'mudanzas']) expect(html).toContain('data-mode="' + modo + '"');
+  });
+  it('la portada enlaza las tres pestañas del formulario con sus nombres de siempre', () => {
+    const html = leer('index.html');
+    expect(html).toMatch(/href="formulario\.html"[\s\S]{0,900}Enviar \/ Crear registro/);
+    expect(html).toMatch(/href="formulario\.html#editar"[\s\S]{0,900}Editar mi registro/);
+    expect(html).toMatch(/href="formulario\.html#mudanzas"[\s\S]{0,900}Agendar mudanza/);
+  });
+  it('ninguna página enlaza ya a index.html esperando el formulario', () => {
+    for (const p of ['residente.html', 'salon-social.html', 'index.html']) expect(leer(p)).not.toMatch(/href="index\.html"/);
+  });
+  it('inicio.html (enlace anterior) redirige a la dirección principal', () => {
+    const html = leer('inicio.html');
+    expect(html).toMatch(/http-equiv="refresh" content="0; url=\.\/"/);
+    expect(html).toMatch(/location\.replace\('\.\/'\)/);
+  });
+});
+
+describe('formulario: abrir una pestaña desde el enlace', () => {
+  function montar(hash) {
+    window.location.hash = hash;
+    document.body.innerHTML = '<button class="mode-tab active" data-mode="create"></button><button class="mode-tab" data-mode="edit"></button><button class="mode-tab" data-mode="mudanzas"></button>';
+    const pulsadas = [];
+    document.querySelectorAll('.mode-tab').forEach((t) => t.addEventListener('click', () => pulsadas.push(t.dataset.mode)));
+    new Function(JS)();
+    return pulsadas;
+  }
+  it('#mudanzas pulsa la pestaña de mudanzas', () => { expect(montar('#mudanzas')).toEqual(['mudanzas']); });
+  it('#editar pulsa la pestaña de editar', () => { expect(montar('#editar')).toEqual(['edit']); });
+  it('sin # (o con uno desconocido) no pulsa nada', () => {
+    expect(montar('')).toEqual([]);
+    expect(montar('#otra-cosa')).toEqual([]);
   });
 });

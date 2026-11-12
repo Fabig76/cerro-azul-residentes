@@ -14,7 +14,7 @@ const APP_JS = process.env.APP_JS || raiz('js/app.js');
 
 let w;
 beforeAll(() => {
-  const html = fs.readFileSync(raiz('index.html'), 'utf-8');
+  const html = fs.readFileSync(raiz('formulario.html'), 'utf-8');
   const dom = new JSDOM(html.replace(/<script[\s\S]*?<\/script>/g, ''), { runScripts: 'outside-only', url: 'https://x.test/' });
   w = dom.window;
   const inline = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
