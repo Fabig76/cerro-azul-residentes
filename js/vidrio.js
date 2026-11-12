@@ -292,6 +292,30 @@
     window.addEventListener('hashchange', aplicar);
   }
 
+  // ------------------------------------------------------------------
+  // 8. Portada: botones que abren el asistente con IA
+  //    El asistente sigue siendo js/asistente.js, sin cambios. Estos
+  //    botones solo pulsan su propio "Abrir chat". Si el asistente no
+  //    cargó, los botones se ocultan en vez de quedar sin efecto.
+  // ------------------------------------------------------------------
+  function botonesAsistente() {
+    var botones = document.querySelectorAll('[data-vd-asistente]');
+    if (!botones.length) return;
+    var alternar = document.getElementById('ca-btn-toggle');
+    var ventana = document.getElementById('ca-ventana');
+    if (!alternar || !ventana) {
+      Array.prototype.forEach.call(document.querySelectorAll('[data-vd-asistente-zona]'), function (z) { z.hidden = true; });
+      return;
+    }
+    Array.prototype.forEach.call(botones, function (b) {
+      b.addEventListener('click', function () {
+        if (ventana.classList.contains('ca-oculta')) alternar.click();
+        var campo = document.getElementById('ca-input');
+        if (campo && campo.focus) campo.focus();
+      });
+    });
+  }
+
   function iniciar() {
     seguro('botonInicio', botonInicio);
     seguro('torres', torres);
@@ -299,6 +323,7 @@
     seguro('avisoConsulta', avisoConsulta);
     seguro('pasos', pasos);
     seguro('pestanaPorEnlace', pestanaPorEnlace);
+    seguro('botonesAsistente', botonesAsistente);
     seguro('precalentar', precalentar);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar);
