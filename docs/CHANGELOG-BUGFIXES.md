@@ -12,6 +12,51 @@
 
 ---
 
+## FEAT · Rediseño "vidrio" como capa aditiva — verificación (12-Nov-2026)
+
+**Estado:** 🟡 Verificado en automático (T2–T3). **Pendiente:** revisión
+manual en celular real (T4) y visto bueno del operador antes de publicar.
+
+**Rama:** `rediseno-vidrio` (base local `main` en `f4fff7d`; `origin/main`
+ya va en `b274b8e` con el portal de fumigación → **rebasar/mezclar antes de
+publicar**. El parche aplica limpio sobre `origin/main` y la paridad se
+repitió también contra esa base).
+
+**Qué es:** hoja `assets/vidrio.css` + `js/vidrio.js` cargados al final de
+los 8 portales (2 líneas añadidas por HTML, 0 eliminadas) y portada nueva
+`inicio.html` (+ `assets/inicio.css`). No toca backend, ni `js/*.js`
+existentes, ni `styles.css` / `residente.css` / `salon-social.css` /
+`informes.css`. Se revierte quitando las 2 líneas de cada HTML.
+
+**Resultado de la verificación:**
+- T2 — `npx vitest run`: 140/140 (122 previos + 18 de `tests/vidrio-capa.test.js`).
+  `eslint js/vidrio.js`: sin avisos.
+- Auditoría manual de las 5 reglas de la capa: cumplidas. Únicas
+  propiedades no-pintura sobre algo preexistente: `body::before` (capa de
+  fondo fija, `z-index:-1`, `pointer-events:none`) y
+  `.section { scroll-margin-top }`; ambas inocuas. Ningún `backdrop-filter`
+  queda en un antepasado de una ventana modal (`#form-card` lo anula; el
+  modal de admin cuelga directo de `<main>`).
+- T3 — paridad en Chromium (Playwright, red bloqueada, backend simulado):
+  `compara.js` → **PARIDAD COMPLETA** en 40 estados (9 páginas × PC/celular
+  + flujos), contra `main` local y contra `origin/main`. `extra.js` →
+  **27/27** comprobaciones.
+- `?action=ping` (precalentado) se atiende en `doGet` antes de cualquier
+  `rateLimit_`; como mucho 1 por pestaña cada 4 min, solo al cargar.
+
+**Observaciones (no bloquean):**
+- En celular (390 px) el botón "Inicio" quita ~50 px al título del
+  encabezado: el nombre del conjunto pasa a 2–3 líneas en admin/vigilancia.
+- "Siguiente" en la barra de pasos no valida la sección actual; la
+  validación completa sigue ocurriendo al pulsar "Enviar" (sin cambios).
+- El indicador de pasos no se actualiza cuando la validación abre las
+  secciones con error.
+
+**Fuera de alcance / pendiente:** revisión en iPhone (Safari) y Android
+reales, rendimiento del desenfoque en equipos modestos.
+
+---
+
 ## FEAT · Chat del asistente arranca cerrado (25-Oct-2026)
 
 **Estado:** ✅ Implementado y desplegado (frontend, GitHub Pages).
