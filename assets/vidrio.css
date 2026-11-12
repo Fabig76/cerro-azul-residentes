@@ -1,0 +1,300 @@
+/* ============================================================
+   Cerro Azul — Capa "vidrio" (rediseño de noviembre de 2026)
+
+   Se carga DESPUÉS de styles.css (y de residente.css,
+   salon-social.css o informes.css cuando la página los usa).
+   Para volver al aspecto anterior basta con quitar el <link> de
+   esta hoja y el <script> de js/vidrio.js: nada más depende de ella.
+
+   Reglas de esta capa (las verifica tests/vidrio-capa.test.js):
+     1. No usa !important.
+     2. Sobre clases e ids que ya existían solo cambia pintura
+        (colores, fondos, bordes, sombras, radios, desenfoque).
+        Nunca display, visibility, position, z-index, pointer-events,
+        transform ni tamaños: eso lo decide styles.css y el JavaScript.
+     3. El desenfoque (backdrop-filter) solo va en superficies que
+        NO contienen ventanas modales: un antepasado con desenfoque
+        atrapa a los position:fixed que tenga dentro.
+     4. Todo lo nuevo lleva el prefijo "vd-".
+   ============================================================ */
+
+/* ---------- 1. Variables ---------- */
+:root {
+  --fondo:        #E8F0F9;
+  --fondo-card:   rgba(255, 255, 255, .74);
+  --gris-med:     #4B5567;
+  --texto-med:    #4B5567;
+  --linea:        rgba(15, 27, 45, .10);
+  --gris-borde:   rgba(15, 27, 45, .14);
+
+  --acento:       #0058B8;
+  --acento-osc:   #00469A;
+
+  --r-card: 24px;
+  --r-hoja: 30px;
+
+  --sombra-1: inset 0 0 0 1px rgba(255, 255, 255, .7), 0 1px 2px rgba(20, 50, 100, .05), 0 10px 26px -14px rgba(20, 60, 120, .26);
+  --sombra-2: inset 0 0 0 1px rgba(255, 255, 255, .8), 0 2px 6px rgba(20, 50, 100, .05), 0 28px 60px -26px rgba(20, 60, 120, .38);
+  --sombra-boton: inset 0 1px 0 rgba(255, 255, 255, .35), 0 1px 2px rgba(20, 30, 50, .10), 0 10px 20px -8px rgba(0, 76, 153, .55);
+
+  /* Propias de la capa */
+  --vd-vidrio:      rgba(255, 255, 255, .64);
+  --vd-vidrio-alto: rgba(255, 255, 255, .86);
+  --vd-borde:       rgba(255, 255, 255, .85);
+  --vd-desenfoque:  blur(22px) saturate(170%);
+  --vd-surco:       rgba(15, 27, 45, .08);
+  --vd-f1: rgba(10, 132, 208, .42);
+  --vd-f2: rgba(47, 163, 107, .32);
+  --vd-f3: rgba(243, 146, 0, .18);
+  --vd-f4: rgba(0, 168, 156, .22);
+}
+
+/* Los paneles de personal conservan su propio acento */
+body.tema-admin {
+  --acento:     #1B3F94;
+  --acento-osc: #142F70;
+  --vd-f1: rgba(27, 63, 148, .30);
+  --vd-f2: rgba(10, 132, 208, .22);
+  --vd-f4: rgba(27, 63, 148, .14);
+}
+body.tema-vigilancia {
+  --acento:     #0B7A6E;
+  --acento-osc: #085C53;
+  --vd-f1: rgba(11, 122, 110, .30);
+  --vd-f2: rgba(47, 163, 107, .24);
+  --vd-f4: rgba(10, 132, 208, .14);
+}
+
+:root[data-tema="oscuro"] {
+  --fondo:        #06101C;
+  --fondo-card:   rgba(24, 34, 50, .74);
+  --gris-med:     #A9B4C6;
+  --texto-med:    #A9B4C6;
+  --linea:        rgba(255, 255, 255, .12);
+  --gris-borde:   rgba(255, 255, 255, .16);
+  --acento:       #4D9EFF;        /* los mismos valores que ya tenía el tema oscuro */
+  --acento-osc:   #0066CC;
+
+  --sombra-1: inset 0 0 0 1px rgba(255, 255, 255, .08), 0 1px 2px rgba(0, 0, 0, .4), 0 10px 26px -14px rgba(0, 0, 0, .7);
+  --sombra-2: inset 0 0 0 1px rgba(255, 255, 255, .10), 0 2px 6px rgba(0, 0, 0, .3), 0 28px 60px -26px rgba(0, 0, 0, .8);
+  --sombra-boton: inset 0 1px 0 rgba(255, 255, 255, .25), 0 1px 2px rgba(0, 0, 0, .4), 0 10px 20px -8px rgba(77, 158, 255, .5);
+
+  --vd-vidrio:      rgba(22, 32, 48, .62);
+  --vd-vidrio-alto: rgba(30, 42, 62, .88);
+  --vd-borde:       rgba(255, 255, 255, .14);
+  --vd-surco:       rgba(255, 255, 255, .08);
+  --vd-f1: rgba(10, 132, 208, .26);
+  --vd-f2: rgba(47, 163, 107, .16);
+  --vd-f3: rgba(243, 146, 0, .09);
+  --vd-f4: rgba(0, 168, 156, .14);
+}
+
+/* ---------- 2. Fondo ----------
+   Los "cerros" del logo como manchas de color suaves. Va en una capa fija
+   detrás de todo (no recibe clics) para que el vidrio tenga qué reflejar. */
+html { background: var(--fondo); }
+body { background: transparent; }
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(62vmax 44vmax at 10% -10%, var(--vd-f1), transparent 62%),
+    radial-gradient(54vmax 40vmax at 104% 2%,  var(--vd-f2), transparent 62%),
+    radial-gradient(40vmax 30vmax at -6% 46%,  var(--vd-f3), transparent 60%),
+    radial-gradient(72vmax 46vmax at 64% 112%, var(--vd-f4), transparent 62%);
+}
+
+/* ---------- 3. Superficies de vidrio (con desenfoque) ---------- */
+header.site-header {
+  background: var(--vd-vidrio);
+  -webkit-backdrop-filter: var(--vd-desenfoque);
+  backdrop-filter: var(--vd-desenfoque);
+  box-shadow: inset 0 -1px 0 var(--vd-borde);
+}
+:root[data-tema="oscuro"] header.site-header {
+  background: var(--vd-vidrio);
+  border-bottom-color: transparent;
+}
+
+.lookup-box, .login-card, main > .card, .success-card, .confirmacion {
+  background: var(--vd-vidrio);
+  -webkit-backdrop-filter: var(--vd-desenfoque);
+  backdrop-filter: var(--vd-desenfoque);
+}
+/* El formulario principal contiene una ventana modal: sin desenfoque */
+#form-card {
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* ---------- 4. Superficies translúcidas (sin desenfoque: son muchas) ---------- */
+.mode-tabs, .vig-tabs, .admin-nav { background: var(--vd-surco); }
+.card .card { background: var(--vd-surco); }
+.meta-info { background: var(--vd-surco); }
+.modal-content { background: var(--vd-vidrio-alto); }
+.campo-fijo { background: var(--vd-surco); }
+
+@media (hover: hover) {
+  .section-head:hover, .detail-card summary:hover { background: var(--vd-surco); }
+}
+
+/* ---------- 5. Campos ---------- */
+input, select, textarea { border-color: var(--linea); }
+input:disabled, select:disabled, textarea:disabled { background-color: var(--vd-surco); }
+
+/* ---------- 6. Botones ---------- */
+.btn-primary {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--acento) 84%, #FFFFFF), var(--acento));
+}
+.btn-secondary { box-shadow: inset 0 0 0 1px var(--vd-borde); }
+/* Tema oscuro: texto blanco sobre un azul más profundo (antes quedaba en 2.8:1).
+   :where() mantiene la especificidad baja para que :hover, :disabled y el
+   control segmentado de styles.css sigan mandando. */
+:where(:root[data-tema="oscuro"]) .btn-primary { background: linear-gradient(180deg, #1A6FDB, #0058B8); }
+:where(:root[data-tema="oscuro"]) .legal-banner strong { color: #FFD9A0; }
+.tema-toggle { background: var(--vd-vidrio-alto); border-color: var(--vd-borde); }
+
+/* ---------- 7. Asistente ---------- */
+html body #ca-ventana {
+  background: var(--vd-vidrio-alto);
+  -webkit-backdrop-filter: var(--vd-desenfoque);
+  backdrop-filter: var(--vd-desenfoque);
+  box-shadow: inset 0 0 0 1px var(--vd-borde), 0 2px 6px rgba(20, 30, 50, .08), 0 30px 70px -24px rgba(10, 16, 30, .5);
+}
+html body #ca-head, html body #ca-msgs, html body #ca-pie { background: transparent; }
+
+/* ---------- 8. Compatibilidad y rendimiento ---------- */
+/* En el celular el desenfoque es más corto: cuesta menos en equipos modestos */
+@media (max-width: 560px) {
+  :root { --vd-desenfoque: blur(14px) saturate(160%); }
+}
+/* Sin soporte de desenfoque, o si la persona pidió menos transparencia:
+   las superficies se vuelven casi opacas y todo se lee igual */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root { --vd-vidrio: rgba(255, 255, 255, .93); --fondo-card: rgba(255, 255, 255, .93); }
+  :root[data-tema="oscuro"] { --vd-vidrio: rgba(24, 34, 50, .95); --fondo-card: rgba(24, 34, 50, .95); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root { --vd-vidrio: #FFFFFF; --vd-vidrio-alto: #FFFFFF; --fondo-card: #FFFFFF; --vd-desenfoque: none; }
+  :root[data-tema="oscuro"] { --vd-vidrio: #1A2027; --vd-vidrio-alto: #1A2027; --fondo-card: #1A2027; }
+}
+@media print {
+  body::before { content: none; }
+  .vd-no-imprimir { display: none; }
+}
+
+/* ============================================================
+   COMPONENTES NUEVOS (prefijo vd-). Los crea js/vidrio.js.
+   ============================================================ */
+
+/* ---------- 9. Botón de inicio en el encabezado ---------- */
+.vd-inicio {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: var(--vd-vidrio-alto);
+  box-shadow: inset 0 0 0 1px var(--vd-borde), 0 6px 14px -8px rgba(20, 60, 120, .4);
+  color: var(--gris-tx);
+  text-decoration: none;
+  transition: transform .18s var(--curva), color .2s ease;
+}
+.vd-inicio:hover { color: var(--acento); transform: translateY(-1px); }
+.vd-inicio:active { transform: scale(.94); }
+@media (max-width: 560px) {
+  .vd-inicio { width: 38px; height: 38px; border-radius: 12px; }
+}
+
+/* ---------- 10. Tarjeta 3D del apartamento (estado de cuenta) ---------- */
+.vd-escena { perspective: 1100px; margin: 4px 0 18px; }
+.vd-flota { animation: vd-flota 7s ease-in-out infinite; transform-style: preserve-3d; }
+.vd-tarjeta {
+  position: relative;
+  height: 212px;
+  max-width: 400px;
+  margin: 0 auto;
+  border-radius: 26px;
+  color: #FFFFFF;
+  background: linear-gradient(135deg, #0A3F9E 0%, #0A82D0 52%, #16A88F 100%);
+  box-shadow: 0 26px 44px -14px rgba(8, 60, 140, .5), inset 0 2px 0 rgba(255, 255, 255, .5), inset 0 -3px 0 rgba(0, 0, 0, .18);
+  transform-style: preserve-3d;
+  transition: transform .2s ease-out;
+  overflow: visible;
+}
+.vd-tarjeta.vd-saldo  { background: linear-gradient(135deg, #7A3B00 0%, #D97A00 55%, #F2A63A 100%); box-shadow: 0 26px 44px -14px rgba(150, 80, 0, .45), inset 0 2px 0 rgba(255, 255, 255, .5), inset 0 -3px 0 rgba(0, 0, 0, .18); }
+.vd-tarjeta > * { position: absolute; }
+.vd-tarjeta svg { inset: 0; width: 100%; height: 100%; border-radius: 26px; transform: translateZ(16px); }
+.vd-tarjeta-brillo { inset: 0; border-radius: 26px; transform: translateZ(1px); background: radial-gradient(circle at var(--vd-mx, 30%) var(--vd-my, 20%), rgba(255, 255, 255, .38), rgba(255, 255, 255, 0) 55%); }
+.vd-tarjeta-marca { top: 20px; left: 22px; font-size: 13.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; transform: translateZ(28px); }
+.vd-tarjeta-estado { top: 18px; right: 18px; padding: 5px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; color: #063D22; background: rgba(214, 255, 232, .94); box-shadow: 0 6px 14px rgba(0, 0, 0, .2); transform: translateZ(54px); }
+.vd-saldo .vd-tarjeta-estado { color: #5A2C00; background: rgba(255, 236, 205, .96); }
+.vd-tarjeta-apto { left: 22px; bottom: 50px; transform: translateZ(44px); }
+.vd-tarjeta-apto small { display: block; font-size: 13px; opacity: .92; }
+.vd-tarjeta-apto b { display: block; font-size: 58px; line-height: 1; font-weight: 700; letter-spacing: -.03em; text-shadow: 0 8px 18px rgba(0, 0, 0, .25); }
+.vd-tarjeta-nombre { left: 22px; right: 22px; bottom: 18px; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transform: translateZ(24px); }
+@keyframes vd-flota { 0%, 100% { transform: translateY(0) rotateZ(-.8deg); } 50% { transform: translateY(-8px) rotateZ(.8deg); } }
+
+/* ---------- 11. Aviso de "consultando" ---------- */
+.vd-esqueleto { display: grid; gap: 8px; margin: 14px 0 0; }
+.vd-esqueleto[hidden] { display: none; }
+.vd-esqueleto i {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--vd-surco) 20%, var(--acento) 50%, var(--vd-surco) 80%);
+  background-size: 200% 100%;
+  animation: vd-brillo 1.1s linear infinite;
+}
+.vd-esqueleto p { margin: 0; text-align: center; font-size: 14px; color: var(--gris-med); }
+@keyframes vd-brillo { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* ---------- 12. Pasos del formulario ---------- */
+.vd-pasos {
+  position: sticky;
+  top: 54px;                      /* debajo del aviso fijo del asistente (46px) */
+  z-index: 6;
+  margin: 0 0 12px;
+  padding: 8px 8px 10px;
+  border-radius: 22px;
+  background: var(--vd-vidrio-alto);
+  -webkit-backdrop-filter: var(--vd-desenfoque);
+  backdrop-filter: var(--vd-desenfoque);
+  box-shadow: var(--sombra-2);
+}
+.vd-pasos-fila { display: flex; align-items: center; gap: 8px; }
+.vd-pasos-texto { flex: 1 1 auto; min-width: 0; padding: 0 4px; line-height: 1.25; }
+.vd-pasos-texto b { display: block; font-size: 13px; color: var(--acento); }
+.vd-pasos-texto span { display: block; font-size: 14.5px; font-weight: 600; color: var(--gris-tx); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vd-pasos button {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  font: 600 14.5px/1 var(--fuente);
+  cursor: pointer;
+  transition: transform .15s var(--curva), background-color .2s ease, opacity .2s ease;
+}
+.vd-pasos button:active { transform: scale(.96); }
+.vd-pasos-ant { background: var(--vd-surco); color: var(--gris-tx); }
+.vd-pasos-sig { background: var(--acento); color: #FFFFFF; }
+:root[data-tema="oscuro"] .vd-pasos-sig { color: #06101C; }
+.vd-pasos button:disabled { opacity: .45; cursor: not-allowed; }
+.vd-pasos-barra { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; margin: 8px 4px 0; }
+.vd-pasos-barra i { height: 5px; border-radius: 999px; background: var(--vd-surco); transition: background-color .25s ease; }
+.vd-pasos-barra i.vd-hecho { background: var(--acento); }
+.section { scroll-margin-top: 150px; }
+@media (max-width: 560px) {
+  .vd-pasos button { padding: 0 12px; font-size: 13.5px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vd-flota, .vd-esqueleto i { animation: none; }
+}

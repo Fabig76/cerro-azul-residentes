@@ -12,3 +12,6 @@
 
 # Dependencias de Node (T18) — nunca subir
 node_modules/
+
+# Salida de las pruebas visuales del rediseño
+scripts/qa-rediseno/out/
