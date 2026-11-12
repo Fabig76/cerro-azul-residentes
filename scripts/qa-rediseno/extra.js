@@ -19,7 +19,7 @@ async function abrir(browser, vp, pagina, opt = {}) {
       let action = u.searchParams.get('action') || ''; try { action = JSON.parse(route.request().postData() || '{}').action || action; } catch (e) {}
       if (action === 'ping') { pings.push(route.request().method()); return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }); }
       if (opt.lento) await new Promise((r) => setTimeout(r, 1500));
-      const body = action === 'ecConsultar' ? (opt.falla ? { ok: false, error: 'La cédula no coincide.' } : EC) : { ok: false, error: 'simulado' };
+      const body = action === 'chatAsistente' ? { ok: true, respuesta: 'Respuesta simulada.' } : action === 'ecConsultar' ? (opt.falla ? { ok: false, error: 'La cédula no coincide.' } : EC) : { ok: false, error: 'simulado' };
       return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
     }
     return route.abort();
@@ -103,6 +103,18 @@ async function abrir(browser, vp, pagina, opt = {}) {
     await s.page.click('a.vd-ficha[href="formulario.html#editar"]'); await s.page.waitForSelector('#view-edit', { timeout: 5000 }); await s.page.waitForTimeout(500);
     afirmar(await s.page.$eval('#view-edit', (e) => !e.classList.contains('hidden')), 'la ficha "Editar mi registro" abre la pestaña de editar');
     afirmar(s.errores.length === 0, 'sin errores de JavaScript en el recorrido');
+    await s.ctx.close();
+    s = await abrir(b, CEL, '/');
+    afirmar(await s.page.$('#ca-banner') !== null && await s.page.$eval('#ca-ventana', (e) => e.classList.contains('ca-oculta')), 'la portada tiene el aviso del asistente arriba y el chat arranca cerrado');
+    await s.page.click('.vd-barra button[data-vd-asistente]'); await s.page.waitForTimeout(500);
+    afirmar(await s.page.$eval('#ca-ventana', (e) => !e.classList.contains('ca-oculta')), 'el botón de la barra flotante abre el chat');
+    await s.page.screenshot({ path: path.join(OUT, 'cel_portada_chat.png') });
+    await s.page.click('#ca-btn-min'); await s.page.waitForTimeout(300);
+    await s.page.click('.vd-ayuda button[data-vd-asistente]'); await s.page.waitForTimeout(500);
+    afirmar(await s.page.$eval('#ca-ventana', (e) => !e.classList.contains('ca-oculta')), 'el botón "Abrir chat" de la portada también lo abre');
+    await s.page.fill('#ca-input', 'hola'); await s.page.click('#ca-enviar'); await s.page.waitForTimeout(700);
+    afirmar((await s.page.$$eval('.ca-msg-user', (x) => x.length)) === 1 && (await s.page.$$eval('.ca-msg-bot', (x) => x.length)) >= 1, 'se puede escribir y el asistente responde (backend simulado)');
+    afirmar(s.errores.length === 0, 'sin errores de JavaScript con el asistente' + (s.errores.length ? ': ' + s.errores.join(' | ') : ''));
     await s.ctx.close();
     s = await abrir(b, CEL, 'formulario.html');
     afirmar(await s.page.$eval('#view-create', (e) => !e.classList.contains('hidden')) && await s.page.$eval('.mode-tab.active', (e) => e.dataset.mode) === 'create', 'formulario.html sin # abre en "Enviar / Crear registro", como siempre');

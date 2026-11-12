@@ -189,3 +189,25 @@ describe('formulario: abrir una pestaña desde el enlace', () => {
     expect(montar('#otra-cosa')).toEqual([]);
   });
 });
+
+describe('portada: el asistente con IA está disponible', () => {
+  it('index.html carga common.js y asistente.js antes de vidrio.js', () => {
+    const guiones = [...leer('index.html').matchAll(/<script src="js\/([\w-]+)\.js/g)].map((m) => m[1]);
+    expect(guiones).toEqual(['config', 'common', 'asistente', 'vidrio']);
+  });
+  it('los botones abren el chat con el propio "Abrir chat" del asistente y no lo cierran', () => {
+    document.body.innerHTML = '<button id="ca-btn-toggle"></button><div id="ca-ventana" class="ca-oculta"><input id="ca-input"></div><button data-vd-asistente id="b1"></button>';
+    const v = document.getElementById('ca-ventana');
+    document.getElementById('ca-btn-toggle').addEventListener('click', () => v.classList.toggle('ca-oculta'));
+    new Function(JS)();
+    document.getElementById('b1').click();
+    expect(v.classList.contains('ca-oculta')).toBe(false);
+    document.getElementById('b1').click();              // segundo toque: sigue abierto
+    expect(v.classList.contains('ca-oculta')).toBe(false);
+  });
+  it('si el asistente no cargó, los botones se ocultan', () => {
+    document.body.innerHTML = '<section data-vd-asistente-zona id="z"><button data-vd-asistente></button></section>';
+    new Function(JS)();
+    expect(document.getElementById('z').hidden).toBe(true);
+  });
+});

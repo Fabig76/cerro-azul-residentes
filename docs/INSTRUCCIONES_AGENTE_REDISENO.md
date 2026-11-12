@@ -251,3 +251,38 @@ del asistente, eso **sí** requiere redesplegar Apps Script: hacerlo aparte.
 ## Cómo deshacerlo
 
 `git revert` del commit. Las direcciones vuelven a ser las de antes.
+
+---
+
+# Tercera entrega (12-nov-2026, noche) — El asistente con IA en la portada
+
+Rama sugerida: `asistente-portada`
+
+## Por qué
+
+La portada nueva no cargaba el asistente: desapareció el aviso azul de arriba
+("Ayudante con IA… Abrir chat") y no había ningún botón para abrir el chat.
+
+## Qué cambia
+
+- `index.html` (portada) carga `js/common.js` y `js/asistente.js`, igual que
+  los demás portales. Vuelve el aviso de arriba con su "Abrir chat".
+- Dos botones nuevos que abren el mismo chat: la franja "¿Necesita ayuda?"
+  bajo la presentación y un botón en la barra flotante.
+- `js/vidrio.js`: los botones solo pulsan el "Abrir chat" propio del
+  asistente. Si `asistente.js` no cargó, los botones se ocultan.
+- **No se tocó** `js/asistente.js` ni el backend. En las demás páginas solo
+  cambia la versión del `<script>` de `vidrio.js` (`?v=20261114`).
+
+## Tareas
+
+1. `git checkout main && git pull && git checkout -b asistente-portada && git apply --index asistente-portada.patch`
+2. `npm run lint` (0 errores) y `npm test` (**150 pasan**, 1 omitida).
+   Opcional: `scripts/qa-rediseno` → `PARIDAD COMPLETA` y `40 comprobaciones correctas, 0 fallidas`.
+3. Publicar y, con recarga forzada, comprobar en la portada: aparece el aviso
+   azul arriba; "Abrir chat" de la franja y el botón de la barra abren el chat;
+   hacer una pregunta real y recibir respuesta.
+
+Pendiente de texto (no bloquea): el aviso dice "para llenar el formulario" y
+el pie del chat "Solo preguntas sobre el formulario". Ese texto vive en
+`js/asistente.js`; cambiarlo es una decisión de Fabio y se haría aparte.

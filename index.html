@@ -8,7 +8,7 @@
   <link rel="icon" href="assets/logo.jpg" type="image/jpeg">
   <link rel="stylesheet" href="assets/styles.css?v=20261107">
   <link rel="stylesheet" href="assets/vidrio.css?v=20261112">
-  <link rel="stylesheet" href="assets/inicio.css?v=20261113">
+  <link rel="stylesheet" href="assets/inicio.css?v=20261114">
   <script>
       // Anti-FOUC: el mismo bloque que usa formulario.html (misma clave de localStorage).
       (function() {
@@ -69,6 +69,13 @@
         </div>
       </div>
     </div>
+  </section>
+
+  <!-- Asistente con IA: el mismo de los demás portales (js/asistente.js). Este botón solo lo abre. -->
+  <section class="vd-ayuda" data-vd-asistente-zona>
+    <span class="vd-icono vd-i-noche"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M9 11h.01M12 11h.01M15 11h.01"/></svg></span>
+    <p><strong>¿Necesita ayuda?</strong> El asistente con IA le explica paso a paso cómo registrarse, agendar una mudanza, reservar el salón o consultar su cuenta.</p>
+    <button type="button" class="btn btn-primary" data-vd-asistente>Abrir chat</button>
   </section>
 
   <section class="vd-servicios" id="servicios">
@@ -139,6 +146,8 @@
     <a href="residente.html" aria-label="Portal del residente"><span class="vd-icono vd-i-indigo"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.600-7 8-7s8 3 8 7"/></svg></span></a>
     <a href="salon-social.html" aria-label="Salón social"><span class="vd-icono vd-i-naranja"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span></a>
     <a href="informes.html" aria-label="Informes contables"><span class="vd-icono vd-i-cielo"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span></a>
+    <span class="vd-barra-sep" data-vd-asistente-zona aria-hidden="true"></span>
+    <button type="button" data-vd-asistente data-vd-asistente-zona aria-label="Abrir el asistente con IA" title="Asistente"><span class="vd-icono vd-i-noche"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M9 11h.01M12 11h.01M15 11h.01"/></svg></span></button>
   </div>
 </nav>
 
@@ -147,7 +156,9 @@
 </footer>
 
 <script src="js/config.js?v=20261028"></script>
-<script src="js/vidrio.js?v=20261113"></script>
+<script src="js/common.js?v=20261028"></script>
+<script src="js/asistente.js?v=3"></script>
+<script src="js/vidrio.js?v=20261114"></script>
 <script>
       // Toggle de tema claro/oscuro: el mismo bloque que usa formulario.html.
       (function() {
