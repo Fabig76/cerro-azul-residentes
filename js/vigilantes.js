@@ -454,10 +454,17 @@ const V = {
         return;
       }
 
-      // Render de las 2 cards: mañana y tarde
       container.innerHTML = '';
-      container.appendChild(this.renderSalonCard('☀️ Mañana (8 AM - 1 PM)', r.manana));
-      container.appendChild(this.renderSalonCard('🌆 Tarde (2 PM - 10 PM)', r.tarde));
+      if (r.dia) {
+        // SAL-UNICO: una sola reserva por día (día completo, 8 AM - 10 PM).
+        const card = this.renderSalonCard('📅 Día completo (8 AM - 10 PM)', r.dia);
+        card.style.gridColumn = 'span 2';
+        container.appendChild(card);
+      } else {
+        // Backend anterior: 2 cards (mañana y tarde)
+        container.appendChild(this.renderSalonCard('☀️ Mañana (8 AM - 1 PM)', r.manana));
+        container.appendChild(this.renderSalonCard('🌆 Tarde (2 PM - 10 PM)', r.tarde));
+      }
     } catch (e) {
       container.innerHTML = '<p style="grid-column: span 2; color:var(--err);">Error de red: ' + e.message + '</p>';
     }
@@ -484,6 +491,9 @@ const V = {
       html += '<div style="margin-top:12px; font-size:0.95em;">';
       html += '<div><strong>Apto:</strong> ' + V.escapeHtml(slotData.apto) + '</div>';
       html += '<div><strong>Reservado por:</strong> ' + V.escapeHtml(slotData.nombre) + '</div>';
+      if (slotData.slot === 'Mañana' || slotData.slot === 'Tarde') {
+        html += '<div><strong>Turno reservado:</strong> ' + (slotData.slot === 'Mañana' ? 'Mañana (8 AM - 1 PM)' : 'Tarde (2 PM - 10 PM)') + '</div>';
+      }
       html += '</div>';
     }
 

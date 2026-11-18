@@ -79,8 +79,19 @@ function formatDate(isoDate) {
   return dias[date.getDay()] + ' ' + d + ' de ' + meses[date.getMonth()] + ' de ' + y;
 }
 
+// SAL-UNICO: las reservas nuevas son de día completo. Las antiguas
+// ('Mañana' / 'Tarde') se muestran con su horario original.
 function formatSlot(slot) {
-  return slot === 'Mañana' ? 'Mañana (8 AM - 1 PM)' : 'Tarde (2 PM - 10 PM)';
+  if (slot === 'Mañana') return 'Mañana (8 AM - 1 PM)';
+  if (slot === 'Tarde') return 'Tarde (2 PM - 10 PM)';
+  return 'Día completo (8 AM - 10 PM)';
+}
+
+// Un día está libre solo si no tiene ninguna reserva. Compatible con el
+// backend anterior (que solo enviaba manana/tarde).
+function diaLibre(dia) {
+  if (dia.estado) return dia.estado === 'libre';
+  return dia.manana === 'libre' && dia.tarde === 'libre';
 }
 
 // ============ FLUJO 1: LOGIN ============
@@ -190,7 +201,7 @@ async function cargarCalendario() {
     dias.forEach(dia => {
       const date = new Date(dia.fecha + 'T00:00:00');
       const isPasado = date < today;
-      const libre = (dia.manana === 'libre' || dia.tarde === 'libre') && !isPasado;
+      const libre = diaLibre(dia) && !isPasado;
       const reservado = !libre && !isPasado;
 
       const div = document.createElement('div');
@@ -205,17 +216,15 @@ async function cargarCalendario() {
 
       const slots = document.createElement('div');
       slots.className = 'day-slots';
-      const mIcon = dia.manana === 'libre' ? '☀️' : '🔴';
-      const tIcon = dia.tarde === 'libre' ? '🌆' : '🔴';
-      slots.innerHTML = mIcon + ' ' + tIcon;
+      slots.textContent = diaLibre(dia) ? '🟢' : '🔴';
       div.appendChild(slots);
 
       if (!isPasado) {
         div.addEventListener('click', () => {
-          if (dia.manana === 'libre' || dia.tarde === 'libre') {
+          if (diaLibre(dia)) {
             flujoSeleccionarDia(dia);
           } else {
-            showAlert('calendario', 'Este día ya tiene ambos turnos reservados.', 'error');
+            showAlert('calendario', 'Este día ya está reservado. Elija otra fecha.', 'error');
           }
         });
       }
@@ -237,11 +246,7 @@ function flujoSeleccionarDia(dia) {
   document.getElementById('userApto2').textContent = state.apto;
   document.getElementById('reservarFecha').textContent = formatDate(dia.fecha);
 
-  const btnManana = document.getElementById('btnSlotManana');
-  const btnTarde = document.getElementById('btnSlotTarde');
-
-  btnManana.disabled = dia.manana !== 'libre';
-  btnTarde.disabled = dia.tarde !== 'libre';
+  document.getElementById('btnSlotDia').disabled = !diaLibre(dia);
 
   hideAlert('reservar');
   showView('reservar');
@@ -262,7 +267,7 @@ async function flujoSeleccionarSlot(slot) {
     clientRequestId: state.clientRequestId || (state.clientRequestId = crypto.randomUUID())
   };
 
-  const btn = slot === 'Mañana' ? document.getElementById('btnSlotManana') : document.getElementById('btnSlotTarde');
+  const btn = document.getElementById('btnSlotDia');
   btn.disabled = true;
   const oldText = btn.textContent;
   btn.textContent = 'Reservando...';
@@ -481,7 +486,7 @@ async function cargarMisReservas() {
       li.dataset.reservaId = res.id;
 
       const fecha = formatDate(res.fechaReserva);
-      const slotTxt = res.slot === 'Mañana' ? '☀️ Mañana' : '🌆 Tarde';
+      const slotTxt = res.slot === 'Mañana' ? '☀️ Mañana' : (res.slot === 'Tarde' ? '🌆 Tarde' : '📅 Día completo');
       const estadoTxt = etiquetaEstado(res.estado);
       const tiempoLimite = (res.estado === 'PendientePago' && res.fechaLimitePago)
         ? '<br><small style="color:var(--err);">⏰ Límite de pago: ' + res.fechaLimitePago + '</small>'
@@ -637,8 +642,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnVolverLogin').addEventListener('click', flujoVolverInicio);
 
   // Reservar (slot buttons)
-  document.getElementById('btnSlotManana').addEventListener('click', () => flujoSeleccionarSlot('Mañana'));
-  document.getElementById('btnSlotTarde').addEventListener('click', () => flujoSeleccionarSlot('Tarde'));
+  document.getElementById('btnSlotDia').addEventListener('click', () => flujoSeleccionarSlot('Día completo'));
   document.getElementById('btnVolverCalendario').addEventListener('click', async () => {
     // Liberar la reserva pendiente antes de volver (si el usuario no ha pagado)
     if (state.reservaIdActual && state.fechaSeleccionada && state.slotSeleccionado) {
