@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="assets/vidrio.css?v=20261112">
   <script src="js/config.js?v=20261028"></script>
 <script src="js/common.js?v=20261028"></script>
-<script src="js/salon-social.js?v=1"></script>
+<script src="js/salon-social.js?v=20261118"></script>
 </head>
 <body>
 
@@ -34,8 +34,8 @@
     <section id="view-login" class="lookup-box">
       <h3>🏛️ Reservar Salón Social</h3>
       <p>El salón social puede ser reservado por el propietario o por cualquier
-         residente adulto del apartamento. Cada turno (mañana o tarde) cuesta
-         <strong>$125.000 COP</strong>.</p>
+         residente adulto del apartamento. Se reserva por <strong>día completo</strong>
+         (8:00 AM a 10:00 PM) y cuesta <strong>$125.000 COP</strong>.</p>
 
       <div id="alert-login" class="alert hidden" role="alert"></div>
 
@@ -93,8 +93,8 @@
 
       <div id="alert-calendario" class="alert hidden" role="alert"></div>
 
-      <p>Selecciona un día disponible para ver los turnos.
-         Cada turno (mañana o tarde) cuesta <strong>$125.000 COP</strong>.</p>
+      <p>Selecciona un día disponible. El salón se reserva por <strong>día completo</strong>
+         (8:00 AM a 10:00 PM) y cuesta <strong>$125.000 COP</strong>.</p>
 
       <div class="calendario-grid" id="calendarioGrid">
         <!-- Se llena dinámicamente -->
@@ -119,7 +119,7 @@
     <!-- VISTA 4: RESERER (seleccionar turno + link de pago)              -->
     <!-- ============================================================== -->
     <section id="view-reservar" class="lookup-box wide hidden">
-      <h3>📝 Reservar turno</h3>
+      <h3>📝 Reservar el salón</h3>
 
       <div class="user-info">
         <strong>👤 <span id="userNombre2"></span></strong> ·
@@ -129,19 +129,12 @@
 
       <div id="alert-reservar" class="alert hidden" role="alert"></div>
 
-      <p>Selecciona el turno que deseas reservar.
-         Ambos turnos del mismo día pueden ser reservados (si están disponibles).</p>
+      <p>El salón se reserva por día completo. Toque el botón para confirmar la reserva de este día.</p>
 
       <div class="slot-buttons">
-        <button type="button" class="slot-btn" id="btnSlotManana">
+        <button type="button" class="slot-btn" id="btnSlotDia">
           <span class="slot-info">
-            <strong>☀️ Mañana</strong> 8:00 AM — 1:00 PM
-          </span>
-          <span class="slot-precio">$125.000</span>
-        </button>
-        <button type="button" class="slot-btn" id="btnSlotTarde">
-          <span class="slot-info">
-            <strong>🌆 Tarde</strong> 2:00 PM — 10:00 PM
+            <strong>📅 Día completo</strong> 8:00 AM — 10:00 PM
           </span>
           <span class="slot-precio">$125.000</span>
         </button>

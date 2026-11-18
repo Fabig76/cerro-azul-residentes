@@ -50,7 +50,7 @@ function verificarEsquema_(sheet) {
 }
 
 // AUD-T17: permite saber qué versión responde en producción
-const VERSION_BACKEND = '2026-11-07-audbit3';
+const VERSION_BACKEND = '2026-11-18-salon1';
 function ping_() { return { ok: true, version: VERSION_BACKEND, tz: Session.getScriptTimeZone(), hora: Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss') }; }
 
 // AUD-T18: ejecutar desde el editor antes de cada despliegue. Lanza si algo falta.
@@ -3668,6 +3668,28 @@ const CARTERA_SHEET_ID_FOR_SALON = '1IQn1y3AoArQSI4dtwhUsH3PVGm0zsZCom0TEdSAfVb4
 const COMPROBANTES_FOLDER_ID = '1RPHtWnVEFwzBKR1DCzBP1to9wLHY2F22'; // Reutilizar carpeta del proyecto
 const SALON_SHEET_NAME = 'salon social';
 const VALOR_POR_SLOT = 125000;
+// SAL-UNICO (2026-11): el salón se reserva por DÍA COMPLETO (8 a. m. a 10 p. m.).
+// Las reservas antiguas guardadas como 'Mañana' o 'Tarde' siguen siendo válidas:
+// cualquier reserva activa de una fecha ocupa ese día completo.
+const SALON_SLOT_UNICO = 'Día completo';
+const SALON_SLOTS_VALIDOS = ['Día completo', 'Mañana', 'Tarde'];
+
+// Devuelve la primera reserva activa (PendientePago o Pagado) de la fecha, sin
+// importar el turno con que se guardó, u null si el día está libre.
+// filaExcluir: número de fila (1-based) que no se cuenta (la reserva que se edita).
+function salonReservaActivaEnFecha_(dataSheet, fechaStr, filaExcluir) {
+  for (let i = 1; i < dataSheet.length; i++) {
+    if (filaExcluir && i + 1 === filaExcluir) continue;
+    const row = dataSheet[i];
+    const estadoRow = String(row[10] || '').trim();
+    if (estadoRow !== 'PendientePago' && estadoRow !== 'Pagado') continue;
+    const fechaRow = row[8] ? Utilities.formatDate(new Date(row[8]), 'America/Bogota', 'yyyy-MM-dd') : '';
+    if (fechaRow !== fechaStr) continue;
+    return { fila: i + 1, id: String(row[0] || ''), apto: String(row[2] || ''), nombre: String(row[5] || ''),
+             slot: String(row[9] || '').trim(), estado: estadoRow };
+  }
+  return null;
+}
 
 // ---------------------------------------------------------------------
 // Helper: asegura que la pestaña "salon social" exista
@@ -3907,12 +3929,15 @@ function dispSalon(apto, fechaInicio, fechaFin) {
   const cur = new Date(inicio);
   while (cur <= fin) {
     const fechaStr = Utilities.formatDate(cur, 'America/Bogota', 'yyyy-MM-dd');
-    const manana = reservas[fechaStr] && reservas[fechaStr]['Mañana'] ? 'reservado' : 'libre';
-    const tarde = reservas[fechaStr] && reservas[fechaStr]['Tarde'] ? 'reservado' : 'libre';
+    // SAL-UNICO: el día está ocupado si tiene CUALQUIER reserva activa.
+    // manana/tarde se mantienen (con el mismo valor) para páginas en caché.
+    const ocupado = reservas[fechaStr] && Object.keys(reservas[fechaStr]).length > 0;
+    const estadoDia = ocupado ? 'reservado' : 'libre';
     dias.push({
       fecha: fechaStr,
-      manana: manana,
-      tarde: tarde
+      estado: estadoDia,
+      manana: estadoDia,
+      tarde: estadoDia
     });
     cur.setDate(cur.getDate() + 1);
   }
@@ -3944,9 +3969,12 @@ function reservarSalon(data) {
     if (!apto || !cc || !fechaReserva || !slot) {
       return { ok: false, error: 'Faltan datos requeridos (apto, cc, fechaReserva, slot)' };
     }
-    if (slot !== 'Mañana' && slot !== 'Tarde') {
-      return { ok: false, error: 'Slot inválido. Use "Mañana" o "Tarde".' };
+    if (SALON_SLOTS_VALIDOS.indexOf(slot) < 0) {
+      return { ok: false, error: 'Turno inválido.' };
     }
+    // SAL-UNICO: toda reserva nueva es de día completo (aunque una página
+    // vieja en caché envíe 'Mañana' o 'Tarde').
+    const slotGuardar = SALON_SLOT_UNICO;
 
     // Validar acceso + mora (re-validar al momento de reservar)
     const acceso = verificarAccesoSalon(apto, cc);
@@ -3962,24 +3990,18 @@ function reservarSalon(data) {
     if (diffDias < 0) return { ok: false, error: 'No se puede reservar en el pasado.' };
     if (diffDias > 30) return { ok: false, error: 'No se puede reservar con más de 30 días de anticipación.' };
 
-    // Validar slot libre
+    // Validar día libre (SAL-UNICO: cualquier reserva activa ocupa el día)
     const sheet = ensureSalonSocialSheet();
     const dataSheet = sheet.getDataRange().getValues();
-    for (let i = 1; i < dataSheet.length; i++) {
-      const row = dataSheet[i];
-      const fechaRow = row[8] ? Utilities.formatDate(new Date(row[8]), 'America/Bogota', 'yyyy-MM-dd') : '';
-      const slotRow = String(row[9] || '').trim();
-      const estadoRow = String(row[10] || '').trim();
-      if (fechaRow === fechaReserva && slotRow === slot && (estadoRow === 'PendientePago' || estadoRow === 'Pagado')) {
-        return { ok: false, error: 'Este horario ya está reservado. Seleccione otro.' };
-      }
+    if (salonReservaActivaEnFecha_(dataSheet, fechaReserva)) {
+      return { ok: false, error: 'Ese día ya está reservado. Seleccione otra fecha.' };
     }
 
     // Crear reserva
     const id = getNextReservaId();
     const now = new Date();
     const fechaLimite = new Date(now.getTime() + 48 * 60 * 60 * 1000);
-    const hash = hashReservaDedupe(apto, fechaReserva, slot);
+    const hash = hashReservaDedupe(apto, fechaReserva, slotGuardar);
 
     sheet.appendRow([
       id,                                    // A
@@ -3991,7 +4013,7 @@ function reservarSalon(data) {
       acceso.correo || '',                   // G
       acceso.celular || '',                  // H
       fechaReserva,                          // I
-      slot,                                  // J
+      slotGuardar,                           // J
       'PendientePago',                       // K
       now,                                   // L
       fechaLimite,                           // M
@@ -4009,12 +4031,12 @@ function reservarSalon(data) {
       '  ID: ' + id + '\n' +
       '  Apto: ' + apto + '\n' +
       '  Solicitante: ' + acceso.nombre + ' (CC ' + cc + ')\n' +
-      '  Fecha: ' + fechaReserva + ' (' + slot + ')\n' +
+      '  Fecha: ' + fechaReserva + ' (' + slotGuardar + ', 8:00 a. m. a 10:00 p. m.)\n' +
       '  Límite de pago: ' + Utilities.formatDate(fechaLimite, 'America/Bogota', 'yyyy-MM-dd HH:mm') + '\n'
     );
 
     // W1: Auditoria (Logger.log)
-    Logger.log('[reservarSalon] ' + id + ' creada por apto ' + apto + ' CC ' + cc + ' fecha ' + fechaReserva + ' ' + slot);
+    Logger.log('[reservarSalon] ' + id + ' creada por apto ' + apto + ' CC ' + cc + ' fecha ' + fechaReserva + ' ' + slotGuardar);
 
     return {
       ok: true,
@@ -4212,13 +4234,14 @@ function editarReservaSalon(data) {
     const cc = String(data.cc || '').trim();
     const apto = String(data.apto || '').trim();
     const nuevaFecha = String(data.nuevaFecha || '').trim();
-    const nuevoSlot = String(data.nuevoSlot || '').trim();
+    const slotPedido = String(data.nuevoSlot || '').trim();
+    const nuevoSlot = SALON_SLOT_UNICO;   // SAL-UNICO
 
-    if (!reservaId || !cc || !apto || !nuevaFecha || !nuevoSlot) {
+    if (!reservaId || !cc || !apto || !nuevaFecha) {
       return { ok: false, error: 'Faltan datos requeridos' };
     }
-    if (nuevoSlot !== 'Mañana' && nuevoSlot !== 'Tarde') {
-      return { ok: false, error: 'Slot inválido.' };
+    if (slotPedido && SALON_SLOTS_VALIDOS.indexOf(slotPedido) < 0) {
+      return { ok: false, error: 'Turno inválido.' };
     }
 
     // Validar fecha
@@ -4248,16 +4271,9 @@ function editarReservaSalon(data) {
     }
     if (rowFound < 0) return { ok: false, error: 'Reserva no encontrada.' };
 
-    // Verificar que el nuevo slot esté libre (excluyendo la reserva actual)
-    for (let i = 1; i < dataSheet.length; i++) {
-      if (i + 1 === rowFound) continue; // saltar la misma reserva
-      const row = dataSheet[i];
-      const fechaRow = row[8] ? Utilities.formatDate(new Date(row[8]), 'America/Bogota', 'yyyy-MM-dd') : '';
-      const slotRow = String(row[9] || '').trim();
-      const estadoRow = String(row[10] || '').trim();
-      if (fechaRow === nuevaFecha && slotRow === nuevoSlot && (estadoRow === 'PendientePago' || estadoRow === 'Pagado')) {
-        return { ok: false, error: 'El nuevo horario ya está reservado. Elija otro.' };
-      }
+    // Verificar que el nuevo día esté libre (excluyendo la reserva actual)
+    if (salonReservaActivaEnFecha_(dataSheet, nuevaFecha, rowFound)) {
+      return { ok: false, error: 'Ese día ya está reservado. Elija otra fecha.' };
     }
 
     const now = new Date();
@@ -4289,6 +4305,7 @@ function vigilanteVerReservasSalon(fecha) {
   const resultado = {
     ok: true,
     fecha: fecha,
+    dia: { estado: 'libre' },     // SAL-UNICO: una sola reserva por día
     manana: { estado: 'libre' },
     tarde: { estado: 'libre' }
   };
@@ -4299,6 +4316,9 @@ function vigilanteVerReservasSalon(fecha) {
     const slot = String(row[9] || '').trim();
     const estado = String(row[10] || '').trim();
     if (estado !== 'PendientePago' && estado !== 'Pagado') continue;
+    if (resultado.dia.estado === 'libre') {
+      resultado.dia = { estado: 'reservado', apto: String(row[2]), nombre: String(row[5]), slot: slot };
+    }
     if (slot === 'Mañana') {
       resultado.manana = { estado: 'reservado', apto: String(row[2]), nombre: String(row[5]) };
     } else if (slot === 'Tarde') {
@@ -5113,9 +5133,8 @@ const MANUAL_CERRO = (
 "\n" +
 "10. Salón social\n" +
 "* Se reserva en línea desde el portal principal.\n" +
-"* Hay dos turnos:\n" +
-"   * Mañana: 8:00 a. m. a 1:00 p. m.\n" +
-"   * Tarde: 2:00 p. m. a 10:00 p. m.\n" +
+"* Se reserva por día completo: de 8:00 a. m. a 10:00 p. m. Solo hay una reserva por día (ya no hay turnos de mañana y tarde).\n" +
+"* Valor de la reserva: $125.000.\n" +
 "* El pago se hace en línea por Jelpit.\n" +
 "* Requisito: el apartamento no debe tener 2 o más meses en mora.\n" +
 "* Desde el 1 de octubre de 2026, los apartamentos en mora no pueden alquilar el salón social (ver sección 10).\n" +
@@ -5292,8 +5311,8 @@ const MANUAL_CERRO = (
 "* Mi celular es viejo / iPhone antiguo → En iPhone necesita iOS 16.4 o superior para los avisos. Si no lo tiene, comuníquese con la administración para buscar una alternativa.\n" +
 "* ¿Puede usarlo toda mi familia? → Sí, cada persona con su celular registrado en el portal.\n" +
 "Salón social y piscina\n" +
-"* ¿Cómo reservo el salón? → En el portal principal, opción salón social; turno de mañana (8:00 a. m.–1:00 p. m.) o tarde (2:00–10:00 p. m.), pago por Jelpit.\n" +
-"* No me deja reservar → Puede ser porque el apartamento tiene 2 o más meses en mora o el turno ya está ocupado. Consulte a la administración.\n" +
+"* ¿Cómo reservo el salón? → En el portal principal, opción salón social; se reserva el día completo (8:00 a. m.–10:00 p. m.), pago por Jelpit.\n" +
+"* No me deja reservar → Puede ser porque el apartamento tiene 2 o más meses en mora o ese día ya está reservado. Consulte a la administración.\n" +
 "* ¿Cuánto vale la tarjeta de la piscina? → $10.000, con el estado de cuenta al día.\n" +
 "Convivencia\n" +
 "* ¿A qué hora puedo botar la basura? → Desde el 1 de noviembre, el shut funciona de 8:00 a. m. a 5:00 p. m.; fuera de ese horario use los contenedores de la entrada.\n" +
@@ -5353,7 +5372,7 @@ const MANUAL_CERRO = (
 "* Buscar residente: escriba el número del apartamento (o nombre, apellido o cédula) → \"Buscar\" → toque la fila de la persona. Ve la ficha: apartamento, propietario, residentes con cédula, vehículos, bicicletas, parqueaderos y mascotas. El celular y el correo no aparecen (son privados). Si sale \"No se encontraron resultados\", revise lo escrito; si está bien, la persona no está registrada: avise a la administración.\n" +
 "* Buscar por placa: escriba la placa (o la parte que recuerde, por ejemplo las letras) → \"Buscar placa\". Aparece el apartamento y el propietario. Revise que marca y color coincidan con el vehículo que ve. El cuadro amarillo solo explica para qué sirve la búsqueda.\n" +
 "* Mudanzas: muestra las mudanzas del día (código MD, salida o ingreso, apartamento, torre, ascensor y hora). Verifique que usen el ascensor A y lleguen a la hora reservada. Al terminar: primero escriba su nombre en el cuadro → toque \"Sí, se realizó\" (verde) o \"No se realizó\" (rojo). El cuadro cambia a verde y queda registrado quién la marcó y a qué hora. Si llega una mudanza que no está en la lista, no puede registrarla: avise a la administración. Si se equivocó al marcar, avise a la administración.\n" +
-"* Salón Social: muestra el turno de mañana (8:00 a. m.–1:00 p. m.) y el de tarde (2:00–10:00 p. m.). RESERVADO (en rojo) muestra apartamento y nombre de quien reservó; LIBRE significa que nadie ha reservado. El botón \"Hoy\" regresa a la fecha actual. El vigilante no puede cancelar ni cambiar reservas.\n" +
+"* Salón Social: muestra si el día está reservado (el salón se reserva por día completo, de 8:00 a. m. a 10:00 p. m.). RESERVADO (en rojo) muestra apartamento y nombre de quien reservó; LIBRE significa que nadie ha reservado. El botón \"Hoy\" regresa a la fecha actual. El vigilante no puede cancelar ni cambiar reservas.\n" +
 "* Cerrar sesión: al terminar el turno, toque \"Cerrar sesión\", arriba a la derecha.\n" +
 "16.3 App de portería del citófono\n" +
 "Iniciar turno:\n" +
