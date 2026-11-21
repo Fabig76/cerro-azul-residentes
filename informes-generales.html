@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#0066CC" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0F1419" media="(prefers-color-scheme: dark)">
+  <title>Informes generales — Cerro Azul</title>
+  <link rel="icon" href="assets/logo.jpg">
+  <link rel="stylesheet" href="assets/styles.css?v=20261107">
+  <link rel="stylesheet" href="assets/vidrio.css?v=20261112">
+  <link rel="stylesheet" href="assets/inicio.css?v=20261114">
+  <link rel="stylesheet" href="assets/informes-generales.css?v=20261121">
+  <script>
+      // Anti-FOUC: aplica el tema antes de que el CSS termine de cargar.
+      // Sin esto, el usuario vería un flash blanco al cargar la pagina.
+      (function() {
+        try {
+          var guardado = localStorage.getItem('cerro-azul-tema');
+          var prefiSO = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var tema = guardado || (prefiSO ? 'oscuro' : 'claro');
+          document.documentElement.setAttribute('data-tema', tema);
+        } catch (e) { /* sin localStorage: queda en claro */ }
+      })();
+    </script>
+  <script src="js/config.js?v=20261028"></script>
+  <script src="js/common.js?v=20261101"></script>
+  <script src="js/informes-generales.js?v=20261121"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <img src="assets/logo.jpg" alt="Logo Urbanización Cerro Azul" class="logo">
+      <div class="header-text">
+        <h1>Urbanización Cerro Azul</h1>
+        <p class="sub">Informes generales · Solo propietarios</p>
+        <p class="nit">NIT 900770444 · Bello / Niquía</p>
+      </div>
+    <button type="button" class="tema-toggle" id="temaToggle" aria-label="Cambiar tema claro u oscuro" title="Cambiar tema">
+      <svg class="icono-luna" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+      <svg class="icono-sol" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/>
+        <line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/>
+        <line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+    </button>
+    </div>
+  </header>
+
+  <main>
+    <!-- VISTA 1: INGRESO (solo propietarios) -->
+    <section id="ig-login" class="lookup-box">
+      <h3>🔒 Informes generales</h3>
+      <p>Espacio exclusivo para <strong>propietarios</strong>. Aquí se publican las <strong>actas de asamblea</strong> y otros documentos del conjunto. Ingrese con su <strong>N° de formulario</strong>, su <strong>N° de apartamento</strong> y la <strong>cédula del propietario</strong>.</p>
+      <div id="ig-alert" class="alert hidden" role="alert" aria-live="polite"></div>
+      <div class="field">
+        <label for="igNumForm">N° de formulario <span class="req">*</span></label>
+        <input type="text" id="igNumForm" placeholder="Ej: CA-0042" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="igApto">N° de apartamento <span class="req">*</span></label>
+        <input type="text" id="igApto" placeholder="Ej: 101, 202B" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="igCc">Cédula del propietario <span class="req">*</span></label>
+        <input type="text" id="igCc" placeholder="Solo números, sin puntos ni guiones" inputmode="numeric" autocomplete="off">
+      </div>
+      <button type="button" class="btn btn-primary btn-block" id="btnIgIngresar">Ingresar</button>
+      <p class="nota-pie">El arrendatario no tiene acceso a esta sección. ¿Perdió su N° de formulario? Escriba a urb.cerroazul@gmail.com.</p>
+    </section>
+
+    <!-- VISTA 2: SECCIÓN (después de ingresar) -->
+    <section id="ig-app" class="ig-app hidden" aria-live="polite">
+      <div class="ig-cabeza">
+        <nav class="ig-migas" id="igMigas" aria-label="Ubicación"></nav>
+        <div class="ig-usuario"><span id="igUsuario"></span><button type="button" class="btn btn-secondary btn-sm" id="btnIgSalir">Salir</button></div>
+      </div>
+      <div id="ig-alert-app" class="alert hidden" role="alert"></div>
+
+      <!-- 2a. Íconos -->
+      <div id="ig-hub">
+        <h2 class="ig-titulo">¿Qué desea consultar?</h2>
+        <div class="vd-rejilla ig-rejilla">
+          <button type="button" class="vd-ficha ig-ficha" data-ig-ir="actas">
+            <span class="vd-icono vd-i-morado"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6M9 9h1"/></svg></span>
+            <span><strong>Actas de asamblea</strong><span>Actas firmadas de las asambleas ordinarias y extraordinarias, por año.</span></span>
+          </button>
+          <div class="vd-ficha ig-ficha ig-pronto" aria-disabled="true">
+            <span class="vd-icono vd-i-gris"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 11v5M9.5 13.5h5"/></svg></span>
+            <span><strong>Más documentos</strong><span>Próximamente: reglamento, contratos e informes de gestión.</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2b. Años -->
+      <div id="ig-anios" class="hidden">
+        <h2 class="ig-titulo">Actas de asamblea</h2>
+        <p class="ig-sub">Elija el año.</p>
+        <div class="ig-anios" id="igAnios"></div>
+      </div>
+
+      <!-- 2c. Actas del año -->
+      <div id="ig-lista" class="hidden">
+        <h2 class="ig-titulo" id="igListaTitulo"></h2>
+        <p class="ig-sub">Toque <strong>Descargar</strong> para guardar el acta en PDF.</p>
+        <ul class="ig-actas" id="igActas"></ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>
+      Urbanización Cerro Azul · NIT 900770444 · Bello / Niquía<br>
+      Documentos para propietarios — Ley 675 de 2001 y Ley 1581 de 2012<br>
+      urb.cerroazul@gmail.com
+    </p>
+  </footer>
+<script src="js/asistente.js?v=3"></script>
+<script>
+      // Toggle de tema claro/oscuro. Sincroniza localStorage con el atributo data-tema en <html>.
+      (function() {
+        var btn = document.getElementById('temaToggle');
+        if (!btn) return;
+        btn.addEventListener('click', function() {
+          var html = document.documentElement;
+          var actual = html.getAttribute('data-tema') === 'oscuro' ? 'oscuro' : 'claro';
+          var nuevo = actual === 'oscuro' ? 'claro' : 'oscuro';
+          html.setAttribute('data-tema', nuevo);
+          try { localStorage.setItem('cerro-azul-tema', nuevo); } catch (e) {}
+          // Anuncia a lectores de pantalla el cambio
+          btn.setAttribute('aria-label', nuevo === 'oscuro' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro');
+        });
+      })();
+    </script>
+<script src="js/vidrio.js?v=20261114"></script>
+</body>
+</html>
