@@ -50,7 +50,7 @@ function verificarEsquema_(sheet) {
 }
 
 // AUD-T17: permite saber qué versión responde en producción
-const VERSION_BACKEND = '2026-11-18-salon1';
+const VERSION_BACKEND = '2026-11-21-ig1';
 function ping_() { return { ok: true, version: VERSION_BACKEND, tz: Session.getScriptTimeZone(), hora: Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss') }; }
 
 // AUD-T18: ejecutar desde el editor antes de cada despliegue. Lanza si algo falta.
@@ -64,6 +64,9 @@ function selfTest_() {
   ['admin_password', 'vigilante_password', 'cartera_sheet_id', 'facturas_folder_id', 'plantilla_pys_id', 'link_pago', 'respaldos_folder_id'].forEach(function (k) { if (!getConfigValue(k)) fallos.push('Config sin ' + k); });
   if (!PropertiesService.getScriptProperties().getProperty('MINIMAX_API_KEY')) fallos.push('Falta MINIMAX_API_KEY');
   try { DriveApp.getFolderById(COMPROBANTES_FOLDER_ID); } catch (e) { fallos.push('Carpeta de comprobantes inaccesible'); }
+  if (getConfigValue('actas_folder_id')) {
+    try { DriveApp.getFolderById(getConfigValue('actas_folder_id')); } catch (e) { fallos.push('Carpeta de actas inaccesible'); }
+  }
   if (fallos.length) throw new Error('selfTest: ' + fallos.join(' | '));
   Logger.log('selfTest OK ' + VERSION_BACKEND);
 }
@@ -526,6 +529,9 @@ function doPost(e) {
     if (action === 'ecIniciarCarga')     return jsonOut(ecIniciarCarga(payload));
     if (action === 'ecSubirFacturas')    return jsonOut(ecSubirFacturas(payload));
     if (action === 'ecFinalizarCarga')   return jsonOut(ecFinalizarCarga(payload));
+    // --- INFORMES GENERALES (informes-generales.html, solo propietarios) ---
+    if (action === 'igListarActas')      return jsonOut(igListarActas(payload));
+    if (action === 'igDescargarActa')    return jsonOut(igDescargarActa(payload));
     if (action === 'reservarMudanza') {
       return jsonOut(idempotente_(payload, function () { return reservarMudanza(payload); }));
     }
@@ -5497,7 +5503,14 @@ const MANUAL_CERRO = (
 "Gasto proyectado: no es dinero que sobre. Incluye gastos del presupuesto que se pagan más adelante en el año (eventos de fin de año, fumigación, extintores), facturas de servicios que aún no llegan y las cuotas facturadas que los morosos no han pagado.\n" +
 "El informe descargable es la versión para propietarios: no incluye la cartera por apartamento ni la conciliación bancaria, por protección de datos personales (Ley 1581 de 2012). El informe completo lo revisan el Consejo y la Revisoría Fiscal.\n" +
 "Si preguntan cuándo se publica: la administración lo publica cuando el contador entrega el informe del mes, normalmente en las primeras semanas del mes siguiente.\n" +
-"Si un dato no cuadra o tienen dudas sobre un gasto: que escriban a la administración (urb.cerroazul@gmail.com). El agente no interpreta cifras contables más allá de lo que explica esta sección."
+"Si un dato no cuadra o tienen dudas sobre un gasto: que escriban a la administración (urb.cerroazul@gmail.com). El agente no interpreta cifras contables más allá de lo que explica esta sección." +
+"\n\n________________\n\n" +
+"19. Informes generales (portal informes-generales.html)\n" +
+"INFORMES GENERALES (agregado en noviembre de 2026). Enlace: fabig76.github.io/cerro-azul-residentes/informes-generales.html (también en la página principal: \"Informes generales\").\n" +
+"Quién entra: solo el propietario, la inmobiliaria o el encargado, con el N° de formulario, el N° de apartamento y la cédula del propietario (los mismos datos del estado de cuenta). El arrendatario no puede entrar.\n" +
+"Qué tiene: por ahora, las Actas de asamblea. Se toca el ícono 'Actas de asamblea', luego el año (2026, 2027…) y aparece la lista de actas en PDF; cada una tiene el botón 'Descargar'.\n" +
+"Por qué solo propietarios: las actas incluyen nombres, coeficientes y votaciones de los propietarios; se protegen según la Ley 1581 de 2012. Los PDF no son públicos: el portal los entrega solo después de verificar los datos.\n" +
+"Si un acta no aparece: la administración la publica cuando está firmada y aprobada. Que escriban a urb.cerroazul@gmail.com."
 );
 function chatAsistente(payload) {
   try {
@@ -6146,3 +6159,88 @@ function configurarRespaldoDiario() { return configurarRespaldoDiario_(); }
 function configurarAuditoriaDiaria() { return configurarAuditoriaDiaria_(); }
 // Destino del trigger diario de respaldo (configurarRespaldoDiario_).
 function respaldoDiario() { return respaldoDiario_(); }
+
+// =====================================================================
+// INFORMES GENERALES (informes-generales.html) — solo propietarios
+// ---------------------------------------------------------------------
+// Las actas viven en una carpeta PRIVADA de Drive (clave Config
+// 'actas_folder_id'), con una subcarpeta por año: "2026", "2027"…
+// Para publicar un acta basta subir el PDF a la carpeta del año.
+// El portal verifica al propietario (ecVerificarAcceso: mismos datos y
+// bloqueo por intentos del estado de cuenta) y entrega el PDF en base64.
+// Ningún enlace de Drive llega al navegador ni al repositorio público.
+// =====================================================================
+const IG_MAX_MB = 20;   // tope por archivo (la respuesta va en base64)
+
+function igCarpetaActas_() {
+  const id = ecConfig('actas_folder_id');
+  if (!id) return null;
+  return DriveApp.getFolderById(id);
+}
+
+// Años = subcarpetas con nombre de 4 dígitos. Más reciente primero.
+function igAniosActas_(raiz) {
+  const out = [];
+  const it = raiz.getFolders();
+  while (it.hasNext()) {
+    const f = it.next();
+    const nombre = String(f.getName()).trim();
+    if (/^\d{4}$/.test(nombre)) out.push({ anio: nombre, carpeta: f });
+  }
+  out.sort(function (a, b) { return b.anio.localeCompare(a.anio); });
+  return out;
+}
+
+function igActasDeCarpeta_(carpeta) {
+  const out = [];
+  const it = carpeta.getFiles();
+  while (it.hasNext()) {
+    const f = it.next();
+    if (f.getMimeType() !== 'application/pdf') continue;
+    out.push({
+      id: f.getId(),
+      titulo: String(f.getName()).replace(/\.pdf$/i, '').replace(/[_]+/g, ' ').trim(),
+      fecha: Utilities.formatDate(f.getDateCreated(), 'America/Bogota', 'yyyy-MM-dd'),
+      kb: Math.max(1, Math.round(f.getSize() / 1024))
+    });
+  }
+  // Orden por nombre: se recomienda nombrar "2026-03-21 Asamblea ordinaria".
+  out.sort(function (a, b) { return a.titulo.localeCompare(b.titulo, 'es'); });
+  return out;
+}
+
+function igListarActas(data) {
+  const v = ecVerificarAcceso(data || {});
+  if (!v.ok) return v;
+  const raiz = igCarpetaActas_();
+  if (!raiz) return { ok: false, error: 'La sección de actas aún no está configurada. Contacte a la administración.' };
+  const anios = igAniosActas_(raiz).map(function (a) {
+    return { anio: a.anio, actas: igActasDeCarpeta_(a.carpeta) };
+  });
+  return { ok: true, nombreProp: v.nombreProp, apto: v.apto, anios: anios };
+}
+
+function igDescargarActa(data) {
+  const v = ecVerificarAcceso(data || {});
+  if (!v.ok) return v;
+  const fileId = String((data && data.fileId) || '').trim();
+  if (!/^[A-Za-z0-9_-]{10,}$/.test(fileId)) return { ok: false, error: 'Acta no válida.' };
+  const raiz = igCarpetaActas_();
+  if (!raiz) return { ok: false, error: 'La sección de actas aún no está configurada.' };
+  // Seguridad: el archivo debe estar dentro de una carpeta de año de la carpeta de actas.
+  let archivo = null;
+  const anios = igAniosActas_(raiz);
+  for (let i = 0; i < anios.length && !archivo; i++) {
+    const it = anios[i].carpeta.getFiles();
+    while (it.hasNext()) {
+      const f = it.next();
+      if (f.getId() === fileId) { archivo = f; break; }
+    }
+  }
+  if (!archivo || archivo.getMimeType() !== 'application/pdf') return { ok: false, error: 'El acta no está disponible.' };
+  if (archivo.getSize() > IG_MAX_MB * 1024 * 1024) {
+    return { ok: false, error: 'El archivo es muy grande para descargarlo desde el portal. Pídalo a la administración.' };
+  }
+  Logger.log('[igDescargarActa] apto ' + v.apto + ' descargó ' + archivo.getName());
+  return { ok: true, nombreArchivo: archivo.getName(), base64: Utilities.base64Encode(archivo.getBlob().getBytes()) };
+}
