@@ -17,9 +17,10 @@ function carpeta(nombre, archivos = [], sub = []) {
   return { getName: () => nombre, getFiles: () => iter(archivos), getFolders: () => iter(sub) };
 }
 
-let ctx, verif;
+let ctx, verif, props;
 beforeEach(() => {
   verif = { ok: true, apto: '402', nombreProp: 'Ana Pérez' };
+  props = {};
   const raiz = carpeta('Actas', [archivo('SUELTO000001', 'suelto.pdf')], [
     carpeta('2026', [archivo('ACTA2026B00', '2026-09-12 Asamblea extraordinaria.pdf'), archivo('ACTA2026A00', '2026-03-21 Asamblea ordinaria.pdf'), archivo('IMAGEN000001', 'foto.jpg', 'image/jpeg')]),
     carpeta('2027'),
@@ -28,6 +29,8 @@ beforeEach(() => {
   ctx = vm.createContext({
     console, Logger: { log: () => {} },
     DriveApp: { getFolderById: () => raiz },
+    PropertiesService: { getScriptProperties: () => ({ getProperty: k => props[k] || null, setProperty: (k, v) => { props[k] = v; } }) },
+    LockService: { getScriptLock: () => ({ waitLock: () => {}, releaseLock: () => {} }) },
     Utilities: { formatDate: (d) => d.toISOString().slice(0, 10), base64Encode: () => 'QUJD' }
   });
   vm.runInContext(CODIGO, ctx);
@@ -79,5 +82,31 @@ describe('igDescargarActa', () => {
   it('sin verificación no descarga', () => {
     verif = { ok: false, error: 'La cédula no coincide' };
     expect(ctx.igDescargarActa({ fileId: 'ACTA2026A00' }).ok).toBe(false);
+  });
+});
+
+describe('igPrepararCarpeta_', () => {
+  function carpetaNueva(nombre) {
+    const hijas = [];
+    return { nombre, hijas, getName: () => nombre, getId: () => 'F_' + nombre, getUrl: () => 'https://drive/F_' + nombre,
+      setDescription: () => {}, getFiles: () => iter([]), getFolders: () => iter(hijas.slice()),
+      createFolder: n => { const c = carpetaNueva(n); hijas.push(c); return c; } };
+  }
+  it('sin configuración: crea la carpeta privada con 2026 y 2027, una sola vez', () => {
+    const creadas = [];
+    let raizNueva = null;
+    vm.runInContext('ecConfig = function () { return ""; };', ctx);
+    ctx.DriveApp = {
+      createFolder: n => { raizNueva = carpetaNueva(n); creadas.push(n); return raizNueva; },
+      getFolderById: id => { if (raizNueva && id === raizNueva.getId()) return raizNueva; throw new Error('no'); }
+    };
+    const r1 = ctx.igPrepararCarpeta_();
+    expect(r1.ok).toBe(true);
+    expect(creadas).toEqual(['Actas de asamblea']);
+    expect(raizNueva.hijas.map(h => h.nombre)).toEqual(['2026', '2027']);
+    const r2 = ctx.igPrepararCarpeta_();
+    expect(r2.ok).toBe(true);
+    expect(creadas.length).toBe(1);
+    expect(raizNueva.hijas.length).toBe(2);
   });
 });
