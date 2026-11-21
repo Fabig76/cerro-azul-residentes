@@ -55,9 +55,13 @@ describe('igListarActas', () => {
     expect(r.anios).toBeUndefined();
   });
 
-  it('sin la clave de Config → mensaje claro', () => {
+  it('sin la clave de Config usa la carpeta fija de actas', () => {
+    let pedido = null;
     vm.runInContext('ecConfig = function () { return ""; };', ctx);
-    expect(ctx.igListarActas({}).ok).toBe(false);
+    const raiz = ctx.DriveApp.getFolderById();
+    ctx.DriveApp = { getFolderById: id => { pedido = id; return raiz; } };
+    expect(ctx.igListarActas({}).ok).toBe(true);
+    expect(pedido).toBe('1z_6i79_Oe7V5h6kJqea2gVzEWlxfAB_a');
   });
 });
 
@@ -86,27 +90,15 @@ describe('igDescargarActa', () => {
 });
 
 describe('igPrepararCarpeta_', () => {
-  function carpetaNueva(nombre) {
-    const hijas = [];
-    return { nombre, hijas, getName: () => nombre, getId: () => 'F_' + nombre, getUrl: () => 'https://drive/F_' + nombre,
-      setDescription: () => {}, getFiles: () => iter([]), getFolders: () => iter(hijas.slice()),
-      createFolder: n => { const c = carpetaNueva(n); hijas.push(c); return c; } };
-  }
-  it('sin configuración: crea la carpeta privada con 2026 y 2027, una sola vez', () => {
-    const creadas = [];
-    let raizNueva = null;
+  it('con la carpeta fija que ya tiene 2026 y 2027 no crea nada', () => {
+    let creadas = 0;
+    const raiz = carpeta('Actas de asamblea', [], [carpeta('2026'), carpeta('2027')]);
+    raiz.getUrl = () => 'https://drive/x';
+    raiz.createFolder = () => { creadas++; };
     vm.runInContext('ecConfig = function () { return ""; };', ctx);
-    ctx.DriveApp = {
-      createFolder: n => { raizNueva = carpetaNueva(n); creadas.push(n); return raizNueva; },
-      getFolderById: id => { if (raizNueva && id === raizNueva.getId()) return raizNueva; throw new Error('no'); }
-    };
-    const r1 = ctx.igPrepararCarpeta_();
-    expect(r1.ok).toBe(true);
-    expect(creadas).toEqual(['Actas de asamblea']);
-    expect(raizNueva.hijas.map(h => h.nombre)).toEqual(['2026', '2027']);
-    const r2 = ctx.igPrepararCarpeta_();
-    expect(r2.ok).toBe(true);
-    expect(creadas.length).toBe(1);
-    expect(raizNueva.hijas.length).toBe(2);
+    ctx.DriveApp = { getFolderById: () => raiz, createFolder: () => { creadas++; } };
+    const r = ctx.igPrepararCarpeta_();
+    expect(r.ok).toBe(true);
+    expect(creadas).toBe(0);
   });
 });

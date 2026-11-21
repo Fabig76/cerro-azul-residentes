@@ -50,7 +50,7 @@ function verificarEsquema_(sheet) {
 }
 
 // AUD-T17: permite saber qué versión responde en producción
-const VERSION_BACKEND = '2026-11-21-ig2';
+const VERSION_BACKEND = '2026-11-21-ig3';
 function ping_() { return { ok: true, version: VERSION_BACKEND, tz: Session.getScriptTimeZone(), hora: Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss') }; }
 
 // AUD-T18: ejecutar desde el editor antes de cada despliegue. Lanza si algo falta.
@@ -6177,10 +6177,13 @@ const IG_MAX_MB = 20;   // tope por archivo (la respuesta va en base64)
 const IG_CARPETA_NOMBRE = 'Actas de asamblea';
 const IG_ANIOS_INICIALES = ['2026', '2027'];
 
+// Carpeta "Actas de asamblea" de admin@urbcerroazul.com (debe quedar SIN compartir).
+const IG_ACTAS_FOLDER_ID = '1z_6i79_Oe7V5h6kJqea2gVzEWlxfAB_a';
+
 // Carpeta de actas: 1) clave Config 'actas_folder_id' si existe;
-// 2) la que el propio sistema creó (Script Properties 'IG_ACTAS_FOLDER').
+// 2) la carpeta fija de arriba; 3) la que el sistema haya creado (Script Properties).
 function igCarpetaActas_() {
-  const id = ecConfig('actas_folder_id') ||
+  const id = ecConfig('actas_folder_id') || IG_ACTAS_FOLDER_ID ||
     PropertiesService.getScriptProperties().getProperty('IG_ACTAS_FOLDER');
   if (!id) return null;
   return DriveApp.getFolderById(id);
