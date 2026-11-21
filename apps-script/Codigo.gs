@@ -50,7 +50,7 @@ function verificarEsquema_(sheet) {
 }
 
 // AUD-T17: permite saber qué versión responde en producción
-const VERSION_BACKEND = '2026-11-21-ig1';
+const VERSION_BACKEND = '2026-11-21-ig2';
 function ping_() { return { ok: true, version: VERSION_BACKEND, tz: Session.getScriptTimeZone(), hora: Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss') }; }
 
 // AUD-T18: ejecutar desde el editor antes de cada despliegue. Lanza si algo falta.
@@ -64,9 +64,7 @@ function selfTest_() {
   ['admin_password', 'vigilante_password', 'cartera_sheet_id', 'facturas_folder_id', 'plantilla_pys_id', 'link_pago', 'respaldos_folder_id'].forEach(function (k) { if (!getConfigValue(k)) fallos.push('Config sin ' + k); });
   if (!PropertiesService.getScriptProperties().getProperty('MINIMAX_API_KEY')) fallos.push('Falta MINIMAX_API_KEY');
   try { DriveApp.getFolderById(COMPROBANTES_FOLDER_ID); } catch (e) { fallos.push('Carpeta de comprobantes inaccesible'); }
-  if (getConfigValue('actas_folder_id')) {
-    try { DriveApp.getFolderById(getConfigValue('actas_folder_id')); } catch (e) { fallos.push('Carpeta de actas inaccesible'); }
-  }
+  try { igCarpetaActas_(); } catch (e) { fallos.push('Carpeta de actas inaccesible'); }
   if (fallos.length) throw new Error('selfTest: ' + fallos.join(' | '));
   Logger.log('selfTest OK ' + VERSION_BACKEND);
 }
@@ -385,6 +383,10 @@ function doGet(e) {
     }
     if (action === 'ping') {
       return jsonOut(ping_());
+    }
+    // Informes generales: crea (una sola vez) la carpeta privada de actas.
+    if (action === 'igPreparar') {
+      return jsonOut(igPrepararCarpeta_());
     }
     if (action === 'lookup') {
       const numForm = String(e.parameter.numForm || '').trim();
@@ -6172,10 +6174,41 @@ function respaldoDiario() { return respaldoDiario_(); }
 // =====================================================================
 const IG_MAX_MB = 20;   // tope por archivo (la respuesta va en base64)
 
+const IG_CARPETA_NOMBRE = 'Actas de asamblea';
+const IG_ANIOS_INICIALES = ['2026', '2027'];
+
+// Carpeta de actas: 1) clave Config 'actas_folder_id' si existe;
+// 2) la que el propio sistema creó (Script Properties 'IG_ACTAS_FOLDER').
 function igCarpetaActas_() {
-  const id = ecConfig('actas_folder_id');
+  const id = ecConfig('actas_folder_id') ||
+    PropertiesService.getScriptProperties().getProperty('IG_ACTAS_FOLDER');
   if (!id) return null;
   return DriveApp.getFolderById(id);
+}
+
+// Crea la carpeta PRIVADA "Actas de asamblea" con las subcarpetas 2026 y 2027
+// en el Drive de la cuenta que ejecuta el backend. No la comparte con nadie.
+// Es idempotente: si ya existe, solo la devuelve (y crea los años que falten).
+function igPrepararCarpeta_() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    let raiz = null;
+    try { raiz = igCarpetaActas_(); } catch (e) { raiz = null; }
+    if (!raiz) {
+      raiz = DriveApp.createFolder(IG_CARPETA_NOMBRE);
+      raiz.setDescription('Actas de asamblea del portal (Informes generales). Privada: el portal la lee por su cuenta. ' +
+        'Suba cada acta en PDF a la carpeta de su año.');
+      PropertiesService.getScriptProperties().setProperty('IG_ACTAS_FOLDER', raiz.getId());
+    }
+    const existentes = igAniosActas_(raiz).map(function (a) { return a.anio; });
+    IG_ANIOS_INICIALES.forEach(function (anio) {
+      if (existentes.indexOf(anio) < 0) raiz.createFolder(anio);
+    });
+    return { ok: true, carpeta: IG_CARPETA_NOMBRE, url: raiz.getUrl(), anios: IG_ANIOS_INICIALES };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 // Años = subcarpetas con nombre de 4 dígitos. Más reciente primero.
