@@ -50,7 +50,7 @@ function verificarEsquema_(sheet) {
 }
 
 // AUD-T17: permite saber qué versión responde en producción
-const VERSION_BACKEND = '2026-11-21-ig3';
+const VERSION_BACKEND = '2026-11-27-rc1';
 function ping_() { return { ok: true, version: VERSION_BACKEND, tz: Session.getScriptTimeZone(), hora: Utilities.formatDate(new Date(), 'America/Bogota', 'yyyy-MM-dd HH:mm:ss') }; }
 
 // AUD-T18: ejecutar desde el editor antes de cada despliegue. Lanza si algo falta.
@@ -103,7 +103,7 @@ function configurarRespaldoDiario_() {
 // =====================================================================
 const BITACORA_SHEET = 'Bitacora';
 const BITACORA_HDR = ['Fecha', 'Acción', 'N° Formulario', 'N° Apto', 'Origen', 'Celdas con dato', 'Versión'];
-const BITACORA_ORIGENES = ['formulario-publico', 'portal-residente', 'portal-admin'];
+const BITACORA_ORIGENES = ['formulario-publico', 'portal-residente', 'portal-admin', 'portada'];
 
 // Celda "con dato" = no vacía tras trim. 0 y false cuentan (Sheets los guarda).
 function celdaConDato_(v) {
@@ -534,6 +534,9 @@ function doPost(e) {
     // --- INFORMES GENERALES (informes-generales.html, solo propietarios) ---
     if (action === 'igListarActas')      return jsonOut(igListarActas(payload));
     if (action === 'igDescargarActa')    return jsonOut(igDescargarActa(payload));
+    // --- RECUPERAR N° DE FORMULARIO (portada) ---
+    if (action === 'rcConsultar')        return jsonOut(rcConsultar(payload));
+    if (action === 'rcEnviar')           return jsonOut(rcEnviar(payload));
     if (action === 'reservarMudanza') {
       return jsonOut(idempotente_(payload, function () { return reservarMudanza(payload); }));
     }
@@ -4961,7 +4964,7 @@ const MANUAL_CERRO = (
 "4. Ese código lo necesitará para editar su registro, agendar mudanzas y consultar su estado de cuenta.\n" +
 "\n" +
 "\n" +
-"Si perdió el código: escriba a urb.cerroazul@gmail.com o al WhatsApp 316 924 0748 con su nombre completo, cédula y número de apartamento.\n" +
+"Si perdió el código: en la página principal del portal toque \"¿Olvidó su N° de formulario?\", escriba el número del apartamento (solo el número, sin la torre), confirme el correo que aparece parcialmente oculto y el sistema le reenvía el código a ese correo (el del propietario o la inmobiliaria, tal como quedó en el registro). Si el correo que aparece no es el suyo o no le llega: escriba a urb.cerroazul@gmail.com o al WhatsApp 316 924 0748 con su nombre completo, cédula y número de apartamento.\n" +
 "\n" +
 "\n" +
 "________________\n" +
@@ -6279,4 +6282,107 @@ function igDescargarActa(data) {
   }
   Logger.log('[igDescargarActa] apto ' + v.apto + ' descargó ' + archivo.getName());
   return { ok: true, nombreArchivo: archivo.getName(), base64: Utilities.base64Encode(archivo.getBlob().getBytes()) };
+}
+
+// =====================================================================
+// RECUPERAR N° DE FORMULARIO (portada: "¿Olvidó su N° de formulario?")
+// ---------------------------------------------------------------------
+// Paso 1 (rcConsultar): con solo el N° de apartamento devuelve el correo
+//   registrado PARCIALMENTE OCULTO (columna H: correo del propietario o de
+//   la inmobiliaria, tal como quedó en el registro).
+// Paso 2 (rcEnviar): si la persona confirma, se envía el N° de formulario
+//   a ESE correo. El código y el correo completo nunca llegan al navegador.
+// Si hay varios registros del mismo apartamento se usa el MÁS RECIENTE
+// (el último en la hoja). Límites anti-abuso en CacheService.
+// =====================================================================
+const RC_MAX_CONSULTAS_HORA = 10;   // por apartamento
+const RC_ESPERA_ENVIO_SEG   = 600;  // 1 envío cada 10 min por apartamento
+const RC_MAX_ENVIOS_DIA     = 3;    // por apartamento
+const RC_MAX_ENVIOS_HORA    = 40;   // tope global del portal
+
+function rcOcultarCorreo_(correo) {
+  const c = String(correo || '').trim().toLowerCase();
+  const at = c.lastIndexOf('@');
+  if (at < 1) return '';
+  const local = c.slice(0, at), dominio = c.slice(at + 1);
+  const punto = dominio.lastIndexOf('.');
+  const nombreDom = punto > 0 ? dominio.slice(0, punto) : dominio;
+  const tld = punto > 0 ? dominio.slice(punto) : '';
+  const vis = local.length <= 2 ? local.slice(0, 1) : local.slice(0, 2);
+  return vis + '•••••@' + nombreDom.slice(0, 1) + '•••' + tld;
+}
+
+// Último registro (más reciente) del apartamento con N° de formulario.
+function rcBuscarRegistro_(apto) {
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
+  const last = sheet.getLastRow();
+  if (last < HEADER_ROW + 1) return null;
+  const data = sheet.getRange(HEADER_ROW + 1, 1, last - HEADER_ROW, 8).getValues();
+  for (let i = data.length - 1; i >= 0; i--) {
+    const numForm = String(data[i][COL_NUM_FORM] || '').trim();
+    if (!numForm) continue;
+    if (normApto(data[i][COL_APTO]) !== apto) continue;
+    return { numForm: numForm, apto: String(data[i][COL_APTO] || '').trim(),
+             nombre: String(data[i][5] || '').trim(), correo: String(data[i][7] || '').trim() };
+  }
+  return null;
+}
+
+function rcCorreoValido_(c) { return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(c || '').trim()); }
+
+function rcAptoValido_(raw) {
+  const apto = normApto(raw);
+  return /^\d{2,5}[A-Za-z]?$/.test(apto) ? apto : '';
+}
+
+function rcConsultar(data) {
+  const apto = rcAptoValido_(data && data.apto);
+  if (!apto) return { ok: false, error: 'Escriba solo el número del apartamento, sin la torre. Ejemplo: 402.' };
+  const cache = CacheService.getScriptCache();
+  const k = 'rc_q_' + apto;
+  const n = parseInt(cache.get(k) || '0', 10);
+  if (n >= RC_MAX_CONSULTAS_HORA) return { ok: false, error: 'Demasiadas consultas para este apartamento. Intente de nuevo en una hora.' };
+  cache.put(k, String(n + 1), 3600);
+  const reg = rcBuscarRegistro_(apto);
+  if (!reg) return { ok: true, encontrado: false };
+  if (!rcCorreoValido_(reg.correo)) return { ok: true, encontrado: true, sinCorreo: true };
+  return { ok: true, encontrado: true, correoOculto: rcOcultarCorreo_(reg.correo) };
+}
+
+function rcEnviar(data) {
+  const apto = rcAptoValido_(data && data.apto);
+  if (!apto) return { ok: false, error: 'Número de apartamento no válido.' };
+  const cache = CacheService.getScriptCache();
+  if (cache.get('rc_e_' + apto)) {
+    return { ok: false, error: 'Ya enviamos el código hace poco. Revise su correo (también la carpeta de spam) o intente de nuevo en 10 minutos.' };
+  }
+  const dia = Utilities.formatDate(new Date(), 'America/Bogota', 'yyyyMMdd');
+  const kDia = 'rc_d_' + apto + '_' + dia;
+  const enviosDia = parseInt(cache.get(kDia) || '0', 10);
+  if (enviosDia >= RC_MAX_ENVIOS_DIA) return { ok: false, error: 'Se alcanzó el máximo de envíos de hoy para este apartamento. Intente mañana o comuníquese con la administración.' };
+  const kHora = 'rc_h_' + Utilities.formatDate(new Date(), 'America/Bogota', 'yyyyMMddHH');
+  const enviosHora = parseInt(cache.get(kHora) || '0', 10);
+  if (enviosHora >= RC_MAX_ENVIOS_HORA) return { ok: false, error: 'El servicio está ocupado. Intente de nuevo en unos minutos.' };
+
+  const reg = rcBuscarRegistro_(apto);
+  if (!reg || !rcCorreoValido_(reg.correo)) {
+    return { ok: false, error: 'No hay un correo registrado para este apartamento. Comuníquese con la administración.' };
+  }
+  const body =
+    'Hola' + (reg.nombre ? ' ' + reg.nombre : '') + ',\n\n' +
+    'Alguien pidió recuperar el N° de formulario del apartamento ' + reg.apto + ' en el portal de residentes de la Urbanización Cerro Azul.\n\n' +
+    '  N° de formulario: ' + reg.numForm + '\n' +
+    '  Apartamento:      ' + reg.apto + '\n\n' +
+    'Con este número puede editar su registro, agendar mudanzas, consultar el estado de cuenta y ver los informes.\n' +
+    'Portal: https://fabig76.github.io/cerro-azul-residentes/\n\n' +
+    'Si usted no pidió este correo, puede ignorarlo: el número solo se envía a este correo.\n\n' +
+    'Dudas: WhatsApp 316 924 0748 o urb.cerroazul@gmail.com\n\n' +
+    '--\nUrbanización Cerro Azul — NIT 900770444\n';
+  const r = enviarEmailSeguro_(reg.correo, 'Cerro Azul — su N° de formulario es ' + reg.numForm, body);
+  if (!r.enviado) return { ok: false, error: 'No se pudo enviar el correo en este momento. Intente más tarde o comuníquese con la administración.' };
+  cache.put('rc_e_' + apto, '1', RC_ESPERA_ENVIO_SEG);
+  cache.put(kDia, String(enviosDia + 1), 86400);
+  cache.put(kHora, String(enviosHora + 1), 3600);
+  registrarBitacora_('recuperar-codigo', reg.numForm, reg.apto, 'portada', 0);
+  return { ok: true, enviado: true, correoOculto: rcOcultarCorreo_(reg.correo) };
 }

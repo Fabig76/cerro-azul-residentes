@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="assets/styles.css?v=20261107">
   <link rel="stylesheet" href="assets/vidrio.css?v=20261112">
   <link rel="stylesheet" href="assets/inicio.css?v=20261114">
+  <link rel="stylesheet" href="assets/recuperar.css?v=20261127">
   <script>
       // Anti-FOUC: el mismo bloque que usa formulario.html (misma clave de localStorage).
       (function() {
@@ -49,6 +50,10 @@
         <a class="btn btn-primary" href="formulario.html">Enviar / Crear registro</a>
         <a class="btn vd-btn-vidrio" href="estado-cuenta.html">Consultar estado de cuenta</a>
       </div>
+      <button type="button" class="rc-enlace" id="rcAbrir">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 21 2M16 7l3 3M18.5 4.5l2 2"/></svg>
+        ¿Olvidó su N° de formulario? <span>Recupérelo aquí</span>
+      </button>
       <ul class="vd-datos">
         <li>3 torres</li>
         <li>625 apartamentos</li>
@@ -160,10 +165,60 @@
   <p>Urbanización Cerro Azul · NIT 900770444 · Bello / Niquía</p>
 </footer>
 
+
+  <!-- RECUPERAR N° DE FORMULARIO (js/recuperar.js) -->
+  <div class="rc-fondo hidden" id="rcModal" role="dialog" aria-modal="true" aria-labelledby="rcTitulo">
+    <div class="rc-caja">
+      <button type="button" class="rc-cerrar" id="rcCerrar" aria-label="Cerrar">×</button>
+      <h3 id="rcTitulo">🔑 Recuperar mi N° de formulario</h3>
+
+      <div id="rcPaso1">
+        <p>Le enviaremos su N° de formulario al correo que quedó en el registro del apartamento (el del propietario o la inmobiliaria).</p>
+        <div class="field">
+          <label for="rcApto">N° de apartamento</label>
+          <input type="text" id="rcApto" inputmode="numeric" autocomplete="off" placeholder="Ej: 402">
+          <small class="rc-ayuda">Escriba <strong>solo el número</strong>, sin la torre. Ejemplo: 402 o 9804.</small>
+        </div>
+        <div id="rcAlerta1" class="alert hidden" role="alert"></div>
+        <button type="button" class="btn btn-primary btn-block" id="rcBuscar">Buscar</button>
+      </div>
+
+      <div id="rcPaso2" class="hidden">
+        <p>Le enviaremos su N° de formulario a este correo:</p>
+        <p class="rc-correo" id="rcCorreo"></p>
+        <p><strong>¿Es su correo?</strong></p>
+        <div id="rcAlerta2" class="alert hidden" role="alert"></div>
+        <div class="rc-botones">
+          <button type="button" class="btn btn-primary" id="rcSi">Sí, enviarlo</button>
+          <button type="button" class="btn btn-secondary" id="rcNo">No es mi correo</button>
+        </div>
+      </div>
+
+      <div id="rcListo" class="hidden">
+        <div class="rc-icono rc-ok">✓</div>
+        <p class="rc-grande">¡Listo! Revise su correo</p>
+        <p>Enviamos su N° de formulario a <strong id="rcCorreoListo"></strong>. Si no lo ve en unos minutos, revise también la carpeta de <strong>spam</strong>.</p>
+        <button type="button" class="btn btn-primary btn-block" id="rcCerrarListo">Entendido</button>
+      </div>
+
+      <div id="rcAdmin" class="hidden">
+        <div class="rc-icono rc-info">i</div>
+        <p class="rc-grande" id="rcAdminTitulo">Comuníquese con la administración</p>
+        <p id="rcAdminTexto">Para proteger sus datos, el código solo se envía al correo registrado. La administración le ayuda a recuperarlo y a actualizar su correo.</p>
+        <ul class="rc-contacto">
+          <li>📱 WhatsApp <a href="https://wa.me/573169240748" target="_blank" rel="noopener">316 924 0748</a></li>
+          <li>✉️ <a href="mailto:urb.cerroazul@gmail.com">urb.cerroazul@gmail.com</a></li>
+        </ul>
+        <p class="rc-nota">Indique su nombre completo, cédula y número de apartamento.</p>
+        <button type="button" class="btn btn-secondary btn-block" id="rcVolver">Volver</button>
+      </div>
+    </div>
+  </div>
 <script src="js/config.js?v=20261028"></script>
 <script src="js/common.js?v=20261028"></script>
 <script src="js/asistente.js?v=3"></script>
 <script src="js/vidrio.js?v=20261114"></script>
+<script src="js/recuperar.js?v=20261127"></script>
 <script>
       // Toggle de tema claro/oscuro: el mismo bloque que usa formulario.html.
       (function() {

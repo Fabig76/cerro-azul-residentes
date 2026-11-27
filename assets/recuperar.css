@@ -1,0 +1,33 @@
+/* Recuperar N° de formulario (index.html + js/recuperar.js). Prefijo "rc-". */
+.rc-enlace {
+  display: block; text-align: left; line-height: 1.5; margin: 4px 0 2px; padding: 8px 4px;
+  border: 0; background: none; font: inherit; font-size: 15px; color: var(--gris-med); cursor: pointer;
+}
+.rc-enlace svg { width: 18px; height: 18px; color: var(--azul); vertical-align: -4px; margin-right: 6px; }
+.rc-enlace span { color: var(--azul); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.rc-enlace:hover span { text-decoration-thickness: 2px; }
+.rc-enlace:focus-visible { outline: 3px solid var(--naranja); outline-offset: 2px; border-radius: 8px; }
+
+.rc-fondo { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 16px;
+  background: rgba(10, 25, 45, .45); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.rc-fondo.hidden { display: none; }
+.rc-caja { position: relative; width: 100%; max-width: 440px; max-height: calc(100vh - 32px); overflow: auto;
+  background: var(--fondo-card); color: var(--gris-tx); border-radius: 24px; padding: 26px 24px 22px;
+  box-shadow: 0 24px 60px rgba(0, 30, 70, .35); display: grid; gap: 6px; }
+.rc-caja h3 { margin: 0 34px 8px 0; font-size: 21px; }
+.rc-caja p { margin: 0 0 8px; color: var(--gris-med); font-size: 15px; line-height: 1.45; }
+.rc-cerrar { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%; border: 0;
+  background: var(--gris-claro); color: var(--gris-tx); font-size: 22px; line-height: 1; cursor: pointer; }
+.rc-ayuda { display: block; margin-top: 6px; font-size: 13.5px; color: var(--gris-med); }
+.rc-correo { font-size: 22px !important; font-weight: 700; color: var(--gris-tx) !important; text-align: center;
+  padding: 14px; border-radius: 16px; background: var(--gris-claro); letter-spacing: .02em; overflow-wrap: anywhere; }
+.rc-botones { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rc-icono { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; margin: 4px auto 8px;
+  font-size: 30px; font-weight: 800; color: #fff; }
+.rc-ok { background: var(--ok); }
+.rc-info { background: var(--azul); font-family: Georgia, serif; font-style: italic; }
+.rc-grande { font-size: 19px !important; font-weight: 700; color: var(--gris-tx) !important; text-align: center; }
+.rc-contacto { list-style: none; margin: 4px 0 6px; padding: 0; display: grid; gap: 8px; }
+.rc-contacto li { padding: 12px 14px; border-radius: 14px; background: var(--gris-claro); font-weight: 600; }
+.rc-nota { font-size: 13.5px !important; }
+@media (max-width: 380px) { .rc-botones { grid-template-columns: 1fr; } }

@@ -586,7 +586,7 @@ function mostrarExito(data) {
       Tu N° de formulario es: <strong style="font-size:18px; letter-spacing:2px;">${data.numForm}</strong><br>
       Lo necesitarás cada vez que quieras editar o actualizar tus datos.<br>
       Guárdalo en un lugar seguro (anota, captura de pantalla, etc.).<br>
-      <em>La administración NO puede recuperar este número por ti.</em>
+      <em>Si lo olvidas, en la página principal toca «¿Olvidó su N° de formulario?» y te lo enviamos al correo registrado.</em>
     `;
   }
   // BUGFIX-028: aviso de correo enviado (solo en creacion con Propietario).
