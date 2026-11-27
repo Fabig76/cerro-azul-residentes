@@ -193,7 +193,7 @@ describe('formulario: abrir una pestaña desde el enlace', () => {
 describe('portada: el asistente con IA está disponible', () => {
   it('index.html carga common.js y asistente.js antes de vidrio.js', () => {
     const guiones = [...leer('index.html').matchAll(/<script src="js\/([\w-]+)\.js/g)].map((m) => m[1]);
-    expect(guiones).toEqual(['config', 'common', 'asistente', 'vidrio']);
+    expect(guiones).toEqual(['config', 'common', 'asistente', 'vidrio', 'recuperar']);
   });
   it('los botones abren el chat con el propio "Abrir chat" del asistente y no lo cierran', () => {
     document.body.innerHTML = '<button id="ca-btn-toggle"></button><div id="ca-ventana" class="ca-oculta"><input id="ca-input"></div><button data-vd-asistente id="b1"></button>';
